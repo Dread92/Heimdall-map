@@ -212,6 +212,19 @@ Where drones were reported (1.34) is a record of the past, drawn in a colour no 
 shoot-downs or the hits, which would map where the air defence works. It is off at every opening of the app:
 nobody should open the map at 3 a.m. and see last week.
 
+## The guide says what the official guidance says
+
+The what-to-do page (1.35, `/guide`) is the one place where the app tells people how to act, so it carries nothing
+of its own invention. Every rule is taken from guidance the ДСНС, the National Police, the Ministry of Health or an
+oblast administration published, and those sources are listed on the page; what is not taken from them is said there
+too (the bridge advice applies the police's advice for drivers to the bridges; a card with a parent's number in a
+child's pocket is common sense). Warning times and speeds are written as typical values, never as a promise —
+"2–4 minutes" for a ballistic missile is what it usually is, not what it will be. It never says that a place, a
+floor or a bridge is safe — only what is safer, and what to avoid. And it puts the official siren first, in its
+opening lines.
+
+When the official guidance changes, the page changes with it, and its "checked" date moves.
+
 ## The history layer never buries the live picture
 
 The map carries the last 24 hours and nothing more. Beyond that the dots are denser than the thing somebody

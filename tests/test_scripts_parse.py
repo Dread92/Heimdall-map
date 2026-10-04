@@ -13,7 +13,7 @@ NODE = shutil.which("node")
 
 
 @pytest.mark.skipif(not NODE, reason="node is not installed")
-@pytest.mark.parametrize("page", ["kyiv.html", "light.html", "admin.html"])
+@pytest.mark.parametrize("page", ["kyiv.html", "light.html", "admin.html", "guide.html"])
 def test_the_inline_scripts_parse(page):
     src = open(os.path.join(ROOT, "static", page), encoding="utf-8").read()
     for i, body in enumerate(re.findall(r"<script>(.*?)</script>", src, re.S)):
@@ -27,7 +27,7 @@ def test_the_inline_scripts_parse(page):
 
 
 @pytest.mark.skipif(not NODE, reason="node is not installed")
-@pytest.mark.parametrize("js", ["i18n.js", "glyphs.js", "sw.js"])
+@pytest.mark.parametrize("js", ["i18n.js", "glyphs.js", "sw.js", "nuke.js"])
 def test_the_shared_scripts_parse(js):
     r = subprocess.run([NODE, "--check", os.path.join(ROOT, "static", js)], capture_output=True, text=True)
     assert r.returncode == 0, r.stderr[:400]

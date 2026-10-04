@@ -1,8 +1,27 @@
-// Heimdall — service worker: push notifications + app shell (no caching of live data)
-self.addEventListener('install', e => { self.skipWaiting(); });
+// Heimdall — service worker: push notifications, and the what-to-do guide kept for when there is no network.
+// Nothing live is ever cached: the guide (/guide) and the two files it draws with are the only answers this worker
+// gives, and even those come from the network first — the stored copy is used only when the network fails.
+const GUIDE_CACHE = 'heimdall-guide-1';
+const GUIDE = ['/guide', '/static/glyphs.js', '/static/heimdall-64.png'];
+self.addEventListener('install', e => {
+  self.skipWaiting();
+  // a failed download must not stop the worker (and the push notifications) from installing
+  e.waitUntil(caches.open(GUIDE_CACHE).then(c => c.addAll(GUIDE)).catch(() => {}));
+});
+self.addEventListener('fetch', e => {
+  const u = new URL(e.request.url);
+  if (e.request.method !== 'GET' || u.origin !== self.location.origin || !GUIDE.includes(u.pathname)) return;
+  e.respondWith(fetch(e.request).then(r => {
+    if (r.ok) { const copy = r.clone(); caches.open(GUIDE_CACHE).then(c => c.put(u.pathname, copy)).catch(() => {}); }
+    return r;
+  }).catch(() => caches.match(u.pathname).then(r => r || Response.error())));
+});
 // the page can ask the waiting worker to take over immediately (the "new version" bar does this)
 self.addEventListener('message', e => { if (e.data === 'skipWaiting') self.skipWaiting(); });
-self.addEventListener('activate', e => { e.waitUntil(self.clients.claim()); });
+self.addEventListener('activate', e => {
+  e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k.startsWith('heimdall-guide-') && k !== GUIDE_CACHE).map(k => caches.delete(k))))
+    .catch(() => {}).then(() => self.clients.claim()));
+});
 
 self.addEventListener('push', e => {
   let d = {};

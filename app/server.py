@@ -336,7 +336,7 @@ def build_id():
 
 # The version the front end shows in its footer, kept here too so /api/version can answer "what is actually
 # running" without anybody reading it off a screenshot. tests/test_version.py pins the two to each other.
-APP_VERSION = "1.34"
+APP_VERSION = "1.35"
 APP_NAME = "Heimdall"
 BUILD = None    # filled at startup
 
@@ -4778,6 +4778,11 @@ class Handler(BaseHTTPRequestHandler):
                 return self._file("light.html", "text/html; charset=utf-8")
             if u.path == "/light.webmanifest":
                 return self._file("light.webmanifest", "application/manifest+json")
+            # 1.35: what to do, weapon by weapon — the official guidance (ДСНС, police, Ministry of Health, an oblast
+            # administration) on one page in three languages. Self-contained, and kept by the service worker so it
+            # still opens with no network (static/sw.js). It asks the server for nothing.
+            if u.path == "/guide":
+                return self._file("guide.html", "text/html; charset=utf-8")
             if u.path == "/api/places":
                 oq = q.get("oblast", ["14,31"])[0]
                 obl = None if oq == "all" else set(oq.split(","))

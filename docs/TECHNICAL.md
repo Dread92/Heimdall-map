@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.34** · last updated 2026-10-04
+**Documented version: 1.35** · last updated 2026-10-04
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -55,6 +55,7 @@ and serves two web pages from the same data:
 |---|---|---|
 | **Tactical** | `/m` (also `/`, `/k`, `/kyiv`) | The full map: every mark with its evidence, the feed, alerts, statistics, display modes, layers. |
 | **Light** | `/light` (also `/l`) | One place (Home / Work / Kids / Pin): its raion's official status, what is within 30 km, what is heading there. |
+| **Guide** | `/guide` | What to do, weapon by weapon and situation by situation — the official guidance, in three languages, offline (1.35, §10.5). |
 
 Both install as separate PWAs (manifest ids `/m` and `/light` — unchanged by the 1.29 rename, so Android offers
 the new name and icon as an update of the installed app; an iPhone keeps an installed app's name and icon until
@@ -126,7 +127,8 @@ clear-sky/
 │   ├── ukraine-map.json    oblast outlines in an affine lon/lat projection (Light page fallback lookup)
 │   ├── admin.html          private dashboard: usage, source health, channels, lead time (/admin, ADMIN_KEY)
 │   ├── index.html, mobile.html   older desktop / mobile views (/desktop, /ua)
-│   ├── sw.js               service worker: push display and notification clicks
+│   ├── guide.html          what to do, weapon by weapon (/guide, 1.35): self-contained, content in its JSON block
+│   ├── sw.js               service worker: push display, notification clicks, the guide kept for offline
 │   ├── manifest.json, light.webmanifest   the two PWAs
 │   ├── logo-cs*.png        the Clear Sky logo: app icons (any / maskable), favicon, badge, the notice
 │   └── logo*.png (NGO 07300), bf-logo*.png (Black Flame Studio), ukraine-map.LICENSE.md
@@ -763,6 +765,26 @@ names, `OBL_N` / `oblFull()`. A test fails when a key is missing in one language
 The language is a **drop-down** on both pages (`langSelect()`: the Tactical menu and notice, the Light header —
 flag and code only — and notice); `pickLang()` stores it and reloads.
 
+### 10.5 The guide (`/guide`, 1.35)
+
+What to do, weapon by weapon. One self-contained `static/guide.html`; its content is the JSON block `#gd`
+(`uk` / `en` / `fr`, the same shape in each — `tests/test_guide.py` compares them key by key and list by list) and
+the sources in `#gsrc` ([publisher, title, URL]). The script draws it, so the page reads `?lang=` (not stored),
+then `localStorage.lang` (shared with the two pages; the УКР / EN / FR buttons store it), then the phone's language.
+
+- **Five rules** that always apply; **weapon cards** (`shahed`, `jet`, `cruise`, `ballistic`, `kab`, `debris`):
+  the usual warning time as a chip, how you notice it, what to do — with the map's own silhouette and colour
+  (`static/glyphs.js`, `ICON` in the page); **situations** (`car` — the bridges, `out`, `home`, `kids`, `after`,
+  `rad`); the **emergency numbers** as `tel:` links; the **sources**, with what is not taken from them said.
+- Every rule comes from the listed official guidance (ДСНС, National Police, Ministry of Health, Poltava ОВА) —
+  [SAFETY.md](SAFETY.md#the-guide-says-what-the-official-guidance-says). The checked date is in the footer.
+- **Offline**: the page registers `sw.js`; the worker stores `/guide`, `glyphs.js` and the logo at install
+  (`heimdall-guide-N`) and answers those three paths **network first**, the stored copy only when the network
+  fails. Nothing else goes through it. "Saved on this phone" appears only once `caches.match('/guide')` finds it.
+- **Print**: `@media print` — black on white, no buttons, cards kept whole, three columns; two A4 pages in each language.
+- Linked from the Tactical menu (About, `m_guide`), the top of the help sheet (`.gdl`), the Light footer (`#gdl`)
+  and the nuclear-event banner (`/guide#rad`, `static/nuke.js`). The page asks the server for nothing.
+
 ## 11. Privacy and security
 
 - The four places never leave the phone; the Light page's requests carry no place (checked in the render tests).
@@ -788,6 +810,7 @@ All JSON unless stated. Public unless marked 🔒 (`ADMIN_KEY`).
 |---|---|
 | `GET /`, `/m`, `/k`, `/kyiv` | Tactical page |
 | `GET /light`, `/l` | Light page |
+| `GET /guide` | the what-to-do guide (§10.5): static, three languages, kept offline by `sw.js` |
 | `GET /desktop`, `/index.html`, `/dash` | older desktop view |
 | `GET /ua`, `/mobile`, `/mobile.html` | older mobile view |
 | `GET /manifest.json`, `/light.webmanifest`, `/sw.js`, `/favicon.ico`, `/static/*` | PWA files, assets (gzip + ETag) |

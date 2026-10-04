@@ -2,6 +2,20 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.35.0 — 2026-10-04
+
+### Added
+- **What to do — a threat cheat sheet** at `/guide`, in Ukrainian, English and French: five rules that always apply,
+  then weapon by weapon — Shahed, jet drone (Geran-3, Banderol), cruise missiles, ballistic missiles and Kinzhal,
+  KAB, debris — how much warning there usually is, how you notice it and what to do, each card with the symbol the
+  map uses; then in a car and on the bridges, caught outside, at home at night, with children, after a strike (and
+  under rubble), a radiation danger; the emergency numbers (101, 102, 103, 104, 112) as tap-to-call buttons; and
+  the official guidance every rule comes from (ДСНС, police, Ministry of Health, Poltava oblast administration).
+- It opens with no network: the service worker keeps a copy (the page says so only once the copy is there), and
+  it prints on two A4 pages for a shelter or a door.
+- Linked from the Tactical menu (About → What to do), the top of the help sheet, the Light page's footer, and the
+  nuclear-event banner (straight to "Radiation danger").
+
 ## 1.34.0 — 2026-10-04
 
 ### Added

@@ -1,0 +1,804 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b0d11">
+<title>Що робити — пам'ятка про загрози · Heimdall</title>
+<link rel="icon" href="/static/heimdall-64.png">
+<style>
+/* Heimdall — what to do, weapon by weapon (1.35).
+   One page, three languages, nothing fetched but the map's own silhouettes (static/glyphs.js): it has to open in a
+   corridor on 2G, and — kept by the service worker (static/sw.js) — with no network at all. Every rule on it comes
+   from the official guidance listed at the bottom (ДСНС, police, Ministry of Health, an oblast administration);
+   docs/SAFETY.md says why nothing else goes on it. The content is the JSON block below, the same shape in each
+   language (tests/test_guide.py checks it). */
+:root{--bg:#0b0d11;--panel:#12151b;--panel2:#181c24;--line:#242830;--ink:#e8e6df;--ink2:#a9a79f;--ink3:#77766f;
+  --red:#e0342c;--ora:#ff8a3d;--amb:#ffb15c;--msl:#ff5b52;--vio:#b07cff;--blu:#5b9cff;--grn:#2fbf71;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-padding-top:12px}
+html,body{background:var(--bg);color:var(--ink);font:15.5px/1.5 var(--sans)}
+body{padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0)}
+.wrap{max-width:820px;margin:0 auto;padding:0 16px}
+a{color:#8fb4ff}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+header{display:flex;align-items:center;gap:8px;padding:12px 0 6px}
+header img{width:24px;height:24px}
+header .brand{font:800 15px/1 var(--sans);letter-spacing:.08em;color:var(--ink);text-decoration:none}
+header .sp{flex:1}
+.lng{display:flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.lng button{padding:7px 10px;font:700 12px/1 var(--mono);color:var(--ink2);min-width:44px}
+.lng button+button{border-left:1px solid var(--line)}
+.lng button[aria-pressed="true"]{background:#24303f;color:#fff}
+h1{font:800 24px/1.2 var(--sans);margin:10px 0 4px;letter-spacing:-.01em}
+.sub{color:var(--ink2);margin-bottom:12px}
+.warn{background:#2a1416;border:1px solid #6b2328;border-left:5px solid var(--red);border-radius:6px;padding:10px 12px;font-size:14.5px}
+.warn b{color:#fff}
+nav.toc{display:flex;flex-wrap:wrap;gap:6px;margin:14px 0 4px}
+nav.toc a{font:600 13px/1 var(--sans);color:var(--ink);text-decoration:none;border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:8px 11px}
+nav.toc a:hover,nav.toc a:focus-visible{border-color:#3b4a60;background:var(--panel2)}
+section{margin-top:22px}
+h2{font:800 13px/1.2 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ink2);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+.rules{list-style:none;counter-reset:r;display:grid;gap:8px}
+.rules li{counter-increment:r;position:relative;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:11px 12px 11px 50px}
+.rules li::before{content:counter(r);position:absolute;left:12px;top:10px;width:26px;height:26px;border-radius:50%;background:var(--red);color:#fff;
+  font:800 14px/26px var(--sans);text-align:center}
+.rules b{color:#fff}
+.note{color:var(--ink2);font-size:13.5px;margin:-2px 0 10px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:10px}
+.wc{background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--c,var(--ink2));border-radius:8px;padding:11px 12px 12px}
+.wh{display:flex;gap:10px;align-items:flex-start}
+.ic{flex:none;width:42px;height:42px;border-radius:8px;background:#0e1117;border:1px solid var(--line)}
+.wh h3{font:750 16px/1.25 var(--sans);margin-bottom:5px}
+.chip{display:inline-block;font:700 12px/1.3 var(--sans);color:#111;background:var(--c,var(--ink2));border-radius:4px;padding:3px 7px}
+.see{color:var(--ink2);font-size:14px;margin:9px 0 6px}
+ul.do,.sit ul{padding-left:20px;display:grid;gap:5px}
+ul.do li::marker,.sit li::marker{color:var(--c,var(--ink3))}
+.sil .glyph{fill:var(--c);stroke:#0b0d11;stroke-width:1px;vector-effect:non-scaling-stroke}
+.sil .glyph.x{fill:none;stroke:var(--c);stroke-width:2.2px}.sil .glyph.ring{fill:none;stroke:var(--c);stroke-width:1.6px}
+.sil .jetfx{display:none}.sil.jet .jetfx{display:inline}.sil .flame{fill:#ffb347;stroke:none}.sil .flame2{fill:#fff4d6;stroke:none}
+.sil.bal .glyph{fill:#fff;stroke:#ff1744;stroke-width:1.4px}
+.sits{margin-top:22px;display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:10px}
+.sits section{margin-top:0}
+.sit{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:11px 12px 12px}
+.sit h3{font:750 16px/1.25 var(--sans);margin-bottom:7px}
+#car{--c:var(--amb);border-color:#5a4126}
+#rad{--c:#ffd500}
+.nums{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.nums a{display:flex;flex-direction:column;gap:2px;text-decoration:none;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+.nums b{font:800 26px/1 var(--mono);color:#fff}
+.nums span{font-size:13px;color:var(--ink2)}
+.srcs{padding-left:20px;display:grid;gap:4px;font-size:13.5px}
+.srcs small{color:var(--ink3)}
+footer{margin:26px 0 30px;padding-top:12px;border-top:1px solid var(--line);font-size:13px;color:var(--ink2);display:grid;gap:8px}
+footer .row{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}
+footer button{border:1px solid var(--line);border-radius:6px;padding:7px 12px;font:600 13px var(--sans);color:var(--ink)}
+#saved{color:#a8f0cf}
+noscript p{margin:16px 0;padding:12px;border:1px solid #6b2328;border-radius:6px}
+@media (max-width:420px){h1{font-size:21px}.cards,.sits{grid-template-columns:1fr}}
+@media print{
+  @page{size:A4;margin:9mm}
+  :root{--bg:#fff;--panel:#fff;--panel2:#fff;--line:#999;--ink:#000;--ink2:#222;--ink3:#444}
+  html,body{font-size:9.6px;line-height:1.35;background:#fff;color:#000}
+  .wrap{max-width:none;padding:0}
+  .lng,nav.toc,footer button,#saved,header img{display:none!important}
+  header{padding:0 0 2px}h1{font-size:16px;margin:2px 0}.sub{margin-bottom:4px}
+  .warn{background:#fff;border-color:#000;padding:5px 8px;font-size:9.6px}
+  .warn b,.rules b,.nums b{color:#000}
+  section,.sits{margin-top:8px}h2{font-size:9.5px;margin-bottom:5px;padding-bottom:3px}
+  .rules{grid-template-columns:1fr 1fr;gap:4px}.rules li{padding:5px 6px 5px 28px}
+  .rules li::before{background:#000;width:16px;height:16px;font-size:10px;line-height:16px;left:6px;top:5px}
+  .cards,.sits{grid-template-columns:1fr 1fr 1fr;gap:5px}
+  .wc,.sit{padding:5px 7px 6px}.ic{width:24px;height:24px;background:#fff}
+  .wh h3,.sit h3{font-size:11px;margin-bottom:3px}.see{font-size:9.2px;margin:4px 0 3px}
+  ul.do,.sit ul{padding-left:13px;gap:2px}
+  .chip{border:1px solid #000;background:#fff;color:#000;font-size:9px;padding:1px 4px}
+  .nums{grid-template-columns:repeat(5,1fr);gap:4px}.nums a{padding:4px 6px}.nums b{font-size:15px}.nums span{font-size:8.6px}
+  .srcs{font-size:8.4px;gap:1px}.note{font-size:9px;margin:0 0 4px}
+  footer{margin:8px 0 0;padding-top:4px;gap:2px;font-size:8.6px}
+  .wc,.sit,.rules li,.nums a{break-inside:avoid}
+  a{color:#000;text-decoration:none}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <img src="/static/heimdall-64.png" alt="" onerror="this.remove()">
+  <a class="brand" href="/m">HEIMDALL</a><span class="sp"></span>
+  <div class="lng" id="lng" role="group" aria-label="Мова"></div>
+</header>
+<main id="main"></main>
+<noscript><p>101 · 102 · 103 · 104 · 112 — Сирена: одразу в укриття. · Siren: go to a shelter now. · Sirène : à l'abri tout de suite.</p></noscript>
+<footer id="foot"></footer>
+</div>
+<script type="application/json" id="gd">
+{
+ "uk": {
+  "title": "Що робити — пам'ятка про загрози · Heimdall",
+  "h1": "Пам'ятка: загрози і як діяти",
+  "sub": "Як реагувати на кожен тип зброї, яким атакують Київ і область.",
+  "intro": "Неофіційний стислий виклад порад ДСНС, Національної поліції, МОЗ та обласних адміністрацій — джерела внизу. <b>Офіційна сирена і застосунок «Повітряна тривога» — завжди передусім.</b> Сумніваєтеся — йдіть в укриття.",
+  "lang": "Мова",
+  "nav": {
+   "always": "Завжди",
+   "weapons": "Зброя",
+   "car": "Авто й мости",
+   "out": "На вулиці",
+   "home": "Вдома вночі",
+   "kids": "З дітьми",
+   "after": "Після удару",
+   "rad": "Радіація",
+   "num": "Номери",
+   "src": "Джерела"
+  },
+  "always": {
+   "h": "П'ять правил — завжди",
+   "items": [
+    "<b>Сирена — одразу в укриття.</b> Укриття, метро, підземний паркінг чи підземний перехід значно безпечніші за будь-яку кімнату в квартирі. Не чекайте, поки побачите, що летить, — і не чекайте на цю мапу.",
+    "<b>Укриття немає поруч:</b> кімната без вікон (коридор, ванна), за несучими стінами, подалі від скла, не на верхніх поверхах. Правило «двох стін» — крайній випадок, а не захист.",
+    "<b>Вибухи поруч — одразу лягайте на землю</b>: обличчям донизу, у заглиблення, біля бордюру або за щось міцне, руками прикрийте голову, рот трохи відкритий. Не біжіть.",
+    "<b>Подалі від скла</b> — вікон, балконів, вітрин. Скло й уламки ранять навіть тоді, коли ціль збито. Не дивіться, не знімайте, не публікуйте місця падінь і роботи ППО.",
+    "<b>Кінець — це відбій</b>, а не тиша. Атаки йдуть хвилями: лишайтеся в укритті, а після останнього вибуху зачекайте щонайменше 10 хвилин, перш ніж рухатися."
+   ]
+  },
+  "weapons": {
+   "h": "Зброя",
+   "note": "Значок — той самий, що на мапі Heimdall. Швидкість і час на реакцію — типові, а не гарантія.",
+   "cards": [
+    {
+     "id": "shahed",
+     "name": "Шахед (Герань-2)",
+     "warn": "~150–185 км/год · зазвичай видно заздалегідь",
+     "see": "Гучне дзижчання, як у мопеда, низько над дахами; переважно вночі, часто десятками за хвилю.",
+     "do": [
+      "Ідіть в укриття за тривогою — не чекайте, поки почуєте.",
+      "Чуєте його над собою — одразу лягайте подалі від вікон; на вулиці — у заглиблення або за бетонну стіну.",
+      "Звук двигуна раптом стих — він може пікірувати: негайно лягайте й прикрийте голову.",
+      "Вночі на вулиці чи в авто вимкніть фари й ліхтарик: світло і рух — орієнтир для дронів."
+     ]
+    },
+    {
+     "id": "jet",
+     "name": "Реактивний дрон (Герань-3, «Бандероль»)",
+     "warn": "Набагато швидший · хвилини",
+     "see": "Реактивний гул, а не дзижчання; кілька сотень км/год. Ними били й по київських мостах.",
+     "do": [
+      "Сприймайте як ракету: в укриття за тривогою, а не коли почуєте.",
+      "Почалися вибухи — не перебігайте відкритий простір, лягайте там, де ви є.",
+      "Авто не захищає. Під час тривоги з'їжджайте з мостів і відкритих трас."
+     ]
+    },
+    {
+     "id": "cruise",
+     "name": "Крилаті ракети (Х-101, «Калібр»)",
+     "warn": "Години попередження · хвилини поблизу",
+     "see": "Запускають з літаків Ту-95/Ту-160 або з кораблів; летять низько годину й довше та змінюють курс. Про зліт і пуски повідомляють Повітряні сили.",
+     "do": [
+      "Повідомили про зліт бомбардувальників — вирішіть заздалегідь, де ховатиметеся; взуття й телефон — напоготові.",
+      "В укриття одразу за тривогою — ракета перетинає область за хвилини.",
+      "Лишайтеся до відбою: ракети часто летять разом із дронами, хвилями."
+     ]
+    },
+    {
+     "id": "ballistic",
+     "name": "Балістика (Іскандер, KN-23) і «Кинджал»",
+     "warn": "2–4 хвилини — інколи швидше за сирену",
+     "see": "Повідомлення Повітряних сил «загроза балістики»; сирена може пролунати перед самим ударом або після нього. Зліт МіГ-31К (носія «Кинджала») — тривога по всій країні.",
+     "do": [
+      "Не чекайте: одразу в найближче укриття — навіть якщо у вашому районі сирени ще немає.",
+      "Не встигаєте — лягайте на підлогу подалі від вікон, у коридорі чи ванній.",
+      "На вулиці — одразу лягайте в заглиблення або біля бордюру чи стіни, руки на голову.",
+      "Після всього лишайтеся в укритті ще 10–15 хвилин."
+     ]
+    },
+    {
+     "id": "kab",
+     "name": "КАБ (керовані авіабомби)",
+     "warn": "Прифронтові області · секунди",
+     "see": "Скидають з літаків біля фронту — Харківщина, Сумщина, Запорізька область та інші прифронтові райони.",
+     "do": [
+      "Там — під землю за першим попередженням про КАБ: коли її чути, часу вже немає."
+     ]
+    },
+    {
+     "id": "debris",
+     "name": "Уламки й нерозірвані частини",
+     "warn": "Після будь-якої атаки",
+     "see": "Частини дронів і ракет можуть містити пальне, вибухівку чи отруйні рідини.",
+     "do": [
+      "Не торкайтеся, не переносьте, не фотографуйте зблизька. Відведіть інших.",
+      "Телефонуйте 101 або 102 і скажіть, де це."
+     ]
+    }
+   ]
+  },
+  "sit": [
+   {
+    "id": "car",
+    "h": "В авто — і на мостах",
+    "items": [
+     "Під час тривоги, якщо можете, оминайте великі мости: вони стали ціллю, разом з авто на них.",
+     "Тривога застала на мосту — не зупиняйтеся і не пригальмовуйте, щоб подивитися чи зняти: з'їжджайте з мосту й далі від нього.",
+     "Потім зупиніться (не на мосту, не біля скляних будівель), заглушіть двигун і йдіть в укриття чи підземний перехід. Авто — не захист: метал і скло можуть погіршити ситуацію.",
+     "Вибухи поруч і сховатися ніде — вийдіть, відійдіть від авто й ляжте в кювет чи заглиблення.",
+     "Вночі, зупинившись, вимкніть фари.",
+     "Сповіщення Heimdall про мости — з дописів каналів, не радар. «Нічого не повідомлено» на мосту не означає «безпечно»."
+    ]
+   },
+   {
+    "id": "out",
+    "h": "Застало на вулиці",
+    "items": [
+     "Заходьте в найближче метро, підземний перехід, підземний паркінг або під'їзд.",
+     "Уникайте скляних фасадів, білбордів, легких конструкцій, АЗС і припаркованих авто.",
+     "Почалися вибухи — не біжіть: одразу лягайте обличчям донизу в кювет, заглиблення, біля бордюру чи за міцну стіну; ноги схрещені, руки на голові, очі заплющені, рот відкритий.",
+     "Підводьтеся й рухайтеся далі не раніше ніж через 10 хвилин після останнього вибуху."
+    ]
+   },
+   {
+    "id": "home",
+    "h": "Вдома, вночі",
+    "items": [
+     "Спіть подалі від вікон і зовнішніх стін.",
+     "Біля виходу напоготові: документи, ключі, одяг за сезоном, вода, ліки, ліхтарик, заряджений телефон і павербанк.",
+     "Знайте найближче укриття і скільки до нього йти; якщо воно надто далеко — оберіть найбезпечнішу кімнату зараз, а не під час атаки.",
+     "Не користуйтеся ліфтом під час тривоги — можна застрягнути, якщо зникне світло.",
+     "Верхні поверхи найбільше під ударом дронів: спускайтеся на нижні поверхи чи в укриття."
+    ]
+   },
+   {
+    "id": "kids",
+    "h": "З дітьми",
+    "items": [
+     "На вулиці спершу покладіть дитину в заглиблення і прикрийте собою, руками — обидві голови.",
+     "Удень спокійно пройдіть з ними шлях до укриття.",
+     "Покладіть у кишеню чи рюкзак картку з вашим номером телефону; візьміть воду, перекус, теплий одяг, іграшку.",
+     "Поясніть простими словами, що відбувається; тримайтеся спокійно — діти повторюють за вами."
+    ]
+   },
+   {
+    "id": "after",
+    "h": "Після удару",
+    "items": [
+     "Допомагайте, лише якщо це безпечно; телефонуйте 103 (швидка) і 101 (рятувальники).",
+     "Сильна кровотеча: щільно притисніть рану й не відпускайте до приїзду допомоги.",
+     "Запах газу: нічого не вмикайте й не вимикайте, без вогню — вийдіть і телефонуйте 104.",
+     "Не користуйтеся ліфтом; не повертайтеся в пошкоджену будівлю.",
+     "Під завалами: не кричіть постійно — стукайте по трубі чи стіні двома предметами; рятувальники кожні 15–20 хвилин оголошують тишу, щоб слухати. Якщо телефон працює — подзвоніть 101, назвіть адресу й номер квартири, потім бережіть заряд.",
+     "Удари можуть повторитися по тому ж місцю: не збирайтеся, щоб подивитися чи зняти."
+    ]
+   },
+   {
+    "id": "rad",
+    "h": "Радіаційна небезпека",
+    "items": [
+     "Одразу в приміщення — у підвал або в середину будівлі — і лишайтеся там. Зачиніть вікна й двері, ущільніть щілини (скотч, мокра тканина), вимкніть вентиляцію й кондиціонер.",
+     "Якщо були на вулиці: зніміть верхній одяг (це прибирає більшість забруднення), складіть у пакет, прийміть душ з милом, вимийте голову шампунем без кондиціонера.",
+     "Йодид калію — лише за вказівкою влади. Він захищає тільки щитоподібну залозу, а не від радіації загалом.",
+     "Стежте за офіційними каналами (радіо, ТБ, місцева влада); виходьте, лише коли скажуть."
+    ]
+   }
+  ],
+  "num": {
+   "h": "Екстрені номери",
+   "n": {
+    "101": "Рятувальники, пожежна (ДСНС)",
+    "102": "Поліція",
+    "103": "Швидка допомога",
+    "104": "Аварійна газова служба",
+    "112": "Єдиний номер екстрених служб"
+   }
+  },
+  "src": {
+   "h": "Джерела",
+   "note": "Пам'ятку складено з цих порад ДСНС, поліції, МОЗ та обласної адміністрації. Поради щодо мостів застосовують до мостів поради патрульної поліції для водіїв; кілька побутових приготувань (картка з номером для дитини, пройти шлях до укриття) — просто здоровий глузд поверх них."
+  },
+  "foot": {
+   "checked": "Перевірено: 4 жовтня 2026",
+   "print": "Надрукувати",
+   "saved": "✓ Збережено на цьому телефоні — відкривається без інтернету",
+   "map": "← Мапа (Тактична)",
+   "light": "Heimdall Light",
+   "disc": "Heimdall — неофіційний волонтерський застосунок, а не система оповіщення."
+  }
+ },
+ "en": {
+  "title": "What to do — threat cheat sheet · Heimdall",
+  "h1": "Cheat sheet: threats and what to do",
+  "sub": "How to react to each weapon used against Kyiv and the oblast.",
+  "intro": "Unofficial summary of the guidance of the State Emergency Service (ДСНС), the National Police, the Ministry of Health and oblast administrations — sources at the bottom. <b>The official siren and the «Повітряна тривога» app always come first.</b> When in doubt, take cover.",
+  "lang": "Language",
+  "nav": {
+   "always": "Always",
+   "weapons": "Weapons",
+   "car": "Car & bridges",
+   "out": "Outside",
+   "home": "Home at night",
+   "kids": "Children",
+   "after": "After a strike",
+   "rad": "Radiation",
+   "num": "Numbers",
+   "src": "Sources"
+  },
+  "always": {
+   "h": "Five rules — always",
+   "items": [
+    "<b>Siren = go to a shelter now.</b> A shelter, the metro, an underground car park or an underpass is far safer than any room in a flat. Don't wait to see what is coming — and don't wait for this map.",
+    "<b>No shelter within reach:</b> a room without windows (corridor, bathroom), behind load-bearing walls, away from glass, not on the top floors. The “two walls” rule is a last resort, not protection.",
+    "<b>Explosions close by: drop to the ground at once</b> — face down, in a dip, by a kerb or behind something solid, hands over your head, mouth slightly open. Don't run.",
+    "<b>Keep away from glass</b> — windows, balconies, shop fronts. Glass and debris injure even when the target is shot down. Don't watch, don't film, don't post where things fell or where air defence works.",
+    "<b>It ends with the all-clear</b>, not with the silence. Attacks come in waves: stay in the shelter, and after the last explosion wait at least 10 minutes before moving."
+   ]
+  },
+  "weapons": {
+   "h": "Weapons",
+   "note": "The symbol is the one the Heimdall map uses. Speeds and warning times are typical values, not a promise.",
+   "cards": [
+    {
+     "id": "shahed",
+     "name": "Shahed (Geran-2)",
+     "warn": "~150–185 km/h · usually seen coming",
+     "see": "A loud moped-like buzz, low over the roofs; mostly at night, often dozens in a wave.",
+     "do": [
+      "Go to the shelter at the alert — don't wait until you hear it.",
+      "You hear it overhead: lie down at once, away from windows; outside, in a dip or behind a concrete wall.",
+      "The engine noise suddenly stops: it may be diving — drop immediately and cover your head.",
+      "At night, outside or in a car, switch off headlights and torch: light and movement are a reference for drones."
+     ]
+    },
+    {
+     "id": "jet",
+     "name": "Jet drone (Geran-3, “Banderol”)",
+     "warn": "Much faster · minutes",
+     "see": "A jet roar, not a buzz; several hundred km/h. They have also been used on the Kyiv bridges.",
+     "do": [
+      "Treat it like a missile: shelter at the alert, not when you hear it.",
+      "Once explosions start, don't run across open ground — lie down where you are.",
+      "A car is no protection. During the alert, get off bridges and open roads."
+     ]
+    },
+    {
+     "id": "cruise",
+     "name": "Cruise missiles (Kh-101, Kalibr)",
+     "warn": "Hours of notice · minutes once close",
+     "see": "Launched from Tu-95/Tu-160 bombers or from ships; they fly low for an hour or more and change course. The Air Force announces take-offs and launches.",
+     "do": [
+      "Bombers reported airborne: decide in advance where you will shelter; shoes and phone ready.",
+      "Shelter as soon as the alert sounds — a missile crosses the oblast in minutes.",
+      "Stay until the all-clear: missiles often come together with drones, in waves."
+     ]
+    },
+    {
+     "id": "ballistic",
+     "name": "Ballistic (Iskander, KN-23) and Kinzhal",
+     "warn": "2–4 minutes — sometimes faster than the siren",
+     "see": "An Air Force “ballistic threat” (загроза балістики) message; the siren can sound just before the impact, or after it. A MiG-31K take-off (the Kinzhal carrier) means an alert across the whole country.",
+     "do": [
+      "Don't wait: go to the nearest shelter at once — even if there is no siren in your area yet.",
+      "No time: lie on the floor away from windows, in a corridor or bathroom.",
+      "Outside: lie down at once in a dip or by a kerb or wall, hands over your head.",
+      "When it is over, stay in the shelter another 10–15 minutes."
+     ]
+    },
+    {
+     "id": "kab",
+     "name": "KAB (guided aerial bombs)",
+     "warn": "Front-line oblasts · seconds",
+     "see": "Dropped by aircraft near the front — the Kharkiv, Sumy and Zaporizhzhia oblasts and other front-line areas.",
+     "do": [
+      "There, go underground at the first KAB warning: once you can hear it, there is no time left."
+     ]
+    },
+    {
+     "id": "debris",
+     "name": "Debris and unexploded parts",
+     "warn": "After any attack",
+     "see": "Parts of drones and missiles can still hold fuel, explosive or toxic fluids.",
+     "do": [
+      "Don't touch, move or photograph them up close. Keep others away.",
+      "Call 101 or 102 and say where it is."
+     ]
+    }
+   ]
+  },
+  "sit": [
+   {
+    "id": "car",
+    "h": "In a car — and on the bridges",
+    "items": [
+     "During an alert, avoid the big bridges if you can: they have become targets, with the cars on them.",
+     "On a bridge when it starts: don't stop and don't slow down to look or film — drive off the bridge and away from it.",
+     "Then pull over (not on a bridge, not by glass buildings), switch off the engine and go to a shelter or underpass. A car is not protection: metal and glass can make things worse.",
+     "Explosions nearby and nowhere to go: get out, move away from the car and lie down in a ditch or a dip.",
+     "At night, once stopped, switch off the headlights.",
+     "Heimdall's bridge alerts come from channel posts, not radar. “Nothing reported” on a bridge does not mean safe."
+    ]
+   },
+   {
+    "id": "out",
+    "h": "Caught outside",
+    "items": [
+     "Go into the nearest metro, underpass, underground car park or a building's entrance.",
+     "Avoid glass façades, billboards, light structures, petrol stations and parked cars.",
+     "Explosions start: don't run — lie face down at once in a ditch, a dip, by a kerb or behind a solid wall; legs crossed, hands on your head, eyes closed, mouth open.",
+     "Get up and move on no sooner than 10 minutes after the last explosion."
+    ]
+   },
+   {
+    "id": "home",
+    "h": "At home, at night",
+    "items": [
+     "Sleep away from windows and outer walls.",
+     "Ready by the door: documents, keys, clothes for the season, water, medicines, torch, a charged phone and power bank.",
+     "Know your nearest shelter and how long it takes to get there; if it is too far, choose the safest room now, not during the attack.",
+     "Don't use the lift during an alert — you can get stuck if the power goes.",
+     "Top floors are the most exposed to drones: go down to the lower floors or to the shelter."
+    ]
+   },
+   {
+    "id": "kids",
+    "h": "With children",
+    "items": [
+     "Outside, put the child in the dip first and cover them with your body, your hands over both heads.",
+     "In daytime, walk the way to the shelter with them, calmly.",
+     "Put a card with your phone number in their pocket or backpack; take water, a snack, a warm layer, a toy.",
+     "Explain in simple words what is happening; stay calm — children copy you."
+    ]
+   },
+   {
+    "id": "after",
+    "h": "After a strike",
+    "items": [
+     "Help only if it is safe; call 103 (ambulance) and 101 (rescue).",
+     "Heavy bleeding: press hard on the wound and keep pressing until help arrives.",
+     "Smell of gas: don't switch anything on or off, no flames — get out, then call 104.",
+     "Don't use lifts; don't go back into a damaged building.",
+     "Trapped under rubble: don't shout all the time — knock on a pipe or wall with two objects; every 15–20 minutes rescuers call for silence to listen. If your phone works, call 101 with the address and flat number, then save the battery.",
+     "Strikes can return to the same place: don't gather to look or film."
+    ]
+   },
+   {
+    "id": "rad",
+    "h": "Radiation danger",
+    "items": [
+     "Get indoors at once — into the basement or the middle of the building — and stay there. Close windows and doors, seal gaps (tape, a wet cloth), switch off ventilation and air conditioning.",
+     "If you were outside: take off your outer clothes (that removes most of the contamination), put them in a bag, shower with soap and wash your hair with shampoo, no conditioner.",
+     "Potassium iodide only when the authorities say so. It protects only the thyroid, not against radiation in general.",
+     "Follow official channels (radio, TV, local authorities); go out only when they say so."
+    ]
+   }
+  ],
+  "num": {
+   "h": "Emergency numbers",
+   "n": {
+    "101": "Rescue and fire (ДСНС)",
+    "102": "Police",
+    "103": "Ambulance",
+    "104": "Gas emergency",
+    "112": "Single emergency number"
+   }
+  },
+  "src": {
+   "h": "Sources",
+   "note": "This sheet is built from the guidance of the ДСНС, the police, the Ministry of Health and an oblast administration below. The bridge advice applies the patrol police's advice for drivers to the bridges; a few everyday preparations (a card with your number for a child, walking the way to the shelter) are plain common sense on top."
+  },
+  "foot": {
+   "checked": "Checked: 4 October 2026",
+   "print": "Print",
+   "saved": "✓ Saved on this phone — opens without a connection",
+   "map": "← Map (Tactical)",
+   "light": "Heimdall Light",
+   "disc": "Heimdall is an unofficial volunteer app, not an alert system."
+  }
+ },
+ "fr": {
+  "title": "Que faire — aide-mémoire des menaces · Heimdall",
+  "h1": "Aide-mémoire : menaces et réflexes",
+  "sub": "Comment réagir face à chaque arme utilisée contre Kyiv et l'oblast.",
+  "intro": "Résumé non officiel des consignes du Service d'urgence de l'État (ДСНС), de la Police nationale, du ministère de la Santé et des administrations régionales — sources en bas de page. <b>La sirène officielle et l'application « Повітряна тривога » passent toujours en premier.</b> Dans le doute, mettez-vous à l'abri.",
+  "lang": "Langue",
+  "nav": {
+   "always": "Toujours",
+   "weapons": "Armes",
+   "car": "Voiture et ponts",
+   "out": "Dehors",
+   "home": "La nuit chez soi",
+   "kids": "Avec des enfants",
+   "after": "Après une frappe",
+   "rad": "Radiation",
+   "num": "Numéros",
+   "src": "Sources"
+  },
+  "always": {
+   "h": "Cinq règles — toujours",
+   "items": [
+    "<b>Sirène = abri, tout de suite.</b> Un abri, le métro, un parking souterrain ou un passage souterrain sont bien plus sûrs que n'importe quelle pièce d'un appartement. N'attendez pas de voir ce qui arrive — ni cette carte.",
+    "<b>Pas d'abri à portée :</b> une pièce sans fenêtre (couloir, salle de bains), derrière des murs porteurs, loin des vitres, pas dans les derniers étages. La règle des « deux murs » est un dernier recours, pas une protection.",
+    "<b>Explosions proches : à terre immédiatement</b> — face contre le sol, dans un creux, contre une bordure ou derrière quelque chose de solide, mains sur la tête, bouche entrouverte. Ne courez pas.",
+    "<b>Loin des vitres</b> — fenêtres, balcons, vitrines. Le verre et les débris blessent même quand la cible est abattue. Ne regardez pas, ne filmez pas, ne publiez pas les points de chute ni la défense aérienne.",
+    "<b>C'est fini à la fin d'alerte</b>, pas quand le silence revient. Les attaques arrivent par vagues : restez à l'abri et attendez au moins 10 minutes après la dernière explosion avant de bouger."
+   ]
+  },
+  "weapons": {
+   "h": "Armes",
+   "note": "Le symbole est celui de la carte Heimdall. Vitesses et délais : valeurs typiques, pas une garantie.",
+   "cards": [
+    {
+     "id": "shahed",
+     "name": "Shahed (Geran-2)",
+     "warn": "~150–185 km/h · généralement vu venir",
+     "see": "Un fort bourdonnement de mobylette, bas au-dessus des toits ; surtout la nuit, souvent par dizaines.",
+     "do": [
+      "Allez à l'abri dès l'alerte — n'attendez pas de l'entendre.",
+      "Vous l'entendez au-dessus de vous : couchez-vous tout de suite, loin des fenêtres ; dehors, dans un creux ou derrière un mur en béton.",
+      "Le moteur se tait soudain : il peut être en piqué — à terre immédiatement, protégez votre tête.",
+      "La nuit, dehors ou en voiture, éteignez phares et lampe : la lumière et le mouvement servent de repère aux drones."
+     ]
+    },
+    {
+     "id": "jet",
+     "name": "Drone à réaction (Geran-3, « Banderol »)",
+     "warn": "Bien plus rapide · quelques minutes",
+     "see": "Un grondement de réacteur, pas un bourdonnement ; plusieurs centaines de km/h. Utilisés aussi contre les ponts de Kyiv.",
+     "do": [
+      "Traitez-le comme un missile : à l'abri dès l'alerte, pas quand vous l'entendez.",
+      "Une fois les explosions commencées, ne traversez pas un espace découvert en courant — couchez-vous où vous êtes.",
+      "Une voiture ne protège pas. Pendant l'alerte, quittez les ponts et les routes dégagées."
+     ]
+    },
+    {
+     "id": "cruise",
+     "name": "Missiles de croisière (Kh-101, Kalibr)",
+     "warn": "Des heures d'avance · minutes à l'approche",
+     "see": "Tirés depuis des bombardiers Tu-95/Tu-160 ou des navires ; ils volent bas pendant une heure ou plus et changent de cap. L'Armée de l'air annonce les décollages et les tirs.",
+     "do": [
+      "Bombardiers signalés en vol : décidez à l'avance où vous vous abriterez ; chaussures et téléphone prêts.",
+      "À l'abri dès l'alerte — un missile traverse l'oblast en quelques minutes.",
+      "Restez jusqu'à la fin d'alerte : les missiles arrivent souvent avec les drones, par vagues."
+     ]
+    },
+    {
+     "id": "ballistic",
+     "name": "Balistiques (Iskander, KN-23) et Kinjal",
+     "warn": "2 à 4 minutes — parfois plus vite que la sirène",
+     "see": "Message de l'Armée de l'air « menace balistique » (загроза балістики) ; la sirène peut retentir juste avant l'impact, ou après. Le décollage d'un MiG-31K (porteur du Kinjal) déclenche l'alerte dans tout le pays.",
+     "do": [
+      "N'attendez pas : abri le plus proche, immédiatement — même s'il n'y a pas encore de sirène dans votre secteur.",
+      "Pas le temps : couchez-vous au sol loin des fenêtres, dans un couloir ou une salle de bains.",
+      "Dehors : à terre tout de suite, dans un creux ou contre une bordure ou un mur, mains sur la tête.",
+      "Une fois fini, restez à l'abri encore 10 à 15 minutes."
+     ]
+    },
+    {
+     "id": "kab",
+     "name": "KAB (bombes aériennes guidées)",
+     "warn": "Oblasts du front · quelques secondes",
+     "see": "Larguées par des avions près du front — les oblasts de Kharkiv, Soumy et Zaporijjia et d'autres zones du front.",
+     "do": [
+      "Là-bas, descendez sous terre au premier avertissement KAB : quand on l'entend, il n'y a plus le temps."
+     ]
+    },
+    {
+     "id": "debris",
+     "name": "Débris et engins non explosés",
+     "warn": "Après toute attaque",
+     "see": "Les morceaux de drones et de missiles peuvent encore contenir du carburant, des explosifs ou des liquides toxiques.",
+     "do": [
+      "Ne les touchez pas, ne les déplacez pas, ne les photographiez pas de près. Éloignez les autres.",
+      "Appelez le 101 ou le 102 en donnant l'emplacement."
+     ]
+    }
+   ]
+  },
+  "sit": [
+   {
+    "id": "car",
+    "h": "En voiture — et sur les ponts",
+    "items": [
+     "Pendant une alerte, évitez si possible les grands ponts : ils sont devenus des cibles, avec les voitures dessus.",
+     "Sur un pont quand ça commence : ne vous arrêtez pas et ne ralentissez pas pour regarder ou filmer — quittez le pont et éloignez-vous.",
+     "Puis garez-vous (pas sur un pont, pas près d'immeubles vitrés), coupez le moteur et gagnez un abri ou un passage souterrain. La voiture ne protège pas : le métal et le verre peuvent aggraver les choses.",
+     "Explosions proches et nulle part où aller : sortez, éloignez-vous de la voiture, couchez-vous dans un fossé ou un creux.",
+     "La nuit, une fois arrêté, éteignez les phares.",
+     "Les alertes « ponts » de Heimdall viennent des messages des chaînes, pas d'un radar. « Rien de signalé » sur un pont ne veut pas dire « sûr »."
+    ]
+   },
+   {
+    "id": "out",
+    "h": "Surpris dehors",
+    "items": [
+     "Entrez dans le métro, un passage souterrain, un parking souterrain ou l'entrée d'immeuble le plus proche.",
+     "Évitez les façades vitrées, panneaux publicitaires, structures légères, stations-service et voitures garées.",
+     "Les explosions commencent : ne courez pas — couchez-vous face contre terre dans un fossé, un creux, contre une bordure ou derrière un mur solide ; jambes croisées, mains sur la tête, yeux fermés, bouche ouverte.",
+     "Ne vous relevez et ne repartez qu'au moins 10 minutes après la dernière explosion."
+    ]
+   },
+   {
+    "id": "home",
+    "h": "Chez soi, la nuit",
+    "items": [
+     "Dormez loin des fenêtres et des murs extérieurs.",
+     "Prêts près de la porte : papiers, clés, vêtements de saison, eau, médicaments, lampe, téléphone et batterie externe chargés.",
+     "Sachez où est l'abri le plus proche et combien de temps il faut pour y aller ; s'il est trop loin, choisissez la pièce la plus sûre maintenant, pas pendant l'attaque.",
+     "Pas d'ascenseur pendant une alerte — vous pouvez rester bloqué si le courant coupe.",
+     "Les derniers étages sont les plus exposés aux drones : descendez aux étages inférieurs ou à l'abri."
+    ]
+   },
+   {
+    "id": "kids",
+    "h": "Avec des enfants",
+    "items": [
+     "Dehors, couchez d'abord l'enfant dans le creux et couvrez-le de votre corps, vos mains sur vos deux têtes.",
+     "En journée, faites calmement avec eux le chemin jusqu'à l'abri.",
+     "Mettez dans leur poche ou leur sac une carte avec votre numéro ; prenez de l'eau, un en-cas, un vêtement chaud, un jouet.",
+     "Expliquez avec des mots simples ce qui se passe ; restez calme — les enfants vous imitent."
+    ]
+   },
+   {
+    "id": "after",
+    "h": "Après une frappe",
+    "items": [
+     "N'aidez que si c'est sans danger ; appelez le 103 (ambulance) et le 101 (secours).",
+     "Saignement abondant : appuyez fort sur la plaie et maintenez jusqu'à l'arrivée des secours.",
+     "Odeur de gaz : n'allumez et n'éteignez rien, pas de flamme — sortez, puis appelez le 104.",
+     "Pas d'ascenseur ; ne retournez pas dans un bâtiment endommagé.",
+     "Sous les décombres : ne criez pas sans arrêt — frappez sur un tuyau ou un mur avec deux objets ; toutes les 15 à 20 minutes, les sauveteurs demandent le silence pour écouter. Si le téléphone marche, appelez le 101 avec l'adresse et le numéro d'appartement, puis économisez la batterie.",
+     "Une frappe peut revenir au même endroit : ne vous attroupez pas pour regarder ou filmer."
+    ]
+   },
+   {
+    "id": "rad",
+    "h": "Danger radiologique",
+    "items": [
+     "Rentrez tout de suite — au sous-sol ou au centre du bâtiment — et restez-y. Fermez portes et fenêtres, calfeutrez les jours (ruban adhésif, linge mouillé), coupez ventilation et climatisation.",
+     "Si vous étiez dehors : retirez les vêtements de dessus (cela enlève l'essentiel de la contamination), mettez-les dans un sac, douchez-vous au savon et lavez-vous les cheveux au shampooing, sans après-shampooing.",
+     "Iodure de potassium : seulement sur instruction des autorités. Il protège uniquement la thyroïde, pas contre la radiation en général.",
+     "Suivez les canaux officiels (radio, TV, autorités locales) ; ne sortez que lorsqu'ils le disent."
+    ]
+   }
+  ],
+  "num": {
+   "h": "Numéros d'urgence",
+   "n": {
+    "101": "Secours et pompiers (ДСНС)",
+    "102": "Police",
+    "103": "Ambulance",
+    "104": "Urgence gaz",
+    "112": "Numéro d'urgence unique"
+   }
+  },
+  "src": {
+   "h": "Sources",
+   "note": "Cet aide-mémoire reprend les consignes du ДСНС, de la police, du ministère de la Santé et d'une administration régionale ci-dessous. Les conseils sur les ponts appliquent aux ponts les consignes de la police de patrouille pour les conducteurs ; quelques préparatifs du quotidien (une carte avec votre numéro pour un enfant, repérer le chemin de l'abri) relèvent simplement du bon sens."
+  },
+  "foot": {
+   "checked": "Vérifié : 4 octobre 2026",
+   "print": "Imprimer",
+   "saved": "✓ Enregistrée sur ce téléphone — s'ouvre sans connexion",
+   "map": "← Carte (Tactique)",
+   "light": "Heimdall Light",
+   "disc": "Heimdall est une application bénévole non officielle, pas un système d'alerte."
+  }
+ }
+}
+</script>
+<script type="application/json" id="gsrc">
+[
+ [
+  "ДСНС · РБК-Україна",
+  "«Забудьте про дві стіни»: де ховатися під час обстрілу",
+  "https://www.rbc.ua/rus/news/zabudte-dvi-stini-tse-pravilo-vzhe-zahishchae-1750717174.html"
+ ],
+ [
+  "ДСНС · ТСН",
+  "Що робити під час обстрілу на вулиці",
+  "https://tsn.ua/ato/shcho-robyty-pid-chas-obstrilu-na-vulytsi-instruktsiia-dsns-3179228.html"
+ ],
+ [
+  "ДСНС · my.ua",
+  "Вибухи застали просто неба: як урятуватися і де шукати укриття",
+  "https://my.ua/uk/news/cluster/2026-10-01-vibukhi-zastali-prosto-neba-u-dsns-rozpovili-iak-uriatuvatisia-ta-de-shukati-ukrittia"
+ ],
+ [
+  "ДСНС Києва · Українське радіо",
+  "Що робити і куди ховатися вдома та на вулиці",
+  "https://ukr.radio/news.html?newsID=101574"
+ ],
+ [
+  "ДСНС · Канал Дім",
+  "Безпека під час тривог: метро та вдома",
+  "https://kanaldim.tv/bezpeka-pid-chas-povitryanyh-tryvog-pravyla-perebuvannya-v-metro-ta-vdoma-nagadaly-v-dsns/"
+ ],
+ [
+  "Полтавська ОВА",
+  "Як діяти, якщо чуєте шахед",
+  "https://poda.gov.ua/news/236305"
+ ],
+ [
+  "Радіо Свобода",
+  "Як вижити під час атаки реактивних дронів",
+  "https://www.radiosvoboda.org/a/yak-vyzhyty-pid-chas-ataky-reaktyvnykh-droniv/33867343.html"
+ ],
+ [
+  "ДСНС · Радіо ТРЕК",
+  "Загроза балістики: що означає сигнал і як діяти",
+  "https://radiotrek.rv.ua/news/zagroza-balistiki-shcho-oznachaie-cey-signal-i-yak-diyati-pid-chas-nebezpeki_367916.html"
+ ],
+ [
+  "Патрульна поліція · ТСН",
+  "Як поводитися під час тривоги, якщо ви за кермом",
+  "https://tsn.ua/auto/news/iak-povodytysia-pid-chas-tryvohy-iakshcho-vy-za-kermom-podrobytsi-2871728.html"
+ ],
+ [
+  "ДСНС · РБК-Україна",
+  "Якщо опинилися під завалами",
+  "https://www.rbc.ua/rus/news/krichit-pid-zavalami-dsns-podililis-poradami-1750863336.html"
+ ],
+ [
+  "МОЗ · Укрінформ",
+  "Що робити у разі радіаційної аварії",
+  "https://www.ukrinform.ua/rubric-society/3545563-so-robiti-u-razi-radiacijnoi-avarii-moz-nadalo-rekomendacii.html"
+ ]
+]
+</script>
+<script src="/static/glyphs.js"></script>
+<script>
+(function(){
+'use strict';
+var GD=JSON.parse(document.getElementById('gd').textContent), SRC=JSON.parse(document.getElementById('gsrc').textContent);
+var LN={uk:'УКР',en:'EN',fr:'FR'}, ORDER=['uk','en','fr'], NUMS=['101','102','103','104','112'];
+var NAV=['always','weapons','car','out','home','kids','after','rad','num','src'];
+// the map's own silhouette and colour for each card (static/glyphs.js, the same as on Tactical and Light)
+var ICON={shahed:['drone','var(--ora)',''],jet:['jetdrone','var(--amb)',' jet'],cruise:['missile','var(--msl)',''],
+  ballistic:['ballistic','var(--msl)',' bal'],kab:['bomb','var(--vio)',''],debris:['down','var(--ink2)','']};
+var $=function(id){return document.getElementById(id);};
+function pick(){
+  try{ var q=new URLSearchParams(location.search).get('lang'); if(GD[q]) return q; }catch(e){}
+  try{ var l=localStorage.getItem('lang'); if(GD[l]) return l; }catch(e){}
+  var n=(navigator.language||'en').slice(0,2).toLowerCase(); return n==='uk'||n==='ru'?'uk':n==='fr'?'fr':'en';
+}
+var LANG=pick();
+function icon(id){
+  var I=ICON[id], g=(typeof G!=='undefined'&&I)?G[I[0]]:'';
+  return '<svg class="ic" viewBox="-14 -14 28 28" aria-hidden="true"><g class="sil'+I[2]+'" style="--c:'+I[1]+'">'+(g||'')+'</g></svg>';
+}
+function li(a){ return a.map(function(x){ return '<li>'+x+'</li>'; }).join(''); }
+function render(){
+  var T=GD[LANG], h='';
+  document.documentElement.lang=LANG; document.title=T.title;
+  $('lng').setAttribute('aria-label',T.lang);
+  $('lng').innerHTML=ORDER.map(function(l){ return '<button type="button" lang="'+l+'" data-l="'+l+'" aria-pressed="'+(l===LANG)+'">'+LN[l]+'</button>'; }).join('');
+  h+='<h1>'+T.h1+'</h1><p class="sub">'+T.sub+'</p><div class="warn" role="note">'+T.intro+'</div>';
+  h+='<nav class="toc">'+NAV.map(function(k){ return '<a href="#'+k+'">'+T.nav[k]+'</a>'; }).join('')+'</nav>';
+  h+='<section id="always"><h2>'+T.always.h+'</h2><ol class="rules">'+li(T.always.items)+'</ol></section>';
+  h+='<section id="weapons"><h2>'+T.weapons.h+'</h2><p class="note">'+T.weapons.note+'</p><div class="cards">'+
+    T.weapons.cards.map(function(c){ return '<article class="wc" id="w-'+c.id+'" style="--c:'+ICON[c.id][1]+'"><div class="wh">'+icon(c.id)+
+      '<div><h3>'+c.name+'</h3><span class="chip">⏱ '+c.warn+'</span></div></div><p class="see">'+c.see+'</p><ul class="do">'+li(c.do)+'</ul></article>'; }).join('')+'</div></section>';
+  h+='<div class="sits">'+T.sit.map(function(s){ return '<section class="sit" id="'+s.id+'"><h3>'+s.h+'</h3><ul>'+li(s.items)+'</ul></section>'; }).join('')+'</div>';
+  h+='<section id="num"><h2>'+T.num.h+'</h2><div class="nums">'+NUMS.map(function(n){ return '<a href="tel:'+n+'"><b>'+n+'</b><span>'+T.num.n[n]+'</span></a>'; }).join('')+'</div></section>';
+  h+='<section id="src"><h2>'+T.src.h+'</h2><p class="note">'+T.src.note+'</p><ol class="srcs">'+
+    SRC.map(function(s){ return '<li><a href="'+s[2]+'" target="_blank" rel="noopener noreferrer" lang="uk">'+s[1]+'</a> <small>· '+s[0]+'</small></li>'; }).join('')+'</ol></section>';
+  $('main').innerHTML=h;
+  $('foot').innerHTML='<div class="row"><span>'+T.foot.checked+'</span><button type="button" id="prn">'+T.foot.print+'</button><span id="saved" hidden>'+T.foot.saved+'</span></div>'+
+    '<div class="row"><a href="/m">'+T.foot.map+'</a><a href="/light">'+T.foot.light+'</a></div><div>'+T.foot.disc+'</div>';
+  $('prn').onclick=function(){ window.print(); };
+  saved();
+}
+$('lng').addEventListener('click',function(e){ var b=e.target.closest('button[data-l]'); if(!b||b.dataset.l===LANG) return;
+  LANG=b.dataset.l; try{ localStorage.setItem('lang',LANG); }catch(x){}
+  try{ var u=new URL(location.href); if(u.searchParams.has('lang')){ u.searchParams.delete('lang'); history.replaceState(null,'',u.pathname+u.search+u.hash); } }catch(x){}
+  render(); });
+// kept on this phone by the service worker: said only once the copy is really there
+function saved(){ if(!('caches' in window)) return;
+  caches.match('/guide').then(function(r){ var e=$('saved'); if(e) e.hidden=!r; }).catch(function(){}); }
+render();
+// the content is drawn by the script, so the browser's own jump to #rad (from the nuclear-event banner) came too early
+if(location.hash){ var t=document.getElementById(location.hash.slice(1)); if(t) t.scrollIntoView(); }
+if('serviceWorker' in navigator){ navigator.serviceWorker.register('/sw.js').then(function(){ return navigator.serviceWorker.ready; })
+  .then(function(){ setTimeout(saved,1500); }).catch(function(){}); }
+})();
+</script>
+</body>
+</html>

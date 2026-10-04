@@ -196,7 +196,7 @@ footer a{color:var(--blu)}
 <div id="list"></div>
 <div id="off" hidden></div>
 
-<footer><div id="disc"></div><div style="margin-top:8px"><a href="/m" id="full"></a></div></footer>
+<footer><div id="disc"></div><div style="margin-top:8px"><a href="/guide" id="gdl"></a> · <a href="/m" id="full"></a></div></footer>
 <div id="dm" hidden><div class="dbox"><img class="dlogo" src="/static/heimdall-full.webp" alt="Heimdall" width="160" height="147" loading="lazy"><div class="dmh"><b id="dmt"></b><select class="lsel" id="dmlang" aria-label="Language"></select></div><p id="dm1"></p><p id="dm2"></p><p id="dm3"></p><button id="dmok"></button></div></div>
 <div id="pick"><button class="x" id="pickx">✕</button><h3 id="pickh"></h3><p id="pickp"></p>
   <input id="pickq" autocomplete="off"><button class="loc" id="pickloc"></button><div class="res" id="pickres"></div></div>
@@ -450,7 +450,7 @@ function paintSlots(){
 function paint(){
   paintSlots();
   const p=place();
-  $('disc').textContent=t('lt_disc'); $('full').textContent=t('lt_full')+' →';
+  $('disc').textContent=t('lt_disc'); $('full').textContent=t('lt_full')+' →'; $('gdl').textContent=t('m_guide');
   $('swl').textContent=t('sw_light'); $('swt').textContent=t('sw_tac'); $('sw').title=t('sw_title');
   $('swl2').textContent=t('sw_light_b'); $('swt2').textContent=t('sw_tac_b');
   if(!p){ $('status').className='status U'; $('status').innerHTML=`<div class="big">${esc(t('lt_noplace'))}</div><div class="pl">${esc(t('lt_noplace_b'))}</div>`;

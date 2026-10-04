@@ -558,6 +558,8 @@ body.lite .leader{stroke:#fff;stroke-opacity:.6}body.lite .anchor{fill:#fff}
 .hsec{margin-top:12px}.hsec h4{margin:0 0 3px;font:700 14px var(--cond);letter-spacing:.04em;text-transform:uppercase;color:var(--ink)}
 .hsec p{margin:0;font:400 13.5px/1.45 var(--sans);color:var(--ink2)}
 .warnbox{border-left:3px solid var(--red);background:rgba(224,52,44,.08);padding:8px 10px;font:500 13px/1.4 var(--sans);margin-top:8px}
+/* 1.35: the what-to-do guide (/guide) — in the menu and at the top of the help sheet */
+.mi.gdm{font-weight:700}.gdl{display:block;margin-top:8px;padding:9px 10px;border:1px solid var(--line);border-radius:4px;background:var(--panel2);color:var(--ink);text-decoration:none;font:700 13px/1.3 var(--sans)}
 /* descending: the moment a drone dives on its target */
 .mk.desc .glyph{fill:#ff2d55}.mk.desc .halo{stroke:#ff2d55;animation-duration:.9s}
 .mk .dn{display:none;font:800 calc(var(--k,1)*10px) var(--mono);fill:#ff2d55;paint-order:stroke;stroke:#080b10;stroke-width:calc(var(--k,1)*3px);text-anchor:middle}
@@ -745,11 +747,12 @@ body.lite .mk.inbound .lbl2,body.lite .mk.tohome .lbl2{fill:#ff9ab0}
     <a class="mi" href="/light" data-t="m_light">Heimdall Light — only your place</a>
 
     <div class="mg" data-t="m_g_info">About</div>
+    <a class="mi gdm" href="/guide" data-t="m_guide">What to do — threat cheat sheet</a>
     <button class="mi" id="helpbtn" data-t="m_help">How this app works</button>
     <button class="mi" id="supbtn" data-t="m_support">Support the project</button>
     <a class="mi" id="tgbtn" data-t="m_tg" target="_blank" rel="noopener" hidden>Community on Telegram</a>
     <button class="mi" id="aboutbtn" data-t="m_about">About · disclaimer</button>
-    <div class="mi bt" id="buildtag">v1.34</div>
+    <div class="mi bt" id="buildtag">v1.35</div>
   </div>
   <div class="band N" id="kyiv"><div class="dot N"></div><div><div class="big" data-t="loading">Loading…</div><div class="small"></div></div></div>
   <button class="ticker" id="ticker" type="button"><span class="tki">⚠</span><span class="tkt" id="tkt"></span></button>
@@ -2407,7 +2410,7 @@ function renderStats(){ if(!STATS) return; const el=$('stats'); if(!el) return; 
 // ---------------------------------------------------------------------------------------------------
 // Contacts — the only place to edit them. A channel left empty simply does not appear, so no dead link
 // ever ships: fill TELEGRAM in when the channel exists.
-const APP_VERSION='1.34';
+const APP_VERSION='1.35';
 const CONTACT={
   hosting:'nomakievip@gmail.com',      // hosting & development  ← replace when there is a separate address
   ngo:'nomakievip@gmail.com',          // NGO 07300 volunteer work
@@ -2611,6 +2614,7 @@ function helpSheet(){
   $('sheetbody').innerHTML=`<div class="type">${t('help_title')}</div>
     <div class="kv1">${esc(t('help_intro'))}</div>
     <div class="warnbox">${esc(t('help_warn'))}</div>
+    <a class="gdl" href="/guide">${esc(t('m_guide'))} →</a>
     ${secs}
     <div class="credit"><img src="/static/bf-logo.png" alt=""><div><span class="cn">${esc(t('credits'))}</span><br>${esc(t('credits_dev'))}</div></div>
     <div style="margin-top:10px;text-align:right"><button class="tgl" onclick="closeSheet()">${t('btn_close')}</button></div>`;
