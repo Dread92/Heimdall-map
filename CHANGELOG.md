@@ -15,6 +15,10 @@ Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md
 - While a fresh preventive warning is on, the one-line card (folded, or with the drawer pulled up) shows the warning
   itself, in its colour, instead of the status.
 
+### Fixed
+- CI: the front-end job failed on 1.36 and 1.37 — its translation check read the Ukrainian plurals of the new card
+  strings (`_1` / `_2` / `_5`) as missing. It knows them now, and the test suite runs that job's steps too.
+
 ## 1.36.0 — 2026-10-04
 
 ### Changed — the Tactical page, redesigned around the reader's own place

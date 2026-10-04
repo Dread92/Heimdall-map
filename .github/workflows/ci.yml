@@ -71,7 +71,9 @@ jobs:
             const I18N = new Function(src + '; return I18N')();
             let bad = 0;
             for (const lang of ['uk', 'fr']) {
-              const missing = Object.keys(I18N.en).filter(k => !(k in I18N[lang]) && !/^raion_/.test(k));
+              // a plural: English and French say _1 / _n, Ukrainian _1 / _2 / _5 (tn() in i18n.js)
+              const plural = k => lang === 'uk' && /_n$/.test(k) && ['_2', '_5'].every(e => k.replace(/_n$/, e) in I18N.uk);
+              const missing = Object.keys(I18N.en).filter(k => !(k in I18N[lang]) && !/^raion_/.test(k) && !plural(k));
               if (missing.length) { console.error(lang + ' missing: ' + missing.join(', ')); bad = 1; }
             }
             process.exit(bad);
