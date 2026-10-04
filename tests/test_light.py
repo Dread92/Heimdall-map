@@ -52,10 +52,12 @@ def test_it_stays_light():
     # 1.32 raised them by 0.5 KB: the admin's message in loud colours (green / pulsing red) and the few lines that
     # download static/nuke.js — only while a nuclear event is on; the overlay itself is not part of the page.
     # 1.34 raised them by 0.5 KB: the Kyiv bridges — a target reported on or near one, bridge by bridge.
+    # 1.36 raised them by 0.5 KB: each place's chip carries its own official status, every target is 44 px, and the
+    # radar's legend sits behind a button.
     with open(os.path.join(ROOT, "static", "live.js"), "rb") as fh:
         page += len(gzip.compress(fh.read(), 6))
-    assert page < 24_000, f"the light page is no longer light ({page} B gzipped)"
-    assert page + extra < 65_000, f"page + map data = {page + extra} B gzipped"
+    assert page < 24_500, f"the light page is no longer light ({page} B gzipped)"
+    assert page + extra < 65_500, f"page + map data = {page + extra} B gzipped"
     # 1.29: the live line is allowed — the light variant only (alerts and marks, no feed, no raw events). An open
     # line costs the server nothing any more (one thread holds them all) and the phone ~100 bytes every 15 s,
     # against ~8 KB every 15 s for asking.

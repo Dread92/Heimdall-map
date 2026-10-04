@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.35** · last updated 2026-10-04
+**Documented version: 1.36** · last updated 2026-10-04
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -609,11 +609,19 @@ type. Nothing about a reader is in it.
   push per 2 min per device — except immediate types, which alert the whole region with no throttle. Siren-start
   and all-clear pushes were removed on purpose (nothing to act on, and they train people to swipe).
 - **In the page**: the Tactical page raises toasts with sound/vibration scaled by zone (near / approach /
-  observe). The sound has a **volume** (menu → Alerts: slider 0–100 %, 0 = off, 50 % for a new reader, kept in
+  observe). The sound has a **volume** (the bell: slider 0–100 %, 0 = off, 50 % for a new reader, kept in
   `localStorage` as `sndvol`): every tone goes through one Web Audio master gain, squared from the slider (50 % =
   −12 dB), because an iPhone ignores an `<audio>` element's volume. 100 % is the pre-1.28 level; letting go of
   the slider or **▶** (test) plays the loudest alert at the chosen level. The zones keep their relative levels under
-  it. Push notifications (app closed) use the phone's own notification sound and volume. And a **shoot-down notice** for a track the reader was warned about — worded so it can never read
+  it. Push notifications (app closed) use the phone's own notification sound and volume.
+- **The escalation level** (1.36, `escLevel()`), 0–4, from what is already known — never from a guess:
+  **1** an official alert over the watched place's own raion (or, with no place set, over Kyiv); **2** a live target
+  within 30 km of the place, or one a post says is heading for it; **3** within 10 km, or a target **at** a Kyiv bridge
+  (with the bridges on); **4** a fresh ballistic or MiG-31K warning, or an immediate type over the region. It colours
+  the card's edge (`#mycard.lv2`–`lv4`) and the bell's dot, and picks the **tone**: `l1` one soft sine (an official
+  alert starting), `l2` two short beeps, `l3` three rising beeps twice, `l4` a 3-second two-tone warble with no gap —
+  each with its vibration (`VIB_L`). At most one tone in 10 s unless the level rises (`TONE`), so a busy night does
+  not become a noise people mute. The bell's ▶ plays `l2`, `l3`, `l4` in turn at the chosen volume. And a **shoot-down notice** for a track the reader was warned about — worded so it can never read
   as an all-clear.
 - **The admin's message** (1.29; headed "Message from the system admin" since 1.30): the dashboard publishes one message (UK / EN / FR, info / warning / urgent, for
   1 h – 3 days or until removed), stored in `kv.notice` and carried in the alerts state (`notice`), so the live
@@ -663,9 +671,9 @@ and until 1.34 those posts were dropped as saying nothing, or drawn at the centr
   at a vague point ("Київ" alone, a bank of the river: 2–4 km from several bridges at once). With the distance, the
   type, the place named, the time and the channel.
 - **The pages**: Tactical — a bar in the header (red for at / hit, amber for near: the bridge, the distance, how
-  long ago, which channel; tap → the map on that bridge), the five spans drawn on the map in their state, and — menu
-  → Alerts → "Kyiv bridges" (on by default) — a toast, a tone at the reader's volume (critical for a jet drone or a
-  missile at the bridge) and a vibration when one rises. Light — a block above the places, a vibration when one
+  long ago, which channel; tap → the map on that bridge), the five spans drawn on the map in their state, and — the
+  bell → "Kyiv bridges" (on by default) — a toast, a tone at the reader's volume (the level-3 tone at the bridge, louder
+  for a jet drone or a missile; level 2 near it, §9) and a vibration when one rises. Light — a block above the places, a vibration when one
   reaches `at`.
 - **Push**: the same toggle subscribes the phone to the topic `bridges` (`push_subs.topics`, with its `lang`);
   `bridge_watch` sends "🌉 Південний міст: ціль за 2,3 км — Реактивний БпЛА · 17:33 · з дописів каналів, не радар.
@@ -683,7 +691,52 @@ reported", never "safe".
 ### 10.1 Tactical (`/m`)
 
 One self-contained `kyiv.html`: an SVG map in a km projection around Kyiv (`proj`/`unproj`, `KX`, `KY`),
-level-of-detail classes by zoom, OSM tiles under the vector layers below 150 km width. Main parts:
+level-of-detail classes by zoom, OSM tiles under the vector layers below 150 km width.
+
+**The screen (1.36)** — the reader's own place first, the map second, everything else one tap away:
+
+- **Header**: the two logos, the LIGHT | TACTICAL switch, the **bell** (`#bellbtn`, a dot in the escalation
+  level's colour) and **More** (`#menubtn`). No clock, no rotating ticker.
+- **The card "My place"** (`#mycard`), in the header's flow — never over the map; `syncTop()` measures it:
+  the four places as 44 px chips, each with its **own official status** as a dot (`placeLevel()`: R / Y over the
+  place's raion or the city, H a hromada inside its raion, G none, U not known — `unitAt()` finds the unit on the
+  map's own outlines, on the phone); the **official block** (`#kyiv`) — with a place set it says that place's status
+  ("Obolon · Kyiv · since 19:08 · official") and the duration, without one Kyiv's; the **preventive strip**
+  (`#tstrip`), whose fresh ballistic or MiG-31K warning adds one sentence ("Little time — go to a shelter now, do
+  not wait for the siren", `mc_go_now`, the guide's own rule) and a **What to do** button to `/guide#w-ballistic`;
+  the **channels block** (`#mych`): the one target that matters most for the place — one a post says is heading for
+  it, else the nearest within 30 km — with its silhouette, place, course as stated, age, the number of channels and
+  the distance; with none, "Nothing reported within 30 km — that is not the same as safe"; with no place set, the
+  nearest within 30 km of the centre or an invitation to set one; and the **foot**: the data's age ("updated 4 s
+  ago", amber past 2 min, the block greyed past 10), the sources' dot, "unofficial · not radar" (a tap opens the
+  full notice) and **What to do →**.
+- **The map** with its controls on the right, each 44 px: **Layers** (`#laybtn`), +, −, centre on my place, the
+  impacts toggle.
+- **The drawer** at the bottom, tabs **Near · Feed · Alerts · Stats**, three heights (tab bar / half / most of the
+  screen: a tap on a tab opens it to half, the handle cycles, a swipe moves it). While it is up the card folds to
+  one line (`#mcmini`: the place's status, name and number of targets within 30 km; a tap folds the drawer back).
+- **Near** (`nearRows()`, `nearHTML()`): every live target with its distance from the watched place (or the centre
+  of Kyiv), in bands — the whole region (immediate types, no distance) / within 10 / 30 / 60 km / further — nearest
+  first, inbound ones (as a post said) before others at the same distance; a tap opens the mark's sheet. A
+  distance between two reported points is a fact; nothing is projected.
+- **The feed** has no row of category chips under each post any more ("on trial" and the Air Force summary keep a
+  label): it adds, when the map placed a mark from the post, its distance from the watched place, its type and
+  place (`.meta2`, redrawn when the marks change — `feedSync()`), and starts with "Do not publish air-defence or
+  impact locations during an attack".
+- **Panels** (`#bell`, `#menu`, `#lay`; a sheet from the bottom on a phone, a drop-down under the header on a
+  computer; outside tap or Escape closes): **the bell** — push, warn near my position, Kyiv bridges, sound, volume and
+  test, vibration, as switches with a line saying what each does; **More** — places (priority place, my oblast),
+  view (language, normal / day / night, blackout, Light), about (What to do, how it works, support, Telegram,
+  about, build tag); **Layers** — the map layers, Kyiv's 10 districts, EST, zoom out to oblast / region / Ukraine,
+  and the legend behind a button.
+- **Computer** (≥ 1000 px): the card is a 360 px column on the left with the Near list under it, the map in the
+  middle, the drawer on the right opening on the Feed.
+- Every control of the header, the card, the map, the panels and the drawer can be hit over at least 44 × 44 px
+  (the "unofficial" line and the drawer's tab through an invisible margin); the card, panels and drawer use no text
+  under 12 px; secondary text `--ink2` `#b5b3ab`, tertiary `--ink3` `#8f8d86` (at least 4.9:1 on the panels and
+  the drawer in the normal mode).
+
+Main parts:
 
 - `render()` — official colours (raions, oblasts, banner band, raion chips, alerts tab);
 - `tick()` — marks: silhouettes per weapon (`G`, `GLYPH_BY_TYPE` from `static/glyphs.js`), turned only to a stated course (`orientOf`),
@@ -694,16 +747,16 @@ level-of-detail classes by zoom, OSM tiles under the vector layers below 150 km 
 - **the 📍 pin**: press and hold on open map (a ring fills while the finger stays; a drag only starts past
   `HOLD_SLOP_PX` = 10 screen px; the browser's long-press menu is suppressed), or tap the empty Pin chip to arm the
   map (`armPin`, banner with Cancel) and tap where it goes (`dropPin`);
-- **the heat layer** (1.34, Map tab → Layers, off at every opening — never remembered): where drones and
+- **the heat layer** (1.34; Layers since 1.36, off at every opening — never remembered): where drones and
   unidentified targets were reported over 24 h / 7 days / 30 days (`GET /api/drone_heat`: the places the posts named,
   town and district level, the number of posts — shoot-downs and hits left out, never an oblast's centre or "Kyiv"
   alone), drawn as a violet density whose spread keeps its size on the screen, so it is layered by zoom (out: the
   corridors across the region; in: the villages and the Kyiv districts); the most-named places in view written on it
   and listed in its legend; under every mark. (1.33's alert hours by oblast stay in the dashboard's Analytics.)
-- tabs: **Feed**; **Alerts** (the live tally of what is on the map, then the official alerts); **Stats** — the Air
+- tabs: **Near** (1.36, above); **Feed**; **Alerts** (the live tally of what is on the map, then the official alerts); **Stats** — the Air
   Force's official figures only, weapon by weapon since 1.32 (§7.5): for 24 h / 7 d / 30 d (`windows[…].af`) a
   row per type — launched and ↓ shot down, ✓ when used without a number — and the hit locations; then each
-  summary (night / day) with chips and a link to its post (`af_days`); **Map** (layers);
+  summary (night / day) with chips and a link to its post (`af_days`). (The **Map** tab became the Layers panel in 1.36.)
 - **approach marks** (drawn at the town they are heading to): a dashed course coming **into** the town from the
   side the post named, no ray or cone ahead, never dead-reckoned (Est.), no ETA; label "→ Vasylkiv from the NW";
   on Light "heading for Vasylkiv — where it is now was not said";
@@ -716,13 +769,15 @@ level-of-detail classes by zoom, OSM tiles under the vector layers below 150 km 
   outlines, one path per colour;
 - display modes: normal, day (inverted, WCAG-checked), night (dim, arrows only), blackout (2G);
 - the **notice** (disclaimer, language, oblast): shown **once per opening** — `sessionStorage.disc_seen`, shared
-  with the Light page, so switching Light ⇄ Tactical does not show it again; always reachable from the menu.
-  Changing the language inside it reloads the page **and shows it again** in the new language
-  (`pickLang(l, true)` clears `disc_seen`); "I understand" is a full-width button, centred (`.dok`).
+  with the Light page, so switching Light ⇄ Tactical does not show it again; always reachable from the card's foot
+  ("unofficial · not radar") and More → About. Changing the language inside it reloads the page **and shows it
+  again** in the new language (`pickLang(l, true)` clears `disc_seen`); "I understand" is a full-width button,
+  centred, and since 1.36 it stays at the bottom of the screen while the notice scrolls (`.dok`, `position:
+  sticky`). Its content is unchanged.
 
 ### 10.2 Light (`/light`)
 
-One place, what concerns it, nothing else. Built to load and be read on 2G (page ≈ 19 KB gzipped, map data
+One place, what concerns it, nothing else. Built to load and be read on 2G (page ≈ 24 KB gzipped, map data
 ≈ 41 KB, fetched after the status is on screen; `test_light` holds both under budget).
 
 - **Status = the place's raion**, from the official data only. The raion is found **on the phone**: point in
@@ -751,6 +806,9 @@ One place, what concerns it, nothing else. Built to load and be read on 2G (page
 - **Tap a mark on the radar**: the nearest mark within a finger's width (`tapAt`, `RT`) opens its row as a card
   over the part of the map it is not on (`#rcard`), kept current on every repaint; a tap on open map closes it.
 - **Approaching (30–100 km)**: listed apart, only targets whose **stated** course points at the place.
+- 1.36: each of the four place chips carries its own official status as a dot (`placeStatus()` for that place);
+  the colour legend is behind a "?" button; the footer is two buttons (What to do, the Tactical map); every control
+  44 px, no text under 13 px, the same secondary-text colours as Tactical.
 - Immediate types: a banner for the whole region, no distance, no countdown.
 
 ### 10.3 The switch
@@ -762,7 +820,7 @@ two-segment control on Light, each half captioned; a high-contrast pill in the T
 
 `static/i18n.js`: every string in EN / UK / FR (`t()`, `tn()` for plurals), place, raion, river and district
 names, `OBL_N` / `oblFull()`. A test fails when a key is missing in one language. See [I18N.md](I18N.md).
-The language is a **drop-down** on both pages (`langSelect()`: the Tactical menu and notice, the Light header —
+The language is a **drop-down** on both pages (`langSelect()`: the Tactical More panel and notice, the Light header —
 flag and code only — and notice); `pickLang()` stores it and reloads.
 
 ### 10.5 The guide (`/guide`, 1.35)
@@ -782,7 +840,7 @@ then `localStorage.lang` (shared with the two pages; the УКР / EN / FR button
   (`heimdall-guide-N`) and answers those three paths **network first**, the stored copy only when the network
   fails. Nothing else goes through it. "Saved on this phone" appears only once `caches.match('/guide')` finds it.
 - **Print**: `@media print` — black on white, no buttons, cards kept whole, three columns; two A4 pages in each language.
-- Linked from the Tactical menu (About, `m_guide`), the top of the help sheet (`.gdl`), the Light footer (`#gdl`)
+- Linked from the Tactical More panel (About, `m_guide`), the card (What to do →, and the ballistic warning's button), the top of the help sheet (`.gdl`), the Light footer (`#gdl`)
   and the nuclear-event banner (`/guide#rad`, `static/nuke.js`). The page asks the server for nothing.
 
 ## 11. Privacy and security
@@ -888,6 +946,7 @@ python app/server.py --demo --port 8099
 | `test_digests` | a night's figures, the model's rules and answer, windows, owner-only and never in a request |
 | `test_bridges` | 43 real bridge posts, the five spans, at / near / hit and what never counts, a post naming a bridge, the push by topic and language, faster reading, the heat layer's places |
 | `test_carriers_weather_heat` | the carriers on 63 real posts, sorties and delays, a reply read as itself, no mark for a carrier, Kinzhal ballistic, the weather, the approach sides, the oblast hours, the heat layer |
+| `test_card`, `test_guide` | 1.36's card: in the header, each chip's official status, the one target and no time promised, the guide's own instruction, the escalation level and its tones, the bell / More / Layers split, 44 px targets, what the ticker said; 1.35's guide |
 | `test_af_reports`, `test_nuke_analytics`, `test_channels` | the Air Force read weapon by weapon, one per night, the backfill; the nuclear event's locks, Analytics, the loud message, both languages on the dashboard; channels from the dashboard |
 
 **The corpus** (`data/corpus.jsonl`, [CORPUS.md](CORPUS.md)): real posts with their expected reading; a

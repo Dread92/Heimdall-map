@@ -22,7 +22,7 @@ history.replaceState(null,'',location.pathname+location.search);}catch(e){}})();
 </script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Barlow:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap');
-:root{--top:86px;--peek:40px;--bg:#0b0d11;--ink:#e8e6df;--ink2:#a9a79f;--ink3:#6c6b66;--line:#242830;--panel:#12151b;--panel2:#181c24;
+:root{--top:86px;--peek:58px;--bg:#0b0d11;--ink:#e8e6df;--ink2:#b5b3ab;--ink3:#8f8d86;--line:#242830;--panel:#12151b;--panel2:#181c24;
   --ua-blue:#0057b7;--ua-yellow:#ffd500;--red:#e0342c;--red2:#ff5b52;--yellow:#f2c200;--green:#2fbf71;--orange:#ff8a3d;--purple:#b07cff;--blue:#5b9cff;
   --cond:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;--sans:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
   --sat:env(safe-area-inset-top,0px);--sab:env(safe-area-inset-bottom,0px)}
@@ -32,26 +32,16 @@ body{padding-top:var(--sat)}
 button{font:inherit;cursor:pointer}
 /* ---------- top strip ---------- */
 #top{position:fixed;left:0;right:0;top:var(--sat);z-index:20;background:var(--bg);border-bottom:1px solid var(--line)}
-#top .r1{height:40px;display:flex;align-items:center;gap:10px;padding:0 10px 0 8px;border-bottom:1px solid var(--line)}
-#top .logo{width:28px;height:28px;flex:none}#top .logo.ngo{margin-left:-5px}
+#top .r1{height:52px;display:flex;align-items:center;gap:6px;padding:0 6px 0 8px}
+#top .logo{width:28px;height:28px;flex:none}#top .logo.ngo{width:24px;height:24px;margin-left:-3px}
 .dlogo{display:block;width:170px;height:auto;margin:0 auto 8px}body.lite .dlogo{display:none}
 #stats a{color:#8fb4ff}
 /* the one way out of the notice: big, full width, centred, well clear of the links above it — a small button
    at the edge was missed, and the tap landed on something else */
-.dok{display:block;width:100%;max-width:340px;margin:18px auto 2px;padding:15px 18px;border:2px solid var(--ua-yellow);border-radius:6px;background:var(--ua-yellow);color:#111;font:800 17px/1.1 var(--sans);letter-spacing:.03em;text-transform:uppercase;cursor:pointer}
+.dok{display:block;position:sticky;bottom:calc(10px + var(--sab));box-shadow:0 -12px 22px 6px #14171d;width:100%;max-width:340px;margin:18px auto 2px;padding:15px 18px;border:2px solid var(--ua-yellow);border-radius:6px;background:var(--ua-yellow);color:#111;font:800 17px/1.1 var(--sans);letter-spacing:.03em;text-transform:uppercase;cursor:pointer}
 #top .name{font:700 17px/1 var(--cond);letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
 .menu{position:absolute;right:8px;top:44px;background:#14171d;border:1px solid var(--line);display:flex;flex-direction:column;min-width:230px;max-width:min(320px,calc(100vw - 16px));max-height:calc(100vh - 56px);max-height:calc(100dvh - 56px - var(--sat));overflow-y:auto;overscroll-behavior:contain;z-index:25;box-shadow:0 8px 24px #0009}
 .menu[hidden]{display:none}
-/* Was a 55-second marquee: you could not read it at your own pace, it clipped its own descenders at 18 px,
-   and during an attack nobody follows a moving line. It is now one short sentence at a time, fading between
-   five of them, each written to fit a phone in one line. Tapping it opens the full disclaimer. */
-.ticker{display:flex;align-items:center;gap:7px;width:100%;min-height:22px;padding:3px 12px;background:#0f1218;border:0;border-bottom:1px solid var(--line);font:600 10.5px/1.35 var(--mono);color:#b9c2d0;letter-spacing:.03em;text-align:left;cursor:pointer}
-.ticker .tki{flex:0 0 auto;color:var(--ua-yellow);font-size:11px}
-.ticker .tkt{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;transition:opacity .45s ease}
-.ticker.fade .tkt{opacity:0}
-/* fixed two-line box on a phone: a line that wraps must not make the whole header jump under the map */
-@media (max-width:460px){.ticker{height:34px}.ticker .tkt{white-space:normal;overflow:hidden;text-overflow:clip;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-clamp:2}}
-body.lite .ticker .tki{color:#fff}
 .upd .cd{display:inline-block;min-width:26px;color:var(--ua-yellow);font-weight:700}
 /* ballistic: a second-by-second countdown would read as a stutter, so it says LIVE and pulses instead */
 .upd .cd.live{color:#ff5b52;letter-spacing:.08em;animation:livepulse 1s ease-in-out infinite}
@@ -93,8 +83,8 @@ body.m-day .notice{background:#e8f0ff;color:#12161c}body.m-day .notice.lv-warn{b
 .sbars{display:flex;align-items:flex-end;gap:2px;height:46px;margin-top:4px}.sbars .sb{flex:1;min-width:2px;border-radius:1px 1px 0 0;opacity:.9}.sbars.h24 .sb{min-width:4px}
 .sdays{display:flex;justify-content:space-between;font:10px var(--mono);color:var(--muted);margin-top:2px}.sdays span{flex:1;text-align:center}.sdays span:first-child{text-align:left}.sdays span:last-child{text-align:right}
 .slbl{font:600 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-top:12px}
-.srow{display:flex;gap:10px;font:500 12.5px var(--sans);padding:3px 0;border-bottom:1px solid var(--line)}.srow span{flex:1}.srow b{min-width:44px;text-align:right}
-.sfoot{font:11.5px var(--sans);color:var(--muted);margin-top:10px;line-height:1.35}
+.srow{display:flex;gap:10px;font:500 14px var(--sans);padding:5px 0;border-bottom:1px solid var(--line)}.srow span{flex:1}.srow b{min-width:44px;text-align:right}
+.sfoot{font:13px var(--sans);color:var(--muted);margin-top:10px;line-height:1.4}
 /* a number the app counted is not a number of things that happened; the caveat sits under the figures,
    not at the bottom of a panel nobody scrolls to */
 .sfoot.warn{border-left:2px solid var(--ua-yellow);padding-left:8px;margin:6px 0 2px;color:#c9c3a8}
@@ -104,20 +94,23 @@ body.m-day .notice{background:#e8f0ff;color:#12161c}body.m-day .notice.lv-warn{b
 .wtab .srow b{font:700 15px var(--cond)}
 .mi[hidden]{display:none}
 .dset{margin-top:10px;border-top:1px solid var(--line);padding-top:8px;display:flex;flex-direction:column;gap:8px}.dset label{display:flex;flex-direction:column;gap:4px;font:600 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink2)}.dset select{width:100%;padding:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font:14px var(--sans);border-radius:2px}.dset .tgl{align-self:flex-start;text-transform:none;letter-spacing:0;font:600 13px var(--sans)}
-.kv1{font:500 13.5px/1.35 var(--sans);margin-top:5px}.kv1.muted{color:var(--muted);font-size:12.5px}.kv1.green{color:#a8f0cf}.kv1.yellow{color:#ffd166}.kv1 a{color:#8fb4ff}
+.kv1{font:500 14.5px/1.4 var(--sans);margin-top:6px}.kv1.muted{color:var(--muted);font-size:13.5px}.kv1.green{color:#a8f0cf}.kv1.yellow{color:#ffd166}.kv1 a{color:#8fb4ff}
 .sheet .type{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.tstrip{font:700 12px/1.25 var(--mono);letter-spacing:.04em;text-transform:uppercase;padding:5px 12px;background:#3a1030;color:#ffd0f0;border-bottom:1px solid #7a2a6a;animation:tpulse 1.6s ease-in-out infinite}.tstrip small{font:600 10.5px var(--mono);color:inherit;opacity:.8;text-transform:none;letter-spacing:0}
-.tstrip.bal{background:#4a0d12;color:#ffd6d6;border-color:#8a2a2a}.tstrip.mig{background:#2b1440;color:#e9d6ff;border-color:#5f2f8a}.tstrip[hidden]{display:none}
+.tstrip{font:800 16px/1.25 var(--sans);letter-spacing:.02em;text-transform:uppercase;padding:10px 12px;border-radius:10px;background:#3a1030;color:#ffd0f0;border:1px solid #7a2a6a;animation:tpulse 1.6s ease-in-out infinite}.tstrip small{display:block;font:600 13.5px/1.35 var(--sans);color:inherit;opacity:.92;text-transform:none;letter-spacing:0;margin-top:3px}
+.tstrip.bal{background:#7a0f16;color:#fff;border-color:#b3262e}.tstrip.mig{background:#5b2fa8;color:#fff;border-color:#7a45f0}.tstrip[hidden]{display:none}
+.tstrip .tsgo{display:block;margin-top:5px;font:700 14.5px/1.3 var(--sans);text-transform:none;letter-spacing:0}
+.tstrip .tsbtn{display:inline-flex;align-items:center;min-height:44px;margin-top:6px;padding:0 16px;border-radius:10px;background:#fff;color:#1d0c3f;font:800 15px var(--sans);text-transform:none;letter-spacing:0;text-decoration:none}
+@media (prefers-reduced-motion:reduce){.tstrip{animation:none}}
 /* past the freshness window it stops shouting: no pulse, muted amber, past tense, age on the face of it */
 .tstrip.old{background:#221d13;color:#d9cba4;border-color:#4d411f;animation:none}
-.tstrip.calm{background:#0e2018;color:#b8e6cc;border-color:#25503c;animation:none}
-.tstrip.offr{background:#4a0d12;color:#ffd6d6;border-color:#8a2a2a}
-.tstrip.offy{background:#3a2e05;color:#ffe9a8;border-color:#7a6212}
+.tstrip.calm{background:transparent;border:0;color:var(--ink2);font:500 13.5px/1.4 var(--sans);text-transform:none;letter-spacing:0;padding:0 4px;animation:none}.tstrip.calm small{display:inline}
+.tstrip.offr{background:#7a0f16;color:#fff;border-color:#b3262e}
+.tstrip.offy{background:#4a3a06;color:#ffe9a8;border-color:#8a6d00}
 body.lite .tstrip.offr,body.lite .tstrip.offy{background:#fff;color:#000;border-color:#fff;animation:none}
-.tstrip .tsmore{margin-left:8px;font:700 11px var(--mono);letter-spacing:.04em;text-transform:uppercase;background:rgba(255,255,255,.08);color:inherit;border:1px solid currentColor;border-radius:2px;padding:2px 7px;cursor:pointer;opacity:.85}
+.tstrip .tsmore{margin-top:6px;min-height:44px;font:700 13px var(--sans);text-transform:none;background:rgba(255,255,255,.1);color:inherit;border:1px solid currentColor;border-radius:8px;padding:0 12px;cursor:pointer;opacity:.9}
 .tstrip .tsmore:active{background:rgba(255,255,255,.18)}
 .tstrip .tsrest{margin-top:5px;padding-top:5px;border-top:1px solid currentColor;display:flex;flex-direction:column;gap:4px;opacity:.92}
-.tstrip .tsr{font:700 11.5px/1.3 var(--mono)}
+.tstrip .tsr{font:700 14px/1.3 var(--sans)}
 body.lite .tstrip.calm{background:#fff;color:#000;border-color:#fff}
 .tstrip.old small{opacity:.95}
 body.lite .tstrip.old{background:#111;color:#ddd;border-color:#555}
@@ -141,27 +134,24 @@ body.lite .tstrip.old{background:#111;color:#ddd;border-color:#555}
 #top .sp{flex:1}
 /* Light | Tactical — the two versions, one tap apart, where the eye lands first */
 #top .vsw{display:flex;flex:none;border:2px solid var(--orange,#ff8a3d);border-radius:7px;overflow:hidden;box-shadow:0 0 0 3px rgba(255,138,61,.14)}
-#top .vsw>*{font:800 12.5px/1 var(--sans);letter-spacing:.08em;padding:8px 11px;color:#fff;text-decoration:none;background:#1a202b;white-space:nowrap}
+#top .vsw>*{display:flex;align-items:center;min-height:44px;font:800 12.5px/1 var(--sans);letter-spacing:.08em;padding:0 12px;color:#fff;text-decoration:none;background:#1a202b;white-space:nowrap}
 #top .vsw .on{background:var(--orange,#ff8a3d);color:#14100a}
 #top .vsw a::after{content:' ›'}
 #top .vsw a:hover,#top .vsw a:focus{background:#242c3a}
-@media (max-width:430px){#top .name{display:none}#top .vsw>*{padding:8px 9px;font-size:12px}}
-@media (max-width:380px){#top .clock{display:none}#top .vsw>*{padding:8px 7px;font-size:11.5px;letter-spacing:.05em}}
+@media (max-width:380px){#top .vsw>*{padding:0 8px;font-size:11.5px;letter-spacing:.05em}#top .logo.ngo{display:none}}
 body.m-day #top .vsw{border-color:#b9b2a4}body.m-day #top .vsw>*{background:#fff;color:#333}body.m-day #top .vsw .on{background:#e0701f;color:#fff}
 body.lite #top .vsw .on{background:#fff;color:#000}
-#top .clock{font:600 13px var(--mono);color:var(--ink2);white-space:nowrap;letter-spacing:.02em}
 .ib{width:34px;height:30px;border:1px solid var(--line);background:var(--panel);color:var(--ink2);border-radius:2px;font:600 12px var(--mono);display:inline-flex;align-items:center;justify-content:center;padding:0}
 .ib.on{color:var(--ua-yellow);border-color:#5a4d00;background:#1e1a05}
-/* status band = #kyiv (filled by render) */
-.band{height:28px;display:flex;align-items:center;gap:10px;padding:0 10px;background:#1a2a1f;border-left:6px solid var(--green);position:relative}
-.band.R,.band.A{background:#3a1512;border-left-color:var(--red)}.band.Y,.band.P{background:#3a2f08;border-left-color:var(--yellow)}.band.N{background:#0f2418;border-left-color:var(--green)}
+/* the official block of the card = #kyiv (filled by render): the official status of the watched place's raion, in
+   the alert's own colour, full width — or, with no place set, of the reader's oblast as before */
+.band{min-height:44px;display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:10px;background:rgba(47,191,113,.14);border:1px solid rgba(47,191,113,.4);color:var(--ink);position:relative}
+.band.R,.band.A{background:#c62a22;border-color:#c62a22;color:#fff}.band.Y,.band.P{background:var(--yellow);border-color:var(--yellow);color:#111}.band.H{background:#4a3a06;border-color:#8a6d00;color:#ffe9a8}
 .band .dot{display:none}.band>div:not(.dur):not(.dot){flex:1;min-width:0}
-.band .big{font:700 14px/1 var(--cond);letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.band .small{font:500 10px/1.1 var(--mono);color:var(--ink2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.band .dur{margin-left:auto;font:600 13px/1 var(--mono);white-space:nowrap}
-.band.R .big,.band.A .big{color:#ffd9d6}.band.Y .big,.band.P .big{color:#ffefa8}.band.N .big{color:#c9f2da}
-/* clear state: no sub-line */
-.band.N .small,.band.N .dur{display:none}
+.band .big{font:800 19px/1.15 var(--sans);letter-spacing:.02em;text-transform:uppercase}
+.band .small{font:600 13.5px/1.3 var(--sans);margin-top:3px;opacity:.96}
+.band .dur{margin-left:auto;font:700 15px/1 var(--mono);white-space:nowrap}
+.band.N .big{font-size:17px;color:#bff3d6;text-transform:none}.band.N .small{color:var(--ink2)}.band.N .dur{display:none}
 /* ---------- map ---------- */
 #stage{position:fixed;left:0;right:0;top:calc(var(--sat) + var(--top));bottom:calc(var(--peek) + var(--sab))}
 .mapwrap{position:absolute;inset:0;background:#0a0c10;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;overflow:hidden}
@@ -190,13 +180,6 @@ svg#map{display:block;width:100%;height:100%}
 svg.far .zlbl,svg.veryfar .zlbl{display:none}
 svg.veryfar .zone{display:none}
 body.lite .zone{stroke:#000;stroke-opacity:.8}body.lite .zlbl{fill:#000;stroke:#fff}
-.slotrow{display:flex;gap:4px;flex-wrap:wrap;pointer-events:auto}
-.slotrow button{font:600 11px/1 var(--mono);letter-spacing:.02em;padding:6px 8px;border:1px solid var(--line);background:rgba(18,21,27,.92);color:var(--ink2);border-radius:2px;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:4px}
-.slotrow button .sl{max-width:82px;overflow:hidden;text-overflow:ellipsis}
-.slotrow button.on{border-color:var(--orange);color:var(--ink);background:rgba(40,30,18,.95)}
-.slotrow button.empty{opacity:.5}
-body.lite .slotrow button{background:#000;color:#fff;border-color:#666}
-body.lite .slotrow button.on{border-color:#fff;background:#fff;color:#000}
 #situ>*{pointer-events:auto}
 #raions{display:flex;gap:3px;flex-wrap:wrap}#raions[hidden]{display:none}
 @media (max-width:999px){#raions{flex-wrap:nowrap;overflow-x:auto;max-width:calc(100vw - 60px);scrollbar-width:none;-webkit-overflow-scrolling:touch}#raions::-webkit-scrollbar{display:none}#raions .rt{white-space:nowrap;flex:0 0 auto}}
@@ -208,7 +191,7 @@ body.lite .slotrow button.on{border-color:#fff;background:#fff;color:#000}
 .homerow.danger{border-left-color:var(--red2);background:rgba(58,21,18,.94)}.homerow b{font-weight:600}
 .livebar{position:absolute;left:8px;bottom:42px;display:flex;gap:4px;flex-wrap:wrap;max-width:calc(100% - 60px);pointer-events:none}
 @media (min-width:1000px){.livebar{bottom:8px}}
-.livebar .chip{font:600 11px/1 var(--mono);letter-spacing:.03em;padding:6px 8px;white-space:nowrap;background:rgba(18,21,27,.92);border:1px solid var(--line);color:var(--ink2);border-radius:0}
+.livebar .chip{font:600 13px/1 var(--mono);letter-spacing:.02em;padding:0 10px;min-height:36px;display:inline-flex;align-items:center;white-space:nowrap;background:rgba(18,21,27,.92);border:1px solid var(--line);color:var(--ink2);border-radius:0}
 /* the bar itself stays transparent to pointers so the map can be dragged through the gaps between chips;
    only the buttons take taps */
 .livebar button.chip{pointer-events:auto;cursor:pointer;font-family:var(--mono);text-decoration:underline dotted rgba(255,255,255,.25);text-underline-offset:3px}
@@ -222,10 +205,11 @@ button.chip{cursor:pointer;font-family:var(--mono)}button.chip:hover{border-colo
 .grow.rep{cursor:default}.grow.rep.down{border-left-color:#39d98a}.grow.rep.fire{border-left-color:#ff9a3c}.grow.rep.damage{border-left-color:#c2564a}
 .livebar .chip.red{color:#ffd9d6;border-color:#6a2a26}.livebar .chip.orange{color:#ffc9a3}.livebar .chip.green{color:#c9f2da}.livebar .chip.yellow{color:#ffefa8}.livebar .chip.blue{color:#bcd5ff}
 .livebar .chip b{font-weight:600}
-.mapctl{position:absolute;right:8px;bottom:8px;display:flex;flex-direction:column;gap:4px}
-.mapctl button{width:34px;height:34px;border:1px solid var(--line);background:rgba(18,21,27,.94);color:var(--ink);border-radius:2px;font:600 15px var(--mono);padding:0}
+.mapctl{position:absolute;right:8px;bottom:12px;display:flex;flex-direction:column;gap:8px}
+.mapctl button{width:44px;height:44px;border:1px solid var(--line);background:rgba(18,21,27,.94);color:var(--ink);border-radius:10px;font:600 18px var(--mono);padding:0;display:flex;align-items:center;justify-content:center}
+.mapctl svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2;stroke-linejoin:round}
 .mapctl button.on{color:var(--ua-yellow);border-color:#5a4d00}
-#impbtn{position:relative;color:#ff8a80}#impbtn:not(.on){color:#8f9bb0}#impbtn small{position:absolute;right:2px;bottom:1px;font:600 8.5px var(--mono);color:var(--ua-yellow)}
+#impbtn{position:relative;color:#ff8a80}#impbtn:not(.on){color:#8f9bb0}#impbtn small{position:absolute;right:3px;bottom:2px;font:700 10px var(--mono);color:var(--ua-yellow)}
 .imp{cursor:pointer}
 .imp .ig{fill:#ff3b2f;stroke:#fff;stroke-width:calc(var(--k,1)*.8px);filter:drop-shadow(0 0 calc(var(--k,1)*3px) rgba(255,70,50,.95))}
 .imp .ir{fill:none;stroke:#ff3b2f;stroke-width:1.6;vector-effect:non-scaling-stroke;opacity:.55}
@@ -265,49 +249,54 @@ body.lite .imp.dmg .ig{fill:#fff}
 .tip b{display:block;font:700 15px/1.1 var(--cond);text-transform:uppercase;letter-spacing:.03em;margin-bottom:3px}.tip .m{color:var(--ink2);font-family:var(--mono);font-size:11px}.tip .q{margin-top:5px;padding-top:5px;border-top:1px solid var(--line);white-space:pre-wrap}
 /* ---------- drawer ---------- */
 #drawer{position:fixed;left:0;right:0;bottom:0;z-index:15;background:var(--panel);border-top:1px solid var(--line);height:var(--peek);transition:height .25s;display:flex;flex-direction:column;padding-bottom:var(--sab)}
-#drawer.open{height:72%}
-#drawer .handle{height:40px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;cursor:pointer;flex:none;border-bottom:1px solid var(--line)}
+#drawer.half{height:52%}#drawer.open{height:84%}
+#drawer .handle{height:58px;display:flex;align-items:flex-end;padding:0 6px;cursor:pointer;flex:none;border-bottom:1px solid var(--line)}
 /* the panel is opened and closed constantly during an attack, so the control is a 88x28 tab riding on the
    drawer's top edge — above the tabs, never on top of them */
-#drawer .dchev{position:absolute;left:50%;transform:translateX(-50%);top:-30px;width:96px;height:30px;
+#drawer .dchev{position:absolute;left:50%;transform:translateX(-50%);top:-30px;width:110px;height:30px;
   border:1px solid #5a4d00;border-bottom:0;border-radius:12px 12px 0 0;background:#1e1a05;
   color:var(--ua-yellow);font:700 17px/28px var(--mono);padding:0;z-index:3;cursor:pointer;box-shadow:0 -4px 14px rgba(0,0,0,.5)}
+#drawer .dchev::before{content:'';position:absolute;inset:-14px -8px 0}
 #drawer .dchev:active{background:#2a2408;color:#fff}
 body.lite #drawer .dchev{background:#111;border-color:#fff;color:#fff}
 @media (min-width:1000px){#drawer .dchev{display:none}}
-.tabs{display:flex;gap:14px}
-.tabs button{border:0;background:transparent;color:var(--ink3);font:700 12px var(--mono);letter-spacing:.1em;text-transform:uppercase;padding:0;height:30px;border-bottom:2px solid transparent}
-.tabs button.on{color:var(--ink);border-bottom-color:var(--ua-yellow)}
-.upd{font:500 10.5px var(--mono);color:var(--ink3)}
+.tabs{display:flex;gap:0;width:100%}
+.tabs button{flex:1 1 0;min-width:0;display:flex;align-items:center;justify-content:center;gap:6px;border:0;background:transparent;color:var(--ink2);font:650 15px/1 var(--sans);padding:0 4px;height:48px;border-bottom:3px solid transparent;white-space:nowrap}
+.tabs button.on{color:var(--ink);border-bottom-color:var(--orange)}
+.tabs em{font:800 12.5px/1 var(--sans);font-style:normal;background:var(--orange);color:#111;border-radius:10px;padding:3px 7px}
+.tabs em[hidden]{display:none}
 #drawer .body{flex:1;overflow:auto;min-height:0}
 .sec{padding:8px 12px}
-.filters{display:flex;gap:2px;margin-bottom:8px}
-.filters .chip{font:600 10.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;padding:5px 8px;border:1px solid var(--line);background:transparent;color:var(--ink3);cursor:pointer}
-.filters .chip.on{color:var(--ink);background:var(--panel2);border-color:#3a3f4a}
+.filters{display:flex;gap:6px;margin:0 -12px 8px;padding:0 12px;overflow-x:auto;scrollbar-width:none}.filters::-webkit-scrollbar{display:none}
+.filters .chip{flex:none;min-height:44px;font:600 14px var(--sans);letter-spacing:0;text-transform:none;padding:0 14px;border:1px solid var(--line);border-radius:22px;background:transparent;color:var(--ink2);cursor:pointer}
+.filters .chip.on{color:var(--ink);background:var(--panel2);border-color:#4a5262}
 .card{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);align-items:flex-start}
-.card .when{flex:none;width:56px;font:600 11px/1.45 var(--mono);color:var(--ink3);word-break:break-word}
-.card .when b{display:block;color:var(--ink2);font-weight:500;font-size:10px;letter-spacing:.02em;line-height:1.3;margin-top:2px}
+.card .when{flex:none;width:64px;font:600 13px/1.4 var(--mono);color:var(--ink2);word-break:break-word}
+.card .when b{display:block;color:var(--ink3);font:500 13px/1.3 var(--sans);margin-top:2px}
 .card .bd{flex:1;min-width:0}
-.card .txt{white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere;font-size:14px;line-height:1.4}
+.card .txt{white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere;font-size:15px;line-height:1.4}
 /* a warning is read in a second: two lines, the rest on tap */
 .card .txt.clamp{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.card .mo{background:none;border:0;color:var(--ink3);font:600 10.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;padding:2px 0 0;cursor:pointer}
+.card .mo{background:none;border:0;color:#9cc0ff;font:600 13px var(--sans);padding:8px 0 4px;min-height:44px;cursor:pointer}
 .card .rep{font:600 10px var(--mono);color:var(--ua-yellow);border:1px solid #5a4d00;padding:0 4px;margin-left:6px}
 .card .tags{display:flex;gap:4px;flex-wrap:wrap;margin-top:5px}
-.card .tags span{font:500 10px var(--mono);letter-spacing:.04em;text-transform:uppercase;color:var(--ink3);border:1px solid var(--line);padding:1px 5px}
+.card .tags span{font:500 12.5px var(--sans);color:var(--ink2);border:1px solid var(--line);border-radius:4px;padding:1px 6px}
+#panelfoot a{display:inline-flex;align-items:center;min-height:44px}
+.fnote{margin:2px 2px 8px;padding:8px 10px;border-radius:8px;background:#1a1f29;font:500 13px/1.35 var(--sans);color:var(--ink2)}
+.card .meta2{margin-top:5px;font:500 13px/1.3 var(--sans);color:var(--ink2)}.card .meta2 b{color:var(--ink);font-weight:700}
 .card .tags span.kyiv{color:#bcd5ff;border-color:#2b4370}
 .card.kyiv{border-left:3px solid var(--ua-blue);padding-left:8px}
 .card.red{border-left:3px solid var(--red);padding-left:8px}.card.yellow{border-left:3px solid var(--yellow);padding-left:8px}
 .card.plain{display:block}.card .title{font:700 15px var(--cond);letter-spacing:.02em}.card .meta{font:500 11.5px var(--mono);color:var(--ink2);margin-top:2px}
 .card.new{animation:flash 2.5s ease-out}
 @keyframes flash{0%{background:rgba(255,213,0,.18)}100%{background:transparent}}
-.empty{color:var(--ink3);font-family:var(--mono);font-size:12px;padding:12px 4px}
+.empty{color:var(--ink2);font:500 14px var(--sans);padding:14px 4px}
 .stats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .stat .v{font:700 24px/1 var(--cond)}.stat .l{font:500 10px var(--mono);color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;margin-top:2px}
 .track{position:relative;height:16px;background:var(--panel2);border:1px solid var(--line);overflow:hidden;margin-top:6px}
 .bar{position:absolute;top:2px;bottom:2px;background:var(--red)}
 .ticks{display:flex;justify-content:space-between;font:10px var(--mono);color:var(--ink3);margin-top:3px}
-.foot{padding:10px 12px 14px;font:11px/1.45 var(--mono);color:var(--ink3)}
+.foot{padding:10px 12px 14px;font:13px/1.45 var(--sans);color:var(--ink3)}
 .layermenu{display:flex;flex-wrap:wrap;gap:4px 12px;padding:8px 12px;border-bottom:1px solid var(--line);font:500 11px var(--mono);color:var(--ink2)}
 .layermenu label{display:flex;gap:5px;align-items:center;white-space:nowrap}.layermenu .lbl{color:var(--ink3);letter-spacing:.1em;text-transform:uppercase}
 /* sheets & toast */
@@ -315,23 +304,20 @@ body.lite #drawer .dchev{background:#111;border-color:#fff;color:#fff}
 .sheet.show{transform:none}
 .sheet .grab{display:none}
 .sheet .type{font:800 22px/1.05 var(--cond);letter-spacing:.03em;text-transform:uppercase;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.sheet .kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:13px;margin:8px 0;color:var(--ink3)}
-.sheet .kv>span{font:600 10.5px/1.6 var(--mono);letter-spacing:.06em;text-transform:uppercase}
+.sheet .kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:14px;margin:8px 0;color:var(--ink3)}
+.sheet .kv>span{font:600 12px/1.6 var(--mono);letter-spacing:.04em;text-transform:uppercase}
 .sheet .kv b{color:var(--ink);font-weight:600}
-.sheet .txt{background:var(--panel);border-left:3px solid var(--line);padding:8px 10px;font-size:14px;white-space:pre-wrap}
+.sheet .txt{background:var(--panel);border-left:3px solid var(--line);padding:8px 10px;font-size:15px;white-space:pre-wrap}
 .sheet a{color:#8fb4ff;font-size:13px}
-.chip{display:inline-flex;align-items:center;gap:4px;font:600 10.5px var(--mono);letter-spacing:.04em;text-transform:uppercase;padding:2px 6px;border:1px solid var(--line);color:var(--ink2)}
+.chip{display:inline-flex;align-items:center;gap:4px;font:600 12px var(--mono);letter-spacing:.03em;text-transform:uppercase;padding:2px 7px;border:1px solid var(--line);color:var(--ink2)}
 .chip.red{color:#ffd9d6;border-color:#6a2a26}.chip.yellow{color:#ffefa8;border-color:#5a4d00}.chip.green{color:#c9f2da;border-color:#1f5a3a}.chip.blue{color:#bcd5ff;border-color:#2b4370}.chip.orange{color:#ffc9a3}
-.tgl{border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:2px;padding:6px 10px;font:600 12px var(--mono)}
+.tgl{border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:8px;min-height:44px;padding:0 14px;font:600 14px var(--sans)}
 .tgl.on{color:var(--ua-yellow);border-color:#5a4d00}
-.hitem{padding:9px 6px;border-bottom:1px solid var(--line);cursor:pointer;display:flex;justify-content:space-between;font-size:14px}.hitem:hover{background:var(--panel2)}.hitem span{color:var(--ink3);font:500 11px var(--mono)}
+.hitem{padding:12px 6px;min-height:48px;border-bottom:1px solid var(--line);cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-size:15.5px}.hitem:hover{background:var(--panel2)}.hitem span{color:var(--ink3);font:500 13px var(--sans)}
 #homeq{width:100%;padding:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font:15px var(--sans);border-radius:2px}
 .toast{position:fixed;left:10px;right:10px;top:calc(var(--sat) + var(--top) + 8px);z-index:40;background:#14171d;border:1px solid var(--line);border-left:4px solid var(--red);padding:10px 12px;display:none;box-shadow:0 10px 30px rgba(0,0,0,.6)}
 .toast.show{display:block}.toast b{font:700 16px/1.1 var(--cond);text-transform:uppercase;letter-spacing:.03em}
-@media (max-width:520px){
-  #top .name small{display:none}#top .name{font-size:15px}#top .clock{font-size:11px}.ib{width:30px;height:28px;font-size:11px}#top .r1{gap:6px}
-  .band .big{font-size:13px}.band .dur{font-size:12px}
-}
+
 /* ---------- desktop ---------- */
 @media (min-width:1000px){
   :root{--peek:0px}
@@ -364,9 +350,9 @@ body.m-day .hmv{fill:#1a1340;stroke:#fff}
 .brgl{fill:#b9c6dc;font:700 calc(var(--k,1)*10.5px) var(--sans);paint-order:stroke;stroke:#0b0d11;stroke-width:calc(var(--k,1)*3px);stroke-linejoin:round;pointer-events:none}.brgl.at,.brgl.near,.brgl.hit{fill:#fff}
 svg.far:not(.city) .brgl:not(.at):not(.near):not(.hit){display:none}
 body.m-day .brg{stroke:#4d5d78}body.m-day .brg.near{stroke:#c26a00}body.m-day .brg.at,body.m-day .brg.hit{stroke:#c4121c}body.m-day .brgl{fill:#1d2533;stroke:#fff}
-.brgbar{display:flex;align-items:baseline;flex-wrap:wrap;gap:2px 7px;padding:6px 10px;font:700 13.5px/1.3 var(--sans);color:#fff;cursor:pointer;border-top:1px solid rgba(255,255,255,.18)}
+.brgbar{display:flex;align-items:baseline;flex-wrap:wrap;gap:2px 7px;min-height:44px;padding:9px 12px;border-radius:10px;font:700 15.5px/1.3 var(--sans);color:#fff;cursor:pointer}
 .brgbar[hidden]{display:none}.brgbar.at{background:#c4121c;animation:ntp 1.6s ease-in-out infinite}.brgbar.near{background:#8f4c00}.brgbar.hit{background:#5a1512}
-.brgbar small{font:500 11.5px var(--mono);opacity:.92}.brgbar .brmore{flex-basis:100%;font:500 12px var(--sans);opacity:.92}
+.brgbar small{font:500 13px var(--sans);opacity:.92}.brgbar .brmore{flex-basis:100%;font:500 13.5px var(--sans);opacity:.92}
 @media (prefers-reduced-motion:reduce){.brg.at,.brgbar.at{animation:none}}
 body.m-day #heatleg{background:rgba(255,255,255,.96)}.ob.far{stroke:#1a2029;fill:#0b0d11}
 .ob.region.R{fill:rgba(229,72,77,.10)}.ob.region.Y{fill:rgba(245,185,64,.07)}
@@ -552,13 +538,13 @@ body.lite .leader{stroke:#fff;stroke-opacity:.6}body.lite .anchor{fill:#fff}
 @media (min-width:1000px){#updbar,#pwabar{left:auto;right:396px;width:360px;bottom:16px}}
 .sup{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);padding:8px 10px;margin-top:8px;font:600 14px var(--mono);word-break:break-all}
 .sup b{flex:1;font-weight:600;color:var(--ua-yellow)}
-.credit{display:flex;align-items:center;gap:8px;margin-top:12px;padding-top:10px;border-top:1px solid var(--line);color:var(--ink3);font:500 11px/1.35 var(--sans)}
+.credit{display:flex;align-items:center;gap:8px;margin-top:12px;padding-top:10px;border-top:1px solid var(--line);color:var(--ink3);font:500 12px/1.4 var(--sans)}
 .credit img{width:26px;height:26px;flex:none;opacity:.75}
 .credit a{color:#8fb4ff}.credit .cn{font-weight:600;color:var(--ink2);letter-spacing:.02em}
 .hsec{margin-top:12px}.hsec h4{margin:0 0 3px;font:700 14px var(--cond);letter-spacing:.04em;text-transform:uppercase;color:var(--ink)}
 .hsec p{margin:0;font:400 13.5px/1.45 var(--sans);color:var(--ink2)}
 .warnbox{border-left:3px solid var(--red);background:rgba(224,52,44,.08);padding:8px 10px;font:500 13px/1.4 var(--sans);margin-top:8px}
-/* 1.35: the what-to-do guide (/guide) — in the menu and at the top of the help sheet */
+/* 1.35: the what-to-do guide (/guide) — in More, on the card and at the top of the help sheet */
 .mi.gdm{font-weight:700}.gdl{display:block;margin-top:8px;padding:9px 10px;border:1px solid var(--line);border-radius:4px;background:var(--panel2);color:var(--ink);text-decoration:none;font:700 13px/1.3 var(--sans)}
 /* descending: the moment a drone dives on its target */
 .mk.desc .glyph{fill:#ff2d55}.mk.desc .halo{stroke:#ff2d55;animation-duration:.9s}
@@ -636,7 +622,7 @@ body.m-night .zone{stroke:#2f5480;stroke-opacity:.35}
 body.m-night .zlbl{fill:#3f4e5e;stroke:none}
 body.m-night .trail.hist line{stroke:#5c7086}
 body.m-night .tstrip{animation:none!important}
-body.m-night .ticker,body.m-night .tstrip.calm{animation:none}
+body.m-night .tstrip.calm{animation:none}
 body.m-night .town.minor,body.m-night .towndot.minor,body.m-night .poi,body.m-night .poilbl{display:none}
 /* Marker labels carry their own dark halo, which in daylight is a black smear under light text. */
 body.m-day .mk .lbl{fill:#0a0c10;stroke:#fff;stroke-width:calc(var(--k,1)*3px)}
@@ -706,11 +692,111 @@ body.lite .tabs button.on{border-bottom-color:#fff;color:#fff}
 body.lite .upd .cd{color:#fff}body.lite .ib.on,body.lite .mapctl button.on,body.lite .tgl.on{color:#fff;border-color:#fff;background:#222}
 body.lite .mi.on::after{color:#fff}body.lite .card.kyiv{border-left-color:#fff}
 body.lite .nbar{border-left-color:#fff}body.lite .kv1.green,body.lite .kv1.yellow{color:#fff}
-body.lite .sup b{color:#fff}body.lite .ticker{color:#cfcfcf}
+body.lite .sup b{color:#fff}
 body.lite .srcs i{background:#8a8a8a}body.lite .srcs i.ok{background:#fff}body.lite .srcs i.bad{background:#fff;opacity:.4}
 /* one accent survives blackout: what is heading at you stays red, because that is the only thing worth a colour */
 body.lite .mk.inbound .cnt circle,body.lite .mk.tohome .cnt circle{fill:#ff2d55}
 body.lite .mk.inbound .lbl2,body.lite .mk.tohome .lbl2{fill:#ff9ab0}
+/* ==========================================================================================================
+   1.36 — the redesign (docs/TECHNICAL.md §10.1): a "my place" card in the header, the menu split into the bell,
+   "more" and the map's layers button, a tab bar with "Near", 44 px targets and 13 px text everywhere one reads.
+   ========================================================================================================== */
+.hb{width:44px;height:44px;flex:none;position:relative;display:flex;align-items:center;justify-content:center;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:10px;padding:0;cursor:pointer}
+.hb svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.hb svg circle{fill:currentColor;stroke:none}
+.hb .bdot{position:absolute;top:8px;right:9px;width:10px;height:10px;border-radius:50%;border:2px solid var(--panel);display:none}
+.bdot.l1{display:block;background:var(--yellow)}.bdot.l2{display:block;background:var(--orange)}.bdot.l3{display:block;background:var(--red2)}.bdot.l4{display:block;background:#8e5cff}
+#mycard{margin:2px 8px 8px;padding:6px;display:flex;flex-direction:column;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:14px}
+#mycard.lv2{border-color:#8a4a1c}#mycard.lv3{border-color:var(--red2);box-shadow:inset 0 0 0 1px var(--red2)}#mycard.lv4{border-color:#7a45f0;box-shadow:inset 0 0 0 1px #7a45f0}
+.slotrow{display:flex;gap:6px}
+.slotrow button{flex:1 1 0;min-width:0;height:44px;display:flex;align-items:center;justify-content:center;gap:5px;padding:0 4px;border:1px solid transparent;border-radius:10px;background:var(--panel2);color:var(--ink2);font:600 14px/1 var(--sans);white-space:nowrap;cursor:pointer}
+@media (max-width:380px){.slotrow{gap:4px}.slotrow button{font-size:13px;gap:4px}}
+.slotrow button .sl{overflow:hidden;text-overflow:ellipsis}
+.slotrow button.on{color:var(--ink);border-color:#5a6478;background:#262d3b}
+.slotrow button i{flex:none;width:10px;height:10px;border-radius:50%;border:1.5px dashed var(--ink3)}
+.slotrow button i.R{background:var(--red);border:0}.slotrow button i.Y{background:var(--yellow);border:0}.slotrow button i.H{border:2px solid var(--yellow)}.slotrow button i.G{background:var(--green);border:0}.slotrow button i.U{border:1.5px solid var(--ink3)}
+.mych{display:flex;align-items:center;gap:10px;min-height:56px;padding:8px 10px;border-radius:10px;background:var(--panel2);border-left:4px solid var(--orange);cursor:pointer}
+.mych[hidden]{display:none}.mych>div{flex:1;min-width:0}
+.mych svg{width:40px;height:40px;flex:none}
+.mych b{display:block;font:750 17px/1.2 var(--sans)}
+.mych small{display:block;font:500 13.5px/1.3 var(--sans);color:var(--ink2);margin-top:2px}
+.mych .km{flex:1 0 auto;max-width:96px;text-align:right;font:800 24px/1 var(--mono)}.mych .km small{font:600 12.5px/1.25 var(--sans);margin-top:3px;white-space:nowrap}
+.mych.near{border-left-color:var(--red2);background:rgba(224,52,44,.14)}
+.mych.calm{border-left-color:var(--line);cursor:default;min-height:44px}.mych.calm b{font:600 15px/1.3 var(--sans)}
+.mych.set{cursor:pointer;border-left-color:#9cc0ff}.mych.set em{font:700 22px var(--sans);font-style:normal;color:#9cc0ff}
+.mych.old{opacity:.55;filter:grayscale(1)}
+.mcfoot{display:grid;grid-template-columns:auto 1fr auto;grid-template-areas:"u s w" "n n w";align-items:center;column-gap:8px;min-height:44px;padding:0 4px;font:500 13px/1.25 var(--sans);color:var(--ink2)}
+.mcfoot .upd{grid-area:u}.mcfoot .srcs{grid-area:s;justify-self:start}.mcfoot .mcun{grid-area:n;justify-self:start}.mcfoot .mcwhat{grid-area:w}
+#mycard:has(.tsbtn) .mcwhat{display:none}
+.mcfoot .upd{display:inline-flex;align-items:center;gap:6px;font:500 13px var(--sans);color:var(--ink2)}
+.mcfoot .upd::before{content:'';flex:none;width:8px;height:8px;border-radius:50%;background:var(--green)}
+.mcfoot .upd.stale{color:#ffd166}.mcfoot .upd.stale::before{background:#ffd166}.mcfoot .upd.off{color:#ffb4ae}.mcfoot .upd.off::before{background:var(--red2)}
+.mcfoot .srcs .sn{display:none}
+.mcun{position:relative;background:none;border:0;min-height:24px;padding:2px 0;color:var(--ink3);font:500 13px var(--sans);text-align:left;cursor:pointer}.mcun::before{content:'';position:absolute;inset:-10px -4px}
+.mcwhat{display:flex;align-items:center;min-height:44px;padding:0 2px 0 8px;color:#9cc0ff;font:700 14px var(--sans);text-decoration:none;white-space:nowrap}
+.mcmini{display:flex;align-items:center;gap:10px;width:100%;min-height:44px;padding:0 8px;border:0;background:transparent;color:var(--ink);font:600 15px var(--sans);text-align:left;cursor:pointer}
+.mcmini[hidden]{display:none}.mcmini i{flex:none;width:12px;height:12px;border-radius:50%;background:var(--green)}.mcmini i.R{background:var(--red)}.mcmini i.Y,.mcmini i.H,.mcmini i.P{background:var(--yellow)}
+.mcmini b{flex:none;white-space:nowrap}.mcmini span{color:var(--ink2);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.mcmini em{margin-left:auto;font-style:normal;color:var(--ink2)}
+#mycard.mini>*:not(.mcmini){display:none!important}
+.sil .glyph{fill:var(--c);stroke:#0b0d11;stroke-width:1px;vector-effect:non-scaling-stroke}
+.sil .glyph.x{fill:none;stroke:var(--c);stroke-width:2.2px}.sil .glyph.ring{fill:none;stroke:var(--c);stroke-width:1.6px}
+.sil .jetfx{display:none}.sil.jet .jetfx{display:inline}.sil .flame{fill:#ffb347;stroke:none}.sil .flame2{fill:#fff4d6;stroke:none}
+.sil.bal .glyph{fill:#fff;stroke:#ff1744;stroke-width:1.4px}.sil.sup .glyph{fill:#ffdca8;stroke:#ff6a00;stroke-width:1.3px}
+/* the three panels: a sheet from the bottom on a phone, a drop-down under the header on a computer */
+.panel{position:fixed;z-index:42;left:0;right:0;bottom:0;max-height:86vh;max-height:86dvh;overflow-y:auto;overscroll-behavior:contain;background:#14171d;border-top:1px solid var(--line);border-radius:18px 18px 0 0;padding:0 0 calc(10px + var(--sab));box-shadow:0 -12px 32px rgba(0,0,0,.6);color:var(--ink)}
+.panel[hidden]{display:none}
+.pgrab{width:40px;height:5px;border-radius:3px;background:#3a4252;margin:8px auto 2px}
+.ph{display:flex;align-items:center;gap:8px;padding:4px 8px 6px 16px}.ph b{flex:1;font:800 19px/1.2 var(--sans)}
+.px{flex:none;width:44px;height:44px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);color:var(--ink2);font:600 16px var(--sans);cursor:pointer}
+.pnote{padding:0 16px 8px;font:500 13.5px/1.4 var(--sans);color:var(--ink3)}
+.panel .mg{padding:16px 16px 6px;font:750 12.5px/1 var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)}
+.panel .mi{display:block;width:100%;min-height:48px;padding:12px 16px;border:0;border-bottom:1px solid var(--line);background:transparent;color:var(--ink);font:500 15.5px/1.3 var(--sans);text-align:left;text-decoration:none;cursor:pointer}
+.panel .mi.lrow{display:flex;align-items:center;gap:10px}.panel .lsel{min-height:44px;font:600 15px var(--sans);border-radius:8px}
+.panel .mi.bt{font:500 13px var(--mono);color:var(--ink3);cursor:default}
+.panel .mrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--line)}
+.panel .mrow .ml{font:500 15px var(--sans);color:var(--ink2);margin-right:auto}
+.panel .mi2{min-height:44px;padding:0 14px;border-radius:8px;font:600 14px var(--sans)}
+.panel .mrow.z:not(.vol) .ml{flex:1 0 100%}.panel .mrow.z:not(.vol) .mi2{flex:1 1 0;min-width:0;padding:0 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.panel .mrow.vol input{min-width:110px;height:44px}.panel .mrow.vol b{font:600 13px var(--mono)}.panel .mrow.vol #sndtest{min-width:56px;padding:0 10px}
+.mi.tg{position:relative;display:flex!important;flex-direction:column;align-items:flex-start;padding-right:88px!important}
+.mi.tg .lb{font:600 15.5px/1.3 var(--sans);color:var(--ink)}.mi.tg small{font:500 13px/1.3 var(--sans);color:var(--ink2);margin-top:2px}
+.mi.tg::after{content:'';position:absolute;right:16px;top:50%;margin-top:-16px;width:52px;height:32px;border-radius:16px;background:#3a4252}
+.mi.tg::before{content:'';position:absolute;right:39px;top:50%;margin-top:-13px;width:26px;height:26px;border-radius:50%;background:#fff;z-index:1;transition:right .15s}
+.mi.tg.on::after{content:'';background:var(--green);color:transparent}.mi.tg.on::before{right:19px}
+.layermenu{display:flex;flex-direction:column;gap:0;padding:0;border-bottom:1px solid var(--line);font:500 15px var(--sans);color:var(--ink)}
+.layermenu label{display:flex;align-items:center;gap:12px;min-height:48px;padding:6px 16px;border-bottom:1px solid var(--line);white-space:normal;cursor:pointer}
+.layermenu input{width:22px;height:22px;flex:none;accent-color:var(--orange)}
+.lgd summary{min-height:48px;display:flex;align-items:center;padding:0 16px;font:600 15px var(--sans);cursor:pointer;color:#9cc0ff}
+@media (min-width:1000px){.panel{left:auto;right:10px;top:calc(var(--sat) + 58px);bottom:auto;width:400px;max-height:calc(100vh - 80px);border:1px solid var(--line);border-radius:14px;padding-bottom:8px}.pgrab{display:none}}
+/* "Near": every live target, by distance from the place being watched */
+#near{padding-top:4px}
+.nrh{display:flex;align-items:center;gap:8px;min-height:44px;padding:0 2px}.nrh b{flex:1;font:750 16px var(--sans)}
+.nrh button{min-height:44px;padding:0 6px;border:0;background:none;color:#9cc0ff;font:600 14px var(--sans);cursor:pointer}
+.nrb{padding:12px 2px 4px;font:750 12.5px/1 var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)}
+.nrow{display:flex;align-items:center;gap:10px;width:100%;min-height:64px;padding:10px 2px;border:0;border-bottom:1px solid var(--line);background:transparent;color:var(--ink);text-align:left;cursor:pointer;font:inherit}
+.nrow>svg{width:38px;height:38px;flex:none;border-radius:10px;background:#0e1117;border:1px solid var(--line)}
+.nrow>div{flex:1;min-width:0}
+.nrow b{display:block;font:700 16px/1.25 var(--sans)}.nrow small{display:block;font:500 13.5px/1.3 var(--sans);color:var(--ink2);margin-top:1px}
+.nrow .km{flex:none;text-align:right;font:800 21px/1 var(--mono);white-space:nowrap}.nrow .km small{font:600 12.5px var(--sans);color:var(--ink2)}
+.nrow.here b{color:#ffb3c5}.nrow.stale{opacity:.55}
+.nrnote{padding:12px 2px;font:500 13px/1.4 var(--sans);color:var(--ink3)}
+.nearl{display:none}
+/* computer: the card is a column on the left, the map in the middle, the posts on the right */
+@media (min-width:1000px){
+  #mycard{position:fixed;z-index:14;left:0;top:calc(var(--sat) + var(--top));bottom:0;width:360px;margin:0;padding:10px;border:0;border-right:1px solid var(--line);border-radius:0;overflow-y:auto}
+  #mycard.lv3,#mycard.lv4{box-shadow:inset 3px 0 0 var(--red2)}
+  #stage{left:360px}
+  .nearl{display:block;margin-top:6px}
+  #tabs button[data-tab="near"]{display:none}
+  .toast{left:376px}
+}
+body.m-day .panel,body.m-day #mycard{background:#fff;color:#12161c;border-color:#9aa1ac}body.m-day .hb{background:#fff;color:#12161c}
+body.m-day .slotrow button{background:#eceef2;color:#12161c;border-color:#c3c8d0}body.m-day .slotrow button.on{background:#12161c;color:#fff}
+body.m-day .band.N{background:#d8f0e2;border-color:#0d6b3f}body.m-day .band.N .big{color:#04321d}body.m-day .mych{background:#eceef2}
+body.m-night .panel,body.m-night #mycard,body.m-night .hb,body.m-night .slotrow button{background:#070a0f;color:#8fa3b8;border-color:#1c242f}
+body.m-night .band.R,body.m-night .band.A{background:#5a1a16;border-color:#5a1a16;color:#e8c9c6}body.m-night .band.N .big{color:#7fa395}
+body.m-night .tstrip.bal,body.m-night .tstrip.mig,body.m-night .tstrip.offr{background:#2a0e14;color:#d8b7bd;border-color:#4a1a22}
+body.lite #mycard,body.lite .panel{background:#000;border-color:#666}body.lite .mych{background:#111}body.lite .band.N{background:#000;border-color:#fff}
+@media (prefers-reduced-motion:reduce){.mi.tg::before{transition:none}}
 </style>
 </head>
 <body>
@@ -718,49 +804,66 @@ body.lite .mk.inbound .lbl2,body.lite .mk.tohome .lbl2{fill:#ff9ab0}
 <header id="top">
   <div class="r1">
     <img class="logo" src="/static/heimdall-64.png" alt="Heimdall"><img class="logo ngo" src="/static/logo-64.png" alt="07300">
-    <div class="name">Heimdall</div>
     <nav class="vsw" data-t-title="sw_title" title="Two versions"><a href="/light" data-t="sw_light">LIGHT</a><span class="on" data-t="sw_tac">TACTICAL</span></nav>
-    <span class="srcs" id="srcs"></span>
     <span class="sp"></span>
-    <span class="clock" id="clock">--:--</span>
-    <button class="ib" id="menubtn" data-t-title="t_settings" title="Settings">☰</button>
+    <button class="hb" id="bellbtn" type="button" data-t-title="m_bell" data-t-aria="m_bell" title="Alerts on this phone" aria-label="Alerts on this phone"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg><i class="bdot" id="bdot"></i></button>
+    <button class="hb" id="menubtn" type="button" data-t-title="m_more" data-t-aria="m_more" title="Settings and about" aria-label="Settings and about"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg></button>
   </div>
-  <div class="menu" id="menu" hidden>
-    <div class="mg" data-t="m_g_alert">Alerts</div>
-    <button class="mi" id="pushbtn" data-t="m_push">Push notifications (phone, app closed)</button>
-    <button class="mi" id="geobtn" data-t="geo_title">Warn me near my location</button>
-    <button class="mi" id="brgbtn" data-t="m_brg">Kyiv bridges: alert me</button>
-    <div class="mrow"><button class="mi2 on" id="snd" data-t="m_snd_s">Sound</button><button class="mi2" id="vib" data-t="m_vib_s">Vibration</button></div>
-    <div class="mrow z vol" id="sndrow"><span class="ml" data-t="m_vol">Volume</span><input type="range" id="sndvol" min="0" max="100" step="5" value="50" data-t-aria="m_vol"><b id="sndvolv">50%</b><button class="mi2" id="sndtest" data-t-aria="m_vol_test" data-t-title="m_vol_test_t">▶</button></div>
-
-    <div class="mg" data-t="m_g_map">Map</div>
-    <button class="mi" id="oblbtn" data-t="m_obl">My oblast…</button>
-    <button class="mi" id="homebtn" data-t="m_home">Priority location…</button>
-    <button class="mi" id="zcity2" data-t="m_city">Kyiv city map (10 districts) — toggle</button>
-    <div class="mrow z"><span class="ml" data-t="m_zoom">Zoom out</span><button class="mi2" id="zobl" data-t="m_z_obl">Oblast</button><button class="mi2" id="zreg" data-t="m_z_reg">Region</button><button class="mi2" id="zua" data-t="m_z_ua">Ukraine</button></div>
-    <button class="mi" id="est" data-t="m_est">Estimate motion along heading (EST)</button>
-
-    <div class="mg" data-t="m_g_view">Display</div>
-    <label class="mi lrow"><span data-t="m_lang">Language</span><select class="lsel" id="langsel" aria-label="Language"></select></label>
-    <div class="mrow z"><span class="ml" data-t="m_mode">Display mode</span><button class="mi2" id="mdstd" data-t="m_md_std">Standard</button><button class="mi2" id="mdday" data-t="m_md_day">Daylight</button><button class="mi2" id="mdnight" data-t="m_md_night">Night</button></div>
-    <button class="mi" id="litebtn" data-t="m_lite">Blackout mode (2G / weak signal)</button>
-    <a class="mi" href="/light" data-t="m_light">Heimdall Light — only your place</a>
-
-    <div class="mg" data-t="m_g_info">About</div>
-    <a class="mi gdm" href="/guide" data-t="m_guide">What to do — threat cheat sheet</a>
-    <button class="mi" id="helpbtn" data-t="m_help">How this app works</button>
-    <button class="mi" id="supbtn" data-t="m_support">Support the project</button>
-    <a class="mi" id="tgbtn" data-t="m_tg" target="_blank" rel="noopener" hidden>Community on Telegram</a>
-    <button class="mi" id="aboutbtn" data-t="m_about">About · disclaimer</button>
-    <div class="mi bt" id="buildtag">v1.35</div>
-  </div>
-  <div class="band N" id="kyiv"><div class="dot N"></div><div><div class="big" data-t="loading">Loading…</div><div class="small"></div></div></div>
-  <button class="ticker" id="ticker" type="button"><span class="tki">⚠</span><span class="tkt" id="tkt"></span></button>
-  <div class="tstrip" id="tstrip" hidden></div>
-  <div class="brgbar" id="brgbar" hidden role="alert"></div>
+  <!-- 1.36: the "my place" card — the answer to "do I go down?" for the place being watched, in one block:
+       the official status of its raion, a preventive threat, what the channels report near it, the bridges,
+       and how old all of it is. In the header, never over the map; it grows with the threat. -->
+  <section id="mycard" class="lv0" data-t-aria="mc_aria" aria-label="My place">
+    <div class="slotrow" id="slotrow"></div>
+    <div class="band N" id="kyiv"><div class="dot N"></div><div><div class="big" data-t="loading">Loading…</div><div class="small"></div></div></div>
+    <div class="tstrip" id="tstrip" hidden></div>
+    <div class="mych" id="mych" hidden></div>
+    <div class="brgbar" id="brgbar" hidden role="alert"></div>
+    <div class="mcfoot" id="mcfoot"><span class="upd" id="upd">—</span><span class="srcs" id="srcs"></span><button type="button" class="mcun" id="mcun" data-t="mc_unoff">unofficial · not radar</button><a class="mcwhat" href="/guide" data-t="mc_what">What to do →</a></div>
+    <button type="button" class="mcmini" id="mcmini" hidden></button>
+    <div class="nearl" id="nearL"></div>
+  </section>
   <div class="notice lv-warn" id="moved" hidden role="status"><div class="ntb"><b class="nth mvt"></b><span class="mvb"></span><a class="mvgo" href="#"></a></div><button class="nx" type="button" aria-label="✕">✕</button></div>
   <div class="notice" id="notice" hidden role="status"><div class="ntb"><b class="nth" data-t="nt_from">Message from the system admin</b><span class="ntx"></span></div><button class="nx" type="button" data-t-aria="btn_close" aria-label="Close">✕</button></div>
 </header>
+
+<!-- 1.36: the menu of 27 controls is split by where each one is looked for: the bell (what makes this phone ring),
+     "more" (settings and about), and the layers button on the map (everything that changes the map). -->
+<div class="panel" id="bell" hidden role="dialog" aria-labelledby="bellh"><div class="pgrab"></div>
+  <div class="ph"><b id="bellh" data-t="m_bell">Alerts on this phone</b><button type="button" class="px" data-close="bell" data-t-aria="btn_close" aria-label="Close">✕</button></div>
+  <div class="pnote" data-t="bl_note">They do not replace the siren.</div>
+  <button class="mi tg" id="pushbtn" type="button"><span class="lb" data-t="m_push">Push notifications</span><small data-t="bl_push_b"></small></button>
+  <button class="mi tg" id="geobtn" type="button"><span class="lb" data-t="geo_title">Warn me near my location</span><small data-t="bl_geo_b"></small></button>
+  <button class="mi tg" id="brgbtn" type="button"><span class="lb" data-t="m_brg">Kyiv bridges: alert me</span><small data-t="bl_brg_b"></small></button>
+  <button class="mi tg on" id="snd" type="button"><span class="lb" data-t="m_snd_s">Sound</span><small data-t="bl_snd_b"></small></button>
+  <div class="mrow z vol" id="sndrow"><span class="ml" data-t="m_vol">Volume</span><input type="range" id="sndvol" min="0" max="100" step="5" value="50" data-t-aria="m_vol"><b id="sndvolv">50%</b><button class="mi2" id="sndtest" type="button" data-t-aria="bl_test" data-t-title="bl_test">▶</button></div>
+  <button class="mi tg" id="vib" type="button"><span class="lb" data-t="m_vib_s">Vibration</span><small data-t="bl_vib_b"></small></button>
+</div>
+<div class="panel" id="menu" hidden role="dialog" aria-labelledby="menuh"><div class="pgrab"></div>
+  <div class="ph"><b id="menuh" data-t="m_more">Settings and about</b><button type="button" class="px" data-close="menu" data-t-aria="btn_close" aria-label="Close">✕</button></div>
+  <div class="mg" data-t="m_g_places">Your places</div>
+  <button class="mi" id="homebtn" type="button" data-t="m_home">Priority location…</button>
+  <button class="mi" id="oblbtn" type="button" data-t="m_obl">My oblast…</button>
+  <div class="mg" data-t="m_g_view">Display</div>
+  <label class="mi lrow"><span data-t="m_lang">Language</span><select class="lsel" id="langsel" aria-label="Language"></select></label>
+  <div class="mrow z"><span class="ml" data-t="m_mode">Display mode</span><button class="mi2" id="mdstd" type="button" data-t="m_md_std">Standard</button><button class="mi2" id="mdday" type="button" data-t="m_md_day">Daylight</button><button class="mi2" id="mdnight" type="button" data-t="m_md_night">Night</button></div>
+  <button class="mi tg" id="litebtn" type="button"><span class="lb" data-t="m_lite">Blackout mode (2G / weak signal)</span></button>
+  <a class="mi" href="/light" data-t="m_light">Heimdall Light — only your place</a>
+  <div class="mg" data-t="m_g_info">About</div>
+  <a class="mi gdm" href="/guide" data-t="m_guide">What to do — threat cheat sheet</a>
+  <button class="mi" id="helpbtn" type="button" data-t="m_help">How this app works</button>
+  <button class="mi" id="supbtn" type="button" data-t="m_support">Support the project</button>
+  <a class="mi" id="tgbtn" data-t="m_tg" target="_blank" rel="noopener" hidden>Community on Telegram</a>
+  <button class="mi" id="aboutbtn" type="button" data-t="m_about">About · disclaimer</button>
+  <div class="mi bt" id="buildtag">v1.36</div>
+</div>
+<div class="panel" id="lay" hidden role="dialog" aria-labelledby="layh"><div class="pgrab"></div>
+  <div class="ph"><b id="layh" data-t="m_layers">Map layers</b><button type="button" class="px" data-close="lay" data-t-aria="btn_close" aria-label="Close">✕</button></div>
+  <div class="layermenu" id="layerbox"><label><input type="checkbox" data-l="tiles"> <span data-t="l_tiles">Streets &amp; buildings (OSM, zoomed in)</span></label><label><input type="checkbox" data-l="heat"> <span data-t="l_heat">Heat map: where drones were reported (not live)</span></label><label><input type="checkbox" data-l="himp"> <span data-t="l_himp">History: explosions ✸</span></label><label><input type="checkbox" data-l="hdown"> <span data-t="l_hdown">History: confirmed shot down ✕</span></label><label><input type="checkbox" data-l="trails"> <span data-t="l_trails">Tracks</span></label><label><input type="checkbox" data-l="cones"> <span data-t="l_cones">Course rays</span></label><label><input type="checkbox" data-l="rivers"> <span data-t="l_rivers">Rivers</span></label><label><input type="checkbox" data-l="roads"> <span data-t="l_roads">Roads</span></label><label><input type="checkbox" data-l="infra"> <span data-t="l_infra">Airports / plants</span></label><label><input type="checkbox" data-l="rings"> <span data-t="l_rings">Rings</span></label><label><input type="checkbox" data-l="minor"> <span data-t="l_minor">Villages &amp; small towns (off by default — clutters the phone)</span></label></div>
+  <button class="mi tg" id="zcity2" type="button"><span class="lb" data-t="m_city">Kyiv city map (10 districts) — toggle</span></button>
+  <button class="mi tg" id="est" type="button"><span class="lb" data-t="m_est">Estimate motion along heading (EST)</span></button>
+  <div class="mrow z"><span class="ml" data-t="m_zoom">Zoom out</span><button class="mi2" id="zobl" type="button" data-t="m_z_obl">Oblast</button><button class="mi2" id="zreg" type="button" data-t="m_z_reg">Region</button><button class="mi2" id="zua" type="button" data-t="m_z_ua">Ukraine</button></div>
+  <details class="lgd"><summary data-t="lg_show">Colour legend</summary><div class="foot" data-t-html="legend"></div></details>
+</div>
 
 <div id="stage">
 <div class="mapwrap" id="mapwrap">
@@ -785,12 +888,12 @@ body.lite .mk.inbound .lbl2,body.lite .mk.tohome .lbl2{fill:#ff9ab0}
     <g id="markers"></g>
     <g id="edges"></g>
   </svg>
-  <div id="situ"><div class="slotrow" id="slotrow"></div><div id="raions" hidden></div><div class="homerow" id="homerow" hidden></div></div>
+  <div id="situ"><div id="raions" hidden></div></div>
   <div class="livebar" id="livebar"></div>
   <div class="attrib" id="attrib" hidden>© OpenStreetMap contributors</div>
   <div id="pinhold"></div>
   <div id="pinarm" hidden><span data-t="sl_pin_arm">Tap the map where the pin goes</span><button type="button" id="pinarmx" data-t="sl_pin_cancel">Cancel</button></div>
-  <div class="mapctl"><button id="zin">+</button><button id="zout">−</button><button id="zkyiv" data-t-title="t_center" title="Centre on my oblast">◎</button><button id="impbtn" data-t-title="t_hist" title="History of explosions and confirmed shoot-downs: off / 24 h / 48 h / 72 h">✸<small id="imph"></small></button></div>
+  <div class="mapctl"><button id="laybtn" type="button" data-t-title="m_layers" data-t-aria="m_layers" title="Map layers" aria-label="Map layers"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 3 8l9 5 9-5-9-5z"/><path d="m3 13 9 5 9-5"/></svg></button><button id="zin" type="button" aria-label="+">+</button><button id="zout" type="button" aria-label="−">−</button><button id="zkyiv" type="button" data-t-title="t_center" data-t-aria="t_center" title="Centre on my place">◎</button><button id="impbtn" type="button" data-t-title="t_hist" data-t-aria="t_hist" title="History of explosions and confirmed shoot-downs: off / 24 h / 48 h / 72 h">✸<small id="imph"></small></button></div>
   <div class="tip" id="tip" hidden></div>
   <div id="heatleg" hidden><div class="hlh"><b data-t="hm_title">Where drones were reported</b><button type="button" id="heatx" data-t-aria="hm_off" aria-label="Hide">✕</button></div>
     <div class="hlw" id="heatw"></div><div class="hlt" id="heattop"></div><div class="hlr" id="heatramp"></div><div class="hln" data-t="hm_not_live">Not live.</div></div>
@@ -803,17 +906,14 @@ body.lite .mk.inbound .lbl2,body.lite .mk.tohome .lbl2{fill:#ff9ab0}
 <div class="nbar" id="pwabar" hidden><div class="bt"><b id="pwaT"></b><small id="pwaB"></small></div><button class="tgl on" id="pwaGo"></button><button class="x" id="pwaX">✕</button></div>
 
 <aside id="drawer">
-  <div class="handle" id="handle"><button class="dchev" id="dchev" type="button" aria-label="close">▾</button>
-    <div class="tabs" id="tabs"><button data-tab="feedwrap" class="on" data-t="tab_feed">Feed</button><button data-tab="alerts" data-t="tab_alerts">Alerts</button><button data-tab="hist" data-t="tab_stats">Stats</button><button data-tab="layers" data-t="tab_map">Map</button></div>
-    <span class="upd" id="upd">—</span>
+  <div class="handle" id="handle"><button class="dchev" id="dchev" type="button" aria-label="close">▴</button>
+    <div class="tabs" id="tabs"><button type="button" data-tab="near" class="on"><span data-t="tab_near">Near</span><em id="nearn" hidden></em></button><button type="button" data-tab="feedwrap" data-t="tab_feed">Feed</button><button type="button" data-tab="alerts" data-t="tab_alerts">Alerts</button><button type="button" data-tab="hist" data-t="tab_stats">Stats</button></div>
   </div>
   <div class="body">
-    <div class="sec" id="feedwrap"><div class="filters"><span class="chip on" data-f="kyiv" data-t="f_kyiv">Kyiv area</span><span class="chip" data-f="region" data-t="f_region">Region</span><span class="chip" data-f="all" data-t="f_threats">Threats</span><span class="chip" data-f="official" data-t="f_official">Official</span><span class="chip" data-f="everything" data-t="f_all">All</span></div><div id="feed"></div></div>
+    <div class="sec" id="near"></div>
+    <div class="sec" id="feedwrap" hidden><div class="filters"><button type="button" class="chip on" data-f="kyiv" data-t="f_kyiv">Kyiv area</button><button type="button" class="chip" data-f="region" data-t="f_region">Region</button><button type="button" class="chip" data-f="all" data-t="f_threats">Threats</button><button type="button" class="chip" data-f="official" data-t="f_official">Official</button><button type="button" class="chip" data-f="everything" data-t="f_all">All</button></div><p class="fnote" data-t="fd_opsec">Do not publish air-defence or impact locations during an attack</p><div id="feed"></div></div>
     <div class="sec" id="alerts" hidden></div>
     <div class="sec" id="hist" hidden></div>
-    <div id="layers" hidden><div class="layermenu" id="layerbox"><span class="lbl" data-t="l_title">Layers</span><label><input type="checkbox" data-l="tiles"> <span data-t="l_tiles">Streets &amp; buildings (OSM, zoomed in)</span></label><label><input type="checkbox" data-l="heat"> <span data-t="l_heat">Heat map: where drones were reported (not live)</span></label><label><input type="checkbox" data-l="himp"> <span data-t="l_himp">History: explosions ✸</span></label><label><input type="checkbox" data-l="hdown"> <span data-t="l_hdown">History: confirmed shot down ✕</span></label><label><input type="checkbox" data-l="trails"> <span data-t="l_trails">Tracks</span></label><label><input type="checkbox" data-l="cones"> <span data-t="l_cones">Course rays</span></label><label><input type="checkbox" data-l="rivers"> <span data-t="l_rivers">Rivers</span></label><label><input type="checkbox" data-l="roads"> <span data-t="l_roads">Roads</span></label><label><input type="checkbox" data-l="infra"> <span data-t="l_infra">Airports / plants</span></label><label><input type="checkbox" data-l="rings"> <span data-t="l_rings">Rings</span></label><label><input type="checkbox" data-l="minor"> <span data-t="l_minor">Villages &amp; small towns (off by default — clutters the phone)</span></label></div>
-      <div class="foot" data-t-html="legend"></div>
-      <div class="foot" id="mapfoot"></div></div>
     <div class="foot" id="panelfoot"></div>
   </div>
 </aside>
@@ -847,16 +947,8 @@ const LT=x=>({oblast:t('lt_oblast'),raion:t('lt_raion'),hromada:t('lt_hromada'),
 document.documentElement.lang=LANG;
 document.querySelectorAll('[data-t]').forEach(el=>el.textContent=t(el.dataset.t)); document.querySelectorAll('[data-t-html]').forEach(el=>el.innerHTML=t(el.dataset.tHtml));
 document.querySelectorAll('[data-t-title]').forEach(el=>el.title=t(el.dataset.tTitle)); document.querySelectorAll('[data-t-aria]').forEach(el=>el.setAttribute('aria-label',t(el.dataset.tAria))); document.querySelectorAll('[data-t-ph]').forEach(el=>el.placeholder=t(el.dataset.tPh));
-// one line at a time, 7 s each, cross-faded — and it never rotates while the tab is hidden
-(()=>{ const el=document.getElementById('tkt'), box=document.getElementById('ticker');
-  const lines=()=>{const v=t('tkr'); return Array.isArray(v)?v:[String(v)];};
-  let i=0; const show=()=>{const L=lines(); el.textContent=L[i%L.length];};
-  show();
-  if(window.__tkTimer) clearInterval(window.__tkTimer);
-  window.__tkTimer=setInterval(()=>{ if(document.hidden) return; const L=lines(); if(L.length<2) return;
-    box.classList.add('fade'); setTimeout(()=>{ i=(i+1)%L.length; show(); box.classList.remove('fade'); },450); },7000);
-  box.onclick=()=>{ const d=document.getElementById('disc'); if(d) d.hidden=false; };
-})();
+// the disclaimer's one sentence is always on screen at the foot of the card; a tap on it opens the full notice
+document.getElementById('mcun').onclick=()=>{ document.getElementById('disc').hidden=false; };
 // the language: a drop-down (static/i18n.js). In the opening notice, a change shows the notice again in the new language.
 langSelect(document.getElementById('langsel')); langSelect(document.getElementById('dlang'),true);
 const CH=LANG==='uk'?{kyiv_airdef:'ППО Київ',xydessa_live:'Одеса наживо',kpszsu:'Повітряні сили',povitryanatrivogaaa:'Мапа тривог',war_monitor:'монітор',monitor_ukr:'монітор UA',kyivoda:'КОВА',KyivCityOfficial:'КМДА',demo:'демо',
@@ -892,7 +984,7 @@ function renderLiveCounts(){ const el=$('livecounts'); if(!el) return;
     +LIVE.parts.map(p=>`<div class="srow"><span>${p}</span><b></b></div>`).join('')
     +`</div>`; }
 const TZ='Europe/Kyiv'; const TOPBASE=86;   // fallback only, for the moment before the header has laid out
-// Measured, never assumed: the header grows and shrinks with the ticker, the band and the threat strip, and
+// Measured, never assumed: the header grows and shrinks with the card, the band and the threat strip, and
 // every hardcoded total for it has eventually gone stale and slid the map up underneath it.
 function syncTop(){ const h=document.querySelector('header');
   const px=h&&h.offsetHeight?h.offsetHeight:TOPBASE;
@@ -950,20 +1042,20 @@ function volUI(){ const x=soundOn?sndVol:0; $('sndvol').value=x; $('sndvolv').te
 $('snd').onclick=()=>{soundOn=!soundOn;sndSave();volUI();};
 $('sndvol').oninput=e=>{ const x=+e.target.value; soundOn=x>0; if(x>0) sndVol=x; sndSave(); volUI(); };
 // letting go of the slider plays the loudest alert the app has, at that level: what you hear is the ceiling
-$('sndvol').onchange=()=>{ if(soundOn) beep('start',2); };
-$('sndtest').onclick=()=>{ if(soundOn) beep('start',2); };
+$('sndvol').onchange=()=>{ if(soundOn) beep('l4',1); };
+$('sndtest').onclick=()=>{ if(!soundOn) return; beep('l2',1); setTimeout(()=>beep('l3',1),1100); setTimeout(()=>beep('l4',1),2900); };
 volUI();
 // ---- Web Push: works with the page closed (Android Chrome; iPhone: add to home screen first) ----
 let PUSH_SUB=null;
-async function pushInit(){ if(!('serviceWorker' in navigator)||!('PushManager' in window)){$('pushbtn').textContent=t('m_push_ns');return;}
+async function pushInit(){ if(!('serviceWorker' in navigator)||!('PushManager' in window)){$('pushbtn').classList.add('na');$('pushbtn').querySelector('small').textContent=t('m_push_ns');return;}
   try{ const reg=await navigator.serviceWorker.register('/sw.js'); PUSH_SUB=await reg.pushManager.getSubscription(); }catch(e){}
   pushLabel();
   // 1.34: a phone subscribed before the bridges tells the server once, per version, what it wants and in which language
   // (after the await: the stored location is read by then, so the server keeps the same ~10 km cell)
   try{ if(PUSH_SUB&&localStorage.getItem('pushsync')!==APP_VERSION){ await pushSync(); localStorage.setItem('pushsync',APP_VERSION); } }catch(e){} }
-function pushLabel(){ const b=$('pushbtn'); b.classList.toggle('on',!!PUSH_SUB); b.textContent=PUSH_SUB?t('m_push_on'):t('m_push'); }
+function pushLabel(){ const b=$('pushbtn'); b.classList.toggle('on',!!PUSH_SUB); b.setAttribute('aria-pressed',PUSH_SUB?'true':'false'); }
 function homeRaion(){ if(!HOME||!MAP) return null; const [hx,hy]=proj(HOME.lon,HOME.lat); let best=null; for(const f of MAP.features){ if(!f.raion) continue; const d=Math.hypot(f.cx-hx,f.cy-hy); if(!best||d<best.d) best={d,r:f.raion}; } return best?best.r:null; }
-$('pushbtn').onclick=async()=>{ $('menu').hidden=true;
+$('pushbtn').onclick=async()=>{ if(!('PushManager' in window)) return;
   try{ const info=await(await fetch('/api/push/key')).json(); if(!info.enabled){notify(t('n_push_na'),t('n_push_na_b'),'threat');return;}
     const reg=await navigator.serviceWorker.ready;
     if(PUSH_SUB){ await fetch('/api/push/unsubscribe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({endpoint:PUSH_SUB.endpoint})}); await PUSH_SUB.unsubscribe(); PUSH_SUB=null; pushLabel(); notify(t('n_push_off'),'','end'); return; }
@@ -975,14 +1067,14 @@ $('pushbtn').onclick=async()=>{ $('menu').hidden=true;
     pushLabel(); notify(t('n_push_on'),t('n_push_on_b',HOME?t('n_push_raion',HOME.name):''),'end');
   }catch(e){ notify(t('n_push_fail'),String(e).slice(0,120),'threat'); } };
 pushInit();
-// disclaimer: shown once each time the app is OPENED, always available from the menu.
+// disclaimer: shown once each time the app is OPENED, always available from the card's foot and More → About.
 // Not on every page load: switching Light ⇄ Tactical loads the other page, and the notice came back each time,
 // until people stopped reading it. sessionStorage lives exactly as long as the tab or the installed app's
 // window — so closing and reopening the app shows it again, and the Light page shares the same flag.
 (()=>{ let seen=false; try{ seen=sessionStorage.getItem('disc_seen')==='1'; sessionStorage.setItem('disc_seen','1'); }catch(e){}
   $('disc').hidden=seen;
   $('discok').onclick=()=>{$('disc').hidden=true;try{localStorage.setItem('disc_ack',String(Date.now()));}catch(e){};setTimeout(()=>{try{maybeRemindSupport();}catch(e){}},90000);};
-  $('aboutbtn').onclick=()=>{$('menu').hidden=true;$('disc').hidden=false;};
+  $('aboutbtn').onclick=()=>{closePanels();$('disc').hidden=false;};
   $('discobl').onchange=e=>setMyOblast(e.target.value);
   $('dischome').onclick=async()=>{$('disc').hidden=true;await $('homebtn').onclick();};})();
 // the entry screen offers the two "watch" settings straight away: my oblast (status band, alerts) + an optional precise place
@@ -996,8 +1088,8 @@ function paintFooters(){ const h=footerHTML();
 function discHomeLabel(){ const b=$('dischome'); if(b) b.textContent=HOME?`${t('d_home_set')}: ${homeName()} ✓`:t('d_home_btn'); }
 function fillDiscOblasts(){ const sel=$('discobl'); if(!sel||!MAP) return; const list=(MAP.oblasts||[]).filter(o=>o.uid!=='31'&&o.uid!=='30').sort((a,b)=>oblName(a.uid).localeCompare(oblName(b.uid),LOCALE()));
   sel.innerHTML=list.map(o=>`<option value="${o.uid}" ${o.uid===MYOBL.uid?'selected':''}>${esc(oblFull(o.uid))}</option>`).join(''); discHomeLabel(); }
-{const tg=$('tgbtn'); if(tg) tg.addEventListener('click',()=>{$('menu').hidden=true;});}
-$('oblbtn').onclick=()=>{$('menu').hidden=true;pickOblast();};
+{const tg=$('tgbtn'); if(tg) tg.addEventListener('click',()=>{closePanels();});}
+$('oblbtn').onclick=()=>{closePanels();pickOblast();};
 $('vib').onclick=()=>{vibOn=!vibOn;$('vib').classList.toggle('on',vibOn);try{localStorage.setItem('vib',vibOn?'1':'0')}catch(e){};if(vibOn&&navigator.vibrate)navigator.vibrate(80);};
 
 // ---- projection (km around Kyiv centre) ----
@@ -1021,18 +1113,32 @@ function audio(){ actx=actx||new (window.AudioContext||window.webkitAudioContext
 function beep(kind,vol){ if(!soundOn||sndVol<=0) return; const v=vol==null?1:vol; if(v<=0) return;
   try{ const a=audio();
     const crit=v>1.2;
-    const seq=kind==='end'?[[660,.12],[880,.2]]
+    // 1.36: one tone per escalation level, so the level can be told apart without looking — l1 one soft note
+    // (an official alert over the place), l2 two beeps (a target within 30 km), l3 three rising beeps twice (within
+    // 10 km, a bridge), l4 three seconds of a two-note warble (ballistic, MiG-31K). A 0 Hz note is a rest.
+    const seq=kind==='l1'?[[660,.22]]:kind==='l2'?[[740,.12],[740,.12]]
+      :kind==='l3'?[[620,.11],[780,.11],[940,.17],[0,.22],[620,.11],[780,.11],[940,.17]]
+      :kind==='l4'?[[880,.5],[1040,.5],[880,.5],[1040,.5],[880,.5],[1040,.5]]
+      :kind==='end'?[[660,.12],[880,.2]]
       :crit?[[990,.13],[740,.13],[990,.13],[740,.13],[990,.35]]
       :kind==='threat'?[[520,.1],[520,.1],[520,.1]]:[[880,.15],[660,.15],[880,.15],[660,.3]];
+    const gap=kind==='l4'?0:.05, soft=kind==='l1'?.5:1;
     let t=a.currentTime+.02;
-    for(const [f,d] of seq){const o=a.createOscillator(),g=a.createGain(),L=Math.min(.14,.07*v);o.type='square';o.frequency.value=f;
+    for(const [f,d] of seq){ if(!f){ t+=d; continue; } const o=a.createOscillator(),g=a.createGain(),L=Math.min(.14,.07*v)*soft;o.type=kind==='l1'?'sine':'square';o.frequency.value=f;
       g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(L,t+.012);g.gain.setValueAtTime(L,t+d-.02);g.gain.linearRampToValueAtTime(0,t+d);
-      o.connect(g);g.connect(master);o.start(t);o.stop(t+d+.01);t+=d+.05;} }catch(e){} }
+      o.connect(g);g.connect(master);o.start(t);o.stop(t+d+.01);t+=d+gap;} }catch(e){} }
 // The zone a warning is about, turned into that multiplier.
 const ZONE_VOL={near:1.8,approach:1,observe:.45};
 function alertVol(m,hi){ if(m&&IMMEDIATE.has(m.type)) return 2;
   const z=hi&&hi.zone; if(!z) return .45; return ZONE_VOL[z]!=null?ZONE_VOL[z]:1; }
-function notify(title,body,kind,vol){ const el=$('toast'); el.style.borderLeftColor=kind==='end'?'var(--green)':kind==='threat'?'var(--yellow)':'var(--red)'; el.innerHTML=`<b>${esc(title)}</b><div style="color:var(--muted);font-size:12.5px;margin-top:3px">${esc(body||'')}</div>`; el.classList.add('show'); clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('show'),7000); beep(kind,vol); if(vibOn&&navigator.vibrate) navigator.vibrate(kind==='end'?[80]:(vol!=null&&vol>1.2)?[300,80,300,80,300]:[200,100,200]); }
+// `level` (1–4, 1.36): the escalation level the warning belongs to — its tone and its vibration. A sound plays at most
+// once every 10 s, unless the level is higher than the last one played: a raid of thirty marks is not thirty alarms.
+const VIB_L={2:[120],3:[400,120,400],4:[300,120,300,120,600]};
+let TONE={t:0,l:0};
+function notify(title,body,kind,vol,level){ const el=$('toast'); el.style.borderLeftColor=kind==='end'?'var(--green)':kind==='threat'?'var(--yellow)':'var(--red)'; el.innerHTML=`<b>${esc(title)}</b><div style="color:var(--muted);font-size:13.5px;margin-top:3px">${esc(body||'')}</div>`; el.classList.add('show'); clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('show'),7000);
+  if(level){ const now=Date.now(); if(now-TONE.t<10000&&level<=TONE.l) return; TONE={t:now,l:level};
+    beep('l'+level,vol); if(vibOn&&navigator.vibrate&&VIB_L[level]) navigator.vibrate(VIB_L[level]); return; }
+  beep(kind,vol); if(vibOn&&navigator.vibrate) navigator.vibrate(kind==='end'?[80]:(vol!=null&&vol>1.2)?[300,80,300,80,300]:[200,100,200]); }
 
 // ---- map base ----
 const TOWNS=[['Kyiv',30.52,50.45,1],['Brovary',30.79,50.51],['Boryspil',30.95,50.35],['Bucha',30.22,50.55],['Irpin',30.25,50.52],['Vyshhorod',30.49,50.58],['Obukhiv',30.62,50.11],['Vasylkiv',30.31,50.18],['Fastiv',29.92,50.08],['Bila Tserkva',30.11,49.80],['Pereiaslav',31.45,50.07],['Yahotyn',31.77,50.28],['Ivankiv',29.90,50.94],['Makariv',29.81,50.46],['Borodianka',29.92,50.64],['Kaharlyk',30.81,49.86],['Rzhyshchiv',31.05,49.97],['Uzyn',30.42,49.82],['Skvyra',29.67,49.73],['Tarashcha',30.50,49.55],['Bohuslav',30.87,49.55],['Baryshivka',31.31,50.36],['Zghurivka',31.78,50.49],['Dymer',30.30,50.80],['Slavutych',30.73,51.52],['Chornobyl',30.22,51.27],['Kozelets',31.12,50.91],['Nizhyn',31.89,51.05],['Chernihiv',31.29,51.50],['Zhytomyr',28.66,50.25],['Cherkasy',32.06,49.44],['Kaniv',31.47,49.75],['Uman',30.22,48.75],['Malyn',29.24,50.77],['Korostyshiv',29.06,50.32],['Pryluky',32.39,50.59],
@@ -1114,7 +1220,7 @@ function applyLayers(){for(const [l,on] of Object.entries(LAYERS)){svg.classList
 document.querySelectorAll('#layerbox input').forEach(cb=>cb.onchange=()=>{LAYERS[cb.dataset.l]=cb.checked;try{localStorage.setItem('layers',JSON.stringify(Object.assign({},LAYERS,{heat:false})))}catch(e){};
   applyLayers();});
 applyLayers();
-$('zkyiv').onclick=()=>{if(CITY)toggleCity(false);const o=(MAP.oblasts||[]).find(x=>x.uid===MYOBL.uid); if(o&&MYOBL.uid!=='14') setView(o.cx,o.cy,260); else setView(0,0,110);};
+$('zkyiv').onclick=()=>{if(CITY)toggleCity(false); if(HOME){ const [hx,hy]=proj(HOME.lon,HOME.lat); setView(hx,hy,60); return; } const o=(MAP.oblasts||[]).find(x=>x.uid===MYOBL.uid); if(o&&MYOBL.uid!=='14') setView(o.cx,o.cy,260); else setView(0,0,110);};
 // Kyiv city map: a separate, simplified map — the 10 districts (OSM boundaries), the city outline, targets, nothing else
 let CITY=false,KD=null,prevVB=null;
 async function loadDistricts(){ try{KD=(await(await fetch('/static/kyiv-districts.json')).json()).districts;}catch(e){KD=[];}
@@ -1122,7 +1228,7 @@ async function loadDistricts(){ try{KD=(await(await fetch('/static/kyiv-district
 function paintDistricts(){ if(!KD||!KD.length||!S) return; const lvl=x=>x==='yellow'?'Y':'R'; const kc=S.active.find(a=>a.oblast_uid==='31'&&(a.location_type==='oblast'||a.location_type==='city')); const cityL=kc?lvl(kc.alert_level):(S.oblasts['31'].status==='A'?lvl(S.oblasts['31'].level):'');
   const paths=[...document.querySelectorAll('#kdistg .kd')]; const live=MK.filter(m=>!m.status&&!m.endedBy&&!m.stale); const pt=svg.createSVGPoint();
   paths.forEach(p=>{ let hot=false; for(const m of live){const [x,y]=proj(m.lon,m.lat); pt.x=x;pt.y=y; try{ if(p.isPointInFill(pt)){hot=true;break;} }catch(e){} } p.setAttribute('class',`kd ${cityL} ${hot?'hot':''}`); }); }
-function toggleCity(on){ CITY=on; svg.classList.toggle('city',CITY);  if(CITY){prevVB={...VB}; setView(3,2,24); paintDistricts();} else if(prevVB){VB.x=prevVB.x;VB.y=prevVB.y;VB.w=prevVB.w;VB.h=prevVB.h;applyVB();} }
+function toggleCity(on){ CITY=on; svg.classList.toggle('city',CITY); {const z=$('zcity2'); if(z) z.classList.toggle('on',CITY);}  if(CITY){prevVB={...VB}; setView(3,2,24); paintDistricts();} else if(prevVB){VB.x=prevVB.x;VB.y=prevVB.y;VB.w=prevVB.w;VB.h=prevVB.h;applyVB();} }
  // ---- 1.34: the heat layer — where drones were reported, place by place (not live) ----------------------------------
 // The places the posts named (/api/drone_heat: town and district level, shoot-downs and hits left out), counted over
 // 24 h / 7 d / 30 d and drawn as a density whose spread keeps its size on the screen — so it is layered by zoom:
@@ -1173,7 +1279,7 @@ $('heatx').onclick=()=>{ LAYERS.heat=false; applyLayers(); };
 // ---- 1.34: the Kyiv bridges -------------------------------------------------------------------------------------
 // The server says, bridge by bridge, what was reported on or near it (S.bridges: "at" — the post named the bridge or
 // a place at its ends; "near" — 3 km, 6 km for a jet drone or a missile; "hit" — an explosion on it in the last 30
-// min). Here: the spans on the map in that state, a bar in the header, and — menu → Alerts → Kyiv bridges — a toast,
+// min). Here: the spans on the map in that state, a bar in the header, and — the bell → Kyiv bridges — a toast,
 // a tone and a vibration when one rises. The same spans as the server's BRIDGES (OpenStreetMap).
 const BRG=[['pivnichnyi',[30.53082,50.48923],[30.54096,50.49218]],['metro',[30.55998,50.44132],[30.56888,50.44397]],['paton',[30.57212,50.42440],[30.59198,50.43015]],
   ['darnytskyi',[30.57219,50.41222],[30.59725,50.41850]],['pivdennyi',[30.55467,50.40097],[30.59796,50.39435]]];
@@ -1182,7 +1288,7 @@ const BRG_RANK={hit:1,near:2,at:3};
 let BRG_ON=true, BRG_PREV=null; try{ const v=localStorage.getItem('brg'); BRG_ON=v===null?true:v==='1'; }catch(e){}
 const brgKm=k=>String(k).replace('.',LANG==='en'?'.':',');
 const brgLine=(id,e)=>{ const n=t('br_'+id); return e.lvl==='hit'?t('br_hit',n):e.lvl==='at'?t('br_at',n):t('br_near',n,brgKm(e.km)); };
-function brgLabel(){ const b=$('brgbtn'); if(!b) return; b.classList.toggle('on',BRG_ON); b.textContent=t(BRG_ON?'m_brg_on':'m_brg'); }
+function brgLabel(){ const b=$('brgbtn'); if(!b) return; b.classList.toggle('on',BRG_ON); b.setAttribute('aria-pressed',BRG_ON?'true':'false'); b.title=t(BRG_ON?'m_brg_on':'m_brg'); }
 function drawBridges(){ const B=(S&&S.bridges)||{}, g=$('bridgeg'); if(!g||!MAP) return;
   g.innerHTML=BRG.map(([id,a,b])=>{ const e=B[id]||{}, [x1,y1]=proj(a[0],a[1]), [x2,y2]=proj(b[0],b[1]);
     return `<line class="brg ${e.lvl||''}" x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}"/>`
@@ -1199,12 +1305,12 @@ function drawBridges(){ const B=(S&&S.bridges)||{}, g=$('bridgeg'); if(!g||!MAP)
   // one that rises — nothing → near → at — is said once: a toast, a tone at the reader's volume, a vibration
   if(BRG_PREV&&BRG_ON){ for(const [id,e] of act){ const p=BRG_PREV[id]||{};
     if(e.lvl!=='hit'&&BRG_RANK[e.lvl]>(BRG_RANK[p.lvl]||0)){ notify(brgLine(id,e),t('br_toast_b',fmtT(e.ts),e.ch?' · '+(CH[e.ch]||e.ch):''),'bridge',
-      e.lvl==='at'?((e.jet||/missile/.test(e.type||''))?2:1.4):1); break; } } }
+      e.lvl==='at'?((e.jet||/missile/.test(e.type||''))?2:1.4):1,e.lvl==='at'?3:2); break; } } }
   BRG_PREV=Object.fromEntries(BRG.map(([id])=>[id,{lvl:(B[id]||{}).lvl}]));   // a copy: the live line updates S in place
 }
 $('brgbtn').onclick=()=>{ BRG_ON=!BRG_ON; try{localStorage.setItem('brg',BRG_ON?'1':'0');}catch(e){} brgLabel(); if(typeof pushSync==='function') pushSync(); };
 brgLabel();
-$('est').onclick=()=>{ESTIMATE=!ESTIMATE;$('est').classList.toggle('on',ESTIMATE);try{localStorage.setItem('est',ESTIMATE?'1':'0')}catch(e){}}; $('est').classList.toggle('on',ESTIMATE); $('zobl').onclick=()=>setView(10,10,260); $('zcity2').onclick=()=>{$('menu').hidden=true;toggleCity(!CITY);}; $('zreg').onclick=()=>setView(60,0,620); $('zua').onclick=()=>setView(120,110,1400);
+$('est').onclick=()=>{ESTIMATE=!ESTIMATE;$('est').classList.toggle('on',ESTIMATE);try{localStorage.setItem('est',ESTIMATE?'1':'0')}catch(e){}}; $('est').classList.toggle('on',ESTIMATE); $('zobl').onclick=()=>setView(10,10,260); $('zcity2').onclick=()=>{closePanels();toggleCity(!CITY);}; $('zreg').onclick=()=>setView(60,0,620); $('zua').onclick=()=>setView(120,110,1400);
 let touches={},lastDist=null,lastMid=null,moved=false; const wrap=$('mapwrap');
 // A finger is never perfectly still. A press only becomes a drag past a few screen pixels — the old test was
 // 0.2 km, which at oblast zoom is less than one pixel, so press-and-hold almost never survived to drop the pin.
@@ -1356,13 +1462,14 @@ function etaBand(m,dist){
 function drawHome(){ if(!MAP) return; if(!HOME){$('homeg').innerHTML='';return;} const [x,y]=proj(HOME.lon,HOME.lat);
   $('homeg').innerHTML=`<g class="homemk"><circle class="ring" cx="${x}" cy="${y}" r="5" fill="none" style="stroke-width:1px;vector-effect:non-scaling-stroke"/><circle class="ring" cx="${x}" cy="${y}" r="10" fill="none" style="stroke-width:1px;vector-effect:non-scaling-stroke"/><text class="ico" x="${x}" y="${y+1}" text-anchor="middle" dominant-baseline="middle">🏠</text><text class="hl" x="${x}" y="${(y-8*KPX).toFixed(1)}" text-anchor="middle">${esc(homeName())}</text></g>`; }
 function paintSlots(){ const el=$('slotrow'); if(!el) return;
-  el.innerHTML=SLOT_IDS.map(id=>{const p=SLOTS[id]; const on=id===ACTIVE&&p;
-    // The role, not the place. Shorter, so five chips fit one line on a phone — and the place a child is at
-    // does not sit permanently on screen for whoever is standing behind you. The place itself is named in
-    // the row below, and in the button's own tooltip.
+  const html=SLOT_IDS.map(id=>{const p=SLOTS[id]; const on=id===ACTIVE&&p;
+    // The role, not the place. Shorter, so the four fit one line on a phone — and the place a child is at does
+    // not sit permanently on screen for whoever is standing behind you. The place itself is named in the card
+    // below, and in the button's own tooltip. The dot is that place's official status (1.36).
     const nm=!p?t('sl_'+id):p.dropped?t('sl_pin_dropped'):(LANG==='uk'&&p.uk?p.uk:townName(p.name));
-    return `<button type="button" data-slot="${id}" class="${on?'on':''}${p?'':' empty'}" title="${esc(p?t('sl_switch',nm):t('sl_set',t('sl_'+id)))}">${SLOT_ICO[id]}<span class="sl">${esc(t('sl_'+id))}</span></button>`;}).join('');
-}
+    const k=p?placeLevel(p).k:'';
+    return `<button type="button" data-slot="${id}" class="${on?'on':''}${p?'':' empty'}" aria-pressed="${on?'true':'false'}" title="${esc(p?t('sl_switch',nm):t('sl_set',t('sl_'+id)))}"><i class="${k}"></i><span class="sl">${esc(t('sl_'+id))}</span></button>`;}).join('');
+  if(el._h!==html){ el._h=html; el.innerHTML=html; } }
 // Tap switches. Long-press (or a tap on an empty one) sets the place. The pin is set on the map: its chip arms
 // the map, and the next tap there puts it down (press and hold anywhere on the map does the same).
 (()=>{ let hold=null, held=false;
@@ -1405,9 +1512,19 @@ function renderHomeList(q){const s=(q||'').toLowerCase();const rows=PLACES_ALL.f
     setSlot(slot,{name:p.name,uk:p.uk,lon:p.lon,lat:p.lat,obl:p.obl});
     $('homesheet').classList.remove('show');
     notify(t('n_home',homeName()),t('n_home_b'),'end');});}
-$('menubtn').onclick=e=>{e.stopPropagation();$('menu').hidden=!$('menu').hidden;};
-document.addEventListener('pointerdown',e=>{if(!$('menu').hidden&&!$('menu').contains(e.target)&&e.target!==$('menubtn'))$('menu').hidden=true;});
-$('homebtn').onclick=async()=>{$('menu').hidden=true;if(!PLACES_ALL.length)await loadPlacesList();renderHomeList('');$('homeq').value='';$('homesheet').classList.add('show');setTimeout(()=>$('homeq').focus(),100);};
+// 1.36: three panels instead of one menu — the bell (what makes this phone ring), "more" (settings, about) and the
+// map's layers. One open at a time; a tap outside, the ✕ or Escape closes it.
+const PANELS=['bell','menu','lay'];
+function closePanels(){ for(const id of PANELS){ const p=$(id); if(p) p.hidden=true; } }
+function togglePanel(id){ const p=$(id); if(!p) return; const show=p.hidden; closePanels(); p.hidden=!show; }
+$('bellbtn').onclick=e=>{e.stopPropagation();togglePanel('bell');};
+$('menubtn').onclick=e=>{e.stopPropagation();togglePanel('menu');};
+$('laybtn').onclick=e=>{e.stopPropagation();togglePanel('lay');};
+document.querySelectorAll('.panel [data-close]').forEach(b=>b.onclick=()=>closePanels());
+document.addEventListener('pointerdown',e=>{ if(PANELS.some(id=>{const p=$(id);return p&&!p.hidden&&p.contains(e.target);})) return;
+  if(e.target.closest&&e.target.closest('#bellbtn,#menubtn,#laybtn')) return; closePanels(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closePanels(); });
+$('homebtn').onclick=async()=>{closePanels();if(!PLACES_ALL.length)await loadPlacesList();renderHomeList('');$('homeq').value='';$('homesheet').classList.add('show');setTimeout(()=>$('homeq').focus(),100);};
 $('homeq').addEventListener('input',e=>renderHomeList(e.target.value));
 $('homeclear').onclick=()=>{const slot=SLOT_PICKING||ACTIVE; SLOT_PICKING=null; SLOTS[slot]=null; useSlot(slot); $('homesheet').classList.remove('show');};
 document.addEventListener('pointerdown',e=>{if($('homesheet').classList.contains('show')&&!$('homesheet').contains(e.target)&&e.target!==$('homebtn'))$('homesheet').classList.remove('show');});
@@ -1637,8 +1754,8 @@ function tick(){
     b.g.classList.toggle('tohome',hi.inbound||(hi.near&&!m.status&&!m.endedBy)); if(hi.inbound||hi.near){ if(!m.status&&!m.endedBy){ homeThreats++; if(hi.named) homeNamedN++; if(hi.inbound&&(!homeNearest||hi.dist<homeNearest.dist)) homeNearest={...hi,m}; if(!homeAlerted.has(m.id)){homeAlerted.add(m.id);
       // A ballistic warning names no distance and no ETA: at this speed neither is something the reader can
       // act on, and printing "112 km" invites exactly the wrong decision — that there is time.
-      if(hi.immediate) notify(`🚨 ${t('n_imm',THREAT[m.type]?.[1]||'')}`,`${t('n_rep')} ${pn(m.place)} ${fmtT(m.ts)} · ${t('n_imm_b')}`,'start',alertVol(m,hi));
-      else notify(`🏠 ${hi.inbound?t('n_hto'):t('n_hnear')} ${homeName()} — ${m.type==='drones'?(m.jet?t('k_jet_l'):t('k_shahed')):THREAT[m.type]?.[1]}`,`${Math.round(hi.dist)} km${hi.inbound?' · '+t('n_hway'):''} · ${t('n_rep')} ${pn(m.place)} ${fmtT(m.ts)}`,'start',alertVol(m,hi));} } }
+      if(hi.immediate) notify(`🚨 ${t('n_imm',THREAT[m.type]?.[1]||'')}`,`${t('n_rep')} ${pn(m.place)} ${fmtT(m.ts)} · ${t('n_imm_b')}`,'start',alertVol(m,hi),4);
+      else notify(`🏠 ${hi.inbound?t('n_hto'):t('n_hnear')} ${homeName()} — ${m.type==='drones'?(m.jet?t('k_jet_l'):t('k_shahed')):THREAT[m.type]?.[1]}`,`${Math.round(hi.dist)} km${hi.inbound?' · '+t('n_hway'):''} · ${t('n_rep')} ${pn(m.place)} ${fmtT(m.ts)}`,'start',alertVol(m,hi),hi.zone==='near'?3:2);} } }
     // The other half of a warning: what became of it.
     //
     // Somebody was told a Shahed was coming at their place. When a later post says it was shot down, they
@@ -1779,6 +1896,7 @@ function tick(){
            + `<span class="chip">${IMP_H} h</span>`;})():'');
   paintOblEvents();
   declutter();
+  paintCard();
   scheduleTick();
 }
 // Two things reported at the same village — a target and an explosion, say — used to sit exactly on top of each
@@ -2170,7 +2288,7 @@ function threatStrip(){
   // opens this on a calm evening to ask — is anything happening at all, anywhere. So when nothing is
   // threatening this oblast the strip goes green and reports the country: how many oblasts are under alert,
   // how many targets are on the map. Counts only, from what is already known; nothing here is projected.
-  if(!thr.length){ const idle=idleLine(); if(!idle){el.hidden=true;syncTop();return;}
+  if(!thr.length){ TS_TOP=null; const idle=idleLine(); if(!idle){el.hidden=true;syncTop();return;}
     el.className='tstrip calm'; el.hidden=false; el.innerHTML=idle;
     syncTop(); return; }
   // One row per threat, not per post. A MiG-31K take-off is relayed by four channels within a minute; four
@@ -2186,7 +2304,7 @@ function threatStrip(){
   // freshness outranks type: an unconfirmed MiG from a quarter of an hour ago must never sit on top of a
   // ballistic warning that came in a minute ago
   thr.sort((a,b)=>((tsAge(a)>TS_FRESH_MIN)-(tsAge(b)>TS_FRESH_MIN))||(pri[a.ty]-pri[b.ty])||(a.ts<b.ts?1:-1));
-  const tt=thr[0]; const age=tsAge(tt); const old=age>TS_FRESH_MIN;
+  const tt=thr[0]; const age=tsAge(tt); const old=age>TS_FRESH_MIN; TS_TOP={ty:tt.ty,old};
   const label=(old?{mig31k_departure:t('ts_mig_old'),ballistic_missiles:t('ts_bal_old'),strategic_aircraft_activity:t('ts_strat_old'),cruise_missiles:t('ts_cruise_old')}
                   :{mig31k_departure:t('ts_mig'),ballistic_missiles:t('ts_bal'),strategic_aircraft_activity:t('ts_strat'),cruise_missiles:t('ts_cruise')})[tt.ty];
   const lvl=officialLevel();
@@ -2202,13 +2320,115 @@ function threatStrip(){
                :{mig31k_departure:t('ts_mig'),ballistic_missiles:t('ts_bal'),strategic_aircraft_activity:t('ts_strat'),cruise_missiles:t('ts_cruise')})[x.ty];
     const n=x.srcs?x.srcs.size:(x.src?1:0);
     return `${esc(lb)} <small>· ${fmtT(x.ts)} · ${esc(o?t('ts_unconf',a):t('ts_ago',a))}${x.src?' · '+esc(x.src):''}${n>1?' · '+esc(t('ts_conf',n)):''}</small>`;};
+  // 1.36: a fresh ballistic or MiG-31K warning says what to do, in words, with the guide one tap away
+  const now1=!old&&(tt.ty==='ballistic_missiles'||tt.ty==='mig31k_departure');
   el.innerHTML=one(tt)
+    +(now1?`<span class="tsgo">${esc(t('mc_go_now'))}</span><a class="tsbtn" href="/guide#w-ballistic">${esc(t('mc_what'))}</a>`:'')
     +(rest.length?` <button type="button" class="tsmore" id="tsmore" aria-expanded="${TS_OPEN?'true':'false'}">${esc(t('ts_more',rest.length))} ${TS_OPEN?'▴':'▾'}</button>`:'')
     +(rest.length&&TS_OPEN?`<div class="tsrest">${rest.map(x=>`<div class="tsr">${one(x)}</div>`).join('')}</div>`:'');
   syncTop();
 }
 // Kept outside threatStrip so a re-render every few seconds does not fold the list back up while it is open.
 let TS_OPEN=false;
+let TS_TOP=null;   // the preventive warning on top of the strip right now ({ty, old}), for the escalation level
+
+// ---- 1.36: the card, "Near", the escalation level ---------------------------------------------------------------
+// Every live target with its distance from the place being watched (or from the centre of Kyiv when none is set),
+// nearest first. A distance between two reported points is a fact; nothing here projects where a target is going —
+// "heading for Obolon" is shown only when the post said so (homeInfo().inbound). A target reported for a whole
+// oblast has no point to measure from, and a weapon that outruns any radius gets no distance at all.
+const KIND_COL=m=>m.type==='drones'?(m.jet?'#ffb15c':'#ff8a3d'):/missile/.test(m.type)?'#ff5b52':(m.type==='guided_aerial_bombs'||/aircraft|mig31k/.test(m.type))?'#b07cff':'#a9a79f';
+const kindOf=m=>m.type==='drones'?(m.jet?t('k_jet'):t('k_shahed')):m.type==='unknown'?t('k_unknown'):(THREAT[m.type]?.[1]||m.type);
+function silSvg(m,col){ const k=glyphKey(m)==='arrow'?((m.type==='drones'&&m.jet)?'jetdrone':(GLYPH_BY_TYPE[m.type]||'missile')):glyphKey(m);
+  const cls='sil'+((m.type==='drones'&&m.jet)?' jet':'')+(m.type==='ballistic_missiles'?' bal':'')+(m.type==='supersonic_missiles'?' sup':'');
+  return `<svg viewBox="-14 -14 28 28" aria-hidden="true"><g class="${cls}" style="--c:${col||KIND_COL(m)}">${G[k]||''}</g></svg>`; }
+function nearRows(){
+  const ref=HOME?proj(HOME.lon,HOME.lat):[0,0], now=Date.now(), out=[];
+  const merged=new Set(MK.filter(m=>m.csum).flatMap(m=>m.cids||[]));     // folded into a neighbour's count on the map
+  for(const m of MK){ if(m.status||m.endedBy||merged.has(m.id)||agoMin(m.ts)>ttl) continue;
+    const [x,y]=posOf(m,now), d=Math.hypot(x-ref[0],y-ref[1]), hi=HOME?homeInfo(m,x,y):{inbound:false,named:false};
+    const n=m.csum||m.count||1, chs=new Set([m.channel,...corroboration(m).map(o=>o.channel)]).size;
+    out.push({m,d,hi,n,chs,imm:IMMEDIATE.has(m.type),vague:m.place==='область'}); }
+  out.sort((a,b)=>(b.imm-a.imm)||(a.vague-b.vague)||((b.hi.inbound&&!b.m.stale)-(a.hi.inbound&&!a.m.stale))||(a.d-b.d));
+  return out; }
+const fromWhere=()=>HOME?t('mc_f_'+ACTIVE):t('mc_f_kyiv');
+function rowSub(r){ const m=r.m, bits=[];
+  if(r.hi.inbound) bits.push(t('mc_course',homeName()));
+  else if(m.target&&!m.approach) bits.push(t('mc_course',tgtName(m)));
+  else if(m.heading!=null&&!m.approach) bits.push(dirName(m.heading));
+  bits.push(m.stale?t('lt_lost'):t('tp_ago',Math.max(0,Math.round(agoMin(m.ts)))));
+  if(r.chs>1) bits.push(tn('mc_ch',r.chs));
+  return bits.join(' · '); }
+const rowPlace=m=>m.approach?'→ '+pn(m.target||m.place):m.place==='область'?oblWhere(m):pn(m.place);
+function nearHTML(rows){
+  let h=`<div class="nrh"><b>${esc(HOME?t('nr_from',homeName()):t('nr_kyiv'))}</b><button type="button" data-act="place">${esc(HOME?t('lt_change'):t('sl_home'))}</button></div>`;
+  if(!rows.length) return h+`<div class="nrnote">${esc(t('nr_none'))}</div>`;
+  const band=r=>r.imm?'imm':r.vague?'far':r.d<=10?'near':r.d<=30?'approach':r.d<=60?'observe':'far';
+  const name={imm:t('nr_imm'),near:t('lt_z_near'),approach:t('lt_z_approach'),observe:t('lt_z_observe'),far:t('nr_far')};
+  let cur='';
+  for(const r of rows.slice(0,40)){ const b=band(r), m=r.m;
+    if(b!==cur){ cur=b; h+=`<div class="nrb">${esc(name[b])}</div>`; }
+    const here=r.hi.inbound&&!m.stale, km=(r.imm||r.vague)?'—':Math.round(r.d);
+    h+=`<button type="button" class="nrow${here?' here':''}${m.stale?' stale':''}" data-id="${esc(m.id)}">${silSvg(m,here?'#ff2d55':null)}<div><b>${esc(kindOf(m))}${r.n>1?' ×'+r.n:''} · ${esc(rowPlace(m))}</b><small>${esc(rowSub(r))}</small></div><div class="km">${km}<small> ${esc(t('lt_km'))}</small></div></button>`; }
+  return h+`<div class="nrnote">${esc(t('nr_note'))}</div>`; }
+// The escalation level, 0–4, from what is already known (docs/TECHNICAL.md §9): 1 an official alert over the place,
+// 2 a target within 30 km of it or heading for it as a post said, 3 within 10 km or a bridge "at", 4 a fresh
+// ballistic or MiG-31K warning. It colours the card's edge and the bell's dot; the sounds follow the same scale.
+let LEVEL=0;
+function escLevel(rows){ let lv=0;
+  if(HOME){ const k=placeLevel(HOME).k; if(k==='R'||k==='Y'||k==='H') lv=1; } else if(officialLevel()) lv=1;
+  const live=rows.filter(r=>!r.imm&&!r.vague&&!r.m.stale);
+  if(HOME&&live.some(r=>r.d<=30||r.hi.inbound)) lv=2;
+  if(HOME&&live.some(r=>r.d<=10)) lv=3;
+  if(BRG_ON&&S&&S.bridges&&Object.values(S.bridges).some(e=>e&&e.lvl==='at')) lv=Math.max(lv,3);
+  if(TS_TOP&&!TS_TOP.old&&(TS_TOP.ty==='ballistic_missiles'||TS_TOP.ty==='mig31k_departure')) lv=4;
+  if(rows.some(r=>r.imm&&!r.m.stale&&r.hi&&r.hi.immediate)) lv=4;
+  return lv; }
+// The card's channel block: the one target that matters most for the watched place — one a post says is heading
+// for it, else the nearest within 30 km — or, when there is none, the sentence the Light page also says.
+let CARD_SIG='', CARD_T=0, NEAR_ROWS=[];
+function paintCard(force){
+  if(!force&&Date.now()-CARD_T<1000) return; CARD_T=Date.now();
+  const rows=nearRows(); NEAR_ROWS=rows; LEVEL=escLevel(rows);
+  const live=rows.filter(r=>!r.imm&&!r.vague&&!r.m.stale);
+  const top=HOME?(live.find(r=>r.hi.inbound)||live.find(r=>r.d<=30)):live.find(r=>r.d<=30);
+  const n30=HOME?live.filter(r=>r.d<=30||r.hi.inbound).length:0;
+  const pk=HOME?placeLevel(HOME).k:(officialLevel()||'G');
+  const sig=[LANG,LEVEL,ACTIVE,HOME?HOME.lon+','+HOME.lat:'',pk,top?[top.m.id,Math.round(top.d),top.n,top.chs,Math.round(agoMin(top.m.ts)),top.hi.inbound].join(','):'',
+    n30,rows.map(r=>r.m.id+':'+Math.round(r.d)+':'+Math.round(agoMin(r.m.ts))+':'+r.n+(r.m.stale?'s':'')).join('|')].join('#');
+  if(sig===CARD_SIG&&!force) return; CARD_SIG=sig;
+  const card=$('mycard'); card.className=(card.classList.contains('mini')?'mini ':'')+'lv'+LEVEL+(HOME?' hasplace':'');
+  const bd=$('bdot'); if(bd) bd.className='bdot'+(LEVEL?' l'+LEVEL:'');
+  const ch=$('mych');
+  if(top){ const m=top.m, here=top.hi.inbound;
+    ch.className='mych'+(top.d<=10||here?' near':''); ch.dataset.id=m.id;
+    ch.innerHTML=`${silSvg(m,here?'#ff2d55':null)}<div><b>${esc(kindOf(m))}${top.n>1?' ×'+top.n:''}</b><small>${esc(rowPlace(m))} · ${esc(rowSub(top))}</small></div><div class="km">${Math.round(top.d)} ${esc(t('lt_km'))}<small>${esc(fromWhere())}</small></div>`;
+    ch.hidden=false; }
+  else if(HOME){ ch.className='mych calm'; ch.dataset.id=''; ch.innerHTML=`<div><b>${esc(t('lt_none'))}</b><small>${esc(t('lt_none_b'))}</small></div>`; ch.hidden=false; }
+  else { ch.className='mych calm set'; ch.dataset.id=''; ch.innerHTML=`<div><b>${esc(t('mc_set'))}</b><small>${esc(t('mc_set_b'))}</small></div><em>›</em>`; ch.hidden=false; }
+  // the one-line card shown while the panel below is pulled up
+  const mini=$('mcmini'); if(mini){ const dk=HOME?pk:(officialLevel()||'G');
+    mini.innerHTML=`<i class="${dk}"></i><b>${esc(HOME?t('lt_'+dk):($('kyiv').querySelector('.big')||{}).textContent||'')}</b>${HOME?`<span>${esc(homeName())}${n30?' · '+esc(tn('mc_tgt',n30)):''}</span>`:''}<em>▾</em>`;
+    mini.setAttribute('aria-label',t('mc_open')); }
+  const nb=$('nearn'); if(nb){ nb.hidden=!n30; nb.textContent=n30; }
+  const html=nearHTML(rows); for(const id of ['near','nearL']){ const el=$(id); if(el&&el._h!==html){ el._h=html; el.innerHTML=html; } }
+  feedSync(); syncTop(); }
+// The feed's distance line comes from the map's marks, which arrive on their own clock: redraw the posts when the
+// marks they point at, or the place measured from, change — not on every tick.
+let FEED_MK='';
+function feedSync(){ if(!lastPosts.length) return;
+  const sig=(HOME?HOME.lon+','+HOME.lat:'')+'|'+MK.filter(m=>m.lon!=null&&m.place!=='область').map(m=>m.id+(m.status||'')).join(',');
+  if(sig===FEED_MK) return; FEED_MK=sig; renderFeed(lastPosts,false); }
+$('mych').onclick=()=>{ const el=$('mych'), id=el.dataset.id; if(id) openSheet(id); else if(el.classList.contains('set')){ SLOT_PICKING='home'; $('homebtn').onclick(); } };
+for(const id of ['near','nearL']) { const el=$(id); if(el) el.addEventListener('click',e=>{ const b=e.target.closest('[data-id],[data-act]'); if(!b) return;
+  if(b.dataset.act==='place'){ SLOT_PICKING=ACTIVE; $('homebtn').onclick(); return; } openSheet(b.dataset.id); }); }
+// the drawer: three heights on a phone — the tab bar alone, half the screen, most of it. While it is pulled up the
+// card folds to one line, so the two never cover each other.
+function setDrawer(st){ const d=$('drawer'); d.classList.toggle('half',st==='half'); d.classList.toggle('open',st==='open'); syncMini(); if(typeof dchevSync==='function') dchevSync(); }
+const drawerState=()=>$('drawer').classList.contains('open')?'open':$('drawer').classList.contains('half')?'half':'';
+function syncMini(){ const mini=window.innerWidth<1000&&drawerState()!=='';
+  $('mycard').classList.toggle('mini',mini); $('mcmini').hidden=!mini; syncTop(); }
+$('mcmini').onclick=()=>setDrawer('');
 document.addEventListener('click',e=>{ if(e.target.closest('#tsmore')){ TS_OPEN=!TS_OPEN; threatStrip(); }
   // Idle mode shows the country, but only when asked: silently re-framing a map somebody is reading is
   // the same rudeness as a pop-up over it.
@@ -2226,6 +2446,33 @@ function homeRaion(){
   if(document.querySelector('#raionsg .rn')) _HR={ck,v};   // only remember once the outlines are drawn
   return v;
 }
+// 1.36: the same test for any of the four places, so each one's chip carries its own official status. Nothing is
+// sent: the outlines are the map's own, tested on the phone.
+const _UA=new Map();
+function unitAt(lon,lat){
+  if(!MAP) return null; const ck=lon+','+lat; if(_UA.has(ck)) return _UA.get(ck);
+  const [x,y]=proj(lon,lat); const pt=new DOMPoint(x,y); let v=null;
+  for(const p of document.querySelectorAll('#raionsg .rn')){ try{ if(p.isPointInFill(pt)){ v={obl:p.dataset.r==='kyiv-city'?'31':'14',key:p.dataset.r}; break; } }catch(e){} }
+  if(!v) for(const p of document.querySelectorAll('#neighbors .nb')){ try{ if(p.isPointInFill(pt)){ v={obl:p.dataset.o,key:p.dataset.key}; break; } }catch(e){} }
+  if(document.querySelector('#raionsg .rn')) _UA.set(ck,v);
+  return v;
+}
+// What the government app says about one place: its raion (or the city), never its oblast as a whole — the same
+// rule as the Light page's placeStatus(). R / Y: an air-raid alert over the place's own unit (an oblast-wide one
+// included); H: an alert over a hromada inside its raion (which hromada is the place's cannot be known); G: none
+// over it; U: not known yet.
+function placeLevel(p){
+  if(!p||!S) return {k:'U'}; const u=unitAt(p.lon,p.lat); if(!u) return {k:'U'};
+  const air=(S.active||[]).filter(a=>!a.alert_type||a.alert_type==='air_raid');
+  const covers=a=>a.oblast_uid===u.obl&&(a.location_type==='oblast'||(u.obl==='31'&&a.location_type==='city')||(a.location_type==='raion'&&!!a.raion_key&&a.raion_key===u.key));
+  const part=a=>a.location_type==='hromada'&&a.oblast_uid===u.obl&&!!a.raion_key&&a.raion_key===u.key;
+  const mine=air.filter(covers), pt=air.filter(a=>!covers(a)&&part(a));
+  const since=xs=>xs.filter(a=>a.since_known!==false).map(a=>a.started_at).sort()[0];
+  if(mine.length){ const red=mine.some(a=>a.alert_level!=='yellow'); return {k:red?'R':'Y',since:since(mine),u}; }   // no level (mirror) = red
+  if(pt.length) return {k:'H',since:since(pt),u};
+  return {k:'G',u};
+}
+const unitName=u=>!u?'':u.obl==='31'?t('b_kyiv'):(u.obl==='14'&&RAION[u.key])?t('lt_unit_r',RAION[u.key]):oblFull(u.obl);
 // What the official system says about the reader's own region: R, Y, or nothing. The banner takes its
 // colour from this and not from the threat type, so the strip can never be a different colour from the
 // alert it belongs to. When there is no official alert yet the strip keeps the threat's own colour — the
@@ -2257,10 +2504,11 @@ function idleLine(){
     let best=null; for(const m of alive){ const [x,y]=posOf(m,Date.now()); const d=Math.hypot(x-hx,y-hy);
       if(!best||d<best.d) best={d,m}; }
     if(best&&best.m.place) far=' · '+esc(t('ts_calm_near',pn(best.m.place),Math.round(best.d)));}
-  const bits=[`✓ ${esc(t('ts_calm',oblFull(MYOBL.uid)))}`,
+  // with a place watched the card's official block already says "no alert" for it: only the country is added
+  const bits=[HOME?'':`✓ ${esc(t('ts_calm',oblFull(MYOBL.uid)))}`,
     `<small>${esc(obls?t('ts_calm_obl',obls):t('ts_calm_noobl'))} · ${esc(t('ts_calm_tgt',alive.length))}${far}`
     +`${alive.length?` · <button type="button" class="tsmore" id="tsua">${esc(t('ts_calm_ua'))}</button>`:''}</small>`];
-  return bits.join(' ');
+  return bits.filter(Boolean).join(' ');
 }
 function render(){
   if(!S) return; const ob=S.oblasts; threatStrip(); drawBridges();
@@ -2292,15 +2540,13 @@ function render(){
   el.innerHTML=`<div class="dot ${st==='N'?'N':st==='P'?'P':st==='Y'?'Y':'A'}"></div><div><div class="big">${big}</div>
     <div class="small">${cityL?`${t('b_city')} ${cityL==='R'?t('b_red'):t('b_yel')}${oblL?' · '+t('b_oblwide')+' '+(oblL==='R'?t('b_red'):t('b_yel')):hasRaions?' · '+raionList:' · '+t('b_oblclear')}`:oblL?`${isK?t('b_cityclear')+' · ':''}${t('b_oblwide')} ${oblL==='R'?t('b_red'):t('b_yel')}${hasRaions?' · '+raionList:''}`:hasRaions?raionList:(st==='P'?raionAlerts.map(a=>LANG==='uk'?a.location_title:(a.location_title_en||a.location_title)).join(', '):t('b_noalert',isK?t('b_kyivorobl'):ON))}${since&&st!=='N'?' · '+t('b_since')+' '+fmtT(since):''}${thr.length?' · '+thr.join(', '):''}</div></div>
     ${st!=='N'&&since?`<div class="dur">${dur(since)}</div>`:''}`;
-  document.title=(st==='R'||st==='A'?'🔴 ':st==='Y'||st==='P'?'🟡 ':'')+'Heimdall';
-  // priority location row
-  const hr=$('homerow'); if(HOME){ const hraion=(()=>{const h=homeRaion(); if(h&&(h.obl==='14'||h.obl==='31')) return h.obl==='31'?'kyiv-city':h.key; const [hx,hy]=proj(HOME.lon,HOME.lat); let best=null; for(const f of (MAP?MAP.features:[])){ if(!f.raion) continue; const d=Math.hypot(f.cx-hx,f.cy-hy); if(!best||d<best.d) best={d,r:f.raion}; } return best?best.r:null;})();
-    const hl=hraion==='kyiv-city'?kCity:(maxL(kFill,krst[hraion])||null);
-    const live=MK.filter(m=>!m.status&&!m.endedBy).map(m=>{const [x,y]=posOf(m,Date.now());return {m,hi:homeInfo(m,x,y)};}).filter(o=>o.hi.dist!=null).sort((a,b)=>a.hi.dist-b.hi.dist);
-    const nearest0=live[0]; const inb=live.filter(o=>o.hi.inbound);
-    const relevant=inb.length>0||!!(nearest0&&nearest0.hi.dist<10); hr.hidden=!relevant; hr.className='homerow'+((inb.length||(nearest0&&nearest0.hi.dist<10)||hl==='R')?' danger':'');
-    hr.innerHTML=`<b>${esc(homeName())}</b> ${hl==='R'?'🔴':hl==='Y'?'🟡':'🟢'}${inb.length?` · <b style="color:#ffb3c5">${t('hr_heading',inb.length,Math.round(inb[0].hi.dist))}</b>`:nearest0?` · ${t('hr_nearest',Math.round(nearest0.hi.dist),nearest0.m.type==='drones'?t('k_shahed'):THREAT[nearest0.m.type]?.[1],esc(pn(nearest0.m.place)))}`:' · '+t('hr_none')}`;
-  } else { hr.hidden=false; hr.className='homerow'; hr.hidden=true; }
+  let tst=st;
+  if(HOME){ const pl=placeLevel(HOME), k=pl.k, on=k==='R'||k==='Y'||k==='H';
+    el.className='band '+(k==='R'?'R':k==='Y'?'Y':k==='H'?'H':'N'); tst=k==='R'?'R':k==='Y'||k==='H'?'Y':'N';
+    el.innerHTML=`<div class="dot"></div><div><div class="big">${esc(t('lt_'+k))}</div><div class="small">${esc([homeName(),unitName(pl.u)].filter(Boolean).join(' · '))}${on&&pl.since?' · '+esc(t('lt_since',fmtT(pl.since))):''} · ${esc(t('mc_off'))}</div></div>${on&&pl.since?`<div class="dur">${dur(pl.since)}</div>`:''}`; }
+  document.title=(tst==='R'||tst==='A'?'🔴 ':tst==='Y'||tst==='P'?'🟡 ':'')+'Heimdall';
+  // the watched place: its chips, what is near it, the escalation level (1.36)
+  paintSlots(); paintCard(true);
   // raion chips + fills (red = red level / full alert, yellow = yellow level)
   document.querySelectorAll('#raionsg .rn').forEach(p=>{const r=p.dataset.r; if(r==='kyiv-city'){p.setAttribute('class',`rn city ${kCity||''}`);return;} const l=maxL(kFill,krst[r]); p.setAttribute('class',`rn ${l}`);});
   // surrounding oblasts: per-raion colours when raion alerts are reported (єТривога / oblast channels / keyed API),
@@ -2334,11 +2580,18 @@ function renderFeed(posts,flash){
   lastPosts=posts; try{threatStrip();}catch(e){}
   const rel=p=>{const t=p.tags||[]; if(feedFilter==='everything')return true; if(feedFilter==='kyiv')return t.includes('kyiv')||(t.includes('official')&&!t.includes('region')&&!t.includes('ua'));if(feedFilter==='region')return t.includes('region')||t.includes('kyiv'); if(feedFilter==='official')return t.includes('official'); return t.some(x=>x!=='air_defense'&&x!=='geo')||t.includes('official');};
   const shown=groupFeed(posts.filter(rel));
-  $('feed').innerHTML=shown.length?shown.map(p=>{const tags=(p.tags||[]).filter(t=>t!=='geo'&&t!=='official');const isNew=flash&&!seen.has(p.post_id);seen.add(p.post_id);
+  // 1.36: no row of category chips under every post — a post says what it is. What it adds is where its mark is
+  // from the watched place, when the map placed one. Only "on trial" and the Air Force summary keep a label.
+  const byPost=new Map(); for(const m of MK){ const pid=String(m.id).split('#')[0]; if(!byPost.has(pid)) byPost.set(pid,m); }
+  const ref=HOME?proj(HOME.lon,HOME.lat):[0,0];
+  const where=p=>{ const m=byPost.get(p.post_id); if(!m||m.place==='область'||m.lon==null) return '';
+    const [x,y]=proj(m.lon,m.lat), d=Math.round(Math.hypot(x-ref[0],y-ref[1]));
+    return `<div class="meta2"><b>${d} ${esc(t('lt_km'))}</b> ${esc(fromWhere())} · ${esc(m.status?statusName(m.status):kindOf(m))} · ${esc(pn(m.place))}</div>`; };
+  $('feed').innerHTML=shown.length?shown.map(p=>{const tags=(p.tags||[]).filter(t=>t==='trial'||t==='af_summary');const isNew=flash&&!seen.has(p.post_id);seen.add(p.post_id);
     const body=esc(ptxt(p)); const long=body.length>110||/\n/.test(ptxt(p));
-    return `<div class="card ${tags.includes('kyiv')?'kyiv':''} ${isNew?'new':''}"><div class="when">${fmtT(p.ts)}<b>${esc(CH[p.channel]||'@'+p.channel)}</b></div><div class="bd">
-      <div class="txt${long?' clamp':''}">${body}</div>${long?`<button class="mo">${t('fd_more')}</button>`:''}
-      ${tags.length?`<div class="tags">${tags.map(x=>`<span class="${x==='kyiv'?'kyiv':x==='trial'?'trial':''}">${x==='trial'?t('fd_trial'):x==='af_summary'?t('fd_af'):THREAT[x]?.[1]||x}</span>`).join('')}${p.merged>1?`<span class="rep">${t('fd_times',p.merged)}</span>`:''}</div>`:''}</div></div>`;}).join('')
+    return `<div class="card ${(p.tags||[]).includes('kyiv')?'kyiv':''} ${isNew?'new':''}"><div class="when">${fmtT(p.ts)}<b>${esc(CH[p.channel]||'@'+p.channel)}</b></div><div class="bd">
+      <div class="txt${long?' clamp':''}">${body}</div>${long?`<button class="mo">${t('fd_more')}</button>`:''}${where(p)}
+      ${tags.length||p.merged>1?`<div class="tags">${tags.map(x=>`<span class="${x==='trial'?'trial':''}">${x==='trial'?t('fd_trial'):t('fd_af')}</span>`).join('')}${p.merged>1?`<span class="rep">${t('fd_times',p.merged)}</span>`:''}</div>`:''}</div></div>`;}).join('')
     :`<div class="empty">${t('fd_empty')}</div>`;
   $('feed').querySelectorAll('.mo').forEach(b=>b.onclick=()=>{const tx=b.previousElementSibling;const open=tx.classList.toggle('clamp');b.textContent=open?t('fd_more'):t('fd_less');});
 }
@@ -2410,7 +2663,7 @@ function renderStats(){ if(!STATS) return; const el=$('stats'); if(!el) return; 
 // ---------------------------------------------------------------------------------------------------
 // Contacts — the only place to edit them. A channel left empty simply does not appear, so no dead link
 // ever ships: fill TELEGRAM in when the channel exists.
-const APP_VERSION='1.35';
+const APP_VERSION='1.36';
 const CONTACT={
   hosting:'nomakievip@gmail.com',      // hosting & development  ← replace when there is a separate address
   ngo:'nomakievip@gmail.com',          // NGO 07300 volunteer work
@@ -2464,7 +2717,7 @@ function supportSheet(){
   $('sheetbody').querySelectorAll('[data-copy]').forEach(btn=>btn.onclick=()=>copyText(btn.dataset.copy,btn,t('sup_copied')));
   $('donnever').onclick=()=>{ls('sup_never','1');closeSheet();};
   $('sheet').classList.add('show'); }
-// one footer, used on the welcome screen, in the Map tab and at the bottom of the support sheet
+// one footer, used on the welcome screen, at the bottom of the drawer and of the support sheet
 function footerHTML(){
   return `<div class="credit"><img src="/static/bf-logo.png" alt=""><div>
     <span class="cn">© 2026 Black Flame Studio &amp; NGO 07300</span><br>
@@ -2472,7 +2725,7 @@ function footerHTML(){
     ${CONTACT.telegram?` · <a href="${esc(CONTACT.telegram)}" target="_blank" rel="noopener">💬 ${esc(t('sup_community'))}</a>`:''}
     </div></div>`;
 }
-$('supbtn').onclick=()=>{$('menu').hidden=true;supportSheet();};
+$('supbtn').onclick=()=>{closePanels();supportSheet();};
 // a reminder at most once every 14 days, only after the app has actually been used, never during an alert
 function maybeRemindSupport(){ if(ls('sup_never')==='1') return; const last=+(ls('sup_seen')||0);
   if(Date.now()-last < 14*864e5) return;
@@ -2564,7 +2817,7 @@ function applyMode(){
   if(typeof render==='function') render();
 }
 function setMode(m){ if(!MODES.includes(m)) return; MODE=m; ls('mode',m); applyMode();
-  $('menu').hidden=true; notify(t('md_set',t('m_md_'+(m==='standard'?'std':m))),'','end'); }
+  closePanels(); notify(t('md_set',t('m_md_'+(m==='standard'?'std':m))),'','end'); }
 $('mdstd').onclick=()=>setMode('standard');
 $('mdday').onclick=()=>setMode('day');
 $('mdnight').onclick=()=>setMode('night');
@@ -2573,13 +2826,15 @@ $('mdnight').onclick=()=>setMode('night');
 let LITE=ls('lite')==='1';
 function applyLite(){ document.body.classList.toggle('lite',LITE); $('litebtn').classList.toggle('on',LITE);
   if(typeof updateTiles==='function') updateTiles(); }
-$('litebtn').onclick=()=>{ LITE=!LITE; ls('lite',LITE?'1':'0'); applyLite(); $('menu').hidden=true;
+$('litebtn').onclick=()=>{ LITE=!LITE; ls('lite',LITE?'1':'0'); applyLite(); closePanels();
   try{ es.close(); }catch(e){} connect(); loadFeed(false);   // the live line carries the feed only outside blackout mode
   notify(LITE?t('lite_on'):t('lite_off'),'','end'); };
 applyLite(); applyMode();
 
 // ---- 6. "warn me when something is reported within N km of me" ---------------------------
 let GEO=null; try{GEO=JSON.parse(ls('geo')||'null');}catch(e){}
+function geoLabel(){ const b=$('geobtn'); if(b){ b.classList.toggle('on',!!GEO); b.setAttribute('aria-pressed',GEO?'true':'false'); } }
+geoLabel();
 function geoSheet(){
   const R=[5,10,15,20,30,50]; const cur=GEO&&GEO.radius||15;
   $('sheetbody').innerHTML=`<div class="type">${t('geo_title')}</div>
@@ -2597,9 +2852,9 @@ function geoSheet(){
   $('geogo').onclick=()=>{ if(!PUSH_SUB){notify(t('geo_title'),t('geo_need_push'),'threat');return;}
     navigator.geolocation.getCurrentPosition(async pos=>{
       GEO={lat:+pos.coords.latitude.toFixed(4),lon:+pos.coords.longitude.toFixed(4),radius};
-      ls('geo',JSON.stringify(GEO)); await pushSync(); closeSheet(); notify(t('geo_on',radius),'','end');
+      ls('geo',JSON.stringify(GEO)); geoLabel(); await pushSync(); closeSheet(); notify(t('geo_on',radius),'','end');
     },()=>notify(t('geo_deny'),'','threat'),{enableHighAccuracy:false,timeout:12000,maximumAge:300000}); };
-  const off=$('geooff'); if(off) off.onclick=async()=>{GEO=null;try{localStorage.removeItem('geo');}catch(e){};await pushSync();closeSheet();notify(t('geo_off'),'','end');};
+  const off=$('geooff'); if(off) off.onclick=async()=>{GEO=null;try{localStorage.removeItem('geo');}catch(e){};geoLabel();await pushSync();closeSheet();notify(t('geo_off'),'','end');};
   $('sheet').classList.add('show'); }
 // keep the server's copy of "where to warn me" in step with the local settings
 async function pushSync(){ if(!PUSH_SUB) return;
@@ -2622,8 +2877,8 @@ function helpSheet(){
 // the livebar is rebuilt on every render, so the chips are handled by one delegated listener
 $('livebar').addEventListener('click',e=>{ const b=e.target.closest('#lbexp,#lbdown,#lbfire,#lbdmg'); if(!b) return;
   e.stopPropagation(); impactReport(); });
-$('helpbtn').onclick=()=>{$('menu').hidden=true;helpSheet();};
-$('geobtn').onclick=()=>{$('menu').hidden=true;geoSheet();};
+$('helpbtn').onclick=()=>{closePanels();helpSheet();};
+$('geobtn').onclick=()=>{closePanels();geoSheet();};
 
 // ---- the live line (1.29) ----------------------------------------------------------------------------------
 // The stream sends the data itself: a "sync" message carries what changed in the marks, the alerts and the feed
@@ -2680,24 +2935,32 @@ function connect(){
   es.addEventListener('tr',ev=>{const d=JSON.parse(ev.data); if(d.lang!==LANG||(LIVE_SYNC&&!LITE)) return; clearTimeout(trT); trT=setTimeout(()=>loadFeed(false),2500);});
   const onA=kind=>ev=>{const d=JSON.parse(ev.data),a=d.alert,fav=a.oblast_uid==='31'||a.oblast_uid==='14'; if(!LIVE_SYNC) loadState(); if(kind!=='update')histSoon(); if(!fav)return;
     const lt=LANG==='uk'?a.location_title:(a.location_title_en||a.location_title);
-    if(kind==='start')notify(`🔴 ${ATYPE[a.alert_type]||t('n_alert')} — ${lt}`,`${LT(a.location_type)} · ${fmtT(a.started_at)}${a.notes?' · '+a.notes:''}`,'start');
+    if(kind==='start')notify(`🔴 ${ATYPE[a.alert_type]||t('n_alert')} — ${lt}`,`${LT(a.location_type)} · ${fmtT(a.started_at)}${a.notes?' · '+a.notes:''}`,'start',undefined,1);
     else if(kind==='end')notify(`🟢 ${t('n_allclear')} — ${lt}`,t('n_lasted',dur(a.started_at,a.finished_at)),'end');
-    else if(kind==='threat'){const th=d.threat||{};notify(`⚠️ ${THREAT[th.threat_type]?.[1]||th.threat_type} — ${lt}`,th.source_message||'','threat');}};
+    else if(kind==='threat'){const th=d.threat||{};notify(`⚠️ ${THREAT[th.threat_type]?.[1]||th.threat_type} — ${lt}`,th.source_message||'','threat',undefined,IMMEDIATE.has(th.threat_type)?4:2);}};
   ['start','end','threat','update'].forEach(k=>es.addEventListener(k,onA(k)));
   es.addEventListener('eradar',()=>{ if(!LIVE_SYNC) loadState(); });
   es.addEventListener('feed',ev=>{const d=JSON.parse(ev.data);if(!LIVE_SYNC||LITE)loadFeed(true);if(!LIVE_SYNC)loadMarkers();if(!HOME&&(d.post.tags||[]).includes('kyiv')&&!(d.post.tags||[]).includes('official'))notify(t('n_kyivarea')+' — '+(CH[d.post.channel]||d.post.channel),ptxt(d.post).slice(0,160),'threat');});
   es.onerror=()=>{LIVE_SYNC=false;es.close();setTimeout(connect,3000);};
 }
-document.querySelectorAll('#tabs button').forEach(b=>b.onclick=e=>{e.stopPropagation();document.querySelectorAll('#tabs button').forEach(x=>x.classList.remove('on'));b.classList.add('on');['feedwrap','alerts','hist','layers'].forEach(x=>$(x).hidden=x!==b.dataset.tab);if(window.innerWidth<1000)$('drawer').classList.add('open');});
-$('handle').onclick=()=>{if(window.innerWidth<1000)$('drawer').classList.toggle('open');};
-function dchevSync(){ const op=$('drawer').classList.contains('open'); const b=$('dchev');
+const TABS=['near','feedwrap','alerts','hist'];
+function showTab(id){ document.querySelectorAll('#tabs button').forEach(x=>{ const on=x.dataset.tab===id; x.classList.toggle('on',on); x.setAttribute('aria-selected',on?'true':'false'); });
+  TABS.forEach(x=>{ const el=$(x); if(el) el.hidden=x!==id; }); }
+document.querySelectorAll('#tabs button').forEach(b=>b.onclick=e=>{ e.stopPropagation(); showTab(b.dataset.tab);
+  if(window.innerWidth<1000&&drawerState()==='') setDrawer('half'); });
+// a tap on the bar between the tabs: up one step, and from the top back down
+let HANDLE_DRAG=false;
+$('handle').onclick=()=>{ if(HANDLE_DRAG){ HANDLE_DRAG=false; return; } if(window.innerWidth>=1000) return; const st=drawerState(); setDrawer(st===''?'half':st==='half'?'open':''); };
+function dchevSync(){ const op=drawerState()!==''; const b=$('dchev');
   b.textContent=op?'▾':'▴'; b.setAttribute('aria-label',op?t('dr_close'):t('dr_open')); b.title=op?t('dr_close'):t('dr_open'); }
-$('dchev').onclick=e=>{e.stopPropagation();$('drawer').classList.toggle('open');dchevSync();};
-$('handle').addEventListener('click',()=>setTimeout(dchevSync,0));
-document.querySelectorAll('#tabs button').forEach(b=>b.addEventListener('click',()=>setTimeout(dchevSync,0)));
+$('dchev').onclick=e=>{ e.stopPropagation(); setDrawer(drawerState()===''?'half':''); };
 dchevSync();
-(()=>{let y0=null;$('handle').addEventListener('pointerdown',e=>{y0=e.clientY;});$('handle').addEventListener('pointerup',e=>{if(y0==null)return;const dy=e.clientY-y0;y0=null;if(dy<-20)$('drawer').classList.add('open');else if(dy>20)$('drawer').classList.remove('open');});})();
-setInterval(()=>{$('clock').textContent=new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',timeZone:TZ})+' '+t('c_kyiv');},1000);
+// a swipe on the bar: up one height, down one height
+(()=>{let y0=null;$('handle').addEventListener('pointerdown',e=>{y0=e.clientY;});$('handle').addEventListener('pointerup',e=>{if(y0==null)return;const dy=e.clientY-y0;y0=null;
+  const st=drawerState(); if(Math.abs(dy)>20) HANDLE_DRAG=true; if(dy<-20) setDrawer(st===''?'half':'open'); else if(dy>20) setDrawer(st==='open'?'half':''); });})();
+// a computer has no "Near" tab — the list is in the left column under the card
+if(window.innerWidth>=1000) showTab('feedwrap');
+window.addEventListener('resize',()=>{ if(window.innerWidth>=1000&&!$('near').hidden) showTab('feedwrap'); syncMini(); });
 let lastV=null, lastFull=0, lastUpd=null, nextPulse=Date.now()+15000;
 async function refreshAll(){await Promise.all([loadState(),loadMarkers(),loadFeed(false)]);lastFull=Date.now();lastUpd=new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit',timeZone:TZ});}
 // every 15 s: a ~60-byte version ping; full reload only when the server says something changed (or every 60 s for staleness)
@@ -2735,6 +2998,15 @@ async function pulse(force){
   finally{ pulseBusy=false; }
 }
 const nowKyiv=()=>new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit',timeZone:TZ});
+// 1.36: the age of what is on screen, in words, at the foot of the card. Past 2 minutes it turns amber and says the
+// data may be out of date; past 10, the target in the card greys out. On 2G this is the line that matters.
+function updAge(){ const el=$('upd'); if(!el) return;
+  const last=Math.max(lastPing||0,LIVE_SYNC?liveLast:0), sec=Math.max(0,Math.round((Date.now()-last)/1000));
+  let cls='upd', txt;
+  if(sec>120||(!netOK&&sec>30)){ cls+=netOK?' stale':' off'; txt=t('mc_stale',Math.max(1,Math.round(sec/60))); }
+  else txt=sec<60?t('mc_upd_s',sec):t('mc_upd_m',Math.round(sec/60));
+  if(el.className!==cls) el.className=cls; if(el.textContent!==txt) el.textContent=txt;
+  const ch=$('mych'); if(ch) ch.classList.toggle('old',sec>600); }
 let netOK=true,lastPing=Date.now();
 function schedulePulse(){ clearInterval(pulseTimer); const iv=pulseIv(); nextPulse=Date.now()+iv;
   pulseTimer=setInterval(()=>{nextPulse=Date.now()+iv;pulse();},iv); }
@@ -2744,13 +3016,7 @@ setInterval(()=>{
   const iv=pulseIv();
   if(!document.hidden&&!pulseBusy&&Date.now()-lastPing>Math.max(iv*2.5,3000)) { nextPulse=Date.now()+iv; pulse(); }
   if(LIVE_SYNC&&!liveOK()){ LIVE_SYNC=false; try{es.close();}catch(e){} setTimeout(connect,500); pulse(true); }
-  if(liveOK()&&MSLLVL<2&&!pulseBusy){ $('upd').innerHTML=`${lastUpd?t('u_upd')+' '+lastUpd+' \u00b7 ':''}<span class="cd on">${t('u_live')}</span>`; return; }
-  if(pulseBusy&&MSLLVL<2){$('upd').textContent=t('u_updating');return;}
-  // At one-second cadence a countdown would just flicker between 1 and 0 and read as a fault. It says LIVE
-  // instead, and turns red the moment a round actually fails — which is the only thing worth noticing there.
-  if(MSLLVL>=2){ $('upd').innerHTML=`${lastUpd?t('u_upd')+' '+lastUpd+' \u00b7 ':''}<span class="cd live${netOK?'':' bad'}">${t('u_live')}</span>`; return; }
-  const left=Math.max(0,Math.ceil((nextPulse-Date.now())/1000));
-  $('upd').innerHTML=`${lastUpd?t('u_upd')+' '+lastUpd+' · ':''}<span class="cd${netOK?'':' bad'}">${left}s</span>`;
+  updAge();
 },1000);
 schedulePulse();setInterval(()=>{if(!document.hidden)render();},30000);setInterval(()=>{if(!document.hidden)loadHist();},180000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){schedulePulse();pulse(true);}});

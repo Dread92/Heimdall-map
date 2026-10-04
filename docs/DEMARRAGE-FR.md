@@ -42,7 +42,7 @@ fly deploy
 
 Ou double-clique sur `deploy-fly.bat`. Détails et dépannage : [DEPLOY.md](DEPLOY.md).
 
-**Si un déploiement ne change rien** : compare le tag de build en bas du menu de l'app
+**Si un déploiement ne change rien** : compare le tag de build en bas du panneau « Plus » (⋯) de l'app
 (`build AAAA-MM-JJ HH:MM UTC`) avec celui dans `static/kyiv.html`. S'ils diffèrent, les fichiers
 déployés ne sont pas ceux que tu as modifiés — `git status` et `git log -1` te disent quelle version
 est réellement partie.
@@ -61,7 +61,7 @@ Première fois, ou si tu préfères un clic : `scripts\github-push.bat` (nécess
 ## Modifier l'interface
 
 Tout le front est dans `static/kyiv.html` (une seule page) et `static/i18n.js` (les textes en trois
-langues). Après une modification de l'interface, pense à monter le `build …` dans le menu : c'est ce
+langues). Après une modification de l'interface, pense à monter le `build …` du panneau « Plus » : c'est ce
 qui te permet de vérifier d'un coup d'œil que la version déployée est la bonne.
 
 Avant de toucher à `app/`, lis [ARCHITECTURE.md](ARCHITECTURE.md), et surtout

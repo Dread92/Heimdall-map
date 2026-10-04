@@ -22,7 +22,7 @@ history.replaceState(null,'',location.pathname+location.search);}catch(e){}})();
 /* Heimdall Light — one place, what concerns it, nothing else.
    No map tiles and no feed: it has to load and be read on 2G, at night, in a corridor. The small map under the
    radar is drawn from one 37 KB outline file (gzipped), fetched after the status is already on screen. */
-:root{--bg:#0b0d11;--panel:#12151b;--panel2:#181c24;--line:#242830;--ink:#e8e6df;--ink2:#a9a79f;--ink3:#6c6b66;
+:root{--bg:#0b0d11;--panel:#12151b;--panel2:#181c24;--line:#242830;--ink:#e8e6df;--ink2:#b5b3ab;--ink3:#8f8d86;
   --red:#e0342c;--yel:#f2c200;--grn:#2fbf71;--ora:#ff8a3d;--amb:#ffb15c;--msl:#ff5b52;--vio:#b07cff;--cri:#ff2d55;--blu:#5b9cff;
   --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--mono:ui-monospace,Menlo,Consolas,monospace}
 *{box-sizing:border-box;margin:0}
@@ -36,41 +36,43 @@ header .hlogo{width:26px;height:26px;flex:none;margin-right:-2px}
 /* Light | Tactical: the two versions, as one big switch across the top — the first thing the eye meets,
    each half saying what it is. Not a link hidden in a menu or a footer. */
 .sw{display:flex;margin:0 14px 12px;border:2px solid var(--ora);border-radius:8px;overflow:hidden;box-shadow:0 0 0 3px rgba(255,138,61,.12)}
-.sw>*{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 6px 9px;text-decoration:none;color:#fff;background:#1a202b}
-.sw b{font:800 15px/1 var(--sans);letter-spacing:.1em}
-.sw small{font:500 11px/1.2 var(--sans);opacity:.8;text-align:center}
+.sw>*{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:44px;padding:5px 6px;text-decoration:none;color:#fff;background:#1a202b}
+.sw b{font:800 14px/1 var(--sans);letter-spacing:.1em}
+.sw small{font:500 12px/1.2 var(--sans);opacity:.85;text-align:center}
 .sw .on{background:var(--ora);color:#14100a}
 .sw a b::after{content:' ›'}
 .sw a:hover,.sw a:focus{background:#242c3a}
-header .up{margin-left:auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:11px var(--mono);color:var(--ink3)}header b{white-space:nowrap}
-.slots{display:flex;gap:6px;padding:0 14px 10px;overflow-x:auto}
-.slots button{flex:0 0 auto;display:flex;gap:5px;align-items:center;padding:8px 11px;border:1px solid var(--line);background:var(--panel);border-radius:3px;font:600 13px var(--sans);color:var(--ink2)}
+header .up{margin-left:auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:13px var(--sans);color:var(--ink2)}header b{white-space:nowrap}
+.slots{display:flex;gap:6px;padding:0 14px 10px}
+.slots button{flex:1 1 0;min-width:0;height:44px;display:flex;gap:5px;align-items:center;justify-content:center;padding:0 4px;border:1px solid var(--line);background:var(--panel);border-radius:10px;font:600 14px var(--sans);color:var(--ink2);white-space:nowrap}
+.slots button span{overflow:hidden;text-overflow:ellipsis}.slots i{flex:none;width:10px;height:10px;border-radius:50%;border:1.5px dashed var(--ink3)}.slots i.R{background:var(--red);border:0}.slots i.Y{background:var(--yel);border:0}.slots i.H,.slots i.P{border:2px solid var(--yel)}.slots i.G{background:var(--grn);border:0}
+@media (max-width:380px){.slots{gap:4px}.slots button{font-size:13px;gap:4px}}
 .slots button.on{border-color:var(--ora);color:var(--ink);background:#281e12}
 .slots button.empty{opacity:.5}
 #imm{margin:0 14px 10px;padding:12px 14px;background:#4a0d12;border:1px solid #8a2a2a;border-left:5px solid var(--red);border-radius:3px}
 #imm b{display:block;font:800 16px/1.25 var(--sans);text-transform:uppercase;letter-spacing:.02em}
-#imm small{display:block;color:#ffd6d6;margin-top:4px;font-size:12.5px}
+#imm small{display:block;color:#ffd6d6;margin-top:4px;font-size:13.5px}
 #brg{margin:0 14px 10px;padding:9px 12px;border-radius:3px;color:#fff;font-size:14px;line-height:1.4}#brg[hidden]{display:none}
 #brg.at,#brg.hit{background:#c4121c}#brg.near{background:#8f4c00}#brg b{font-weight:800}#brg small{opacity:.9;margin-left:4px}
 .status{margin:0 14px;padding:16px 16px 14px;border-radius:4px;border:1px solid var(--line);background:var(--panel)}
 .status .big{font:800 22px/1.15 var(--sans);letter-spacing:.02em}
 .status .pl{font-size:14px;color:var(--ink2);margin-top:4px}
-.status .src{font:11px var(--mono);color:var(--ink3);margin-top:8px}
+.status .src{font:13px var(--sans);color:var(--ink3);margin-top:8px}
 .status.R{background:#3a0b10;border-color:#8a2a2a}.status.R .big{color:#ffd6d6}
 .status.Y{background:#332905;border-color:#7a6212}.status.Y .big{color:#ffe9a8}
 .status.G{background:#0e2018;border-color:#25503c}.status.G .big{color:#b8e6cc}
 .status.U .big{color:var(--ink2)}
 .status.H,.status.P{background:#231c0a;border-color:#6a5a1a}.status.H .big,.status.P .big{color:#ffe9a8}
 .status .lv{font-size:13px;margin-top:6px;color:var(--ink)}
-.status .nb{font-size:12.5px;margin-top:6px;color:var(--ink2)}
+.status .nb{font-size:13.5px;margin-top:6px;color:var(--ink2)}
 .status .nb b{color:#ffe9a8;font-weight:600}.status .nb b.R{color:#ffb4ae}
-.status .oo{font-size:12.5px;margin-top:6px;color:#ffe9a8}
+.status .oo{font-size:13.5px;margin-top:6px;color:#ffe9a8}
 #rwrap{position:relative;width:100%;max-width:440px;margin:12px auto 0}
 /* the map zooms by itself, never the page; unzoomed, one finger still scrolls the page */
 #radar{display:block;width:100%;touch-action:pan-y;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;cursor:pointer}
 #radar.zoomed{touch-action:none;cursor:grab}
 #rwrap .zc{position:absolute;right:4px;top:4px;z-index:2;display:flex;flex-direction:column;gap:6px}
-#rwrap .zc button{width:38px;height:38px;border:1px solid var(--line);border-radius:4px;background:rgba(22,27,36,.94);color:var(--ink);font:700 19px/1 var(--mono)}
+#rwrap .zc button{width:44px;height:44px;border:1px solid var(--line);border-radius:4px;background:rgba(22,27,36,.94);color:var(--ink);font:700 19px/1 var(--mono)}
 #rwrap .zc button:disabled{opacity:.3;cursor:default}#rwrap .zc button[hidden]{display:none}
 #rwrap.empty .zc{display:none}
 #rcard{position:absolute;left:6px;right:6px;bottom:6px;z-index:3;max-height:62%;overflow:auto;background:rgba(16,20,27,.97);border:1px solid var(--line);border-left:4px solid var(--ora);border-radius:4px;padding:0 10px;box-shadow:0 6px 20px rgba(0,0,0,.55)}
@@ -79,7 +81,7 @@ header .up{margin-left:auto;min-width:0;overflow:hidden;text-overflow:ellipsis;w
 #rcard .x{position:absolute;right:2px;top:4px;z-index:1;padding:6px 10px;color:var(--ink2);font-size:16px}
 #radar .selr{fill:rgba(255,255,255,.08);stroke:#fff;stroke-width:1.4px;vector-effect:non-scaling-stroke}
 #radar .tg.gone{opacity:.35}
-.lsel{padding:5px 6px;border:1px solid var(--line);border-radius:3px;background:var(--panel);color:var(--ink);font:600 12px var(--sans);max-width:46%}
+.lsel{min-height:40px;padding:5px 6px;border:1px solid var(--line);border-radius:3px;background:var(--panel);color:var(--ink);font:600 12px var(--sans);max-width:46%}
 #dm .dmh{display:flex;align-items:flex-start;gap:10px}#dm .dmh b{flex:1}
 #radar .bg{fill:#10141b}
 #radar .obl{fill:none;stroke:#4a5566;stroke-width:1.1px;vector-effect:non-scaling-stroke;stroke-dasharray:5 3}
@@ -97,7 +99,7 @@ header .up{margin-left:auto;min-width:0;overflow:hidden;text-overflow:ellipsis;w
 #radar .tl.big{fill:#d6dae2;font-size:4.3px}
 #radar .tail{fill:none;stroke-width:1.3px;vector-effect:non-scaling-stroke;stroke-dasharray:2 3;stroke-opacity:.8}
 #radar .cnt{font:700 3.6px var(--mono);paint-order:stroke;stroke:#0b0d11;stroke-width:.9px}
-.lg{max-width:440px;margin:2px auto 6px;padding:0 14px;font-size:11px;color:var(--ink3);text-align:center}
+.lg{max-width:440px;margin:2px auto 6px;padding:0 14px;font-size:13px;color:var(--ink2);text-align:center}.lgb{display:block;margin:4px auto 0;min-height:44px;padding:0 14px;color:var(--blu);font:600 14px var(--sans)}.lgb[hidden],.lg[hidden]{display:none}
 #radar .kd{fill:none;stroke:#334055;stroke-width:.7px;vector-effect:non-scaling-stroke}
 #radar .kdl{fill:#6f7c92;font:600 2.7px var(--sans);text-anchor:middle;letter-spacing:.02em;text-transform:uppercase}
 #radar .vl{fill:#838b99;font:500 2.9px var(--sans);paint-order:stroke;stroke:#0b0d11;stroke-width:.8px}
@@ -113,10 +115,10 @@ header .up{margin-left:auto;min-width:0;overflow:hidden;text-overflow:ellipsis;w
 .row .more{display:none;margin-top:8px;padding:8px 10px;background:var(--panel);border-left:3px solid var(--line);border-radius:2px;font-size:12.5px;color:var(--ink2)}
 .row.open .more{display:block}
 .row .more q{display:block;color:var(--ink);quotes:none;white-space:pre-line;margin-bottom:6px}
-.row .more .orig{display:block;color:var(--ink3);font-size:11.5px;margin:-2px 0 6px;white-space:pre-line}
+.row .more .orig{display:block;color:var(--ink3);font-size:13px;margin:-2px 0 6px;white-space:pre-line}
 .row .more div+div{margin-top:4px}
-.row .tap{font-size:11px;color:var(--ink3);margin-top:3px}
-.sec{margin:14px 0 2px;padding-top:10px;border-top:1px solid var(--line);font:700 11.5px var(--mono);letter-spacing:.06em;color:#ffb3a6;text-transform:uppercase}
+.row .tap{font-size:13px;color:var(--ink3);margin-top:3px}
+.sec{margin:14px 0 2px;padding-top:10px;border-top:1px solid var(--line);font:700 12.5px var(--mono);letter-spacing:.06em;color:#ffb3a6;text-transform:uppercase}
 #radar .ring{fill:none;stroke:#2f5480;stroke-width:1.5px;vector-effect:non-scaling-stroke;stroke-dasharray:5 6}
 #radar .ring.r10{stroke:var(--ora);stroke-dasharray:none;stroke-opacity:.7}
 #radar .rl{fill:#56637a;font:3.4px var(--mono)}
@@ -140,8 +142,8 @@ header .up{margin-left:auto;min-width:0;overflow:hidden;text-overflow:ellipsis;w
 .row .l1{display:flex;gap:8px;align-items:baseline}
 .row .l1 b{font:700 15px var(--sans)}
 .row .l1 .d{margin-left:auto;font:700 15px var(--mono)}
-.row .l2{font-size:12.5px;color:var(--ink2);margin-top:2px}
-.row .l3{font-size:12.5px;margin-top:3px}
+.row .l2{font-size:13.5px;color:var(--ink2);margin-top:2px}
+.row .l3{font-size:13.5px;margin-top:3px}
 .row .l3 b{color:var(--ink)}.row .l3 span{color:var(--ink3)}
 .row.here .l1 b,.row.here .hr{color:#ff8fa3}
 .row.gone{opacity:.5}
@@ -153,12 +155,12 @@ header .up{margin-left:auto;min-width:0;overflow:hidden;text-overflow:ellipsis;w
 .notice.lv-info .nth{color:#d6ffe6}.notice.lv-alert .nth{color:#ffe1e1}.notice.lv-info .nx,.notice.lv-alert .nx{color:#fff;border-color:rgba(255,255,255,.6)}
 @keyframes ntp{50%{background:#8e0b13}}@media (prefers-reduced-motion:reduce){.notice.lv-alert{animation:none}}
 .notice .ntb{flex:1;min-width:0;font-size:14px;line-height:1.4;white-space:pre-wrap;overflow-wrap:anywhere}
-.notice .nth{display:block;font:700 10.5px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--ink2);margin-bottom:2px}
+.notice .nth{display:block;font:700 12px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--ink2);margin-bottom:2px}
 .notice .mvgo{display:inline-block;margin-top:6px;padding:8px 12px;background:var(--yel);color:#111;font-weight:700;border-radius:4px;text-decoration:none}
-.notice .nx{flex:none;background:transparent;border:1px solid var(--line);color:var(--ink2);width:34px;height:34px;border-radius:4px;font-size:15px}
-#off{margin:8px 14px 0;padding:8px 10px;border:1px solid #6a5a1a;background:#221d0b;color:#ffe9a8;font-size:12.5px;border-radius:3px}
-footer{padding:14px 14px 24px;font-size:12px;color:var(--ink3);text-align:center}
-footer a{color:var(--blu)}
+.notice .nx{flex:none;background:transparent;border:1px solid var(--line);color:var(--ink2);width:44px;height:44px;border-radius:4px;font-size:15px}
+#off{margin:8px 14px 0;padding:8px 10px;border:1px solid #6a5a1a;background:#221d0b;color:#ffe9a8;font-size:13.5px;border-radius:3px}
+footer{padding:14px 14px 24px;font-size:13px;color:var(--ink3);text-align:center}
+footer .fbs{display:flex;gap:8px;margin-top:10px}footer .fbs a{flex:1;display:flex;align-items:center;justify-content:center;min-height:44px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink);font:600 14px var(--sans);text-decoration:none}
 /* the notice at opening — once per opening, shared with the Tactical page (sessionStorage 'disc_seen') */
 /* the overlay scrolls, sized by inset:0 and never by vh (on an iPhone with Safari's bars showing, vh is taller
    than the screen and the button ended up out of reach under the bottom bar) */
@@ -192,11 +194,11 @@ footer a{color:var(--blu)}
 <div id="rwrap" class="empty"><svg id="radar" viewBox="-66 -66 132 132" aria-hidden="true"></svg>
   <div class="zc"><button type="button" id="zin">+</button><button type="button" id="zout" disabled>−</button><button type="button" id="zreset" hidden>⟲</button></div>
   <div id="rcard" hidden></div></div>
-<div class="lg" id="lg" hidden></div>
+<button type="button" class="lgb" id="lgb" hidden></button><div class="lg" id="lg" hidden></div>
 <div id="list"></div>
 <div id="off" hidden></div>
 
-<footer><div id="disc"></div><div style="margin-top:8px"><a href="/guide" id="gdl"></a> · <a href="/m" id="full"></a></div></footer>
+<footer><div id="disc"></div><div class="fbs"><a href="/guide" id="gdl"></a><a href="/m" id="full"></a></div></footer>
 <div id="dm" hidden><div class="dbox"><img class="dlogo" src="/static/heimdall-full.webp" alt="Heimdall" width="160" height="147" loading="lazy"><div class="dmh"><b id="dmt"></b><select class="lsel" id="dmlang" aria-label="Language"></select></div><p id="dm1"></p><p id="dm2"></p><p id="dm3"></p><button id="dmok"></button></div></div>
 <div id="pick"><button class="x" id="pickx">✕</button><h3 id="pickh"></h3><p id="pickp"></p>
   <input id="pickq" autocomplete="off"><button class="loc" id="pickloc"></button><div class="res" id="pickres"></div></div>
@@ -443,8 +445,10 @@ function mapLayer(p,kx,loc,iz){
 }
 
 function paintSlots(){
+  // 1.36: each place carries its own official status, as on the Tactical page (its raion, worked out here)
+  const st=p=>{ if(!p||!LMR||!STATE) return ''; const PR=raionsOf(p); const uid=(PR&&PR[0]&&PR[0].obl)||p.obl; return uid?placeStatus(uid,PR).k:''; };
   $('slots').innerHTML=SLOT_IDS.map(id=>{const p=SLOTS[id];
-    return `<button data-s="${id}" class="${id===ACTIVE&&p?'on':''}${p?'':' empty'}">${SLOT_ICO[id]}<span>${esc(t('sl_'+id))}</span></button>`;}).join('');
+    return `<button data-s="${id}" class="${id===ACTIVE&&p?'on':''}${p?'':' empty'}"><i class="${st(p)}"></i><span>${esc(t('sl_'+id))}</span></button>`;}).join('');
 }
 
 function paint(){
@@ -533,7 +537,7 @@ function paint(){
     g+=q+'</g>';
   }
   $('radar').innerHTML=g;
-  $('lg').hidden=!LM; $('lg').textContent=t('lt_legend')+' · '+t('lt_zhint');
+  $('lgb').hidden=!LM; $('lgb').textContent='? '+t('lg_show'); $('lg').hidden=!LM||!LG_OPEN; $('lg').textContent=t('lt_legend')+' · '+t('lt_zhint');
 
   // the list — each row opens on a tap: what the post said, the track so far, the source
   const row=({m,d,zone,toHere,eta,no},force)=>{
@@ -632,6 +636,8 @@ $('rcard').addEventListener('click',e=>{ if(e.target.closest('#rcx')) selectThre
 
 // a row opens and closes on a tap; the page repaints every 15 s, so which rows are open is remembered
 const OPEN=new Set();
+// 1.36: the radar's legend is one tap away instead of four grey lines under it
+let LG_OPEN=false; $('lgb').onclick=()=>{ LG_OPEN=!LG_OPEN; $('lg').hidden=!LG_OPEN; };
 $('list').addEventListener('click',e=>{ const r=e.target.closest('.row[data-id]'); if(!r) return;
   const id=r.dataset.id; if(OPEN.has(id)) OPEN.delete(id); else OPEN.add(id); r.classList.toggle('open'); const tp=r.querySelector('.tap'); if(tp) tp.remove(); });
 

@@ -2,6 +2,40 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.36.0 — 2026-10-04
+
+### Changed — the Tactical page, redesigned around the reader's own place
+- **A "My place" card at the top**, in the header and never over the map: the four places as large chips, each with
+  its own official status as a dot; the watched place's official status in words ("Air raid alert · Obolon · Kyiv ·
+  since 19:08 · official") with how long it has lasted; the MiG-31K / ballistic warning, which now also says what to
+  do ("Little time — go to a shelter now, do not wait for the siren") with a button to the guide; the one target
+  that matters most for the place — the one a post says is heading for it, else the nearest within 30 km — with its
+  silhouette, course as stated, age and distance; or "Nothing reported within 30 km — that is not the same as safe";
+  and at its foot how old the data is (amber past 2 minutes), "unofficial · not radar" (a tap opens the notice) and
+  What to do. With no place set, the nearest target from the centre of Kyiv, or an invitation to set one.
+- **The menu of 27 controls is split by where each one is looked for**: the **bell** (push, warnings near my
+  position, Kyiv bridges, sound, volume and test, vibration — as switches, each with a line saying what it does);
+  **More** (places, language, display mode, blackout, Light, the guide, how it works, support, about); **Layers**,
+  a button on the map (map layers, Kyiv's districts, EST, zoom out, the colour legend). The drawer's Map tab is gone.
+- **Near**, a new first tab: every live target by distance from the watched place, in bands (the whole region /
+  10 / 30 / 60 km / further), with a badge counting those within 30 km.
+- **The drawer has three heights** (tabs / half / most of the screen); while it is up the card folds to one line.
+- **The feed**: no row of category chips under every post; instead, when the map placed a mark from the post, its
+  distance from the watched place. "Do not publish air-defence or impact locations during an attack" at its top.
+- **Escalation levels 0–4** colour the card's edge and the bell's dot, with a tone each: one soft note for an
+  official alert starting, two beeps, three rising beeps, a 3-second warble for a ballistic or MiG-31K warning — at
+  most one tone in 10 seconds unless the level rises. The test button plays the three.
+- **Computer**: the card is a column on the left with the Near list, the map in the middle, the feed on the right.
+- **Larger and clearer**: every control can be hit over 44 × 44 px, no text under 12 px in the card, panels and
+  drawer, lighter secondary text (at least 4.9:1); the red alert block is a brighter red with white text.
+- The rotating ticker and the clock are gone; the essentials they carried sit where they apply (see SAFETY.md).
+- The opening notice is unchanged, shown at every opening; its "I understand" button now stays on screen while the
+  notice scrolls.
+
+### Changed — Light
+- Each place's chip shows that place's official status as a dot; the colour legend is behind a "?" button; the
+  footer is two buttons (What to do, the Tactical map); every control 44 px, no text under 13 px.
+
 ## 1.35.0 — 2026-10-04
 
 ### Added

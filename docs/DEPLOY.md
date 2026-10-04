@@ -50,7 +50,7 @@ GitHub and shows the live version. Anywhere else:
 fly deploy && git push
 ```
 
-**If a deploy does not seem to change anything**, check the build tag at the bottom of the menu in
+**If a deploy does not seem to change anything**, check the build tag at the bottom of the More panel (⋯) in
 the app (`build YYYY-MM-DD HH:MM UTC`) against the one in `static/kyiv.html`. If they differ, the
 files on the machine you deployed from were not the ones you edited — `git status` and `git log -1`
 tell you which version you actually shipped. This is much more often the cause than a Fly caching

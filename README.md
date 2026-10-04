@@ -50,6 +50,7 @@ and opens the browser. Linux/macOS: `scripts/start.sh`.
 | | |
 |---|---|
 | **Alerts by raion** | Each raion coloured by its own official alert, at the government app's level — red (massed drones, missiles) or yellow (drones) — never the whole oblast for one raion. |
+| **Your place first** | The Tactical page opens on a card for the place you watch — Home, Work, Kids or a pin: its raion's official status, the MiG-31K / ballistic warning with what to do, the one target that matters most for it with its distance, and how fresh the data is. Below: the map, then Near · Feed · Alerts · Stats. Alerts settings behind a bell, the rest behind More, map layers on the map. |
 | **Light version** | `/light`: Home, Work, Kids or a pin; the official status of that place's raion; a 30 km radar over a small local map; tap a row for what the post said. The places never leave the phone. |
 | **Targets where they were reported** | Shaheds are drawn loitering around the reported point (their real path is erratic) with a chevron for the reported heading. No extrapolated trajectory unless you switch on EST, no invented ETA — [why](docs/SAFETY.md#no-liberties-with-trajectories). |
 | **Per-target justification** | Tap any marker: the sentence it came from, the channel, the time, how position / heading / count were read, the confidence, and other reports nearby. |

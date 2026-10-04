@@ -8,7 +8,10 @@ a pull request that breaks one will not be merged.
 
 The official *Повітряна тривога* app and the sirens come first, always. Heimdall adds detail to a
 warning that has already been given; it never replaces it. The disclaimer is shown on **every**
-open, not once, and the scrolling ticker repeats the essentials while the app is in use.
+open, not once. Since 1.36 the rotating ticker is gone and the essentials sit where they apply, without moving:
+"unofficial · not radar" at the foot of the card at all times (a tap opens the full notice); "nothing reported
+within 30 km — that is not the same as safe, the siren decides" in the card whenever nothing is near; "do not
+publish air-defence or impact locations" at the top of the feed, where posts are read and shared.
 
 ## No liberties with trajectories
 
@@ -204,6 +207,20 @@ district is a kilometre wide, and a post comes a minute or more after the sighti
 So a bridge is "target at the bridge", "target 2.3 km away", "hit reported" — or nothing. Nothing is never written
 as "clear" or "safe", the texts say "from channel posts, not radar", and the official alert still comes first. A
 post that names only the city, or a bank of the river, is 2–4 km from several bridges at once: it lights none.
+
+## The card says what is known about your place, and nothing more
+
+The card at the top of the Tactical page (1.36) is the first thing read, so it is held to the strictest rules. Its
+colour block is the **official** status of the watched place's own raion — the government app's data, by raion,
+the same rule as the Light page — and each place's chip carries only that. The target under it is one the map
+already shows, chosen by a fact: a post said it is heading for the place, or it is the nearest reported within
+30 km; its distance is between two reported points, never a projection, and no time of arrival is ever written.
+When nothing is near it says so, and that this is not the same as safe. The escalation level that colours its edge
+and picks the tone (0–4) is computed from those same facts — an official alert, a reported distance, a bridge "at",
+a ballistic or MiG-31K warning — never from a guess about where something is going. The one instruction it gives,
+under a fresh ballistic or MiG-31K warning ("little time — go to a shelter now, do not wait for the siren"), is the
+guide's own rule, taken from the official guidance, with the guide one tap away. The card sits in the header, in the
+page's flow: it never covers the map.
 
 ## The heat map is statistics, and says so
 
@@ -451,7 +468,7 @@ So at draw time anything closer than one glyph-width merges into a single marker
   grouped separately even when they sit on the same street.
 - It is purely a function of zoom. Zooming in pulls the group apart into its separate reports, and a tap lists
   every one of them with its own place, time, channel and post — no single report ever stands in for the others.
-- The counts in the ticker and the statistics are computed before grouping, so what is on the screen never
+- The counts in the live tally and the statistics are computed before grouping, so what is on the screen never
   changes a number.
 
 ## Every number is traceable
@@ -474,7 +491,7 @@ precision in the same family as an invented trajectory.
 ## Operational security
 
 The app does not encourage publishing air-defence positions or explosion locations during an
-attack — the disclaimer and the ticker say so explicitly. The history layer only shows what was
+attack — the disclaimer and the top of the feed say so explicitly. The history layer only shows what was
 already public, only at the level of a named town, and only after the fact.
 
 ## When in doubt
