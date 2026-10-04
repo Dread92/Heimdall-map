@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.36** · last updated 2026-10-04
+**Documented version: 1.37** · last updated 2026-10-04
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -707,14 +707,21 @@ level-of-detail classes by zoom, OSM tiles under the vector layers below 150 km 
   the **channels block** (`#mych`): the one target that matters most for the place — one a post says is heading for
   it, else the nearest within 30 km — with its silhouette, place, course as stated, age, the number of channels and
   the distance; with none, "Nothing reported within 30 km — that is not the same as safe"; with no place set, the
-  nearest within 30 km of the centre or an invitation to set one; and the **foot**: the data's age ("updated 4 s
-  ago", amber past 2 min, the block greyed past 10), the sources' dot, "unofficial · not radar" (a tap opens the
-  full notice) and **What to do →**.
+  nearest within 30 km of the centre or an invitation to set one (1.37: "nothing reported" is two lines of text,
+  not a box); and the **foot**: the data's age ("updated 4 s ago", amber past 2 min, the block greyed past 10), the
+  sources' dot, "unofficial · not radar" (a tap opens the full notice), **What to do →** and **▴**.
+- **Folding the card** (1.37, phone only): ▴ folds it to one line (`#mcmini`) — the place's official status, its
+  name, the alert's duration, the targets within 30 km — remembered on the phone (`localStorage.card_fold`). It
+  opens by itself when the escalation level rises above the one it was folded at (`FOLD.at`, at least 1), or when a
+  fresh preventive warning or a bridge bar appears that was not there when it was folded (`warnKey()`), and folds
+  back once that is over (`foldShut()`). While a fresh warning is on, the line carries the warning itself, in its
+  colour. A tap on the line opens the card. Measured at 360 × 760: about 210–230 px open on a quiet night, 56 px
+  folded.
 - **The map** with its controls on the right, each 44 px: **Layers** (`#laybtn`), +, −, centre on my place, the
   impacts toggle.
 - **The drawer** at the bottom, tabs **Near · Feed · Alerts · Stats**, three heights (tab bar / half / most of the
   screen: a tap on a tab opens it to half, the handle cycles, a swipe moves it). While it is up the card folds to
-  one line (`#mcmini`: the place's status, name and number of targets within 30 km; a tap folds the drawer back).
+  the same one line (a tap folds the drawer back).
 - **Near** (`nearRows()`, `nearHTML()`): every live target with its distance from the watched place (or the centre
   of Kyiv), in bands — the whole region (immediate types, no distance) / within 10 / 30 / 60 km / further — nearest
   first, inbound ones (as a post said) before others at the same distance; a tap opens the mark's sheet. A

@@ -9,7 +9,7 @@ a pull request that breaks one will not be merged.
 The official *Повітряна тривога* app and the sirens come first, always. Heimdall adds detail to a
 warning that has already been given; it never replaces it. The disclaimer is shown on **every**
 open, not once. Since 1.36 the rotating ticker is gone and the essentials sit where they apply, without moving:
-"unofficial · not radar" at the foot of the card at all times (a tap opens the full notice); "nothing reported
+"unofficial · not radar" at the foot of the card whenever it is open (a tap opens the full notice); "nothing reported
 within 30 km — that is not the same as safe, the siren decides" in the card whenever nothing is near; "do not
 publish air-defence or impact locations" at the top of the feed, where posts are read and shared.
 
@@ -221,6 +221,12 @@ a ballistic or MiG-31K warning — never from a guess about where something is g
 under a fresh ballistic or MiG-31K warning ("little time — go to a shelter now, do not wait for the siren"), is the
 guide's own rule, taken from the official guidance, with the guide one tap away. The card sits in the header, in the
 page's flow: it never covers the map.
+
+The reader may fold it to one line (1.37), because on a quiet night a third of a phone screen spent on "nothing
+reported" is a third of the map nobody can read. The folded line still says the place's **official** status, and
+the card opens by itself — not on the reader's next tap — when something new matters: the level rises above the one
+it was folded at, or a preventive warning or a bridge bar appears; while a fresh warning is on, the line is that
+warning. Folding hides detail, never the official status and never a new warning.
 
 ## The heat map is statistics, and says so
 

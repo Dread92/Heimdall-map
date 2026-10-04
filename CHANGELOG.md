@@ -2,6 +2,19 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.37.0 — 2026-10-04
+
+### Changed
+- **The card takes less of the map.** On a phone it took about 290 px of 760 on a quiet night; now about 210–230:
+  "Nothing reported within 30 km — that is not the same as safe" is two lines of text instead of a box, the official
+  block is a little tighter, and "What to do" sits beside "unofficial · not radar".
+- **▴ folds the card to one line** (phone): the place's official status, its name, how long the alert has lasted and
+  the targets within 30 km. Remembered on the phone. It opens by itself when something new matters — a target within
+  30 km or heading for the place, a bridge "at", a ballistic or MiG-31K warning, a new preventive warning or bridge
+  bar — and folds back once that is over. A tap on the line opens it.
+- While a fresh preventive warning is on, the one-line card (folded, or with the drawer pulled up) shows the warning
+  itself, in its colour, instead of the status.
+
 ## 1.36.0 — 2026-10-04
 
 ### Changed — the Tactical page, redesigned around the reader's own place

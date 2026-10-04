@@ -105,7 +105,8 @@ def test_targets_are_large_enough_for_a_thumb():
     assert "height:44px" in _rule(".slotrow button") and "width:44px;height:44px" in _rule(".hb")
     assert "width:44px;height:44px" in _rule(".mapctl button")
     assert "min-height:48px" in _rule(".panel .mi") and "width:44px;height:44px" in _rule(".px")
-    assert "min-height:44px" in _rule(".mcwhat") and "min-height:44px" in _rule(".tstrip .tsbtn")
+    assert "min-height:44px" in _rule(".tstrip .tsbtn") and "width:44px;height:44px" in _rule(".mcfold")
+    assert "inset:-10px -2px" in _rule(".mcwhat::before")                # "What to do": 24 px of text, 44 px to hit
     assert "min-height:44px" in _rule("#top .vsw>*") and "min-height:44px" in _rule(".card .mo")
     assert "inset:-10px -4px" in PAGE                                 # the "unofficial" line's hit area
     assert "--ink2:#b5b3ab" in PAGE and "--ink3:#8f8d86" in PAGE
@@ -136,3 +137,18 @@ def test_the_opening_notice_is_unchanged_but_its_button_stays_in_reach():
 def test_the_card_asks_the_server_for_nothing():
     for call in ("fetch(", "jget(", "sendBeacon", "XMLHttpRequest", "/api/"):
         assert call not in CARD_JS, call
+
+
+def test_the_reader_can_fold_the_card_and_it_opens_itself_when_something_matters():
+    """1.37: on a phone the card took a third of the screen on a quiet night. It folds to one line that keeps the
+    official status; it opens by itself when the level rises or a new warning appears, and folds back after."""
+    assert 'id="mcfold"' in HEAD and ".mcfold{display:none}" in PAGE          # a phone thing; a computer has room
+    assert "localStorage.getItem('card_fold')==='1'" in PAGE
+    i = PAGE.index("function foldShut(){")
+    body = PAGE[i:PAGE.index("\n", i)]
+    assert "LEVEL<=FOLD.at" in body and "k===FOLD.key" in body
+    assert "FOLD.at=Math.max(1,LEVEL||0)" in PAGE and "FOLD.key=warnKey()" in PAGE
+    assert "window.innerWidth<1000&&(drawerState()!==''||foldShut())" in PAGE
+    # the folded line: the official status and the place, or the live warning in its own colour
+    assert "t('lt_'+dk)" in CARD_JS and "' w '+tw.className" in CARD_JS
+    assert "!/\\b(calm|old)\\b/.test(ts.className)" in PAGE
