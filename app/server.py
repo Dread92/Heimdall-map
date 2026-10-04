@@ -336,7 +336,7 @@ def build_id():
 
 # The version the front end shows in its footer, kept here too so /api/version can answer "what is actually
 # running" without anybody reading it off a screenshot. tests/test_version.py pins the two to each other.
-APP_VERSION = "1.33"
+APP_VERSION = "1.34"
 APP_NAME = "Heimdall"
 BUILD = None    # filled at startup
 
@@ -803,6 +803,51 @@ def air_sorties(reports):
     return res
 
 
+# ---------------------------------------------------------------------------
+# 1.34: the Dnipro bridges in Kyiv
+# ---------------------------------------------------------------------------
+# From 1 October 2026 the bridges are the targets: the Southern bridge was hit five times in two days, the
+# Northern bridge on 3 and 4 October, by Shaheds and jet drones, by day, with cars on them. A bridge is a place
+# somebody drives onto without thinking and cannot leave quickly — so the app says, bridge by bridge, when a target
+# was reported on or near one. Each span over the river, from OpenStreetMap (the roadway's two ends).
+BRIDGES = [
+    {"id": "pivnichnyi", "uk": "Північний міст", "en": "Northern Bridge", "fr": "pont Nord", "a": (30.53082, 50.48923), "b": (30.54096, 50.49218)},
+    {"id": "metro", "uk": "Міст Метро", "en": "Metro Bridge", "fr": "pont du Métro", "a": (30.55998, 50.44132), "b": (30.56888, 50.44397)},
+    {"id": "paton", "uk": "Міст Патона", "en": "Paton Bridge", "fr": "pont Paton", "a": (30.57212, 50.42440), "b": (30.59198, 50.43015)},
+    {"id": "darnytskyi", "uk": "Дарницький міст", "en": "Darnytskyi Bridge", "fr": "pont de Darnytsia", "a": (30.57219, 50.41222), "b": (30.59725, 50.41850)},
+    {"id": "pivdennyi", "uk": "Південний міст", "en": "Southern Bridge", "fr": "pont Sud", "a": (30.55467, 50.40097), "b": (30.59796, 50.39435)},
+]
+BRIDGE_BY_PLACE = {b["uk"]: b["id"] for b in BRIDGES}
+# "at": the place the post named is the bridge or its ends. "near": a Shahed covers 3.5 km in about a minute; a jet
+# drone or a missile 6 km in well under one, and is drawn 6 km out for that reason.
+BRIDGE_AT_KM, BRIDGE_NEAR_KM, BRIDGE_NEAR_FAST_KM = 1.2, 3.5, 6.0
+# A post that names only the city, or a bank of the river, is placed at a point 2–4 km from several bridges.
+# That is not a report near any of them.
+BRIDGE_VAGUE = {"Київ", "м. Київ", "Столиця", "Лівий берег", "Правий берег", "область"}
+# The bridge named in a post's own words — for the posts that are placed somewhere else ("Повз лівий берег на
+# Південний міст", "ТЕЦ-5/південний міст") or on the city header ("Київ: 🔻Зниження міст метро").
+BRIDGE_NAME_RX = {
+    "pivnichnyi": re.compile(r"\bпівнічн\w{0,3}\s+м[іо]ст|\bсеверн\w{0,3}\s+мост", re.I),
+    "metro": re.compile(r"\bм[іо]ст\w{0,2}\s+метро|\bметро\s*-?\s*м[іо]ст", re.I),
+    "paton": re.compile(r"\bм[іо]ст\w{0,2}\s+(?:ім\.?\s*|імені\s+|им\.?\s*|имени\s+)?патона", re.I),
+    "darnytskyi": re.compile(r"\bдарни[цч]\w{0,4}\s+(?:залізнично-автомобільн\w{0,3}\s+)?м[іо]ст", re.I),
+    "pivdennyi": re.compile(r"\bпівденн\w{0,3}\s+м[іо]ст|\bюжн\w{0,3}\s+мост", re.I),
+}
+
+
+def bridge_km(lon, lat, br):
+    """Distance in km from a point to a bridge's span (a segment; flat projection — a few km in Kyiv)."""
+    kx, ky = 111.32 * math.cos(math.radians(50.45)), 110.57
+    (ax, ay), (bx, by) = br["a"], br["b"]
+    px, py, vx, vy = (lon - ax) * kx, (lat - ay) * ky, (bx - ax) * kx, (by - ay) * ky
+    t = max(0.0, min(1.0, (px * vx + py * vy) / (vx * vx + vy * vy)))
+    return math.hypot(px - t * vx, py - t * vy)
+
+
+def bridges_named(text):
+    return [k for k, rx in BRIDGE_NAME_RX.items() if rx.search(text or "")]
+
+
 def kyiv_tz():
     """Kyiv's own time, summer and winter. Without the zone data (a bare container) the summer offset stands in."""
     try:
@@ -957,6 +1002,16 @@ class Store:
             c.execute("ALTER TABLE feed ADD COLUMN en_mt INTEGER")
         c.execute("CREATE TABLE IF NOT EXISTS kv(k TEXT PRIMARY KEY, v TEXT)")
         c.execute("CREATE TABLE IF NOT EXISTS push_subs(endpoint TEXT PRIMARY KEY, sub TEXT, home TEXT, created TEXT, last_ok TEXT)")
+        # 1.34: what a phone asked for besides its own area ("bridges"), and the language to say it in
+        for col in ("topics TEXT", "lang TEXT"):
+            try:
+                c.execute("ALTER TABLE push_subs ADD COLUMN " + col)
+            except sqlite3.OperationalError:
+                pass
+        # 1.34: each time a target was reported on or near a Kyiv bridge (the rising edges, for the dashboard)
+        c.execute("""CREATE TABLE IF NOT EXISTS bridge_events(
+            ts TEXT, bridge TEXT, lvl TEXT, km REAL, type TEXT, jet INTEGER, place TEXT, channel TEXT, how TEXT)""")
+        c.execute("CREATE INDEX IF NOT EXISTS ix_brg_ts ON bridge_events(ts)")
         # ---- the record of what the app itself said -------------------------------------------------
         # Markers were recomputed from the feed on every request, and the feed prunes. So "what did the map
         # show at 02:14 last Tuesday" had no answer, the lead time over the official siren could not be
@@ -1067,10 +1122,22 @@ class Store:
             self.conn.execute("INSERT OR REPLACE INTO kv(k,v) VALUES(?,?)", (k, v))
             self.conn.commit()
 
-    def push_add(self, sub, home):
+    PUSH_TOPICS = ("bridges",)
+
+    def push_add(self, sub, home, topics=None, lang=None):
+        topics = [t for t in (topics or []) if t in self.PUSH_TOPICS]
+        lang = lang if lang in ("uk", "en", "fr") else None
         with self.lock:
-            self.conn.execute("INSERT OR REPLACE INTO push_subs(endpoint,sub,home,created,last_ok) VALUES(?,?,?,?,?)",
-                              (sub["endpoint"], json.dumps(sub), json.dumps(coarse_home(home)), now_iso(), now_iso()))
+            self.conn.execute("INSERT OR REPLACE INTO push_subs(endpoint,sub,home,created,last_ok,topics,lang) VALUES(?,?,?,?,?,?,?)",
+                              (sub["endpoint"], json.dumps(sub), json.dumps(coarse_home(home)), now_iso(), now_iso(),
+                               ",".join(topics), lang))
+            self.conn.commit()
+
+    def bridge_event(self, bid, e):
+        with self.lock:
+            self.conn.execute("INSERT INTO bridge_events(ts,bridge,lvl,km,type,jet,place,channel,how) VALUES(?,?,?,?,?,?,?,?,?)",
+                              (now_iso(), bid, e.get("lvl"), e.get("km"), e.get("type"), 1 if e.get("jet") else 0, e.get("place"),
+                               e.get("ch"), e.get("how")))
             self.conn.commit()
 
     def coarsen_homes(self):
@@ -1100,8 +1167,9 @@ class Store:
 
     def push_all(self):
         with self.lock:
-            rows = self.conn.execute("SELECT endpoint,sub,home FROM push_subs").fetchall()
-        return [{"endpoint": r[0], "sub": json.loads(r[1]), "home": json.loads(r[2] or "{}")} for r in rows]
+            rows = self.conn.execute("SELECT endpoint,sub,home,topics,lang FROM push_subs").fetchall()
+        return [{"endpoint": r[0], "sub": json.loads(r[1]), "home": json.loads(r[2] or "{}"),
+                 "topics": [t for t in (r[3] or "").split(",") if t], "lang": r[4] or "uk"} for r in rows]
 
     # -- flagged readings ---------------------------------------------------
     # The map is read by people who know the ground far better than any parser does. When one of them sees a
@@ -1946,6 +2014,74 @@ class State:
             self._resp[name] = hit
             return hit
 
+    _bridges_res = None
+    BRIDGE_RANK = {"hit": 1, "near": 2, "at": 3}
+
+    def bridges_now(self):
+        """{bridge id: {} or {lvl, km, type, jet, place, ts, ch, n, how}} — what was reported on or near each bridge
+        now. "at" / "near" from a live, positioned mark (never a stale one, never a closed track, never one placed
+        at a vague point); "at" also when a post of the last 5 minutes names the bridge; "hit" when an explosion
+        was reported on it in the last 30 minutes (and nothing live is). Cached 3 s."""
+        if self._bridges_res and time.time() - self._bridges_res[0] < 3:
+            return self._bridges_res[1]
+        now = datetime.now(timezone.utc)
+        out = {b["id"]: {} for b in BRIDGES}
+        rank = self.BRIDGE_RANK
+
+        def offer(bid, cand):
+            cur = out[bid]
+            if not cur or (rank[cand["lvl"]], -(cand.get("km") if cand.get("km") is not None else 99), cand["ts"]) > \
+                    (rank[cur["lvl"]], -(cur.get("km") if cur.get("km") is not None else 99), cur["ts"]):
+                cand["n"] = cur.get("n", 0) + (cand["lvl"] != "hit")
+                out[bid] = cand
+            elif cand["lvl"] != "hit":
+                cur["n"] = cur.get("n", 0) + 1
+        for m in self.markers_now():
+            if m.get("lat") is None or m.get("lon") is None or m.get("oblast_uid") not in ("31", "14"):
+                continue
+            place = (m.get("place") or "").replace("→", "").strip()
+            if place in BRIDGE_VAGUE or m.get("stale") or m.get("endedBy"):
+                continue
+            t = parse_iso(m.get("ts"))
+            if not t:
+                continue
+            age = (now - t).total_seconds() / 60
+            st = m.get("status")
+            if st and st != "impact":
+                continue
+            if st == "impact" and age > 30:
+                continue
+            fast = bool(m.get("jet") or m.get("fast") or "missile" in (m.get("type") or ""))
+            for b in BRIDGES:
+                d = 0.0 if BRIDGE_BY_PLACE.get(place) == b["id"] else bridge_km(m["lon"], m["lat"], b)
+                lvl = ("hit" if d <= BRIDGE_AT_KM else None) if st else \
+                    "at" if d <= BRIDGE_AT_KM else "near" if d <= (BRIDGE_NEAR_FAST_KM if fast else BRIDGE_NEAR_KM) else None
+                if lvl:
+                    offer(b["id"], {"lvl": lvl, "km": round(d, 1), "type": m.get("type"), "jet": bool(m.get("jet")), "place": place,
+                                    "ts": m.get("ts"), "ch": m.get("channel"), "how": "mark"})
+        for p in self.store.feed_since(6, limit=80, translate=False):
+            tags = set(p.get("tags") or [])
+            t = parse_iso(p.get("ts"))
+            if not t or (now - t).total_seconds() > 300 or tags & {"clear", "forecast", "news", "trial", "af_summary"}:
+                continue
+            if geo and geo.looks_like_news(geo._norm(p.get("text") or "")):
+                continue
+            for bid in bridges_named(p.get("text")):
+                if not out[bid] or out[bid]["lvl"] != "at":
+                    offer(bid, {"lvl": "at", "km": None, "type": None, "jet": False, "place": None, "ts": p["ts"],
+                                "ch": p.get("channel"), "how": "named"})
+        self._bridges_res = (time.time(), out)
+        return out
+
+    def bridges_busy(self):
+        """A live threat within 12 km of a bridge: the Kyiv trackers are then read as often as in a missile threat."""
+        for m in self.markers_now():
+            if m.get("lat") is None or m.get("status") or m.get("stale") or m.get("oblast_uid") not in ("31", "14"):
+                continue
+            if min(bridge_km(m["lon"], m["lat"], b) for b in BRIDGES) <= 12:
+                return True
+        return False
+
     def markers_now(self):
         """The marks as the pages see them — the cached computation, never a private recomputation."""
         return self.cached("markers", 10, self._markers_obj, ver=self.seq)[3]["markers"]
@@ -2074,9 +2210,31 @@ class State:
                 "reports": [rep[d] for d in dates], "hours": hours, "headings": heads,
                 "weather": self._an_weather(dates), "approach": self._an_approach(t0, dates),
                 "air": self._an_air(t0, dates), "obl": self._an_oblasts(t0, dates),
+                "places": self.drone_heat(days)["points"][:25], "bridges": self._an_bridges(t0, dates),
                 "weather_status": getattr(self, "weather_status", None)}
 
     # -- 1.33: the weather, the approach sides, the carriers, and the time under alert oblast by oblast ---------------
+    def _an_bridges(self, t0, dates):
+        """1.34: each time a target was reported on or near a Kyiv bridge (bridge_events), per date (24 h from 18:00)."""
+        tz = kyiv_tz()
+        with self.store.lock:
+            rows = self.store.conn.execute("SELECT ts, bridge, lvl, km, type, jet, place, channel, how FROM bridge_events WHERE ts>=? ORDER BY ts",
+                                           (t0.isoformat(),)).fetchall()
+        per = {d: {b["id"]: 0 for b in BRIDGES} for d in dates}
+        tot = {b["id"]: {"at": 0, "near": 0} for b in BRIDGES}
+        for ts, bid, lvl, *_ in rows:
+            k = parse_iso(ts)
+            if not k or bid not in tot:
+                continue
+            d = (k.astimezone(tz) + timedelta(hours=6)).date().isoformat()
+            if d in per:
+                per[d][bid] += 1
+            if lvl in tot[bid]:
+                tot[bid][lvl] += 1
+        recent = [dict(zip(("ts", "bridge", "lvl", "km", "type", "jet", "place", "channel", "how"), r)) for r in rows[-30:]][::-1]
+        return {"names": {b["id"]: {"uk": b["uk"], "en": b["en"]} for b in BRIDGES}, "per_date": [dict(per[d], date=d) for d in dates],
+                "totals": tot, "recent": recent}
+
     def _an_weather(self, dates):
         wx = self.store.weather(dates[0])
         out = []
@@ -2205,16 +2363,29 @@ class State:
         rows.sort(key=lambda r: -r["total_h"])
         return {"by": "week" if by_week else "day", "cols": cols, "rows": rows}
 
-    def alert_hours(self, days):
-        """The map's heat layer (public): hours under an air-raid alert in each oblast over the last `days`."""
-        now = datetime.now(timezone.utc)
-        t0 = now - timedelta(days=days)
-        spans = self._alert_spans(t0)
-        out = {}
-        for uid, _uk, _en in OBLASTS:
-            m = _union_minutes(spans.get(uid, []))
-            out[uid] = {"h": round(m / 60, 1), "pct": round(m / (days * 1440) * 100, 1)}
-        return {"days": days, "from": t0.isoformat().replace("+00:00", "Z"), "to": now_iso(), "generated": now_iso(), "oblasts": out}
+    def drone_heat(self, days):
+        """The heat layer (1.34, public): where drones and unidentified targets were reported, as the posts placed
+        them — one point per place with the number of posts that named it. Town- and district-level positions only
+        (never an oblast's centre, never "Kyiv" alone or a bank of the river). Shoot-downs and hits are not counted:
+        they would show where the air defence works, not where drones go."""
+        t0 = datetime.now(timezone.utc) - timedelta(days=days)
+        with self.store.lock:
+            rows = self.store.conn.execute(
+                "SELECT post_id, place, lon, lat, oblast_uid FROM marker_log WHERE ts>=? AND type IN ('drones','unknown','banderol_missiles') "
+                "AND status IS NULL AND lon IS NOT NULL AND lat IS NOT NULL AND pos_conf IN ('high','medium')", (t0.isoformat(),)).fetchall()
+        agg, seen = {}, set()
+        for pid, place, lon, lat, uid in rows:
+            pl = (place or "").replace("→", "").strip()
+            if not pl or pl in BRIDGE_VAGUE:
+                continue
+            k = (pl, round(lon, 3), round(lat, 3))
+            if (pid, k) in seen:
+                continue
+            seen.add((pid, k))
+            a = agg.setdefault(k, [round(lon, 4), round(lat, 4), 0, pl, uid])
+            a[2] += 1
+        pts = sorted(agg.values(), key=lambda a: -a[2])
+        return {"days": days, "generated": now_iso(), "reports": sum(a[2] for a in pts), "points": pts}
 
     # -- the dashboard: is every source alive, is every channel still posting, how early was the map ---------
     _health_res = None
@@ -2765,8 +2936,13 @@ class State:
             for t in a.get("threats") or []:
                 if t not in o["threats"]:
                     o["threats"].append(t)
+        try:
+            bridges = self.bridges_now()
+        except Exception as e:                       # never at the cost of the alerts themselves
+            log("bridges:", e)
+            bridges = {b["id"]: {} for b in BRIDGES}
         return {"now": now_iso(), "active": active, "oblasts": by_oblast, "sources": sources, "eradar": self.eradar,
-                "notice": self.notice_now(), "nuke": self.nuke,
+                "notice": self.notice_now(), "nuke": self.nuke, "bridges": bridges,
                 "favourites": self.cfg.get("favourites") or [], "config": {"demo": bool(self.cfg.get("demo")), "canonical": canonical_host(self.cfg),
                 "has_token": bool(self.cfg.get("alerts_in_ua_token")), "channels": self.cfg.get("telegram_channels")}}
 
@@ -3201,10 +3377,14 @@ class Telegram(threading.Thread):
                 log(f"telegram {ch} error:", e)
         while True:
             lvl = self.state.missile_active()
+            try:
+                busy = self.state.bridges_busy()     # 1.34: a threat within 12 km of a Kyiv bridge
+            except Exception:
+                busy = False
             # the dashboard's list, read afresh each round: a channel added, switched or removed takes effect here
             chans = self.state.channels_read("web") + [c for c in self.state.channels_read("api") if c not in self.api_channels]
             list(pool.map(one, chans))   # 4 channels at a time, ~1 round trip each
-            time.sleep(rush if lvl >= 2 else fast if lvl else interval)
+            time.sleep(rush if lvl >= 2 else fast if (lvl or busy) else interval)
 
     def poll(self, ch):
         if ch in self.api_channels:
@@ -3564,7 +3744,7 @@ class TelegramAPI(threading.Thread):
                         self.state.set_source(f"tga:{ch}", False, via="Telegram API", error=str(ex)[:160])
                         if wait:
                             await asyncio.sleep(min(int(wait), 600))
-                await asyncio.sleep(self.POLL_MISSILE_S if self.state.missile_active() else self.POLL_S)
+                await asyncio.sleep(self.POLL_MISSILE_S if (self.state.missile_active() or self.state.bridges_busy()) else self.POLL_S)
         finally:
             self.tg.api_channels -= set(ents)
             await client.disconnect()
@@ -3918,6 +4098,12 @@ class Pusher:
             self.q.append({"title": title, "body": body, "tag": tag, "raion": None, "only": endpoint, "ts": now_iso()})
             self.cond.notify()
 
+    def queue_topic(self, texts, tag, topic):
+        """The phones that asked for `topic` (1.34: "bridges"), each in its own language: texts = {lang: (title, body)}."""
+        with self.cond:
+            self.q.append({"texts": texts, "tag": tag, "topic": topic, "raion": None, "ts": now_iso()})
+            self.cond.notify()
+
     def send_test(self, endpoint=None):
         with self.cond:
             self.q.append({"title": APP_NAME, "body": "Push notifications are on for this phone.", "tag": "test", "raion": None, "only": endpoint, "ts": now_iso()})
@@ -3931,13 +4117,24 @@ class Pusher:
                 n = self.q.pop(0)
             subs = [s_ for s_ in self.store.push_all()
                     if not (n.get("only") and s_["endpoint"] != n["only"])
-                    and not (n.get("raion") and (s_["home"] or {}).get("raion") != n["raion"])]
+                    and not (n.get("raion") and (s_["home"] or {}).get("raion") != n["raion"])
+                    and not (n.get("topic") and n["topic"] not in s_.get("topics", []))]
             if not subs:
                 continue
             t0 = time.time()
             try:
-                res = self.sender.send_many([s_["sub"] for s_ in subs], {"title": n["title"], "body": n["body"], "tag": n["tag"],
-                                                                        "ts": n["ts"], "url": "/m"})
+                if n.get("texts"):
+                    res = [None] * len(subs)
+                    for lang in {s_.get("lang") or "uk" for s_ in subs}:
+                        idx = [i for i, s_ in enumerate(subs) if (s_.get("lang") or "uk") == lang]
+                        title, body = n["texts"].get(lang) or n["texts"]["uk"]
+                        part = self.sender.send_many([subs[i]["sub"] for i in idx], {"title": title, "body": body, "tag": n["tag"],
+                                                                                    "ts": n["ts"], "url": "/m"})
+                        for i, r in zip(idx, part):
+                            res[i] = r
+                else:
+                    res = self.sender.send_many([s_["sub"] for s_ in subs], {"title": n["title"], "body": n["body"], "tag": n["tag"],
+                                                                            "ts": n["ts"], "url": "/m"})
             except Exception as e:
                 log("push error:", e); continue
             ok = 0
@@ -3966,6 +4163,51 @@ def haversine_km(lat1, lon1, lat2, lon2):
 #   - each target notifies a given device once (30 min memory), so a target re-reported every minute is one push;
 #   - at most one push per device every 2 minutes;
 #   - the distance sent is the distance to where the post said the target was, and the text says so.
+BRIDGE_PUSH_GAP = 600  # one push per bridge per 10 minutes — except when a "near" becomes an "at"
+BRIDGE_TXT = {
+    "uk": {"at": "🌉 {n}: ціль біля мосту", "near": "🌉 {n}: ціль за {km} км", "body": "{what} · {t} · з дописів каналів, не радар. Не заїжджайте на міст, якщо можете.",
+           "drone": "БпЛА", "jet": "Реактивний БпЛА", "missile": "Ракета", "target": "Ціль"},
+    "en": {"at": "🌉 {n}: target at the bridge", "near": "🌉 {n}: target {km} km away", "body": "{what} · {t} · from channel posts, not radar. Avoid the bridge if you can.",
+           "drone": "Drone", "jet": "Jet drone", "missile": "Missile", "target": "Target"},
+    "fr": {"at": "🌉 {n} : cible au pont", "near": "🌉 {n} : cible à {km} km", "body": "{what} · {t} · d'après les chaînes, pas un radar. Évitez le pont si vous le pouvez.",
+           "drone": "Drone", "jet": "Drone à réaction", "missile": "Missile", "target": "Cible"},
+}
+
+
+def bridge_push_texts(b, e):
+    out = {}
+    for lang, T in BRIDGE_TXT.items():
+        what = T["jet"] if e.get("jet") else T["missile"] if "missile" in (e.get("type") or "") else T["drone"] if e.get("type") == "drones" else T["target"]
+        km = str(e.get("km") or "").replace(".", "," if lang != "en" else ".")
+        out[lang] = (T[e["lvl"]].format(n=b[lang] if lang != "fr" else b["fr"][0].upper() + b["fr"][1:], km=km),
+                     T["body"].format(what=what, t=fmt_kyiv(e["ts"])))
+    return out
+
+
+def bridge_watch(state, interval=5):
+    """Every 5 s: a bridge whose state rose (nothing → near → at) is written to bridge_events, and pushed to the phones
+    that asked for the bridges — at most once per bridge every 10 minutes, a "near" turning "at" excepted."""
+    prev, pushed = {}, {}
+    while True:
+        time.sleep(interval)
+        try:
+            cur = state.bridges_now()
+            rank = state.BRIDGE_RANK
+            for b in BRIDGES:
+                c, p = cur.get(b["id"]) or {}, prev.get(b["id"]) or {}
+                if not c or c["lvl"] == "hit" or rank[c["lvl"]] <= rank.get(p.get("lvl"), 0):
+                    continue
+                state.store.bridge_event(b["id"], c)
+                pu = getattr(state, "pusher", None)
+                last = pushed.get(b["id"])
+                if pu and pu.enabled and (not last or time.time() - last[0] > BRIDGE_PUSH_GAP or (c["lvl"] == "at" and last[1] != "at")):
+                    pushed[b["id"]] = (time.time(), c["lvl"])
+                    pu.queue_topic(bridge_push_texts(b, c), "threat", "bridges")
+            prev = cur
+        except Exception as e:
+            log("bridge watch:", e)
+
+
 PROX_SEEN = {}          # endpoint -> {marker id: time}
 PROX_LAST = {}          # endpoint -> time of the last push to that device
 
@@ -4558,14 +4800,15 @@ class Handler(BaseHTTPRequestHandler):
                     return self._file("admin.html", "text/html; charset=utf-8")
                 usage = getattr(st, "usage", None)
                 return self._json(usage.report(int(q.get("days", ["30"])[0])) if usage else {"days": []})
-            if u.path == "/api/alert_hours":
-                # the Tactical map's heat layer: hours under alert per oblast — public, a count per oblast, cached 10 min
+            if u.path == "/api/drone_heat":
+                # the Tactical map's heat layer: where drones were reported, place by place — public, counts per place
+                # from public posts, cached 10 min
                 try:
                     d = int(q.get("days", ["7"])[0])
                 except ValueError:
                     d = 7
                 d = d if d in (1, 7, 30) else 7
-                return self._send_cached(st.cached(f"alert_hours:{d}", 600, lambda: st.alert_hours(d)))
+                return self._send_cached(st.cached(f"drone_heat:{d}", 600, lambda: st.drone_heat(d)))
             if u.path == "/api/analytics":
                 if not self._admin_ok(q):
                     return self._json({"error": "unauthorized"}, 401)
@@ -4789,7 +5032,7 @@ class Handler(BaseHTTPRequestHandler):
                 sub = data.get("subscription") or {}
                 if not sub.get("endpoint"):
                     return self._json({"error": "bad subscription"}, 400)
-                st.store.push_add(sub, data.get("home") or {})
+                st.store.push_add(sub, data.get("home") or {}, data.get("topics"), data.get("lang"))
                 return self._json({"ok": True})
             if u.path == "/api/push/unsubscribe":
                 st.store.push_remove((data.get("endpoint") or ""))
@@ -4961,6 +5204,7 @@ def main():
         log("could not coarsen stored homes:", e)
     if state.pusher.enabled:
         threading.Thread(target=proximity_watch, args=(state,), daemon=True, name="proximity").start()
+    threading.Thread(target=bridge_watch, args=(state,), daemon=True, name="bridges").start()
 
     keyed = False
     if cfg.get("demo"):

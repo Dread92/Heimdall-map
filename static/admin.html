@@ -258,7 +258,10 @@ const T={
   an_k_drones:'Drones launched · {0} d',an_k_missiles:'Missiles launched · {0} d (where counted)',an_k_rate:'Drones shot down / suppressed',
   an_k_jet:'Jet drones — share',an_k_hits:'Locations hit · {0} d',an_k_kyiv:'Kyiv city under alert · {0} d',an_h:'h',
   an_s_piston:'Shahed-type & other drones',an_s_jet:'Jet drones',an_s_banderol:'Banderol (jet drone)',an_s_down:'Shot down / suppressed — all',
-  an_min:'min',an_air_mig31k:'MiG-31K',an_air_strategic:'Tu-95 / Tu-160',an_air_tu22:'Tu-22M3',an_air_kalibr:'Kalibr (ships)',
+  an_min:'min',
+  an_br_time:'Reported',an_c_br:'Kyiv bridges: targets reported on or near them',an_src_br:'Each time a bridge went to “near” (3.5 km; 6 km for a jet drone or a missile) or “at” (the post named the bridge or its ends), per 24 h from 18:00. From channel posts, not radar.',
+  an_br_at:'at the bridge',an_br_near:'near',an_br_bridge:'Bridge',an_br_lvl:'Level',an_br_place:'Place named',an_br_ch:'Channel',
+  an_c_places:'Where drones were reported most',an_src_places:'The places the posts named for drones and unidentified targets, number of posts (shoot-downs and hits left out) — the Tactical map’s heat layer.',an_air_mig31k:'MiG-31K',an_air_strategic:'Tu-95 / Tu-160',an_air_tu22:'Tu-22M3',an_air_kalibr:'Kalibr (ships)',
   an_air_n:'{0} take-offs on record',an_air_salvos:'{0} salvos reported',an_air_launched:'a launch reported after {0} of {1}',
   an_air_delay:'take-off → launch: median {0} (half between {1} and {2}; {3} with both reported)',an_air_upfor:'called off after {0} (median)',
   an_air_kind:'Carrier',an_air_up_at:'Take-off reported',an_air_launch_at:'Launch reported',an_air_after:'After',an_air_end_at:'Called off',an_air_reports:'Posts',
@@ -340,7 +343,10 @@ const T={
   an_k_drones:'Запущено БпЛА · {0} д',an_k_missiles:'Запущено ракет · {0} д (де вказано)',an_k_rate:'БпЛА збито / подавлено',
   an_k_jet:'Реактивні БпЛА — частка',an_k_hits:'Локацій із влучаннями · {0} д',an_k_kyiv:'Київ під тривогою · {0} д',an_h:'год',
   an_s_piston:'Shahed та інші БпЛА',an_s_jet:'Реактивні БпЛА',an_s_banderol:'Бандероль (реактивний БпЛА)',an_s_down:'Збито / подавлено — усе',
-  an_min:'хв',an_air_mig31k:'МіГ-31К',an_air_strategic:'Ту-95 / Ту-160',an_air_tu22:'Ту-22М3',an_air_kalibr:'Калібр (кораблі)',
+  an_min:'хв',
+  an_br_time:'Повідомлено',an_c_br:'Мости Києва: цілі на них або поруч',an_src_br:'Кожного разу, коли міст переходив у «поруч» (3,5 км; 6 км для реактивного БпЛА чи ракети) або «біля мосту» (допис назвав міст чи його кінці), за 24 год від 18:00. З дописів каналів, не радар.',
+  an_br_at:'біля мосту',an_br_near:'поруч',an_br_bridge:'Міст',an_br_lvl:'Рівень',an_br_place:'Назване місце',an_br_ch:'Канал',
+  an_c_places:'Де найчастіше повідомляли про дрони',an_src_places:'Місця, які дописи називали для БпЛА й невідомих цілей, кількість дописів (без збиттів і влучань) — дані теплової карти на «Тактичній».',an_air_mig31k:'МіГ-31К',an_air_strategic:'Ту-95 / Ту-160',an_air_tu22:'Ту-22М3',an_air_kalibr:'Калібр (кораблі)',
   an_air_n:'зльотів зафіксовано: {0}',an_air_salvos:'залпів зафіксовано: {0}',an_air_launched:'пуск повідомлено після {0} з {1}',
   an_air_delay:'зліт → пуск: медіана {0} (половина — від {1} до {2}; повідомлено обидва: {3})',an_air_upfor:'відбій через {0} (медіана)',
   an_air_kind:'Носій',an_air_up_at:'Зліт повідомлено',an_air_launch_at:'Пуск повідомлено',an_air_after:'Через',an_air_end_at:'Відбій',an_air_reports:'Дописів',
@@ -853,8 +859,19 @@ function drawMore(A){
       grid(O.rows.map(name),colL,O.rows.map(r=>r.h),(r,c,v)=>{ const cl=O.cols[c], pct=Math.round(v/(cl.days*24)*100);
         return `<b>${escA(name(O.rows[r]))}</b><br>${escA(O.by==='week'?tr('an_obl_week',dshort(cl.from),cl.days):dshort(cl.from))}: <b>${v} ${escA(tr('an_h'))}</b> (${pct}%)`; },
         {lw:CHW>600?150:96,val:(r,c,v)=>v/(O.cols[c].days*24)*100,bins:[2,10,25,45,70],tot:tr('an_obl_tot'),totf:r=>`${Math.round(O.rows[r].total_h)} ${tr('an_h')}`}),'oblasts')); }
+  // 1.34: the Kyiv bridges — each time a target was reported on or near one
+  const BR=A.bridges; if(BR){ const ids=Object.keys(BR.names), nm=id=>L==='uk'?BR.names[id].uk:BR.names[id].en;
+    const tot=ids.map(id=>[nm(id),(BR.totals[id].at||0)+(BR.totals[id].near||0)]);
+    const rows=(BR.recent||[]).slice(0,15).map(e=>`<tr><td>${kt(e.ts,1)}</td><td>${escA(nm(e.bridge))}</td><td>${escA(tr('an_br_'+e.lvl))}</td><td class="n">${e.km!=null?String(e.km).replace('.',L==='uk'?',':'.')+' km':'—'}</td><td>${escA(e.place||'')}</td><td>${escA(e.channel||'')}</td></tr>`).join('');
+    out.push(card('c17',tr('an_c_br'),tr('an_src_br'),legend(ids.map((id,i)=>[nm(id),C[i]]))
+      +bars(BR.per_date.map(r=>r.date),ids.map((id,i)=>({n:nm(id),c:C[i],v:BR.per_date.map(r=>r[id]||null)})),{h:150})
+      +`<div class="an2"><div>${hbars(tot,C[1])}</div><div class="tscroll">${rows?`<table class="airtab"><tr><th>${tr('an_br_time')}</th><th>${tr('an_br_bridge')}</th><th>${tr('an_br_lvl')}</th><th style="text-align:right">km</th><th>${tr('an_br_place')}</th><th>${tr('an_br_ch')}</th></tr>${rows}</table>`:`<div class="nodata">${tr('an_nodata')}</div>`}</div></div>`,'bridges')); }
+  // 1.34: the places drones were reported at most (the heat layer's data)
+  if(A.places&&A.places.length) out.push(card('c18',tr('an_c_places'),tr('an_src_places'),hbars(A.places.slice(0,20).map(p=>[p[3],p[2]]),C[4]),'places'));
   return out.join(''); }
 function csvMore(k,A,tag){
+  if(k==='bridges') csvDownload(`heimdall-bridges-${tag}.csv`,[['time_utc','bridge','level','km','type','jet','place','channel','how'],...(A.bridges.recent||[]).slice().reverse().map(e=>[e.ts,e.bridge,e.lvl,e.km,e.type,e.jet,e.place,e.channel,e.how])]);
+  if(k==='places') csvDownload(`heimdall-drone-places-${tag}.csv`,[['place','oblast_uid','lon','lat','reports'],...A.places.map(p=>[p[3],p[4],p[0],p[1],p[2]])]);
   if(k==='air') csvDownload(`heimdall-carriers-${tag}.csv`,[['kind','takeoff_utc','launch_utc','stood_down_utc','minutes_takeoff_to_launch','minutes_takeoff_to_stand_down','reports','channels'],
     ...(A.air.sorties||[]).slice().reverse().map(s=>[s.kind,s.start,s.launch,s.end,s.delay_min,s.up_min,s.reports,(s.channels||[]).join(' ')])]);
   if(k==='weather'){ const byD={}; A.af.forEach(r=>byD[r.date]=r.night_drones); const F=['wind','gust','cloud','precip','tmin'];

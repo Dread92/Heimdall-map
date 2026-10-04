@@ -2,6 +2,29 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.34.0 — 2026-10-04
+
+### Added
+- **The Kyiv bridges.** The five Dnipro bridges — Northern, Metro, Paton, Darnytskyi, Southern — bridge by bridge:
+  a red bar at the top of the Tactical page when a target is reported **at** a bridge (the post names it, or a place
+  within 1.2 km of it) and an amber one when it is **near** (3.5 km; 6 km for a jet drone or a missile), with the
+  distance, how long ago and which channel; the spans drawn on the map in that state; a toast, a tone and a vibration
+  when one rises (menu → Alerts → Kyiv bridges, on by default); the same on the Light page.
+- **Push for the bridges**: with push notifications on, the same switch sends "🌉 Південний міст: ціль за 2,3 км" to
+  the phone, in its language, at most once per bridge every 10 minutes (and again if "near" becomes "at").
+- While a threat is within 12 km of a bridge, the Kyiv channels are read every 10 seconds instead of 30.
+- **Heat map, redone**: where drones were reported (the places the posts named, over 24 h, 7 days or 30 days), as a
+  density that adapts to the zoom — the corridors across the region zoomed out, the villages and Kyiv districts
+  zoomed in — with the most-named places written on it and listed. Shoot-downs and hits are left out. The alert
+  hours by oblast stay in the dashboard.
+- Dashboard: "Kyiv bridges" (each alert, per bridge and per day) and "Where drones were reported most".
+
+### Fixed
+- **The bridge posts were dropped.** The live trackers write just "Південний міст", "🔻Зниження Північний міст",
+  "на міст патона": with no other word the app read nothing in them (or put the target at the centre of Kyiv). The
+  bridges are now places: 24 of 24 such real posts from 1–4 October are drawn on the right bridge, and the traffic
+  notices and videos about them on none.
+
 ## 1.33.0 — 2026-09-28
 
 ### Added

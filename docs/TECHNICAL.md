@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.33** · last updated 2026-09-28
+**Documented version: 1.34** · last updated 2026-10-04
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -159,7 +159,7 @@ clear-sky/
 | `UkraineAlarm` | official alerts by raion (keyless proxy or keyed API) | `/alerts/status` every 10 s, full list on change or every 30 s |
 | `AlertsInUa` | official alerts from alerts.in.ua, when a token is set | 15 s |
 | `Ubilling` | oblast-level mirror; applies only while the raion source is down | 30 s |
-| `Telegram` | reads the channels' `t.me/s/` previews (all but those the API reads) | 30 s; 10 s while a missile threat is open |
+| `Telegram` | reads the channels' `t.me/s/` previews (all but those the API reads) | 30 s; 10 s while a missile threat is open or a threat is within 12 km of a Kyiv bridge (1.34) |
 | `TelegramAPI` | reads `telegram_api_channels` (chyste_nebo) through the Telegram client API — polls the channel, **never subscribes to updates** | last 20 posts every 15 s (8 s in a missile threat) |
 | `Watchdog` | the database and alert-state locks must be free within 15 s; a held lock logs every thread's stack, five in a row (~2 min) → exit, Fly restarts it; a starved process is only logged (load, not a deadlock) | 20 s |
 | `Digests` | each night (18:00–08:00 Kyiv) after `digest_hour`, and each Monday for the week: the figures (`State.digest_facts`), and with `ANTHROPIC_API_KEY` a written summary in EN + UK; stored in `digests` | 5 min check |
@@ -169,6 +169,7 @@ clear-sky/
 | `proximity` | per-subscriber distance checks → push | continuous |
 | `AlertsInUa.backfill` | a month of history for the favourite regions | once at start |
 | `AFBackfill` | the Air Force summaries of the last 14 days that `af_reports` lacks: first from the stored feed, then from `t.me/s/kpszsu?before=…` pages (at most 240, stops once nothing is missing); since 1.33 also the carriers (`parse_air_report`) in every stored post, once per parser version (`kv.air_parsed`) | 60 s after start, then daily |
+| `bridges` | every 5 s: a Kyiv bridge whose state rose (nothing → near → at, §9b) is written to `bridge_events` and pushed to the phones that asked for the bridges (topic `bridges`, in their language), at most once per bridge every 10 min — a "near" turning "at" excepted | 5 s |
 | `Weather` | the last nights' weather at the launch areas and Kyiv from Open-Meteo (`WEATHER_POINTS`; 92 nights the first time, then 10) into `weather` | 90 s after start, then every 6 h (1 h after a failure) |
 
 **One computation for everybody** (`State.cached`): `/api/markers`, `/api/state`, `/api/feed`, `/api/stats`,
@@ -638,6 +639,43 @@ type. Nothing about a reader is in it.
   address has nothing of its own (`<script id="carry">`). The watched places do **not** travel: they never leave
   the phone, not even in a link that browser history might keep; the reader sets them again. `scripts/set-domain.bat` attaches the domain (Fly certificates, DNS records) and sets it.
 
+## 9b. The Kyiv bridges (1.34)
+
+From 1 October 2026 the Dnipro bridges are the targets — the Southern bridge hit five times in two days, the
+Northern bridge on 3 and 4 October, by Shaheds and jet drones, by day, with cars on them. The live trackers post just
+the bridge's name ("Південний міст", "🔻Зниження Північний міст", "на міст патона", "Північний міст падає‼️✈️"),
+and until 1.34 those posts were dropped as saying nothing, or drawn at the centre of Kyiv.
+
+- **The five bridges** (`BRIDGES`): Pivnichnyi (Northern), Metro, Paton, Darnytskyi, Pivdennyi (Southern) — each
+  the span over the river from OpenStreetMap (the roadway's two ends). They are in the gazetteer (`geo.PLACES`, the
+  middle of each span, with every declension and the Russian names in `geo.ALT`), so a post naming one places its
+  mark on it; plus "Рибальський острів". A traffic notice about them ("рух … перекритий", "смугою", "контактна
+  мережа", "режим руху") and a video of a strike ("Момент вчорашнього удару…") are news: no mark.
+  `tests/fixtures/bridge_posts_2026_10.json`: 43 real posts of 1–4 October, each with the bridge it puts a live
+  mark on, read by hand (24 on a bridge, 19 news / traffic / hits after the fact / "Міст" alone: none).
+- **The state, bridge by bridge** (`State.bridges_now`, carried in the alerts state as `bridges` — a dict by bridge,
+  so the live line sends only the bridge that changed): `at` — a live mark on the bridge or within 1.2 km of its
+  span, or a post of the last 5 minutes that names it (when its mark went elsewhere: "Повз лівий берег на Південний
+  міст"); `near` — within 3.5 km (a Shahed's minute), 6 km for a jet drone or a missile; `hit` — an explosion on it
+  in the last 30 minutes. Never from a stale mark, a closed track, a mark outside Kyiv city / oblast, or one placed
+  at a vague point ("Київ" alone, a bank of the river: 2–4 km from several bridges at once). With the distance, the
+  type, the place named, the time and the channel.
+- **The pages**: Tactical — a bar in the header (red for at / hit, amber for near: the bridge, the distance, how
+  long ago, which channel; tap → the map on that bridge), the five spans drawn on the map in their state, and — menu
+  → Alerts → "Kyiv bridges" (on by default) — a toast, a tone at the reader's volume (critical for a jet drone or a
+  missile at the bridge) and a vibration when one rises. Light — a block above the places, a vibration when one
+  reaches `at`.
+- **Push**: the same toggle subscribes the phone to the topic `bridges` (`push_subs.topics`, with its `lang`);
+  `bridge_watch` sends "🌉 Південний міст: ціль за 2,3 км — Реактивний БпЛА · 17:33 · з дописів каналів, не радар.
+  Не заїжджайте на міст, якщо можете." in the phone's language.
+- **Faster reading**: while a threat is within 12 km of a bridge (`State.bridges_busy`), the web channels are read
+  every 10 s and the Telegram-API ones every 8 s, as in a missile threat.
+- Every rise is kept (`bridge_events`) for the dashboard's "Kyiv bridges" card.
+
+Limits, said in the texts: the positions are the places the posts named (a district is ±1 km), and a post comes
+1–3 minutes after the sighting — a jet drone covers 6 km in that time. A bridge with nothing reported is "nothing
+reported", never "safe".
+
 ## 10. The two pages: Tactical and Light
 
 ### 10.1 Tactical (`/m`)
@@ -654,11 +692,12 @@ level-of-detail classes by zoom, OSM tiles under the vector layers below 150 km 
 - **the 📍 pin**: press and hold on open map (a ring fills while the finger stays; a drag only starts past
   `HOLD_SLOP_PX` = 10 screen px; the browser's long-press menu is suppressed), or tap the empty Pin chip to arm the
   map (`armPin`, banner with Cancel) and tap where it goes (`dropPin`);
-- **the heat layer** (1.33, Map tab → Layers, off at every opening — never remembered): hours under an official
-  air-raid alert in each oblast over 24 h / 7 days / 30 days (`GET /api/alert_hours`), filled in a violet ramp by
-  the share of the time (bins 2 / 10 / 25 / 45 / 70 %), the hours written on each oblast, drawn over the fills and
-  under every mark; the oblasts with an alert anywhere in them right now outlined in red / yellow on top; a legend
-  that says "not live"; switching it on zooms out to the whole country;
+- **the heat layer** (1.34, Map tab → Layers, off at every opening — never remembered): where drones and
+  unidentified targets were reported over 24 h / 7 days / 30 days (`GET /api/drone_heat`: the places the posts named,
+  town and district level, the number of posts — shoot-downs and hits left out, never an oblast's centre or "Kyiv"
+  alone), drawn as a violet density whose spread keeps its size on the screen, so it is layered by zoom (out: the
+  corridors across the region; in: the villages and the Kyiv districts); the most-named places in view written on it
+  and listed in its legend; under every mark. (1.33's alert hours by oblast stay in the dashboard's Analytics.)
 - tabs: **Feed**; **Alerts** (the live tally of what is on the map, then the official alerts); **Stats** — the Air
   Force's official figures only, weapon by weapon since 1.32 (§7.5): for 24 h / 7 d / 30 d (`windows[…].af`) a
   row per type — launched and ↓ shot down, ✓ when used without a number — and the hit locations; then each
@@ -754,7 +793,7 @@ All JSON unless stated. Public unless marked 🔒 (`ADMIN_KEY`).
 | `GET /manifest.json`, `/light.webmanifest`, `/sw.js`, `/favicon.ico`, `/static/*` | PWA files, assets (gzip + ETag) |
 | `GET /healthz` | liveness: `{"ok": true}`, or **503** when the database cannot be had within 3 s |
 | `GET /api/version` | `{v, now, missile, msl, build, app}` — the cheap ping pages poll |
-| `GET /api/state` | active alerts, per-oblast status, sources' health, єРадар counts, config summary |
+| `GET /api/state` | active alerts, per-oblast status, sources' health, єРадар counts, the admin's message, the nuclear event, the Kyiv bridges (`bridges`, §9b), config summary |
 | `GET /api/markers` | live marks with evidence, history, staleness |
 | `GET /api/feed?limit=&lang=` | recent posts (`text`, `text_en`, `text_fr`, `en_mt`, tags); `lang` asks for translation |
 | `GET /api/stream?sync=&ev=&p=&lang=` | the live line (§5.4): `hello`, `sync` (changes of `mk`, `st`, `fd` as asked in `sync`) and, unless `ev=0`, the events `start`, `end`, `threat`, `update`, `feed`, `eradar`, `tr`, `notice`, `nuke`; `p=light` counts it as a Light page |
@@ -763,13 +802,13 @@ All JSON unless stated. Public unless marked 🔒 (`ADMIN_KEY`).
 | `GET /api/impacts?hours=` | explosions and confirmed shoot-downs |
 | `GET /api/stats?days=` | statistics; the Stats tab reads only `windows` (with `af`: launched / down by type, used, impacts, debris) and `af_days` (the Air Force summaries, each with its `post`) |
 | `GET /api/places?oblast=` | gazetteer (names, coordinates, oblast) |
-| `GET /api/alert_hours?days=1|7|30` | the heat layer: per oblast `{h, pct}` — hours under an air-raid alert over the last days and the share of the time (cached 10 min) |
-| `POST /api/push/subscribe`, `/api/push/unsubscribe`, `/api/push/test`; `GET /api/push/key` | Web Push |
+| `GET /api/drone_heat?days=1|7|30` | the heat layer: `points` `[lon, lat, posts, place, oblast]` — where drones and unidentified targets were reported (cached 10 min) |
+| `POST /api/push/subscribe`, `/api/push/unsubscribe`, `/api/push/test`; `GET /api/push/key` | Web Push; subscribe takes `{subscription, home, topics: ["bridges"], lang}` |
 | `POST /api/flag` | "this reading is wrong" report |
 | 🔒 `GET /admin`, `/api/usage` | dashboard, usage counters |
 | 🔒 `GET /api/health` | official sources (ok, last check, detail), every channel read (posts / marks 24 h, share read 7 d, last post, reader state, `mode`, `read_via`, `builtin`), translation backends, lead time over the official alert in Kyiv + oblast (30 days) |
 | 🔒 `GET /api/online` | pages open now with a live line (`total`, `tactical`, `light`, today's peak), the current message, the nuclear event (`nuke`), the last push fan-out (phones, seconds, delivered) |
-| 🔒 `GET /api/analytics?days=` | the dashboard's Analytics (§8c), 7–365 days: `af` per date (launched, down, used, impacts, debris, periods), `af_areas`, `af_directions`, `af_models`, `kyiv` per date (city / oblast minutes, city alerts), `starts` (7 × 24), `reports` per date by type, `hours`, `headings`; since 1.33 `weather` per date (`kyiv`, `launch`), `approach` (8 sectors per date), `air` (`per_date`, `stats`, `sorties`), `obl` (`by`, `cols`, `rows`), `weather_status` |
+| 🔒 `GET /api/analytics?days=` | the dashboard's Analytics (§8c), 7–365 days: `af` per date (launched, down, used, impacts, debris, periods), `af_areas`, `af_directions`, `af_models`, `kyiv` per date (city / oblast minutes, city alerts), `starts` (7 × 24), `reports` per date by type, `hours`, `headings`; since 1.33 `weather` per date (`kyiv`, `launch`), `approach` (8 sectors per date), `air` (`per_date`, `stats`, `sorties`), `obl` (`by`, `cols`, `rows`), `weather_status`; since 1.34 `places` (the heat layer's top 25) and `bridges` (`per_date`, `totals`, `recent`) |
 | 🔒 `POST /api/admin/nuke` | `{action: arm}` → `{code, expires_s, phrase}` (refused while one is on); `{action: fire, code, phrase, text: {uk, en, fr}, push}`; `{action: end}` — the nuclear event (§9) |
 | 🔒 `POST /api/admin/channel` | `{action: add|set|delete, name, mode: map|trial|off, via: web|api}` — the channels read (§7.1); `add` checks `t.me/s/<name>` for readable posts and starts it on trial |
 | 🔒 `POST /api/admin/notice` | `{text: {uk, en, fr}, level: info|warn|alert, hours: 0–168 (0 = until removed), push: bool}` or `{clear: true}` — the team's message (§9) |
@@ -787,13 +826,14 @@ SQLite in WAL mode (`DB_PATH`; on Fly, the volume). Tables:
 | `events` | start / end / threat / update events |
 | `feed` | posts: `post_id, channel, ts, text, tags, text_en, text_fr, en_mt` |
 | `kv` | small settings: the VAPID key pair, the usage counter's daily salt, the channels (`channels`), the admin's message (`notice`), the nuclear event (`nuke`), and similar |
-| `push_subs` | push subscriptions with a ~10 km cell |
+| `push_subs` | push subscriptions with a ~10 km cell, the topics asked for (`bridges`) and the language |
 | `marker_log` | every mark as computed, with its evidence |
 | `outcomes` | shoot-downs, impacts, losses |
 | `channel_stats` | per channel per day: posts, posts with a reading, flagged readings |
 | `digests` | each night / week: the figures (JSON), the summary in EN and UK, the model, any error |
 | `af_reports` | each Air Force summary read (§7.5): `post_id, channel, ts, period, date` and the reading (JSON) — kept for good, one row per post |
 | `air_reports` | what posts reported about the carriers (§7.6): `post_id, kind, phase, channel, ts` and a fingerprint of the text |
+| `bridge_events` | each time a target was reported on or near a Kyiv bridge (§9b): time, bridge, level, km, type, place, channel |
 | `weather` | each night's weather per point (`date, place`, JSON: mean wind, strongest gust, mean cloud cover, rain, lowest temperature) |
 | `flags` | readings people reported as wrong |
 | `corpus_reviews` | verdicts from `/admin` review, merged back with `scripts/corpus.py pull` |
@@ -823,6 +863,7 @@ python app/server.py --demo --port 8099
 | `test_destination`, `test_scripts_parse` | where it is vs where it is going; every page script parses (node) |
 | `test_load`, `test_watchdog` | no network in the marks' path, one computation for everybody; the watchdog |
 | `test_digests` | a night's figures, the model's rules and answer, windows, owner-only and never in a request |
+| `test_bridges` | 43 real bridge posts, the five spans, at / near / hit and what never counts, a post naming a bridge, the push by topic and language, faster reading, the heat layer's places |
 | `test_carriers_weather_heat` | the carriers on 63 real posts, sorties and delays, a reply read as itself, no mark for a carrier, Kinzhal ballistic, the weather, the approach sides, the oblast hours, the heat layer |
 | `test_af_reports`, `test_nuke_analytics`, `test_channels` | the Air Force read weapon by weapon, one per night, the backfill; the nuclear event's locks, Analytics, the loud message, both languages on the dashboard; channels from the dashboard |
 

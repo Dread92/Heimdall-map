@@ -197,11 +197,20 @@ On the channels' web pages a reply shows the message it answers first. Read care
 for the MiG-31K" became a second take-off at the very minute the danger was called off. A post is read as what it
 says itself, never as what it quotes.
 
+## A bridge with nothing reported is not a safe bridge
+
+The bridge alerts (1.34) say what the channels reported on or near each bridge, from the places they named — a
+district is a kilometre wide, and a post comes a minute or more after the sighting, in which a jet drone covers 6 km.
+So a bridge is "target at the bridge", "target 2.3 km away", "hit reported" — or nothing. Nothing is never written
+as "clear" or "safe", the texts say "from channel posts, not radar", and the official alert still comes first. A
+post that names only the city, or a bank of the river, is 2–4 km from several bridges at once: it lights none.
+
 ## The heat map is statistics, and says so
 
-Hours under alert per oblast (1.33) are a record of the past, drawn in a colour no alert uses, under every mark,
-with the oblasts under an alert right now outlined on top and "not live" in its legend. It is off at every opening
-of the app: nobody should open the map at 3 a.m. and see last week.
+Where drones were reported (1.34) is a record of the past, drawn in a colour no alert uses, under every mark, with
+"not live" in its legend. It counts the places posts named for drones and unidentified targets — never the
+shoot-downs or the hits, which would map where the air defence works. It is off at every opening of the app:
+nobody should open the map at 3 a.m. and see last week.
 
 ## The history layer never buries the live picture
 

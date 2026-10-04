@@ -50,6 +50,8 @@ header .up{margin-left:auto;min-width:0;overflow:hidden;text-overflow:ellipsis;w
 #imm{margin:0 14px 10px;padding:12px 14px;background:#4a0d12;border:1px solid #8a2a2a;border-left:5px solid var(--red);border-radius:3px}
 #imm b{display:block;font:800 16px/1.25 var(--sans);text-transform:uppercase;letter-spacing:.02em}
 #imm small{display:block;color:#ffd6d6;margin-top:4px;font-size:12.5px}
+#brg{margin:0 14px 10px;padding:9px 12px;border-radius:3px;color:#fff;font-size:14px;line-height:1.4}#brg[hidden]{display:none}
+#brg.at,#brg.hit{background:#c4121c}#brg.near{background:#8f4c00}#brg b{font-weight:800}#brg small{opacity:.9;margin-left:4px}
 .status{margin:0 14px;padding:16px 16px 14px;border-radius:4px;border:1px solid var(--line);background:var(--panel)}
 .status .big{font:800 22px/1.15 var(--sans);letter-spacing:.02em}
 .status .pl{font-size:14px;color:var(--ink2);margin-top:4px}
@@ -185,6 +187,7 @@ footer a{color:var(--blu)}
 <nav class="sw" id="sw"><span class="on"><b id="swl">LIGHT</b><small id="swl2"></small></span><a href="/m"><b id="swt">TACTICAL</b><small id="swt2"></small></a></nav>
 <div class="slots" id="slots"></div>
 <div id="imm" hidden></div>
+<div id="brg" hidden role="alert"></div>
 <div class="status U" id="status"><div class="big">…</div></div>
 <div id="rwrap" class="empty"><svg id="radar" viewBox="-66 -66 132 132" aria-hidden="true"></svg>
   <div class="zc"><button type="button" id="zin">+</button><button type="button" id="zout" disabled>−</button><button type="button" id="zreset" hidden>⟲</button></div>
@@ -647,7 +650,15 @@ function connectLive(){ if(typeof EventSource==='undefined'||!window.LiveSync) r
     if(d.st){ const r=LiveSync.part('st',d.st,HL.st,STATE); if(r===null) full=true; else if(r!=='same'){ STATE=r.v; HL.st=d.st.h; changed=true; } }
     if(full) refresh(true); else { upd(); if(changed) paint(); } });
   esL.onerror=()=>{ LIVE_ON=false; try{esL.close();}catch(e){} setTimeout(connectLive,5000); }; }
-function upd(){ $('up').textContent=LAST_OK?t('lt_upd',fmtT(new Date(LAST_OK).toISOString())):''; showNotice(STATE&&STATE.notice); showNuke(STATE&&STATE.nuke); checkMove(STATE); }
+function upd(){ $('up').textContent=LAST_OK?t('lt_upd',fmtT(new Date(LAST_OK).toISOString())):''; showNotice(STATE&&STATE.notice); showNuke(STATE&&STATE.nuke); showBrg(STATE&&STATE.bridges); checkMove(STATE); }
+// 1.34: a target reported on or near a Kyiv bridge (the server's state, bridge by bridge); a vibration when one reaches "at"
+let BRP=null;
+function showBrg(B){ const el=$('brg'), R={hit:1,near:2,at:3}; B=B||{};
+  const a=Object.entries(B).filter(([,e])=>e&&e.lvl).sort((x,y)=>R[y[1].lvl]-R[x[1].lvl]);
+  el.hidden=!a.length; el.className=a.length?a[0][1].lvl:'';
+  el.innerHTML=a.map(([id,e])=>{ const n=t('br_'+id); return `<div>🌉 <b>${esc(e.lvl==='hit'?t('br_hit',n):e.lvl==='at'?t('br_at',n):t('br_near',n,String(e.km).replace('.',LANG==='en'?'.':',')))}</b><small>${esc(t('br_ago',Math.max(0,Math.round((Date.now()-Date.parse(e.ts))/6e4))))}</small></div>`; }).join('');
+  if(BRP&&navigator.vibrate&&a.some(([id,e])=>e.lvl==='at'&&(BRP[id]||{}).lvl!=='at')) navigator.vibrate([300,100,300]);
+  BRP=Object.fromEntries(Object.entries(B).map(([k,e])=>[k,{lvl:e&&e.lvl}])); }
 // 1.32: a nuclear event (from the dashboard, behind two locks): static/nuke.js, downloaded only when there is one
 function showNuke(n){ showNuke.n=n; if(window.HNuke) return HNuke.show(n,{host:$('rwrap'),before:$('moved'),flow:1,lang:LANG,alarm:()=>navigator.vibrate&&navigator.vibrate([300,80,300,80,600])});
   if(n&&!showNuke.l){ showNuke.l=1; const s=document.createElement('script'); s.src='/static/nuke.js'; s.onload=()=>showNuke(showNuke.n); s.onerror=()=>{showNuke.l=0}; document.head.appendChild(s); } }

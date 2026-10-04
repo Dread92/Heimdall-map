@@ -5,7 +5,6 @@ what it says, read by hand). And the two live bugs found on the way: a reply rea
 Tu-160 airbase drawn as a town near Kyiv."""
 import json
 import os
-import re
 from datetime import datetime, timedelta, timezone
 
 import geo
@@ -128,19 +127,8 @@ def test_analytics_weather_approach_carriers_and_oblasts():
     kh = next(r for r in A["obl"]["rows"] if r["uid"] == "22")
     assert kh["total_h"] == 3.0 and A["obl"]["by"] == "day" and len(A["obl"]["cols"]) == 7
     assert all(r["uid"] != "20" for r in A["obl"]["rows"])                     # the stale open row counts nothing
-    h = st.alert_hours(1)
-    assert h["oblasts"]["22"] == {"h": 3.0, "pct": 12.5} and h["oblasts"]["20"]["h"] == 0
     json.dumps(A)
 
 
-def test_the_heat_layer_is_public_cached_and_never_hides_the_live_picture():
-    i = SRC.index('if u.path == "/api/alert_hours":')
-    body = SRC[i:SRC.index('if u.path == "/api/analytics":')]
-    assert "_admin_ok" not in body and "st.cached(f\"alert_hours:{d}\", 600" in body and "(1, 7, 30)" in body
-    assert "LAYERS.heat=false;" in TAC                                         # never remembered: every opening is live
-    order = re.findall(r'<g id="(\w+)"></g>', TAC)
-    assert order.index("heatg") > order.index("raionsg") and order.index("heatg") < order.index("markers")
-    assert "hmlive" in TAC and "hm_not_live" in TAC                            # live alerts outlined on top; says "not live"
-    for c in ("#2b2556", "#c0b7f7"):
-        assert c in TAC                                                        # violet: no alert colour means "a lot"
+def test_the_analytics_cards_and_their_csv():
     assert "csvMore(k,A,tag)" in ADMIN and "an_c_obl" in ADMIN and "an_c_air" in ADMIN
