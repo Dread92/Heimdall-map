@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.37** · last updated 2026-10-04
+**Documented version: 1.38** · last updated 2026-10-05
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -444,15 +444,21 @@ block for every value:
 
 `State.markers()`:
 
-1. parses the recent feed into candidates; merges identical ones from the same post (a count);
+1. parses the recent feed into candidates; merges identical ones from the same post (a count). A live-tracking
+   channel's bare line ("На Таращу", "Вибух", "Не спостерігається") is placed at that channel's last reported
+   position (`last_by_channel`, at most 8 min old). 1.38: that position keeps **its own** time — the mark carries
+   `pos_ts`, and a carried position never restarts the clock (only a newly named place does); the channel's own
+   down / lost / clear line ends it; and the official all-clear for Kyiv city ends every position held inside the
+   city (`State.kyiv_city_all_clears`: an end of the city's air-raid alert that left no other source's alert running);
 2. drops what is outside the scope: `in_scope()` = oblast uid in `REGION_UIDS` or within `SCOPE_KM = 330` km
    of Kyiv;
 3. `_chain_and_prune()` links consecutive reports of the same target (same family, time and distance windows,
    roughly ahead of the earlier heading) into a track with `history` — each entry keeps its own report's stated
    height (`alt_m`, `alt_state`), so the pages can show the heights the posts gave in sequence; marks `stale` after
-   `track_stale_minutes`; drops an unknown after 5 min, others after `max(stale × 3, 15)` min; drops
-   everything in an oblast with **no active alert of any kind** once 3 min old; missiles age on their own
-   `MISSILE_TTL_MIN`;
+   `track_stale_minutes`; drops an unknown after 5 min, others after `max(stale × 3, 15)` min — all counted from
+   the position's time (`pos_ts`, else the post's); drops everything in an oblast with **no active alert of any
+   kind** once 3 min old, and, in Kyiv city with no alert running, every mark reported before the last official
+   all-clear there; missiles age on their own `MISSILE_TTL_MIN`;
 4. outcomes (down, impact, lost) close the track they belong to.
 
 Fires, ground damage and the channels' own "чисто" are not drawn (`HIDDEN_STATUS` on the pages).
@@ -656,25 +662,35 @@ Northern bridge on 3 and 4 October, by Shaheds and jet drones, by day, with cars
 the bridge's name ("Південний міст", "🔻Зниження Північний міст", "на міст патона", "Північний міст падає‼️✈️"),
 and until 1.34 those posts were dropped as saying nothing, or drawn at the centre of Kyiv.
 
-- **The five bridges** (`BRIDGES`): Pivnichnyi (Northern), Metro, Paton, Darnytskyi, Pivdennyi (Southern) — each
-  the span over the river from OpenStreetMap (the roadway's two ends). They are in the gazetteer (`geo.PLACES`, the
-  middle of each span, with every declension and the Russian names in `geo.ALT`), so a post naming one places its
-  mark on it; plus "Рибальський острів". A traffic notice about them ("рух … перекритий", "смугою", "контактна
+- **The eight crossings** (`BRIDGES`, north to south): the Kyiv HPP dam at Vyshhorod (`ges`, the road on the dam),
+  Pivnichnyi (Northern), the Petrivskyi railway bridge (`petrivskyi`, "Рибальський залізничний міст" on the map),
+  the Podilsko-Voskresenskyi crossing (`podilskyi`: the harbour, Rybalskyi, the arch over the Dnipro, Trukhaniv
+  island, Raiduzhnyi — one bridge, named by "Подільський" or "Воскресенський"), Metro, Paton, Darnytskyi (also "the
+  Darnytskyi railway bridge", 100 m from it) and Pivdennyi (Southern). Each is its line over the water, `pts` — two
+  points, or more where it bends (1.38) — from OpenStreetMap; `bridge_km` measures to the nearest piece. They are in
+  the gazetteer (`geo.PLACES`, the middle of each crossing — "Київська ГЕС" at the HPP too — with every declension
+  and the Russian names in `geo.ALT`), so a post naming one places its mark on it; plus "Рибальський острів". A traffic notice about them ("рух … перекритий", "смугою", "контактна
   мережа", "режим руху") and a video of a strike ("Момент вчорашнього удару…") are news: no mark.
   `tests/fixtures/bridge_posts_2026_10.json`: 43 real posts of 1–4 October, each with the bridge it puts a live
   mark on, read by hand (24 on a bridge, 19 news / traffic / hits after the fact / "Міст" alone: none).
 - **The state, bridge by bridge** (`State.bridges_now`, carried in the alerts state as `bridges` — a dict by bridge,
   so the live line sends only the bridge that changed): `at` — a live mark on the bridge or within 1.2 km of its
   span, or a post of the last 5 minutes that names it (when its mark went elsewhere: "Повз лівий берег на Південний
-  міст"); `near` — within 3.5 km (a Shahed's minute), 6 km for a jet drone or a missile; `hit` — an explosion on it
-  in the last 30 minutes. Never from a stale mark, a closed track, a mark outside Kyiv city / oblast, or one placed
-  at a vague point ("Київ" alone, a bank of the river: 2–4 km from several bridges at once). With the distance, the
-  type, the place named, the time and the channel.
-- **The pages**: Tactical — a bar in the header (red for at / hit, amber for near: the bridge, the distance, how
-  long ago, which channel; tap → the map on that bridge), the five spans drawn on the map in their state, and — the
+  міст") and says nothing happened to the target; `near` — within 3.5 km (a Shahed's minute), 6 km for a jet drone
+  or a missile; `hit` — **only** a post of the last 30 minutes that names the bridge and says it was hit
+  (`BRIDGE_HIT_RX`: влучання, пошкоджено, зруйновано, приліт). 1.38: an explosion is not a hit — on 5 October a bare
+  "Вибух" (the interception), placed at the tracker's last position, made "hit reported" on two bridges for half an
+  hour. Never from an outcome (shot down, explosion, lost), a stale mark, a mark outside Kyiv city / oblast, one
+  placed at a vague point ("Київ" alone, a bank of the river: 2–4 km from several bridges at once), or anything
+  reported before the official all-clear for Kyiv city (`State.kyiv_city_all_clears`). With the distance, the type,
+  the place named, the time and the channel.
+- **The pages**: Tactical — a bar in the card (red for at / hit, amber for near), one line since 1.38: the bridge
+  that matters most, the distance, how long ago, and "+N" for the others (a tap on it lists them; a tap on the bar →
+  the map on that bridge); the crossings drawn on the map in their state, named a few pixels past their east end
+  (`placeBrgLabels`, at every zoom) — a lit one always, the others only when zoomed in under 22 km; and — the
   bell → "Kyiv bridges" (on by default) — a toast, a tone at the reader's volume (the level-3 tone at the bridge, louder
-  for a jet drone or a missile; level 2 near it, §9) and a vibration when one rises. Light — a block above the places, a vibration when one
-  reaches `at`.
+  for a jet drone or a missile; level 2 near it, §9) and a vibration when one rises. Light — one line above the places
+  (the bridge that matters most, "+N"), a vibration when one reaches `at`.
 - **Push**: the same toggle subscribes the phone to the topic `bridges` (`push_subs.topics`, with its `lang`);
   `bridge_watch` sends "🌉 Південний міст: ціль за 2,3 км — Реактивний БпЛА · 17:33 · з дописів каналів, не радар.
   Не заїжджайте на міст, якщо можете." in the phone's language.
@@ -951,7 +967,7 @@ python app/server.py --demo --port 8099
 | `test_destination`, `test_scripts_parse` | where it is vs where it is going; every page script parses (node) |
 | `test_load`, `test_watchdog` | no network in the marks' path, one computation for everybody; the watchdog |
 | `test_digests` | a night's figures, the model's rules and answer, windows, owner-only and never in a request |
-| `test_bridges` | 43 real bridge posts, the five spans, at / near / hit and what never counts, a post naming a bridge, the push by topic and language, faster reading, the heat layer's places |
+| `test_bridges`, `test_after_the_all_clear` | 43 real bridge posts, the eight crossings and every spelling, at / near / hit and what never counts, a post naming a bridge, the push by topic and language, faster reading, the heat layer's places; the evening of 5 October replayed — nothing left in Kyiv after the official all-clear, no hit from an explosion, a carried position keeps its own time |
 | `test_carriers_weather_heat` | the carriers on 63 real posts, sorties and delays, a reply read as itself, no mark for a carrier, Kinzhal ballistic, the weather, the approach sides, the oblast hours, the heat layer |
 | `test_card`, `test_guide` | 1.36's card: in the header, each chip's official status, the one target and no time promised, the guide's own instruction, the escalation level and its tones, the bell / More / Layers split, 44 px targets, what the ticker said; 1.35's guide |
 | `test_af_reports`, `test_nuke_analytics`, `test_channels` | the Air Force read weapon by weapon, one per night, the backfill; the nuclear event's locks, Analytics, the loud message, both languages on the dashboard; channels from the dashboard |

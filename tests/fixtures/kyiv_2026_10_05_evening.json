@@ -1,0 +1,927 @@
+{
+ "_about": "5 October 2026, 20:14–20:38 Kyiv time: a jet drone across Kyiv to Vydubychi and the Southern bridge, an explosion (kyiv_airdef 'Вибух'), destroyed (kyiv_airdef 20:28), the official all-clear for Kyiv city at 20:27 (alerts), then another target 100+ km south (Lysianka → Stavyshche → Tarashcha → Kaharlyk). Posts as read from the live feed; post ids are channel/hhmmss, not the Telegram ids. The app kept a 'target' at Vydubychi until 20:37 and said 'Darnytskyi / Southern Bridge: hit reported' for 30 minutes: none of that was reported.",
+ "kyiv_city_alert": {
+  "started_at": "2026-10-05T17:21:11+00:00",
+  "finished_at": "2026-10-05T17:27:21+00:00"
+ },
+ "bila_tserkva_alert": {
+  "started_at": "2026-10-05T17:30:34+00:00"
+ },
+ "posts": [
+  {
+   "post_id": "kyiv_airdef/171420",
+   "channel": "kyiv_airdef",
+   "ts": "2026-10-05T17:14:20+00:00",
+   "tags": [
+    "region",
+    "unknown",
+    "kyiv",
+    "geo"
+   ],
+   "text": "1 на Житомирщину\n1 з зони в бік Іванкова"
+  },
+  {
+   "post_id": "kpszsu/171538",
+   "channel": "kpszsu",
+   "ts": "2026-10-05T17:15:38+00:00",
+   "tags": [
+    "drones",
+    "region",
+    "geo"
+   ],
+   "text": "🏍 Реактивний БпЛА на Черкащині, курс на н.п.Кам'янка"
+  },
+  {
+   "post_id": "chyste_nebo/171545",
+   "channel": "chyste_nebo",
+   "ts": "2026-10-05T17:15:45+00:00",
+   "tags": [
+    "unknown",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "Обидва в раціон Іванків"
+  },
+  {
+   "post_id": "chyste_nebo/171641",
+   "channel": "chyste_nebo",
+   "ts": "2026-10-05T17:16:41+00:00",
+   "tags": [
+    "unknown",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "Красилівка на макарівку 4000"
+  },
+  {
+   "post_id": "eRadarrua/171720",
+   "channel": "eRadarrua",
+   "ts": "2026-10-05T17:17:20+00:00",
+   "tags": [
+    "kyiv",
+    "drones",
+    "region",
+    "geo"
+   ],
+   "text": "🛵 Київщина\n- 2 повз Іванків на Бородянку"
+  },
+  {
+   "post_id": "chyste_nebo/171802",
+   "channel": "chyste_nebo",
+   "ts": "2026-10-05T17:18:02+00:00",
+   "tags": [
+    "unknown",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "На Соснівку на Бабинці"
+  },
+  {
+   "post_id": "kyiv_airdef/171812",
+   "channel": "kyiv_airdef",
+   "ts": "2026-10-05T17:18:12+00:00",
+   "tags": [
+    "unknown",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "Бабинці увага з півночі"
+  },
+  {
+   "post_id": "chyste_nebo/171828",
+   "channel": "chyste_nebo",
+   "ts": "2026-10-05T17:18:28+00:00",
+   "tags": [
+    "unknown",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "Макарівка зниження на 2000"
+  },
+  {
+   "post_id": "chyste_nebo/171858",
+   "channel": "chyste_nebo",
+   "ts": "2026-10-05T17:18:58+00:00",
+   "tags": [
+    "unknown",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "На Запруддя . Іванків увага ‼"
+  },
+  {
+   "post_id": "kpszsu/171919",
+   "channel": "kpszsu",
+   "ts": "2026-10-05T17:19:19+00:00",
+   "tags": [
+    "drones",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "🏍 Реактивний БпЛА на Київщині, курс на н.п.Буча/Гостомель"
+  },
+  {
+   "post_id": "chyste_nebo/171952",
+   "channel": "chyste_nebo",
+   "ts": "2026-10-05T17:19:52+00:00",
+   "tags": [
+    "unknown",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "На летовище на Гостомель"
+  },
+  {
+   "post_id": "kyiv_airdef/172005",
+   "channel": "kyiv_airdef",
+   "ts": "2026-10-05T17:20:05+00:00",
+   "tags": [
+    "unknown",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "На Гостомель"
+  },
+  {
+   "post_id": "eRadarrua/172005",
+   "channel": "eRadarrua",
+   "ts": "2026-10-05T17:20:05+00:00",
+   "tags": [
+    "drones",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "🛵 Гостомель"
+  },
+  {
+   "post_id": "kyiv_airdef/172028",
+   "channel": "kyiv_airdef",
+   "ts": "2026-10-05T17:20:28+00:00",
+   "tags": [
+    "unknown",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "Другий на Пісківку підлітає"
+  },
+  {
+   "post_id": "chyste_nebo/172030",
+   "channel": "chyste_nebo",
+   "ts": "2026-10-05T17:20:30+00:00",
+   "tags": [
+    "unknown",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "Гостомель увага ‼"
+  },
+  {
+   "post_id": "chyste_nebo/172100",
+   "channel": "chyste_nebo",
+   "ts": "2026-10-05T17:21:00+00:00",
+   "tags": [
+    "drones",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "Другий не спостерігається"
+  },
+  {
+   "post_id": "kyiv_airdef/172108",
+   "channel": "kyiv_airdef",
+   "ts": "2026-10-05T17:21:08+00:00",
+   "tags": [
+    "drones",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "Цей зник, наче йобнули"
+  },
+  {
+   "post_id": "eRadarrua/172111",
+   "channel": "eRadarrua",
+   "ts": "2026-10-05T17:21:11+00:00",
+   "tags": [
+    "drones",
+    "alert",
+    "kyiv"
+   ],
+   "text": "🟡 20:21 м.Київ - повітряна тривога!"
+  },
+  {
+   "post_id": "chyste_nebo/172131",
+   "channel": "chyste_nebo",
+   "ts": "2026-10-05T17:21:31+00:00",
+   "tags": [
+    "unknown",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "Мінський"
+  },
+  {
+   "post_id": "eRadarrua/172133",
+   "channel": "eRadarrua",
+   "ts": "2026-10-05T17:21:33+00:00",
+   "tags": [
+    "drones",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "🛵 Пуща-Водиця"
+  },
+  {
+   "post_id": "chyste_nebo/172134",
+   "channel": "chyste_nebo",
+   "ts": "2026-10-05T17:21:34+00:00",
+   "tags": [
+    "unknown",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "Оболонь"
+  },
+  {
+   "post_id": "kyiv_airdef/172148",
+   "channel": "kyiv_airdef",
+   "ts": "2026-10-05T17:21:48+00:00",
+   "tags": [
+    "unknown",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "Мінський масив"
+  },
+  {
+   "post_id": "kievinfo_kyiv/172155",
+   "channel": "kievinfo_kyiv",
+   "ts": "2026-10-05T17:21:55+00:00",
+   "tags": [
+    "drones",
+    "alert",
+    "kyiv"
+   ],
+   "text": "🟡 м. Київ — повітряна тривога, жовтий рівень"
+  },
+  {
+   "post_id": "kpszsu/172200",
+   "channel": "kpszsu",
+   "ts": "2026-10-05T17:22:00+00:00",
+   "tags": [
+    "drones",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "🏍 Київ: реактивний БпЛА в напрямку міста"
+  },
+  {
+   "post_id": "kyiv_airdef/172215",
+   "channel": "kyiv_airdef",
+   "ts": "2026-10-05T17:22:15+00:00",
+   "tags": [
+    "unknown",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "Пуща-Водиця"
+  },
+  {
+   "post_id": "kievinfo_kyiv/172215",
+   "channel": "kievinfo_kyiv",
+   "ts": "2026-10-05T17:22:15+00:00",
+   "tags": [
+    "drones",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "✈️❗️Реактивний на Оболонь, Мінський масив"
+  },
+  {
+   "post_id": "kyiv_airdef/172240",
+   "channel": "kyiv_airdef",
+   "ts": "2026-10-05T17:22:40+00:00",
+   "tags": [
+    "unknown",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "Виноградар"
+  },
+  {
+   "post_id": "eRadarrua/172256",
+   "channel": "eRadarrua",
+   "ts": "2026-10-05T17:22:56+00:00",
+   "tags": [
+    "drones",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "🛵 Виноградар"
+  },
+  {
+   "post_id": "monitor_ukr/172302",
+   "channel": "monitor_ukr",
+   "ts": "2026-10-05T17:23:02+00:00",
+   "tags": [
+    "drones"
+   ],
+   "text": "1 реактив на Пущу-Водицю."
+  },
+  {
+   "post_id": "kievinfo_kyiv/172303",
+   "channel": "kievinfo_kyiv",
+   "ts": "2026-10-05T17:23:03+00:00",
+   "tags": [
+    "unknown",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "🔴🔴🔴Виноградар, висота 500 м"
+  },
+  {
+   "post_id": "kpszsu/172305",
+   "channel": "kpszsu",
+   "ts": "2026-10-05T17:23:05+00:00",
+   "tags": [
+    "drones",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "🏍 Київ: реактивний БпЛА на Виноградар"
+  },
+  {
+   "post_id": "chyste_nebo/172326",
+   "channel": "chyste_nebo",
+   "ts": "2026-10-05T17:23:26+00:00",
+   "tags": [
+    "unknown",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "Сирець"
+  },
+  {
+   "post_id": "chyste_nebo/172333",
+   "channel": "chyste_nebo",
+   "ts": "2026-10-05T17:23:33+00:00",
+   "tags": [
+    "unknown",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "На Лукʼянівку"
+  },
+  {
+   "post_id": "kyiv_airdef/172337",
+   "channel": "kyiv_airdef",
+   "ts": "2026-10-05T17:23:37+00:00",
+   "tags": [
+    "unknown",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "Сирець"
+  },
+  {
+   "post_id": "kyiv_airdef/172339",
+   "channel": "kyiv_airdef",
+   "ts": "2026-10-05T17:23:39+00:00",
+   "tags": [
+    "unknown",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "Лукʼянівка"
+  },
+  {
+   "post_id": "chyste_nebo/172358",
+   "channel": "chyste_nebo",
+   "ts": "2026-10-05T17:23:58+00:00",
+   "tags": [
+    "unknown",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "Татарка"
+  },
+  {
+   "post_id": "kievinfo_kyiv/172408",
+   "channel": "kievinfo_kyiv",
+   "ts": "2026-10-05T17:24:08+00:00",
+   "tags": [
+    "drones",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "Сирець, Нивки"
+  },
+  {
+   "post_id": "monitor_ukr/172427",
+   "channel": "monitor_ukr",
+   "ts": "2026-10-05T17:24:27+00:00",
+   "tags": [
+    "drones"
+   ],
+   "text": "1 реактив Центр."
+  },
+  {
+   "post_id": "kpszsu/172428",
+   "channel": "kpszsu",
+   "ts": "2026-10-05T17:24:28+00:00",
+   "tags": [
+    "drones",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "🏍 Київ: реактивний БпЛА на Лук'янівку"
+  },
+  {
+   "post_id": "kyiv_airdef/172431",
+   "channel": "kyiv_airdef",
+   "ts": "2026-10-05T17:24:31+00:00",
+   "tags": [
+    "unknown",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "Клов, Липки увага"
+  },
+  {
+   "post_id": "eRadarrua/172436",
+   "channel": "eRadarrua",
+   "ts": "2026-10-05T17:24:36+00:00",
+   "tags": [
+    "drones",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "🛵 Лукʼянівка"
+  },
+  {
+   "post_id": "chyste_nebo/172454",
+   "channel": "chyste_nebo",
+   "ts": "2026-10-05T17:24:54+00:00",
+   "tags": [
+    "unknown",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "Печерськ"
+  },
+  {
+   "post_id": "chyste_nebo/172500",
+   "channel": "chyste_nebo",
+   "ts": "2026-10-05T17:25:00+00:00",
+   "tags": [
+    "unknown",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "Звіринець"
+  },
+  {
+   "post_id": "kievinfo_kyiv/172501",
+   "channel": "kievinfo_kyiv",
+   "ts": "2026-10-05T17:25:01+00:00",
+   "tags": [
+    "drones",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "Центр, Поділ, Печерськ, Нова забудова"
+  },
+  {
+   "post_id": "kyiv_airdef/172503",
+   "channel": "kyiv_airdef",
+   "ts": "2026-10-05T17:25:03+00:00",
+   "tags": [
+    "unknown",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "На Теличку"
+  },
+  {
+   "post_id": "eRadarrua/172505",
+   "channel": "eRadarrua",
+   "ts": "2026-10-05T17:25:05+00:00",
+   "tags": [
+    "drones",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "🛵❗️ На Південний міст"
+  },
+  {
+   "post_id": "kyiv_airdef/172508",
+   "channel": "kyiv_airdef",
+   "ts": "2026-10-05T17:25:08+00:00",
+   "tags": [
+    "unknown",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "Звіринець"
+  },
+  {
+   "post_id": "chyste_nebo/172510",
+   "channel": "chyste_nebo",
+   "ts": "2026-10-05T17:25:10+00:00",
+   "tags": [
+    "unknown",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "Видубичі"
+  },
+  {
+   "post_id": "kpszsu/172511",
+   "channel": "kpszsu",
+   "ts": "2026-10-05T17:25:11+00:00",
+   "tags": [
+    "drones",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "🏍 Київ: реактивний БпЛА на Печерськ"
+  },
+  {
+   "post_id": "kyiv_airdef/172513",
+   "channel": "kyiv_airdef",
+   "ts": "2026-10-05T17:25:13+00:00",
+   "tags": [
+    "unknown",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "Південний міст - увага!"
+  },
+  {
+   "post_id": "kyiv_airdef/172520",
+   "channel": "kyiv_airdef",
+   "ts": "2026-10-05T17:25:20+00:00",
+   "tags": [
+    "unknown",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "Теличка"
+  },
+  {
+   "post_id": "kyiv_airdef/172523",
+   "channel": "kyiv_airdef",
+   "ts": "2026-10-05T17:25:23+00:00",
+   "tags": [
+    "unknown",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "Видубичі"
+  },
+  {
+   "post_id": "kyiv_airdef/172526",
+   "channel": "kyiv_airdef",
+   "ts": "2026-10-05T17:25:26+00:00",
+   "tags": [
+    "unknown",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "На Деміївку повертає"
+  },
+  {
+   "post_id": "kievinfo_kyiv/172531",
+   "channel": "kievinfo_kyiv",
+   "ts": "2026-10-05T17:25:31+00:00",
+   "tags": [
+    "unknown",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "Південний міст падає"
+  },
+  {
+   "post_id": "chyste_nebo/172534",
+   "channel": "chyste_nebo",
+   "ts": "2026-10-05T17:25:34+00:00",
+   "tags": [
+    "unknown",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "На Пирогів"
+  },
+  {
+   "post_id": "kyiv_airdef/172535",
+   "channel": "kyiv_airdef",
+   "ts": "2026-10-05T17:25:35+00:00",
+   "tags": [
+    "impact",
+    "drones",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "Вибух"
+  },
+  {
+   "post_id": "kyiv_airdef/172544",
+   "channel": "kyiv_airdef",
+   "ts": "2026-10-05T17:25:44+00:00",
+   "tags": [
+    "unknown",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "Пирогів"
+  },
+  {
+   "post_id": "monitor_ukr/172549",
+   "channel": "monitor_ukr",
+   "ts": "2026-10-05T17:25:49+00:00",
+   "tags": [
+    "unknown",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "1х Теличка/Південний міст\n700м"
+  },
+  {
+   "post_id": "eRadarrua/172553",
+   "channel": "eRadarrua",
+   "ts": "2026-10-05T17:25:53+00:00",
+   "tags": [
+    "drones",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "🛵 Повернув на Пирогів"
+  },
+  {
+   "post_id": "kyiv_airdef/172611",
+   "channel": "kyiv_airdef",
+   "ts": "2026-10-05T17:26:11+00:00",
+   "tags": [
+    "clear",
+    "kyiv",
+    "drones",
+    "region",
+    "geo"
+   ],
+   "text": "Впав він тоді ще, затримка цілі. Київ та поруч все чисто"
+  },
+  {
+   "post_id": "kievinfo_kyiv/172721",
+   "channel": "kievinfo_kyiv",
+   "ts": "2026-10-05T17:27:21+00:00",
+   "tags": [
+    "clear",
+    "alert"
+   ],
+   "text": "✅ВІДБІЙ ПОВІТРЯНОЇ ТРИВОГИ"
+  },
+  {
+   "post_id": "eRadarrua/172733",
+   "channel": "eRadarrua",
+   "ts": "2026-10-05T17:27:33+00:00",
+   "tags": [
+    "drones",
+    "clear",
+    "alert",
+    "kyiv"
+   ],
+   "text": "🟢 20:27 м.Київ - відбій повітряної тривоги!"
+  },
+  {
+   "post_id": "kyiv_airdef/172831",
+   "channel": "kyiv_airdef",
+   "ts": "2026-10-05T17:28:31+00:00",
+   "tags": [
+    "air_defense",
+    "drones",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "Перепрошуємо, ціль було знищено."
+  },
+  {
+   "post_id": "chyste_nebo/172920",
+   "channel": "chyste_nebo",
+   "ts": "2026-10-05T17:29:20+00:00",
+   "tags": [
+    "unknown",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "Від Лисянка на Ставище поки"
+  },
+  {
+   "post_id": "chyste_nebo/172943",
+   "channel": "chyste_nebo",
+   "ts": "2026-10-05T17:29:43+00:00",
+   "tags": [
+    "unknown",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "На Таращу"
+  },
+  {
+   "post_id": "kpszsu/172954",
+   "channel": "kpszsu",
+   "ts": "2026-10-05T17:29:54+00:00",
+   "tags": [
+    "drones",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "🏍 Реактивний БпЛА на Черкащині, курс Київщина"
+  },
+  {
+   "post_id": "kyiv_airdef/173002",
+   "channel": "kyiv_airdef",
+   "ts": "2026-10-05T17:30:02+00:00",
+   "tags": [
+    "unknown",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "Та Таращу"
+  },
+  {
+   "post_id": "kievinfo_kyiv/173034",
+   "channel": "kievinfo_kyiv",
+   "ts": "2026-10-05T17:30:34+00:00",
+   "tags": [
+    "drones",
+    "alert"
+   ],
+   "text": "🟡 Білоцерківський район — повітряна тривога, жовтий рівень: Дронова загроза"
+  },
+  {
+   "post_id": "chyste_nebo/173223",
+   "channel": "chyste_nebo",
+   "ts": "2026-10-05T17:32:23+00:00",
+   "tags": [
+    "unknown",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "На Богуслав"
+  },
+  {
+   "post_id": "chyste_nebo/173328",
+   "channel": "chyste_nebo",
+   "ts": "2026-10-05T17:33:28+00:00",
+   "tags": [
+    "unknown",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "На Таращу"
+  },
+  {
+   "post_id": "kpszsu/173413",
+   "channel": "kpszsu",
+   "ts": "2026-10-05T17:34:13+00:00",
+   "tags": [
+    "drones",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "🏍 Реактивний БпЛА на Київщині, курс Біла Церква"
+  },
+  {
+   "post_id": "kyiv_airdef/173437",
+   "channel": "kyiv_airdef",
+   "ts": "2026-10-05T17:34:37+00:00",
+   "tags": [
+    "unknown",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "Далі Узин"
+  },
+  {
+   "post_id": "chyste_nebo/173523",
+   "channel": "chyste_nebo",
+   "ts": "2026-10-05T17:35:23+00:00",
+   "tags": [
+    "unknown",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "Йде 8000 курсом на Кагарлик"
+  },
+  {
+   "post_id": "eRadarrua/173709",
+   "channel": "eRadarrua",
+   "ts": "2026-10-05T17:37:09+00:00",
+   "tags": [
+    "kyiv",
+    "drones",
+    "region",
+    "geo"
+   ],
+   "text": "🛵 Київщина - 1 на Кагарлик"
+  },
+  {
+   "post_id": "chyste_nebo/173728",
+   "channel": "chyste_nebo",
+   "ts": "2026-10-05T17:37:28+00:00",
+   "tags": [
+    "drones",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "Не спостерігається"
+  },
+  {
+   "post_id": "kyiv_airdef/173745",
+   "channel": "kyiv_airdef",
+   "ts": "2026-10-05T17:37:45+00:00",
+   "tags": [
+    "drones",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "Зник"
+  },
+  {
+   "post_id": "chyste_nebo/173811",
+   "channel": "chyste_nebo",
+   "ts": "2026-10-05T17:38:11+00:00",
+   "tags": [
+    "clear",
+    "drones",
+    "kyiv",
+    "region",
+    "geo"
+   ],
+   "text": "В області візуально чисто"
+  }
+ ]
+}

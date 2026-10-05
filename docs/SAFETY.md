@@ -200,6 +200,16 @@ On the channels' web pages a reply shows the message it answers first. Read care
 for the MiG-31K" became a second take-off at the very minute the danger was called off. A post is read as what it
 says itself, never as what it quotes.
 
+## What was carried is as old as where it came from
+
+A live tracker's next line often says only where the target is going ("На Таращу") or what happened to it ("Вибух").
+The app places such a line at the channel's last reported position — and until 1.38 it gave that old position the
+new line's time. On 5 October a jet drone destroyed at Vydubychi at 20:25 stood there as a live target, "1 min ago",
+until 20:37, carried by lines about another target 100 km south; it lit two bridges. Now a carried position keeps the
+time it was reported at and goes grey, then away, on that clock; a line saying the target fell, was lost or that the
+sky is clear ends it; and the **official** all-clear for Kyiv city ends everything reported in the city before it.
+Telegram still cannot end an alert; the official all-clear can end what Telegram said before it.
+
 ## A bridge with nothing reported is not a safe bridge
 
 The bridge alerts (1.34) say what the channels reported on or near each bridge, from the places they named — a
@@ -207,6 +217,11 @@ district is a kilometre wide, and a post comes a minute or more after the sighti
 So a bridge is "target at the bridge", "target 2.3 km away", "hit reported" — or nothing. Nothing is never written
 as "clear" or "safe", the texts say "from channel posts, not radar", and the official alert still comes first. A
 post that names only the city, or a bank of the river, is 2–4 km from several bridges at once: it lights none.
+
+"Hit reported" is said only when a post names the bridge and says the bridge was hit (влучання, пошкоджено, приліт).
+An explosion near a bridge is not a hit: most explosions over Kyiv are interceptions. On 5 October a bare "Вибух",
+placed at the tracker's last position near two bridges, made "hit reported" on both for half an hour; nobody had
+reported a hit, and the app does not draw that conclusion for anyone (1.38).
 
 ## The card says what is known about your place, and nothing more
 

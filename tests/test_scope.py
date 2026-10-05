@@ -81,7 +81,7 @@ def test_a_mark_with_no_oblast_is_judged_by_distance():
 def test_the_filter_runs_before_anything_downstream_sees_the_marks():
     """Dropped in markers(), so the map, the counts, the proximity pushes and the light page all agree."""
     body = SRC[SRC.index("    def markers(self):"):]
-    i, j = body.index("in_scope(m)"), body.index("self._chain_and_prune(out, ttl)")
+    i, j = body.index("in_scope(m)"), body.index("self._chain_and_prune(out, ttl, kyiv_ends)")
     assert i < j
 
 

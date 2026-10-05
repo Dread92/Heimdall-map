@@ -348,9 +348,11 @@ body.m-day .hmv{fill:#1a1340;stroke:#fff}
 .brg{stroke:#9fb3d1;stroke-width:4px;vector-effect:non-scaling-stroke;stroke-linecap:round}.brg.near{stroke:#ff9a2e}.brg.hit{stroke:#ff3b44;stroke-dasharray:5 4}
 .brg.at{stroke:#ff3b44;animation:brp 1.2s ease-in-out infinite}@keyframes brp{50%{stroke-width:9px}}
 .brgl{fill:#b9c6dc;font:700 calc(var(--k,1)*10.5px) var(--sans);paint-order:stroke;stroke:#0b0d11;stroke-width:calc(var(--k,1)*3px);stroke-linejoin:round;pointer-events:none}.brgl.at,.brgl.near,.brgl.hit{fill:#fff}
-svg.far:not(.city) .brgl:not(.at):not(.near):not(.hit){display:none}
+svg:not(.vclose) .brgl:not(.at):not(.near):not(.hit){display:none}
+.brg{fill:none}
 body.m-day .brg{stroke:#4d5d78}body.m-day .brg.near{stroke:#c26a00}body.m-day .brg.at,body.m-day .brg.hit{stroke:#c4121c}body.m-day .brgl{fill:#1d2533;stroke:#fff}
-.brgbar{display:flex;align-items:baseline;flex-wrap:wrap;gap:2px 7px;min-height:44px;padding:9px 12px;border-radius:10px;font:700 15.5px/1.3 var(--sans);color:#fff;cursor:pointer}
+.brgbar{display:flex;align-items:center;flex-wrap:wrap;gap:2px 7px;min-height:44px;padding:4px 6px 4px 12px;border-radius:10px;font:700 14.5px/1.25 var(--sans);color:#fff;cursor:pointer}
+.brgbar .brt{flex:1 1 0;min-width:0}.brgbar .brn{flex:none;min-width:44px;min-height:36px;border:1px solid rgba(255,255,255,.55);border-radius:8px;background:rgba(0,0,0,.18);color:#fff;font:700 14px var(--sans);cursor:pointer}
 .brgbar[hidden]{display:none}.brgbar.at{background:#c4121c;animation:ntp 1.6s ease-in-out infinite}.brgbar.near{background:#8f4c00}.brgbar.hit{background:#5a1512}
 .brgbar small{font:500 13px var(--sans);opacity:.92}.brgbar .brmore{flex-basis:100%;font:500 13.5px var(--sans);opacity:.92}
 @media (prefers-reduced-motion:reduce){.brg.at,.brgbar.at{animation:none}}
@@ -862,7 +864,7 @@ body.lite #mycard,body.lite .panel{background:#000;border-color:#666}body.lite .
   <button class="mi" id="supbtn" type="button" data-t="m_support">Support the project</button>
   <a class="mi" id="tgbtn" data-t="m_tg" target="_blank" rel="noopener" hidden>Community on Telegram</a>
   <button class="mi" id="aboutbtn" type="button" data-t="m_about">About · disclaimer</button>
-  <div class="mi bt" id="buildtag">v1.37</div>
+  <div class="mi bt" id="buildtag">v1.38</div>
 </div>
 <div class="panel" id="lay" hidden role="dialog" aria-labelledby="layh"><div class="pgrab"></div>
   <div class="ph"><b id="layh" data-t="m_layers">Map layers</b><button type="button" class="px" data-close="lay" data-t-aria="btn_close" aria-label="Close">✕</button></div>
@@ -1216,7 +1218,7 @@ function translit(s){let out='';for(let i=0;i<s.length;i++){const c=s[i],l=c.toL
 const svg=$('map'); const VB={x:-75,y:-100,w:150,h:200};
 const ASPECT=()=>{const r=svg.getBoundingClientRect();return r.width?r.height/r.width:1.33;};
 let KPX=1;
-function applyVB(){svg.setAttribute('viewBox',`${VB.x} ${VB.y} ${VB.w} ${VB.h}`);if(typeof drawHome==='function'&&HOME){setTimeout(drawHome,0);if(typeof drawZones==='function')setTimeout(drawZones,0);}const r=svg.getBoundingClientRect();KPX=r.width?VB.w/r.width:1;svg.style.setProperty('--k',KPX);svg.classList.toggle('far',VB.w>90);svg.classList.toggle('close',VB.w<40);svg.classList.toggle('vclose',VB.w<22);svg.classList.toggle('veryfar',VB.w>230);svg.classList.toggle('ua',VB.w>900);if(typeof applySelOblast==='function'&&(VB.w<=300)!==applyVB._zin){applyVB._zin=VB.w<=300;applySelOblast();}{const kz=document.querySelector('.kozak'); if(kz){kz.querySelector('.kz').setAttribute('transform',`scale(${(2.2*KPX).toFixed(3)})`); const ts=kz.querySelectorAll('text'); ts[0].setAttribute('y',(14*KPX).toFixed(2)); ts[1].setAttribute('y',(25*KPX).toFixed(2));}}clearTimeout(applyVB._t);applyVB._t=setTimeout(()=>{applyVB._t=null;if(typeof LAYERS!=='undefined'&&LAYERS.heat&&typeof drawHeat==='function')drawHeat();if(typeof IMP_H!=='undefined'&&IMP_H)drawImpacts();if(typeof updateTiles==='function'){updateTiles();layoutTownLabels();}},120);}
+function applyVB(){svg.setAttribute('viewBox',`${VB.x} ${VB.y} ${VB.w} ${VB.h}`);if(typeof drawHome==='function'&&HOME){setTimeout(drawHome,0);if(typeof drawZones==='function')setTimeout(drawZones,0);}const r=svg.getBoundingClientRect();KPX=r.width?VB.w/r.width:1;if(typeof placeBrgLabels==='function')placeBrgLabels();svg.style.setProperty('--k',KPX);svg.classList.toggle('far',VB.w>90);svg.classList.toggle('close',VB.w<40);svg.classList.toggle('vclose',VB.w<22);svg.classList.toggle('veryfar',VB.w>230);svg.classList.toggle('ua',VB.w>900);if(typeof applySelOblast==='function'&&(VB.w<=300)!==applyVB._zin){applyVB._zin=VB.w<=300;applySelOblast();}{const kz=document.querySelector('.kozak'); if(kz){kz.querySelector('.kz').setAttribute('transform',`scale(${(2.2*KPX).toFixed(3)})`); const ts=kz.querySelectorAll('text'); ts[0].setAttribute('y',(14*KPX).toFixed(2)); ts[1].setAttribute('y',(25*KPX).toFixed(2));}}clearTimeout(applyVB._t);applyVB._t=setTimeout(()=>{applyVB._t=null;if(typeof LAYERS!=='undefined'&&LAYERS.heat&&typeof drawHeat==='function')drawHeat();if(typeof IMP_H!=='undefined'&&IMP_H)drawImpacts();if(typeof updateTiles==='function'){updateTiles();layoutTownLabels();}},120);}
 function setView(cx,cy,w){VB.w=Math.max(8,Math.min(1500,w));VB.h=VB.w*ASPECT();VB.x=cx-VB.w/2;VB.y=cy-VB.h/2;applyVB();}
 function zoomAt(f,cx,cy){const nw=Math.max(8,Math.min(1500,VB.w/f)),nh=nw*ASPECT();VB.x=cx-(cx-VB.x)*(nw/VB.w);VB.y=cy-(cy-VB.y)*(nh/VB.h);VB.w=nw;VB.h=nh;applyVB();}
 function toSvg(px,py){const r=svg.getBoundingClientRect();return [VB.x+(px-r.left)/r.width*VB.w, VB.y+(py-r.top)/r.height*VB.h];}
@@ -1289,26 +1291,39 @@ $('heatx').onclick=()=>{ LAYERS.heat=false; applyLayers(); };
 // a place at its ends; "near" — 3 km, 6 km for a jet drone or a missile; "hit" — an explosion on it in the last 30
 // min). Here: the spans on the map in that state, a bar in the header, and — the bell → Kyiv bridges — a toast,
 // a tone and a vibration when one rises. The same spans as the server's BRIDGES (OpenStreetMap).
-const BRG=[['pivnichnyi',[30.53082,50.48923],[30.54096,50.49218]],['metro',[30.55998,50.44132],[30.56888,50.44397]],['paton',[30.57212,50.42440],[30.59198,50.43015]],
+// 1.38: each crossing is its line over the water — two points, or more where it bends: [id, [lon,lat], [lon,lat], …]
+const BRG=[['ges',[30.50100,50.59050],[30.51000,50.58870],[30.51550,50.58750],[30.52210,50.58620],[30.53000,50.58540]],
+  ['pivnichnyi',[30.53082,50.48923],[30.54096,50.49218]],['petrivskyi',[30.53800,50.48370],[30.55750,50.48370]],
+  ['podilskyi',[30.52480,50.47490],[30.53000,50.47470],[30.54000,50.47160],[30.54570,50.47150],[30.55550,50.47380],[30.56090,50.47550],[30.57130,50.47950],[30.57540,50.48130]],
+  ['metro',[30.55998,50.44132],[30.56888,50.44397]],['paton',[30.57212,50.42440],[30.59198,50.43015]],
   ['darnytskyi',[30.57219,50.41222],[30.59725,50.41850]],['pivdennyi',[30.55467,50.40097],[30.59796,50.39435]]];
-const BRIDGE_UK_NAME={pivnichnyi:'Північний міст',metro:'Міст Метро',paton:'Міст Патона',darnytskyi:'Дарницький міст',pivdennyi:'Південний міст'};
+const BRIDGE_UK_NAME={ges:'Дамба Київської ГЕС',pivnichnyi:'Північний міст',petrivskyi:'Петрівський залізничний міст',podilskyi:'Подільсько-Воскресенський міст',
+  metro:'Міст Метро',paton:'Міст Патона',darnytskyi:'Дарницький міст',pivdennyi:'Південний міст'};
+const brgMid=pts=>pts[Math.floor((pts.length-1)/2)].map((v,i)=>(v+pts[Math.ceil((pts.length-1)/2)][i])/2);
 const BRG_RANK={hit:1,near:2,at:3};
+let BRG_OPEN=false;
 let BRG_ON=true, BRG_PREV=null; try{ const v=localStorage.getItem('brg'); BRG_ON=v===null?true:v==='1'; }catch(e){}
 const brgKm=k=>String(k).replace('.',LANG==='en'?'.':',');
 const brgLine=(id,e)=>{ const n=t('br_'+id); return e.lvl==='hit'?t('br_hit',n):e.lvl==='at'?t('br_at',n):t('br_near',n,brgKm(e.km)); };
 function brgLabel(){ const b=$('brgbtn'); if(!b) return; b.classList.toggle('on',BRG_ON); b.setAttribute('aria-pressed',BRG_ON?'true':'false'); b.title=t(BRG_ON?'m_brg_on':'m_brg'); }
+// the name sits a few screen pixels past the bridge's east end, at every zoom (it used to be 0.8 km off: a street away)
+function placeBrgLabels(){ for(const el of document.querySelectorAll('#bridgeg .brgl')){ el.setAttribute('x',(+el.dataset.x+8*KPX).toFixed(3)); el.setAttribute('y',(+el.dataset.y+4*KPX).toFixed(3)); } }
 function drawBridges(){ const B=(S&&S.bridges)||{}, g=$('bridgeg'); if(!g||!MAP) return;
-  g.innerHTML=BRG.map(([id,a,b])=>{ const e=B[id]||{}, [x1,y1]=proj(a[0],a[1]), [x2,y2]=proj(b[0],b[1]);
-    return `<line class="brg ${e.lvl||''}" x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}"/>`
-      +`<text class="brgl ${e.lvl||''}" x="${(Math.max(x1,x2)+.8).toFixed(2)}" y="${((y1+y2)/2+.4).toFixed(2)}">${esc(t('br_'+id))}</text>`; }).join('');
+  g.innerHTML=BRG.map(([id,...pts])=>{ const e=B[id]||{}, xy=pts.map(p=>proj(p[0],p[1])), east=xy.reduce((a,p)=>p[0]>a[0]?p:a);
+    return `<polyline class="brg ${e.lvl||''}" points="${xy.map(p=>p[0].toFixed(2)+','+p[1].toFixed(2)).join(' ')}"/>`
+      +`<text class="brgl ${e.lvl||''}" data-x="${east[0].toFixed(2)}" data-y="${east[1].toFixed(2)}">${esc(t('br_'+id))}</text>`; }).join('');
+  placeBrgLabels();
   const act=BRG.map(([id])=>[id,B[id]]).filter(([,e])=>e&&e.lvl).sort((x,y)=>BRG_RANK[y[1].lvl]-BRG_RANK[x[1].lvl]||((x[1].km??0)-(y[1].km??0)));
   const bar=$('brgbar');
   if(!act.length){ if(!bar.hidden){ bar.hidden=true; syncTop(); } }
   else { const [id,e]=act[0], age=Math.max(0,Math.round((Date.now()-Date.parse(e.ts))/60000));
     bar.className='brgbar '+e.lvl;
-    bar.innerHTML=`<span>🌉</span><b>${esc(brgLine(id,e))}</b><small>· ${esc(t('br_ago',age))}${e.ch?' · '+esc(CH[e.ch]||e.ch):''}</small>`
-      +(act.length>1?`<span class="brmore">${act.slice(1).map(([i2,e2])=>esc(brgLine(i2,e2))).join(' · ')}</span>`:'');
-    bar.onclick=()=>{ const b=BRG.find(x=>x[0]===id), [x,y]=proj((b[1][0]+b[2][0])/2,(b[1][1]+b[2][1])/2); setView(x,y,18); };
+    // 1.38: one line — the bridge that matters most, its age; the others behind "+N", opened by a tap on it
+    bar.innerHTML=`<span>🌉</span><span class="brt"><b>${esc(brgLine(id,e))}</b> <small>· ${esc(t('br_ago',age))}</small></span>`
+      +(act.length>1?`<button type="button" class="brn" aria-expanded="${BRG_OPEN?'true':'false'}">+${act.length-1}</button>`:'')
+      +(act.length>1&&BRG_OPEN?`<span class="brmore">${act.slice(1).map(([i2,e2])=>esc(brgLine(i2,e2))).join(' · ')}</span>`:'');
+    bar.onclick=ev=>{ if(ev.target.closest('.brn')){ BRG_OPEN=!BRG_OPEN; drawBridges(); return; }
+      const b=BRG.find(x=>x[0]===id), [x,y]=proj(...brgMid(b.slice(1))); setView(x,y,18); };
     if(bar.hidden){ bar.hidden=false; } syncTop(); }
   // one that rises — nothing → near → at — is said once: a toast, a tone at the reader's volume, a vibration
   if(BRG_PREV&&BRG_ON){ for(const [id,e] of act){ const p=BRG_PREV[id]||{};
@@ -2364,7 +2379,7 @@ function rowSub(r){ const m=r.m, bits=[];
   if(r.hi.inbound) bits.push(t('mc_course',homeName()));
   else if(m.target&&!m.approach) bits.push(t('mc_course',tgtName(m)));
   else if(m.heading!=null&&!m.approach) bits.push(dirName(m.heading));
-  bits.push(m.stale?t('lt_lost'):t('tp_ago',Math.max(0,Math.round(agoMin(m.ts)))));
+  bits.push(m.stale?t('lt_lost'):t('tp_ago',Math.max(0,Math.round(agoMin(m.pos_ts||m.ts)))));   // 1.38: the age of the position
   if(r.chs>1) bits.push(tn('mc_ch',r.chs));
   return bits.join(' · '); }
 const rowPlace=m=>m.approach?'→ '+pn(m.target||m.place):m.place==='область'?oblWhere(m):pn(m.place);
@@ -2690,7 +2705,7 @@ function renderStats(){ if(!STATS) return; const el=$('stats'); if(!el) return; 
 // ---------------------------------------------------------------------------------------------------
 // Contacts — the only place to edit them. A channel left empty simply does not appear, so no dead link
 // ever ships: fill TELEGRAM in when the channel exists.
-const APP_VERSION='1.37';
+const APP_VERSION='1.38';
 const CONTACT={
   hosting:'nomakievip@gmail.com',      // hosting & development  ← replace when there is a separate address
   ngo:'nomakievip@gmail.com',          // NGO 07300 volunteer work

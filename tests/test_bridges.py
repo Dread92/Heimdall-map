@@ -39,22 +39,45 @@ def test_the_real_posts_put_their_mark_on_the_right_bridge_and_the_news_on_none(
     assert not wrong, wrong
 
 
-def test_every_spelling_of_the_five_bridges():
+def test_every_spelling_of_the_eight_bridges():
     for text, bid in (("Південного мосту", "pivdennyi"), ("над Північним мостом", "pivnichnyi"), ("на мосту Метро", "metro"),
                       ("метроміст", "metro"), ("міст ім. Патона", "paton"), ("Дарницький залізнично-автомобільний міст", "darnytskyi"),
-                      ("Южный мост", "pivdennyi"), ("Северный мост", "pivnichnyi")):
+                      ("Южный мост", "pivdennyi"), ("Северный мост", "pivnichnyi"),
+                      # 1.38
+                      ("Дарницький залізничний міст", "darnytskyi"), ("Петрівський міст", "petrivskyi"),
+                      ("над Петрівським залізничним мостом", "petrivskyi"), ("Рибальський залізничний міст", "petrivskyi"),
+                      ("Подільський міст", "podilskyi"), ("на Подільсько-Воскресенський міст", "podilskyi"),
+                      ("Воскресенський міст", "podilskyi"), ("Подільський мостовий перехід", "podilskyi"),
+                      ("дамба ГЕС", "ges"), ("над дамбою Київської ГЕС", "ges"), ("міст ГЕС", "ges")):
         assert server.bridges_named(text) == [bid], text
+    for text in ("Подільський район", "Київська ГЕС", "залізничний вокзал", "Петрівка"):
+        assert server.bridges_named(text) == [], text
+    # the trackers' bare names put the mark on the crossing itself
+    for text, place in (("Петрівський міст", "Петрівський залізничний міст"), ("Воскресенський міст", "Подільсько-Воскресенський міст"),
+                        ("Дамба ГЕС", "Дамба Київської ГЕС"), ("Київська ГЕС увага", "Київська ГЕС")):
+        assert [m["place"] for m in geo.parse_for_channel("kyiv_airdef", text)] == [place], text
 
 
 def test_the_spans_and_the_distance_to_them():
-    assert len(server.BRIDGES) == 5
-    pd = next(b for b in server.BRIDGES if b["id"] == "pivdennyi")
-    mid = ((pd["a"][0] + pd["b"][0]) / 2, (pd["a"][1] + pd["b"][1]) / 2)
+    assert [b["id"] for b in server.BRIDGES] == ["ges", "pivnichnyi", "petrivskyi", "podilskyi", "metro", "paton", "darnytskyi", "pivdennyi"]
+    B = {b["id"]: b for b in server.BRIDGES}
+    pd = B["pivdennyi"]
+    mid = ((pd["pts"][0][0] + pd["pts"][1][0]) / 2, (pd["pts"][0][1] + pd["pts"][1][1]) / 2)
     assert server.bridge_km(*mid, pd) < 0.01
     assert 2.0 < server.bridge_km(30.55, 50.38, pd) < 2.5                        # ТЕЦ-5
-    # the page draws the same spans as the server measures
+    # 1.38: a crossing that bends is measured along every piece of it
+    pod = B["podilskyi"]
+    assert all(server.bridge_km(lo, la, pod) < 0.01 for lo, la in pod["pts"])
+    assert server.bridge_km(30.5430, 50.4715, pod) < 0.1                        # the arch over the Dnipro (its place in geo)
+    assert 1.0 < server.bridge_km(30.5430, 50.4715, B["petrivskyi"]) < 1.6       # the railway bridge, 1.4 km north of it
+    assert server.bridge_km(30.5123, 50.5883, B["ges"]) < 0.1                    # the HPP, on the dam
+    for b in server.BRIDGES:                                                     # each geo place is on its own crossing
+        if b["uk"] in geo.PLACES:
+            assert server.bridge_km(*geo.PLACES[b["uk"]][:2], b) < 0.2, b["id"]
+    # the page draws the same lines as the server measures
     for b in server.BRIDGES:
-        assert f"['{b['id']}',[{b['a'][0]:.5f},{b['a'][1]:.5f}],[{b['b'][0]:.5f},{b['b'][1]:.5f}]]" in TAC.replace(" ", ""), b["id"]
+        js = f"['{b['id']}'," + ",".join(f"[{lo:.5f},{la:.5f}]" for lo, la in b["pts"]) + "]"
+        assert js in TAC.replace(" ", "").replace("\n", ""), b["id"]
 
 
 def _state(marks, posts=()):
@@ -77,15 +100,15 @@ def test_bridge_by_bridge_at_near_hit_and_what_never_counts():
         _m("d", 30.50, 50.51, "Оболонь"),                                       # a Shahed 3.2 km from the Northern bridge: near
         _m("e", 30.52, 50.45, "Київ"),                                          # "Kyiv" alone: no bridge
         _m("f", 30.5644, 50.4426, "Міст Метро", stale=7),                       # stale: no
-        _m("g", 30.5644, 50.4426, "Міст Метро", status="impact", minutes=10),   # a hit 10 min ago: hit
+        _m("g", 30.5644, 50.4426, "Міст Метро", status="impact", minutes=10),   # an explosion 10 min ago: not a hit (1.38)
         _m("h", 30.5847, 50.4154, "Дарницький міст", oblast_uid="22"),          # wrong oblast (a misplacement): no
     ]
     B = _state(marks).bridges_now()
     assert B["pivdennyi"]["lvl"] == "at" and B["pivdennyi"]["n"] == 3           # a, b, and the jet drone (< 6 km)
     assert B["paton"]["lvl"] == "at" and B["paton"]["jet"] is True
     assert B["pivnichnyi"]["lvl"] == "near" and 3.0 < B["pivnichnyi"]["km"] < 3.5
-    assert B["metro"]["lvl"] == "near"                                          # the jet drone 2 km away outranks the hit
-    assert _state([marks[5], marks[6]]).bridges_now()["metro"]["lvl"] == "hit"    # alone: the hit 10 min ago; the stale one: nothing
+    assert B["metro"]["lvl"] == "near"                                          # the jet drone 2 km away
+    assert _state([marks[5], marks[6]]).bridges_now()["metro"] == {}             # alone: an explosion is no hit; the stale one: nothing
     assert B["darnytskyi"]["lvl"] == "near" and B["darnytskyi"]["jet"] is True   # the jet drone, 1.7 km away
     # a Shahed 5 km out is nothing; a jet drone 5 km out is "near"
     far = [_m("x", 30.46, 50.33, "Новосілки")]

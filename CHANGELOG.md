@@ -2,6 +2,33 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.38.0 — 2026-10-05
+
+### Fixed
+- **No more "hit reported" from an explosion.** A bridge is "hit reported" only when a post names it and says it was
+  hit (влучання, пошкоджено, приліт). On 5 October a bare "Вибух" — the interception — was placed at the tracker's
+  last position, Vydubychi, and the Darnytskyi and Southern bridges read "hit reported" for half an hour. An explosion
+  stays on the map as an explosion; it never lights a bridge.
+- **A target that is gone no longer stays on the map.** A tracker's line that only says where a target is going ("На
+  Таращу") was placed at the channel's last position *and gave that position its own time*: a jet drone destroyed at
+  Vydubychi at 20:25 stood there as live, "1 min ago", until 20:37, carried by lines about another target 100 km south,
+  and lit the bridges. Now a carried position keeps the time it was reported at; the channel's "fell / lost / clear"
+  ends it; and the official all-clear for Kyiv city ends everything reported in the city before it — marks and
+  bridges alike. Replayed from the posts of that evening in the tests.
+- "Від Лисянки на Ставище": Lysianka is now a known place.
+
+### Added
+- **Three more crossings**: the Kyiv HPP dam at Vyshhorod, the Petrivskyi railway bridge, and the
+  Podilsko-Voskresenskyi bridge (one crossing, from the harbour over Rybalskyi, the Dnipro and Trukhaniv island to
+  Raiduzhnyi — named by "Подільський" or "Воскресенський"). A crossing that bends is measured along its whole line.
+  Posts naming the Darnytskyi railway bridge light the Darnytskyi bridge, 100 m away.
+
+### Changed
+- **The bridge bar is one line**: the bridge that matters most, how far, how long ago, and "+N" for the others (a tap
+  lists them). On Light too. On the map a bridge is named a few pixels from its end at every zoom; the unlit ones only
+  when zoomed in.
+- The card's age for a target is the age of its position.
+
 ## 1.37.0 — 2026-10-04
 
 ### Changed

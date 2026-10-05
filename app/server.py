@@ -336,7 +336,7 @@ def build_id():
 
 # The version the front end shows in its footer, kept here too so /api/version can answer "what is actually
 # running" without anybody reading it off a screenshot. tests/test_version.py pins the two to each other.
-APP_VERSION = "1.37"
+APP_VERSION = "1.38"
 APP_NAME = "Heimdall"
 BUILD = None    # filled at startup
 
@@ -809,18 +809,31 @@ def air_sorties(reports):
 # From 1 October 2026 the bridges are the targets: the Southern bridge was hit five times in two days, the
 # Northern bridge on 3 and 4 October, by Shaheds and jet drones, by day, with cars on them. A bridge is a place
 # somebody drives onto without thinking and cannot leave quickly — so the app says, bridge by bridge, when a target
-# was reported on or near one. Each span over the river, from OpenStreetMap (the roadway's two ends).
+# was reported on or near one. Each crossing as the line it draws over the water, from OpenStreetMap (1.34: the
+# roadway's two ends; 1.38: a polyline where the crossing bends, read off the OpenStreetMap map at street zoom).
+# North to south. 1.38 adds the Kyiv HPP dam at Vyshhorod (the road on the dam), the Petrivskyi railway bridge and the
+# Podilsko-Voskresenskyi crossing (Podil — Rybalskyi — the arch over the Dnipro — Trukhaniv island — Raiduzhnyi).
 BRIDGES = [
-    {"id": "pivnichnyi", "uk": "Північний міст", "en": "Northern Bridge", "fr": "pont Nord", "a": (30.53082, 50.48923), "b": (30.54096, 50.49218)},
-    {"id": "metro", "uk": "Міст Метро", "en": "Metro Bridge", "fr": "pont du Métro", "a": (30.55998, 50.44132), "b": (30.56888, 50.44397)},
-    {"id": "paton", "uk": "Міст Патона", "en": "Paton Bridge", "fr": "pont Paton", "a": (30.57212, 50.42440), "b": (30.59198, 50.43015)},
-    {"id": "darnytskyi", "uk": "Дарницький міст", "en": "Darnytskyi Bridge", "fr": "pont de Darnytsia", "a": (30.57219, 50.41222), "b": (30.59725, 50.41850)},
-    {"id": "pivdennyi", "uk": "Південний міст", "en": "Southern Bridge", "fr": "pont Sud", "a": (30.55467, 50.40097), "b": (30.59796, 50.39435)},
+    {"id": "ges", "uk": "Дамба Київської ГЕС", "en": "Kyiv HPP dam", "fr": "barrage de la centrale de Kyiv",
+     "pts": ((30.5010, 50.5905), (30.5100, 50.5887), (30.5155, 50.5875), (30.5221, 50.5862), (30.5300, 50.5854))},
+    {"id": "pivnichnyi", "uk": "Північний міст", "en": "Northern Bridge", "fr": "pont Nord", "pts": ((30.53082, 50.48923), (30.54096, 50.49218))},
+    {"id": "petrivskyi", "uk": "Петрівський залізничний міст", "en": "Petrivskyi Railway Bridge", "fr": "pont ferroviaire Petrivskyi",
+     "pts": ((30.5380, 50.4837), (30.5575, 50.4837))},
+    {"id": "podilskyi", "uk": "Подільсько-Воскресенський міст", "en": "Podilskyi Bridge", "fr": "pont de Podil",
+     "pts": ((30.5248, 50.4749), (30.5300, 50.4747), (30.5400, 50.4716), (30.5457, 50.4715), (30.5555, 50.4738),
+             (30.5609, 50.4755), (30.5713, 50.4795), (30.5754, 50.4813))},
+    {"id": "metro", "uk": "Міст Метро", "en": "Metro Bridge", "fr": "pont du Métro", "pts": ((30.55998, 50.44132), (30.56888, 50.44397))},
+    {"id": "paton", "uk": "Міст Патона", "en": "Paton Bridge", "fr": "pont Paton", "pts": ((30.57212, 50.42440), (30.59198, 50.43015))},
+    {"id": "darnytskyi", "uk": "Дарницький міст", "en": "Darnytskyi Bridge", "fr": "pont de Darnytsia", "pts": ((30.57219, 50.41222), (30.59725, 50.41850))},
+    {"id": "pivdennyi", "uk": "Південний міст", "en": "Southern Bridge", "fr": "pont Sud", "pts": ((30.55467, 50.40097), (30.59796, 50.39435))},
 ]
 BRIDGE_BY_PLACE = {b["uk"]: b["id"] for b in BRIDGES}
 # "at": the place the post named is the bridge or its ends. "near": a Shahed covers 3.5 km in about a minute; a jet
 # drone or a missile 6 km in well under one, and is drawn 6 km out for that reason.
 BRIDGE_AT_KM, BRIDGE_NEAR_KM, BRIDGE_NEAR_FAST_KM = 1.2, 3.5, 6.0
+# 1.38: what makes "hit reported" — a post that names the bridge and says it was hit or damaged. Never "вибух" (an
+# explosion is most often an interception), never "уражено" (the Air Force's word for a drone taken down).
+BRIDGE_HIT_RX = re.compile(r"влучан|влучил|влучення|пошкоджен|зруйнован|\bприл[іеь]?[іо]т|\bприльот", re.I)
 # A post that names only the city, or a bank of the river, is placed at a point 2–4 km from several bridges.
 # That is not a report near any of them.
 BRIDGE_VAGUE = {"Київ", "м. Київ", "Столиця", "Лівий берег", "Правий берег", "область"}
@@ -828,20 +841,29 @@ BRIDGE_VAGUE = {"Київ", "м. Київ", "Столиця", "Лівий бер
 # Південний міст", "ТЕЦ-5/південний міст") or on the city header ("Київ: 🔻Зниження міст метро").
 BRIDGE_NAME_RX = {
     "pivnichnyi": re.compile(r"\bпівнічн\w{0,3}\s+м[іо]ст|\bсеверн\w{0,3}\s+мост", re.I),
+    "ges": re.compile(r"\b(?:дамб|гребл)\w{0,2}\s+(?:київськ\w{0,3}\s+)?гес\b|\bм[іо]ст\w{0,2}\s+(?:на\s+|через\s+|біля\s+)?(?:київськ\w{0,3}\s+)?гес\b"
+                     r"|\bдамб\w{0,2}\s+(?:киевск\w{0,3}\s+)?гэс\b", re.I),
+    "petrivskyi": re.compile(r"\bпетрівськ\w{0,3}\s+(?:залізничн\w{0,3}\s+)?м[іо]ст|\bрибальськ\w{0,3}\s+залізничн\w{0,3}\s+м[іо]ст"
+                            r"|\bпетровск\w{0,3}\s+(?:железнодорожн\w{0,3}\s+)?мост", re.I),
+    "podilskyi": re.compile(r"\bподільсько-воскресенськ\w{0,3}\s+м[іо]ст|\bподільськ\w{0,3}\s+(?:мостов\w{0,3}\s+перех[оі]д|м[іо]ст)"
+                           r"|\bвоскресенськ\w{0,3}\s+м[іо]ст|\bподольск\w{0,3}\s+мост", re.I),
     "metro": re.compile(r"\bм[іо]ст\w{0,2}\s+метро|\bметро\s*-?\s*м[іо]ст", re.I),
     "paton": re.compile(r"\bм[іо]ст\w{0,2}\s+(?:ім\.?\s*|імені\s+|им\.?\s*|имени\s+)?патона", re.I),
-    "darnytskyi": re.compile(r"\bдарни[цч]\w{0,4}\s+(?:залізнично-автомобільн\w{0,3}\s+)?м[іо]ст", re.I),
+    "darnytskyi": re.compile(r"\bдарни[цч]\w{0,4}\s+(?:залізнично-автомобільн\w{0,3}\s+|залізничн\w{0,3}\s+)?м[іо]ст", re.I),
     "pivdennyi": re.compile(r"\bпівденн\w{0,3}\s+м[іо]ст|\bюжн\w{0,3}\s+мост", re.I),
 }
 
 
 def bridge_km(lon, lat, br):
-    """Distance in km from a point to a bridge's span (a segment; flat projection — a few km in Kyiv)."""
+    """Distance in km from a point to a bridge's line over the water (a polyline; flat projection — a few km in Kyiv)."""
     kx, ky = 111.32 * math.cos(math.radians(50.45)), 110.57
-    (ax, ay), (bx, by) = br["a"], br["b"]
-    px, py, vx, vy = (lon - ax) * kx, (lat - ay) * ky, (bx - ax) * kx, (by - ay) * ky
-    t = max(0.0, min(1.0, (px * vx + py * vy) / (vx * vx + vy * vy)))
-    return math.hypot(px - t * vx, py - t * vy)
+    best = None
+    for (ax, ay), (bx, by) in zip(br["pts"], br["pts"][1:]):
+        px, py, vx, vy = (lon - ax) * kx, (lat - ay) * ky, (bx - ax) * kx, (by - ay) * ky
+        t = max(0.0, min(1.0, (px * vx + py * vy) / (vx * vx + vy * vy)))
+        d = math.hypot(px - t * vx, py - t * vy)
+        best = d if best is None or d < best else best
+    return best
 
 
 def bridges_named(text):
@@ -1874,7 +1896,13 @@ class State:
         if not geo:
             return out
         seen = []
-        last_by_channel = {}   # channel -> (ts, marker) for live-tracking channels (bare place names)
+        # channel -> (when its position was reported, marker, that time as text) — for the live-tracking channels'
+        # bare lines ("Видубичі", "На Таращу", "Вибух"). 1.38: the clock is the POSITION's. A line that only says
+        # where the target is going, or what happened to it, is placed at the channel's last reported position — and
+        # used to restart that position's clock, so on 5 October a target destroyed at Vydubychi at 20:25 stood
+        # there, "1 min ago", until 20:37, carried by lines about another target 100 km south.
+        last_by_channel = {}
+        kyiv_ends = self.kyiv_city_all_clears(ttl)
         for p in sorted(self.store.feed_since(ttl), key=lambda p: p["ts"]):
             ms = self._marker_cache.get(p["post_id"])
             if ms is None:
@@ -1885,12 +1913,17 @@ class State:
                 self._marker_cache[p["post_id"]] = ms
             pts = parse_iso(p["ts"])
             ctx = last_by_channel.get(p["channel"])
+            # the official all-clear for Kyiv city ends every position a channel holds inside the city: whatever is
+            # said after it is about another target, or about nothing
+            if ctx and pts and ctx[1].get("oblast_uid") == "31" and any(ctx[0] < e <= pts for e in kyiv_ends):
+                ctx = None
+                last_by_channel.pop(p["channel"], None)
             fixed = []
             for m in ms:
                 m = dict(m)
                 if m.get("needs_context"):
                     if ctx and pts and (pts - ctx[0]).total_seconds() <= 8 * 60:
-                        m.update(lon=ctx[1]["lon"], lat=ctx[1]["lat"], place=ctx[1]["place"], oblast_uid=ctx[1].get("oblast_uid"))
+                        m.update(lon=ctx[1]["lon"], lat=ctx[1]["lat"], place=ctx[1]["place"], oblast_uid=ctx[1].get("oblast_uid"), pos_ts=ctx[2])
                         ev = dict(m.get("evidence") or {}); ev["position"] = dict(ev.get("position") or {}, matched=ctx[1].get("place"), place=ctx[1].get("place"))
                         m["evidence"] = ev
                     else:
@@ -1903,7 +1936,7 @@ class State:
                         dlon, dlat, _ = geo.PLACES[m["target"]]
                         if math.hypot((dlon - ctx[1]["lon"]) * 70.7, (dlat - ctx[1]["lat"]) * 111) >= 0.4:
                             m.update(lon=ctx[1]["lon"], lat=ctx[1]["lat"], place=ctx[1]["place"], oblast_uid=ctx[1].get("oblast_uid"),
-                                     approach=False, dest_only=False,
+                                     approach=False, dest_only=False, pos_ts=ctx[2],
                                      heading=round(geo.bearing(ctx[1]["lon"], ctx[1]["lat"], dlon, dlat)))
                             ev = dict(m.get("evidence") or {})
                             ev["position"] = {"matched": ctx[1].get("place"), "place": ctx[1].get("place"), "confidence": "medium",
@@ -1919,9 +1952,13 @@ class State:
                             ev = dict(m.get("evidence") or {}); ev["heading"] = {"matched": f"{ctx[1].get('place')} → {m.get('place')}", "method": "bearing between the two latest reports of this live-tracking channel", "confidence": "medium"}
                             m["evidence"] = ev
                 if m.get("lon") is not None and not m.get("status") and not m.get("approach"):
-                    last_by_channel[p["channel"]] = (pts, m)
+                    # a carried position keeps the time it was reported at; only a newly named place resets the clock
+                    last_by_channel[p["channel"]] = ctx if (m.get("pos_ts") and ctx) else (pts, m, p["ts"])
                 fixed.append(m)
             ms = fixed
+            # the channel said the target fell, was destroyed, is lost, or that the sky is clear: its position ends here
+            if any(m.get("status") in ("down", "lost", "clear") for m in ms) or "clear" in (p.get("tags") or []):
+                last_by_channel.pop(p["channel"], None)
             # one post, one marker per place: identical (type, position, status) items collapse (counts add up);
             # official administrations never place a target at an oblast centre; a missile needs a named place or a heading
             official_kind = geo.OFFICIAL_PARSERS.get(p["channel"], (None,))[0]
@@ -1972,7 +2009,7 @@ class State:
         # reaches the Kyiv map, the counts, the proximity pushes or the light page. A mark with no oblast is kept
         # only if it sits close enough to still be about Kyiv.
         out = [m for m in out if in_scope(m)]
-        out = self._chain_and_prune(out, ttl)
+        out = self._chain_and_prune(out, ttl, kyiv_ends)
         out.sort(key=lambda m: m["ts"], reverse=True)
         # Keep what the app decided, not just what it was told. INSERT OR IGNORE keyed on the marker id, so
         # recomputing the same window many times a minute writes each marker exactly once.
@@ -2020,13 +2057,18 @@ class State:
     def bridges_now(self):
         """{bridge id: {} or {lvl, km, type, jet, place, ts, ch, n, how}} — what was reported on or near each bridge
         now. "at" / "near" from a live, positioned mark (never a stale one, never a closed track, never one placed
-        at a vague point); "at" also when a post of the last 5 minutes names the bridge; "hit" when an explosion
-        was reported on it in the last 30 minutes (and nothing live is). Cached 3 s."""
+        at a vague point, never an outcome); "at" also when a post of the last 5 minutes names the bridge and says
+        nothing happened to the target; "hit" only when a post of the last 30 minutes names the bridge AND says the
+        bridge was hit (влучання, пошкоджено, приліт). 1.38: an explosion is not a hit. On 5 October a bare "Вибух"
+        — an interception, placed at the tracker's last position, Vydubychi — made "Darnytskyi Bridge: hit reported"
+        and "Southern Bridge: hit reported" for half an hour; nobody had reported a hit. And nothing posted before
+        the official all-clear for Kyiv city counts after it. Cached 3 s."""
         if self._bridges_res and time.time() - self._bridges_res[0] < 3:
             return self._bridges_res[1]
         now = datetime.now(timezone.utc)
         out = {b["id"]: {} for b in BRIDGES}
         rank = self.BRIDGE_RANK
+        ends = self.kyiv_city_all_clears(35)
 
         def offer(bid, cand):
             cur = out[bid]
@@ -2042,36 +2084,54 @@ class State:
             place = (m.get("place") or "").replace("→", "").strip()
             if place in BRIDGE_VAGUE or m.get("stale") or m.get("endedBy"):
                 continue
-            t = parse_iso(m.get("ts"))
-            if not t:
+            t = parse_iso(m.get("pos_ts") or m.get("ts"))
+            if not t or any(t < e <= now for e in ends):
                 continue
             age = (now - t).total_seconds() / 60
-            st = m.get("status")
-            if st and st != "impact":
-                continue
-            if st == "impact" and age > 30:
-                continue
+            if m.get("status") or age > 30:
+                continue                     # an outcome (shot down, an explosion, lost) is no target on a bridge
             fast = bool(m.get("jet") or m.get("fast") or "missile" in (m.get("type") or ""))
             for b in BRIDGES:
                 d = 0.0 if BRIDGE_BY_PLACE.get(place) == b["id"] else bridge_km(m["lon"], m["lat"], b)
-                lvl = ("hit" if d <= BRIDGE_AT_KM else None) if st else \
-                    "at" if d <= BRIDGE_AT_KM else "near" if d <= (BRIDGE_NEAR_FAST_KM if fast else BRIDGE_NEAR_KM) else None
+                lvl = "at" if d <= BRIDGE_AT_KM else "near" if d <= (BRIDGE_NEAR_FAST_KM if fast else BRIDGE_NEAR_KM) else None
                 if lvl:
                     offer(b["id"], {"lvl": lvl, "km": round(d, 1), "type": m.get("type"), "jet": bool(m.get("jet")), "place": place,
                                     "ts": m.get("ts"), "ch": m.get("channel"), "how": "mark"})
-        for p in self.store.feed_since(6, limit=80, translate=False):
+        for p in self.store.feed_since(31, limit=200, translate=False):
             tags = set(p.get("tags") or [])
             t = parse_iso(p.get("ts"))
-            if not t or (now - t).total_seconds() > 300 or tags & {"clear", "forecast", "news", "trial", "af_summary"}:
+            if not t or tags & {"clear", "forecast", "news", "trial", "af_summary"} or any(t < e <= now for e in ends):
                 continue
-            if geo and geo.looks_like_news(geo._norm(p.get("text") or "")):
+            text = p.get("text") or ""
+            if geo and geo.looks_like_news(geo._norm(text)):
                 continue
-            for bid in bridges_named(p.get("text")):
-                if not out[bid] or out[bid]["lvl"] != "at":
-                    offer(bid, {"lvl": "at", "km": None, "type": None, "jet": False, "place": None, "ts": p["ts"],
+            named = bridges_named(text)
+            if not named:
+                continue
+            if BRIDGE_HIT_RX.search(text):
+                lvl = "hit"                          # the post says the bridge itself was hit
+            elif (now - t).total_seconds() <= 300 and not (geo and any(rx.search(text) for _, rx in geo.STATUS_RX)):
+                lvl = "at"                           # names the bridge, and nothing happened to the target yet
+            else:
+                continue
+            for bid in named:
+                if not out[bid] or rank[out[bid]["lvl"]] < rank[lvl] or (lvl == "hit" and out[bid]["lvl"] != "at"):
+                    offer(bid, {"lvl": lvl, "km": None, "type": None, "jet": False, "place": None, "ts": p["ts"],
                                 "ch": p.get("channel"), "how": "named"})
         self._bridges_res = (time.time(), out)
         return out
+
+    def kyiv_city_all_clears(self, minutes):
+        """When the official air-raid alert over Kyiv city ended within the last `minutes` — an end that left no other
+        source's alert over the city running. Telegram never ends an alert; this is the official one."""
+        try:
+            rows = self.store.history(hours=minutes / 60 + 0.5, oblast_uids=["31"])
+        except Exception:
+            return []
+        spans = [(parse_iso(a["started_at"]), parse_iso(a["finished_at"]) if a.get("finished_at") else None) for a in rows
+                 if (a.get("alert_type") or "air_raid") == "air_raid" and parse_iso(a.get("started_at"))]
+        return sorted(e for i, (s_, e) in enumerate(spans)
+                      if e and not any(j != i and s2 <= e and (e2 is None or e2 > e) for j, (s2, e2) in enumerate(spans)))
 
     def bridges_busy(self):
         """A live threat within 12 km of a bridge: the Kyiv trackers are then read as often as in a missile threat."""
@@ -2792,7 +2852,7 @@ class State:
     # roughly ahead of the earlier heading. The earlier report is then superseded (kept only as history).
     # A report that is neither updated within `stale_minutes` nor closed by an outcome is dropped, and every
     # report in an oblast whose air-raid alert has ended is dropped once the alert has been over for 3 min.
-    def _chain_and_prune(self, ms, ttl):
+    def _chain_and_prune(self, ms, ttl, kyiv_ends=()):
         stale = int(self.cfg.get("track_stale_minutes", 5))
         now = datetime.now(timezone.utc)
         obl_status = {}
@@ -2864,7 +2924,9 @@ class State:
         for m in ms:
             if m.get("superseded_by") or m.get("absorbed"):
                 continue
-            age = (now - parse_iso(m["ts"])).total_seconds() / 60 if parse_iso(m["ts"]) else 0
+            # 1.38: a position carried from an earlier line is as old as that line, not as the line that carried it
+            tp = parse_iso(m.get("pos_ts") or m["ts"])
+            age = (now - tp).total_seconds() / 60 if tp else 0
             if m.get("status"):
                 if age <= 25:
                     keep.append(m)
@@ -2893,6 +2955,8 @@ class State:
             if ou and obl_status and ou not in obl_status and age > 3:
                 # its oblast has no active alert any more → the threat has left or was resolved
                 continue
+            if ou == "31" and "31" not in obl_status and tp and any(tp < e <= now for e in kyiv_ends):
+                continue                          # reported in Kyiv city before the official all-clear there
             keep.append(m)
         return keep
 
