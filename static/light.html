@@ -33,13 +33,18 @@ header{display:flex;align-items:center;gap:8px;padding:10px 14px}
 header b{font:800 17px/1 var(--sans);letter-spacing:.06em}
 header .hlogo{width:26px;height:26px;flex:none;margin-right:-2px}
 #dm .dlogo{display:block;width:160px;height:auto;margin:0 auto 8px}
+@view-transition{navigation:auto}
+::view-transition-old(root){animation:vt-out .16s ease-in both}
+::view-transition-new(root){animation:vt-in .24s cubic-bezier(.2,.8,.2,1) both}
+@keyframes vt-out{to{opacity:0}}@keyframes vt-in{from{opacity:0;transform:translateY(6px)}}
 /* Light | Tactical: the two versions, as one big switch across the top — the first thing the eye meets,
    each half saying what it is. Not a link hidden in a menu or a footer. */
-.sw{display:flex;margin:0 14px 12px;border:2px solid var(--ora);border-radius:8px;overflow:hidden;box-shadow:0 0 0 3px rgba(255,138,61,.12)}
-.sw>*{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:44px;padding:5px 6px;text-decoration:none;color:#fff;background:#1a202b}
+.sw{display:flex;position:relative;isolation:isolate;margin:0 14px 12px;border:2px solid var(--ora);border-radius:8px;overflow:hidden;box-shadow:0 0 0 3px rgba(255,138,61,.12);background:#1a202b}
+.sw>*{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:44px;padding:5px 6px;text-decoration:none;color:#fff;transition:color .2s}
 .sw b{font:800 14px/1 var(--sans);letter-spacing:.1em}
 .sw small{font:500 12px/1.2 var(--sans);opacity:.85;text-align:center}
-.sw .on{background:var(--ora);color:#14100a}
+.sw::before{content:'';position:absolute;z-index:-1;top:0;bottom:0;left:0;width:50%;background:var(--ora);transition:transform .22s cubic-bezier(.3,.7,.2,1)}.sw.go::before{transform:translateX(100%)}
+.sw .on,.sw.go a{color:#14100a;background:none}.sw.go .on{color:#fff}
 .sw a b::after{content:' ›'}
 .sw a:hover,.sw a:focus{background:#242c3a}
 header .up{margin-left:auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:13px var(--sans);color:var(--ink2)}header b{white-space:nowrap}
@@ -68,7 +73,7 @@ header .up{margin-left:auto;min-width:0;overflow:hidden;text-overflow:ellipsis;w
 .status .nb b{color:#ffe9a8;font-weight:600}.status .nb b.R{color:#ffb4ae}
 .status .oo{font-size:13.5px;margin-top:6px;color:#ffe9a8}
 #rwrap{position:relative;width:100%;max-width:440px;margin:12px auto 0}
-/* the map zooms by itself, never the page; unzoomed, one finger still scrolls the page */
+/* the map zooms, never the page; unzoomed, one finger scrolls the page */
 #radar{display:block;width:100%;touch-action:pan-y;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;cursor:pointer}
 #radar.zoomed{touch-action:none;cursor:grab}
 #rwrap .zc{position:absolute;right:4px;top:4px;z-index:2;display:flex;flex-direction:column;gap:6px}
@@ -126,7 +131,7 @@ header .up{margin-left:auto;min-width:0;overflow:hidden;text-overflow:ellipsis;w
 #radar .me{fill:var(--ink)}
 #radar .t{stroke:#0b0d11;stroke-width:.5}
 #radar .t.gone{opacity:.35}
-/* the same silhouettes as the Tactical map (static/glyphs.js), filled with the weapon's colour */
+/* Tactical's silhouettes (glyphs.js), in the weapon's colour */
 .sil .glyph{fill:var(--c);stroke:#0b0d11;stroke-width:1px;vector-effect:non-scaling-stroke}
 .sil .glyph.tri{fill:var(--c)}
 .sil .jetfx{display:none}.sil.jet .jetfx{display:inline}.sil .flame{fill:#ffb347;stroke:none}.sil .flame2{fill:#fff4d6;stroke:none}
@@ -161,7 +166,7 @@ header .up{margin-left:auto;min-width:0;overflow:hidden;text-overflow:ellipsis;w
 #off{margin:8px 14px 0;padding:8px 10px;border:1px solid #6a5a1a;background:#221d0b;color:#ffe9a8;font-size:13.5px;border-radius:3px}
 footer{padding:14px 14px 24px;font-size:13px;color:var(--ink3);text-align:center}
 footer .fbs{display:flex;gap:8px;margin-top:10px}footer .fbs a{flex:1;display:flex;align-items:center;justify-content:center;min-height:44px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink);font:600 14px var(--sans);text-decoration:none}
-/* the notice at opening — once per opening, shared with the Tactical page (sessionStorage 'disc_seen') */
+/* the notice — once per opening, shared with Tactical (sessionStorage 'disc_seen') */
 /* the overlay scrolls, sized by inset:0 and never by vh (on an iPhone with Safari's bars showing, vh is taller
    than the screen and the button ended up out of reach under the bottom bar) */
 #dm{position:fixed;inset:0;z-index:10;background:rgba(5,6,9,.9);display:flex;flex-direction:column;padding:calc(12px + env(safe-area-inset-top,0px)) 16px 0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}#dm::after{content:'';flex:none;height:calc(16px + env(safe-area-inset-bottom,0px))}
@@ -169,10 +174,12 @@ footer .fbs{display:flex;gap:8px;margin-top:10px}footer .fbs a{flex:1;display:fl
 #dm .dbox{max-width:440px;background:var(--panel);border:1px solid var(--line);border-top:4px solid var(--yel);border-radius:4px;padding:16px 18px;margin:auto;flex:none}
 #dm b{display:block;font:800 17px/1.2 var(--sans);margin-bottom:8px}
 #dm p{font-size:14px;line-height:1.45;color:var(--ink2);margin:0 0 10px}#dm p b,#dm p strong{display:inline;font-size:inherit;color:var(--ink)}
-/* big, full width, centred: a small button at the edge was missed */
+/* big, full width, centred (an edge button was missed) */
 #dm #dmok{display:block;width:100%;max-width:340px;margin:18px auto 2px;padding:15px 18px;border:2px solid var(--yel);border-radius:6px;background:var(--yel);color:#111;font:800 17px/1.1 var(--sans);letter-spacing:.03em;text-transform:uppercase}
 #pick{position:fixed;inset:0;background:rgba(5,6,9,.94);display:none;flex-direction:column;padding:16px 14px;z-index:9}
-#pick.show{display:flex}
+#pick.show{display:flex;animation:lin .22s cubic-bezier(.2,.8,.2,1)}
+@keyframes lin{from{opacity:0;transform:translateY(9px)}}
+@media (prefers-reduced-motion:reduce){#pick.show,.sw::before,::view-transition-old(root),::view-transition-new(root){animation:none!important;transition:none!important}}
 #pick h3{font:700 17px var(--sans)}#pick p{color:var(--ink2);font-size:13px;margin:6px 0 12px}
 #pick input{width:100%;padding:12px;font-size:16px;border-radius:3px;border:1px solid var(--line);background:var(--panel);color:var(--ink)}
 #pick .loc{margin:10px 0;padding:12px;border:1px solid var(--ora);border-radius:3px;font-weight:600;text-align:left}
@@ -186,7 +193,7 @@ footer .fbs{display:flex;gap:8px;margin-top:10px}footer .fbs a{flex:1;display:fl
 <header><img class="hlogo" src="/static/heimdall-64.png" alt=""><b>HEIMDALL</b><span class="up" id="up"></span><select class="lsel" id="langsel" aria-label="Language"></select></header>
 <div class="notice lv-warn" id="moved" hidden role="status"><div class="ntb"><b class="nth mvt"></b><span class="mvb"></span><a class="mvgo" href="#"></a></div><button class="nx" type="button" aria-label="✕">✕</button></div>
 <div class="notice" id="notice" hidden role="status"><div class="ntb"><b class="nth" id="nth"></b><span class="ntx"></span></div><button class="nx" type="button" id="noticex" aria-label="✕">✕</button></div>
-<nav class="sw" id="sw"><span class="on"><b id="swl">LIGHT</b><small id="swl2"></small></span><a href="/m"><b id="swt">TACTICAL</b><small id="swt2"></small></a></nav>
+<nav class="sw" id="sw"><span class="on"><b id="swl">LIGHT</b><small id="swl2"></small></span><a href="/m" data-sw><b id="swt">TACTICAL</b><small id="swt2"></small></a></nav>
 <div class="slots" id="slots"></div>
 <div id="imm" hidden></div>
 <div id="brg" hidden role="alert"></div>
@@ -202,6 +209,7 @@ footer .fbs{display:flex;gap:8px;margin-top:10px}footer .fbs a{flex:1;display:fl
 <div id="dm" hidden><div class="dbox"><img class="dlogo" src="/static/heimdall-full.webp" alt="Heimdall" width="160" height="147" loading="lazy"><div class="dmh"><b id="dmt"></b><select class="lsel" id="dmlang" aria-label="Language"></select></div><p id="dm1"></p><p id="dm2"></p><p id="dm3"></p><button id="dmok"></button></div></div>
 <div id="pick"><button class="x" id="pickx">✕</button><h3 id="pickh"></h3><p id="pickp"></p>
   <input id="pickq" autocomplete="off"><button class="loc" id="pickloc"></button><div class="res" id="pickres"></div></div>
+<script type="speculationrules">{"prerender":[{"where":{"href_matches":"/m"},"eagerness":"conservative"}]}</script>
 <script src="/static/i18n.js"></script>
 <script src="/static/glyphs.js"></script>
 <script src="/static/live.js"></script>
@@ -267,7 +275,7 @@ let KD=null, VIL=null;   // Kyiv districts; villages and neighbourhoods (names o
 async function loadExtras(){
   try{ if(!KD) KD=(await (await fetch('/static/kyiv-districts.json')).json()).districts; }catch(e){}
   try{ if(!VIL){ const pl=PLACES||(await (await fetch('/api/places?oblast=31,14,10,25,19,24,4,20')).json()).places;
-    // settlements and neighbourhoods only: no plants, parks, roads, or "Brovary south"-style aliases of a town already on the map
+    // settlements and neighbourhoods only (no plants, parks, roads, aliases)
     VIL=pl.filter(x=>!/громада|берег|столиця|водосховище|море|АЕС|ГЕС|ТЕЦ|траса|шосе|проспект|вулиц|міст\b|аеропорт|район$|очисн|парк|станці|завод|\s(південь|північ|схід|захід|центр)$/i.test(x.name)); } }catch(e){}
 }
 async function loadLM(){
@@ -454,7 +462,7 @@ function paintSlots(){
 function paint(){
   paintSlots();
   const p=place();
-  $('disc').textContent=t('lt_disc'); $('full').textContent=t('lt_full')+' →'; $('gdl').textContent=t('m_guide'); if($('hfoot').dataset.l!==LANG){ $('hfoot').innerHTML=footerHTML({logos:false}); $('hfoot').dataset.l=LANG; }   // 1.39: the same footer as Tactical (static/i18n.js); no logos on 2G
+  $('disc').textContent=t('lt_disc'); $('full').textContent=t('lt_full')+' →'; $('gdl').textContent=t('m_guide'); if($('hfoot').dataset.l!==LANG){ $('hfoot').innerHTML=footerHTML({logos:false}); $('hfoot').dataset.l=LANG; }
   $('swl').textContent=t('sw_light'); $('swt').textContent=t('sw_tac'); $('sw').title=t('sw_title');
   $('swl2').textContent=t('sw_light_b'); $('swt2').textContent=t('sw_tac_b');
   if(!p){ $('status').className='status U'; $('status').innerHTML=`<div class="big">${esc(t('lt_noplace'))}</div><div class="pl">${esc(t('lt_noplace_b'))}</div>`;
@@ -743,7 +751,7 @@ $('pickx').onclick=()=>$('pick').classList.remove('show');
   if(seen) return;
   $('dmt').textContent=t('d_title'); ['dm1','dm2','dm3'].forEach((id,i)=>{ $(id).innerHTML=t('d_p'+(i+1)); });
   $('dmok').textContent=t('d_ok'); $('dm').hidden=false; $('dmok').onclick=()=>{ $('dm').hidden=true; }; })();
-usePlace(); refresh(true).then(connectLive); setInterval(refresh,15000);
+usePlace(); refresh(true).then(()=>whenShown(connectLive)); setInterval(refresh,15000);
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden) refresh(!liveOK()); });
 </script>
 </body>

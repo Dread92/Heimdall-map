@@ -7,6 +7,13 @@
 <title>Що робити — пам'ятка про загрози · Heimdall</title>
 <link rel="icon" href="/static/heimdall-64.png">
 <style>
+/* 1.40: the pages fade into each other instead of reloading on a blank screen */
+@view-transition{navigation:auto}
+::view-transition-old(root){animation:vt-out .16s ease-in both}
+::view-transition-new(root){animation:vt-in .24s cubic-bezier(.2,.8,.2,1) both}
+@keyframes vt-out{to{opacity:0}}@keyframes vt-in{from{opacity:0;transform:translateY(6px)}}
+@media (prefers-reduced-motion:reduce){::view-transition-group(*),::view-transition-old(*),::view-transition-new(*){animation:none!important}}
+
 /* Heimdall — what to do, weapon by weapon (1.35).
    One page, three languages, nothing fetched but the map's own silhouettes (static/glyphs.js): it has to open in a
    corridor on 2G, and — kept by the service worker (static/sw.js) — with no network at all. Every rule on it comes

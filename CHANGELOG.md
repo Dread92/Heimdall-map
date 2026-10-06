@@ -2,6 +2,21 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.40.0 — 2026-10-06
+
+### Changed
+- **The heat map's colour is the number of reports**: pale yellow for a few, orange, red for the most (it was
+  violet). Each place adds its count around itself; the colour is read on a scale set by the busiest place of the
+  period (or the busiest spot in view, if more), so a quiet corner never turns red because it is zoomed in on. The
+  legend reads "1 … N+" and "not live, not alerts"; while the heat map is on, the official alerts are drawn as
+  outlines so the two are never read as one colour.
+- **Light ⇄ Tactical is a toggle, not a reload**: the orange thumb slides to the other half, and the browser fades
+  one version into the other — having usually loaded it already when the switch was pressed. A page loaded ahead
+  opens no live line and is not counted as a visit until it is shown.
+- **Motion in the menus**: the bell, More and Layers panels rise in and leave quickly, their rows a few
+  milliseconds apart; one orange line slides under the drawer's tabs; switches, buttons and sheets move with the same
+  easing. Nothing moves in blackout mode or with "reduce motion". Light: the place picker and the target card slide in.
+
 ## 1.39.0 — 2026-10-06
 
 ### Changed

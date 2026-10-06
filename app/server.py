@@ -336,7 +336,7 @@ def build_id():
 
 # The version the front end shows in its footer, kept here too so /api/version can answer "what is actually
 # running" without anybody reading it off a screenshot. tests/test_version.py pins the two to each other.
-APP_VERSION = "1.39"
+APP_VERSION = "1.40"
 APP_NAME = "Heimdall"
 BUILD = None    # filled at startup
 
@@ -4819,9 +4819,11 @@ class Handler(BaseHTTPRequestHandler):
         if auth == "set":
             self.send_response(302); self.send_header("Location", u.path or "/"); self.send_header("Set-Cookie", f"uak={q['key'][0]}; Path=/; Max-Age=31536000; SameSite=Lax"); self.end_headers(); return
         try:
+            # 1.40: a page the browser loads ahead (Light ⇄ Tactical, Sec-Purpose: prefetch;prerender) is not a visit
+            ahead = "prefetch" in (self.headers.get("Sec-Purpose") or self.headers.get("Purpose") or "").lower()
             if u.path in ("/", "/m", "/k", "/kyiv"):
                 usage = getattr(st, "usage", None)
-                if usage:
+                if usage and not ahead:
                     ua = self.headers.get("User-Agent") or ""
                     usage.hit(self._peer_ip(), ua, "load",
                               lang=(q.get("lang", [None])[0] or ("uk" if "uk" in (self.headers.get("Accept-Language") or "").lower() else None)),
@@ -4837,7 +4839,7 @@ class Handler(BaseHTTPRequestHandler):
             # its own scope, so it installs on the phone as a separate app from the full map.
             if u.path in ("/light", "/l"):
                 usage = getattr(st, "usage", None)
-                if usage:
+                if usage and not ahead:
                     usage.hit(self._peer_ip(), self.headers.get("User-Agent") or "", "load", lang=None, pwa=False, lite=True)
                 return self._file("light.html", "text/html; charset=utf-8")
             if u.path == "/light.webmanifest":

@@ -137,17 +137,27 @@ body.lite .tstrip.old{background:#111;color:#ddd;border-color:#555}
 #top .name small{display:block;font:500 9.5px/1 var(--mono);letter-spacing:.14em;color:var(--ink3);margin-top:3px}
 .srcs{display:flex;gap:4px;margin-left:2px;align-items:center}.srcs i{width:6px;height:6px;background:var(--ink3);display:inline-block}.srcs i.ok{background:var(--green)}.srcs i.warn{background:var(--yellow)}.srcs i.bad{background:var(--red)}.srcs .sn{font:600 10px var(--mono);color:var(--ink3);letter-spacing:.02em}@media (max-width:999px){.srcs .sn{display:none}}
 #top .sp{display:none}
+/* 1.40: Light ⇄ Tactical (and the guide) fade into each other instead of reloading on a blank screen */
+@view-transition{navigation:auto}
+::view-transition-old(root){animation:vt-out .16s ease-in both}
+::view-transition-new(root){animation:vt-in .24s cubic-bezier(.2,.8,.2,1) both}
+@keyframes vt-out{to{opacity:0}}@keyframes vt-in{from{opacity:0;transform:translateY(6px)}}
+@media (prefers-reduced-motion:reduce){::view-transition-group(*),::view-transition-old(*),::view-transition-new(*){animation:none!important}}
 /* Light | Tactical — the two versions, one tap apart, where the eye lands first */
 /* 1.39: the switch takes the room between the logos and the two buttons, centred in it, and its words shrink with the
    screen (clamp) instead of being cut — "ПРОСТА›" was clipped on narrow phones */
-#top .vsw{display:flex;flex:1 1 auto;min-width:0;max-width:340px;margin:0 auto;border:2px solid var(--orange,#ff8a3d);border-radius:7px;overflow:hidden;box-shadow:0 0 0 3px rgba(255,138,61,.14)}
-#top .vsw>*{flex:1 1 0;min-width:0;display:flex;align-items:center;justify-content:center;min-height:44px;font:800 clamp(10.5px,3.3vw,12.5px)/1 var(--sans);letter-spacing:clamp(.01em,.45vw,.08em);padding:0 clamp(3px,1.5vw,12px);color:#fff;text-decoration:none;background:#1a202b;white-space:nowrap}
-#top .vsw .on{background:var(--orange,#ff8a3d);color:#14100a}
+#top .vsw{display:flex;position:relative;isolation:isolate;flex:1 1 auto;min-width:0;max-width:340px;margin:0 auto;border:2px solid var(--orange,#ff8a3d);border-radius:7px;overflow:hidden;box-shadow:0 0 0 3px rgba(255,138,61,.14);background:#1a202b}
+#top .vsw>*{flex:1 1 0;min-width:0;display:flex;align-items:center;justify-content:center;min-height:44px;font:800 clamp(10.5px,3.3vw,12.5px)/1 var(--sans);letter-spacing:clamp(.01em,.45vw,.08em);padding:0 clamp(3px,1.5vw,12px);color:#fff;text-decoration:none;background:transparent;white-space:nowrap;transition:color .2s,background-color .2s}
+/* 1.40: the orange half is one thumb; a tap on the other half slides it across (0.2 s), then that version opens —
+   the browser fades one page into the other (@view-transition) and has usually loaded it on the press already */
+#top .vsw::before{content:'';position:absolute;z-index:-1;top:0;bottom:0;left:50%;width:50%;background:var(--orange,#ff8a3d);transition:transform .22s cubic-bezier(.3,.7,.2,1)}
+#top .vsw.go::before{transform:translateX(-100%)}
+#top .vsw .on{color:#14100a}#top .vsw.go .on{color:#fff}#top .vsw.go a{color:#14100a;background:transparent}
 #top .vsw a::after{content:' ›'}
 #top .vsw a:hover,#top .vsw a:focus{background:#242c3a}
 @media (max-width:380px){#top .logo.ngo{display:none}}
-body.m-day #top .vsw{border-color:#b9b2a4}body.m-day #top .vsw>*{background:#fff;color:#333}body.m-day #top .vsw .on{background:#e0701f;color:#fff}
-body.lite #top .vsw .on{background:#fff;color:#000}
+body.m-day #top .vsw{border-color:#b9b2a4;background:#fff}body.m-day #top .vsw>*{color:#333}body.m-day #top .vsw::before{background:#e0701f}body.m-day #top .vsw .on,body.m-day #top .vsw.go a{color:#fff}body.m-day #top .vsw.go .on{color:#333}body.m-day #top .vsw a:hover{background:#f1ede6}
+body.lite #top .vsw::before{background:#fff;transition:none}body.lite #top .vsw .on,body.lite #top .vsw.go a{color:#000}body.lite #top .vsw.go .on{color:#fff}
 .ib{width:34px;height:30px;border:1px solid var(--line);background:var(--panel);color:var(--ink2);border-radius:2px;font:600 12px var(--mono);display:inline-flex;align-items:center;justify-content:center;padding:0}
 .ib.on{color:var(--ua-yellow);border-color:#5a4d00;background:#1e1a05}
 /* the official block of the card = #kyiv (filled by render): the official status of the watched place's raion, in
@@ -255,7 +265,7 @@ body.lite .imp.dmg .ig{fill:#fff}
 .tip{position:absolute;z-index:6;max-width:300px;background:rgba(18,21,27,.98);border:1px solid var(--line);border-left:3px solid var(--orange);padding:8px 10px;font-size:12.5px;pointer-events:none}
 .tip b{display:block;font:700 15px/1.1 var(--cond);text-transform:uppercase;letter-spacing:.03em;margin-bottom:3px}.tip .m{color:var(--ink2);font-family:var(--mono);font-size:11px}.tip .q{margin-top:5px;padding-top:5px;border-top:1px solid var(--line);white-space:pre-wrap}
 /* ---------- drawer ---------- */
-#drawer{position:fixed;left:0;right:0;bottom:0;z-index:15;background:var(--panel);border-top:1px solid var(--line);height:var(--peek);transition:height .25s;display:flex;flex-direction:column;padding-bottom:var(--sab)}
+#drawer{position:fixed;left:0;right:0;bottom:0;z-index:15;background:var(--panel);border-top:1px solid var(--line);height:var(--peek);transition:height .3s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column;padding-bottom:var(--sab)}
 #drawer.half{height:52%}#drawer.open{height:84%}
 #drawer .handle{height:58px;display:flex;align-items:flex-end;padding:0 6px;cursor:pointer;flex:none;border-bottom:1px solid var(--line)}
 /* the panel is opened and closed constantly during an attack, so the control is a 88x28 tab riding on the
@@ -307,7 +317,7 @@ body.lite #drawer .dchev{background:#111;border-color:#fff;color:#fff}
 .layermenu{display:flex;flex-wrap:wrap;gap:4px 12px;padding:8px 12px;border-bottom:1px solid var(--line);font:500 11px var(--mono);color:var(--ink2)}
 .layermenu label{display:flex;gap:5px;align-items:center;white-space:nowrap}.layermenu .lbl{color:var(--ink3);letter-spacing:.1em;text-transform:uppercase}
 /* sheets & toast */
-.sheet{position:fixed;left:0;right:0;bottom:0;z-index:30;background:#14171d;border-top:2px solid var(--ua-yellow);padding:12px 14px calc(14px + var(--sab));transform:translateY(105%);transition:transform .22s;max-height:82vh;max-height:82dvh;overflow:auto}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:30;background:#14171d;border-top:2px solid var(--ua-yellow);padding:12px 14px calc(14px + var(--sab));transform:translateY(105%);transition:transform .28s cubic-bezier(.2,.8,.2,1);max-height:82vh;max-height:82dvh;overflow:auto}
 .sheet.top{z-index:65}   /* the support sheet opened from the welcome notice (z 60) sits above it */
 .sheet.show{transform:none}
 .sheet .grab{display:none}
@@ -342,13 +352,18 @@ svg#map{display:block;width:100%;height:min(64vh,560px)}
 .ob{fill:none;stroke:#2a3344;stroke-width:1.3px;vector-effect:non-scaling-stroke;transition:fill .5s}
 /* 1.33: the heat map layer — statistics in violet, the live alerts outlined on top, the value per oblast */
 /* 1.34: the heat layer — a density of where drones were reported, the most-named places written on it */
-.hmimg{pointer-events:none;opacity:.85}
+.hmimg{pointer-events:none;opacity:.9;mix-blend-mode:screen}body.m-day .hmimg{mix-blend-mode:multiply}
 .hmv{fill:#fff;font:700 calc(var(--k,1)*11px) var(--sans);paint-order:stroke;stroke:#0b0d11;stroke-width:calc(var(--k,1)*3px);stroke-linejoin:round;pointer-events:none}
 body.m-day .hmv{fill:#1a1340;stroke:#fff}
-#heatleg{position:absolute;right:52px;top:8px;z-index:6;width:min(230px,calc(100% - 70px));background:rgba(14,17,23,.95);border:1px solid var(--line);border-left:3px solid #8b7fe0;padding:7px 8px 7px 10px;font:12px/1.35 var(--sans);color:var(--ink)}
+#heatleg{position:absolute;right:52px;top:8px;z-index:6;width:min(230px,calc(100% - 70px));background:rgba(14,17,23,.95);border:1px solid var(--line);border-left:3px solid #ff8a3d;padding:7px 8px 7px 10px;font:12px/1.35 var(--sans);color:var(--ink)}
 #heatleg[hidden]{display:none}.hlh{display:flex;align-items:center;gap:8px}.hlh b{flex:1;font:700 10.5px var(--mono);letter-spacing:.06em;text-transform:uppercase}
 #heatx{background:transparent;border:1px solid var(--line);color:var(--ink2);width:26px;height:24px;border-radius:3px;font-size:12px}
-.hlr{display:flex;align-items:center;gap:6px;margin:6px 0 2px;font:9.5px var(--mono);color:var(--ink3)}.hlr i{flex:1;height:8px;border-radius:2px}.hle{color:var(--ink3);font-size:11.5px}
+/* 1.40: while the heat map is on, the official alert colours stay — outlined, over a faint fill — so the two are
+   never read as one colour */
+svg:not(.no-heat) :is(.nb,.rn,.kd):is(.R,.oR){fill-opacity:.3!important;stroke:#ff5a5f!important;stroke-width:1.8px!important}
+svg:not(.no-heat) :is(.nb,.rn,.kd):is(.Y,.oY,.P){fill-opacity:.3!important;stroke:#ffc94d!important;stroke-width:1.8px!important}
+body.m-day svg:not(.no-heat) :is(.nb,.rn,.kd):is(.R,.oR,.Y,.oY,.P){fill-opacity:.1!important}
+.hlr{display:flex;align-items:center;gap:6px;margin:6px 0 2px;font:9.5px var(--mono);color:var(--ink3)}.hlr i{flex:1;height:10px;border-radius:3px}.hle{color:var(--ink3);font-size:11.5px}
 .hlw{display:flex;gap:4px;margin:4px 0 5px}.hlw button{flex:1;background:transparent;border:1px solid var(--line);color:var(--ink2);font:600 11px var(--mono);padding:4px 0;border-radius:3px}.hlw button.on{background:#2b2556;color:#fff;border-color:#8b7fe0}
 .hlt{margin:2px 0 4px}.hlt div{display:flex;gap:6px;font-size:12px;line-height:1.45}.hlt b{min-width:26px;text-align:right;font:700 11.5px var(--mono);color:#c0b7f7}
 .hln{font-size:11px;color:var(--ink3)}
@@ -761,6 +776,24 @@ body.lite .mcmini.w{background:#fff;color:#000}
 /* the three panels: a sheet from the bottom on a phone, a drop-down under the header on a computer */
 .panel{position:fixed;z-index:42;left:0;right:0;bottom:0;max-height:86vh;max-height:86dvh;overflow-y:auto;overscroll-behavior:contain;background:#14171d;border-top:1px solid var(--line);border-radius:18px 18px 0 0;padding:0 0 calc(10px + var(--sab));box-shadow:0 -12px 32px rgba(0,0,0,.6);color:var(--ink)}
 .panel[hidden]{display:none}
+/* 1.40: motion — short and eased, never bouncy; none in blackout mode or with "reduce motion". A panel rises in (a
+   phone) or drops in (a computer), its rows follow a few milliseconds apart, and it leaves faster than it came. */
+.panel:not([hidden]){animation:pin .26s cubic-bezier(.2,.8,.2,1) both}
+.panel.closing{animation:pout .16s ease-in both;pointer-events:none}
+@keyframes pin{from{transform:translateY(28px);opacity:0}}@keyframes pout{to{transform:translateY(22px);opacity:0}}
+.panel:not(.closing)>:not(.pgrab){animation:pitem .3s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i,0)*14ms + 30ms)}
+@keyframes pitem{from{opacity:0;transform:translateY(8px)}}
+.mi.tg::after{transition:background-color .2s}
+.panel .mi:active,.panel .lgd summary:active{background:rgba(255,255,255,.06)}
+.hb,.mapctl button,.px,.filters .chip,.slotrow button,.panel .mi2,.hf-share,.tsbtn,.mcfold{transition:transform .12s ease,background-color .15s,border-color .15s}
+.hb:active,.mapctl button:active,.px:active,.filters .chip:active,.slotrow button:active,.panel .mi2:active,.hf-share:active,.tsbtn:active,.mcfold:active{transform:scale(.95)}
+.sec:not([hidden]){animation:secin .22s cubic-bezier(.2,.8,.2,1)}@keyframes secin{from{opacity:0;transform:translateY(4px)}}
+.tabs{position:relative}
+.tabs.ind button.on{border-bottom-color:transparent}
+.tabs.ind::after{content:'';position:absolute;left:0;bottom:0;height:3px;width:var(--tw,0px);transform:translateX(var(--tx,0px));border-radius:2px;background:var(--orange);transition:transform .28s cubic-bezier(.2,.8,.2,1),width .28s cubic-bezier(.2,.8,.2,1)}
+body.lite .tabs.ind::after{background:#fff}
+@media (prefers-reduced-motion:reduce){.panel,.panel>*,.sec,.tabs.ind::after,#top .vsw::before{animation:none!important;transition:none!important}}
+body.lite .panel,body.lite .panel>*,body.lite .sec,body.lite .tabs.ind::after{animation:none!important;transition:none!important}
 .pgrab{width:40px;height:5px;border-radius:3px;background:#3a4252;margin:8px auto 2px}
 .ph{display:flex;align-items:center;gap:8px;padding:4px 8px 6px 16px}.ph b{flex:1;font:800 19px/1.2 var(--sans)}
 .px{flex:none;width:44px;height:44px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);color:var(--ink2);font:600 16px var(--sans);cursor:pointer}
@@ -777,12 +810,13 @@ body.lite .mcmini.w{background:#fff;color:#000}
 .mi.tg{position:relative;display:flex!important;flex-direction:column;align-items:flex-start;padding-right:88px!important}
 .mi.tg .lb{font:600 15.5px/1.3 var(--sans);color:var(--ink)}.mi.tg small{font:500 13px/1.3 var(--sans);color:var(--ink2);margin-top:2px}
 .mi.tg::after{content:'';position:absolute;right:16px;top:50%;margin-top:-16px;width:52px;height:32px;border-radius:16px;background:#3a4252}
-.mi.tg::before{content:'';position:absolute;right:39px;top:50%;margin-top:-13px;width:26px;height:26px;border-radius:50%;background:#fff;z-index:1;transition:right .15s}
+.mi.tg::before{content:'';position:absolute;right:39px;top:50%;margin-top:-13px;width:26px;height:26px;border-radius:50%;background:#fff;z-index:1;transition:right .22s cubic-bezier(.3,1.25,.5,1);box-shadow:0 1px 3px rgba(0,0,0,.35)}
 .mi.tg.on::after{content:'';background:var(--green);color:transparent}.mi.tg.on::before{right:19px}
 .layermenu{display:flex;flex-direction:column;gap:0;padding:0;border-bottom:1px solid var(--line);font:500 15px var(--sans);color:var(--ink)}
 .layermenu label{display:flex;align-items:center;gap:12px;min-height:48px;padding:6px 16px;border-bottom:1px solid var(--line);white-space:normal;cursor:pointer}
 .layermenu input{width:22px;height:22px;flex:none;accent-color:var(--orange)}
 .lgd summary{min-height:48px;display:flex;align-items:center;padding:0 16px;font:600 15px var(--sans);cursor:pointer;color:#9cc0ff}
+@media (min-width:1000px){.panel:not([hidden]){animation-name:pind}.panel.closing{animation-name:poutd}@keyframes pind{from{transform:translateY(-8px) scale(.98);opacity:0}}@keyframes poutd{to{transform:translateY(-6px) scale(.98);opacity:0}}.panel{transform-origin:top right}}
 @media (min-width:1000px){.panel{left:auto;right:10px;top:calc(var(--sat) + 58px);bottom:auto;width:400px;max-height:calc(100vh - 80px);border:1px solid var(--line);border-radius:14px;padding-bottom:8px}.pgrab{display:none}}
 /* "Near": every live target, by distance from the place being watched */
 #near{padding-top:4px}
@@ -822,7 +856,7 @@ body.lite #mycard,body.lite .panel{background:#000;border-color:#666}body.lite .
 <header id="top">
   <div class="r1">
     <img class="logo" src="/static/heimdall-64.png" alt="Heimdall"><img class="logo ngo" src="/static/logo-64.png" alt="07300">
-    <nav class="vsw" data-t-title="sw_title" title="Two versions"><a href="/light" data-t="sw_light">LIGHT</a><span class="on" data-t="sw_tac">TACTICAL</span></nav>
+    <nav class="vsw" data-t-title="sw_title" title="Two versions"><a href="/light" data-sw data-t="sw_light">LIGHT</a><span class="on" data-t="sw_tac">TACTICAL</span></nav>
     <span class="sp"></span>
     <button class="hb" id="bellbtn" type="button" data-t-title="m_bell" data-t-aria="m_bell" title="Alerts on this phone" aria-label="Alerts on this phone"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg><i class="bdot" id="bdot"></i></button>
     <button class="hb" id="menubtn" type="button" data-t-title="m_more" data-t-aria="m_more" title="Settings and about" aria-label="Settings and about"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg></button>
@@ -873,7 +907,7 @@ body.lite #mycard,body.lite .panel{background:#000;border-color:#666}body.lite .
   <button class="mi" id="supbtn" type="button" data-t="m_support">Support the project</button>
   <a class="mi" id="tgbtn" data-t="m_tg" target="_blank" rel="noopener" hidden>Community on Telegram</a>
   <button class="mi" id="aboutbtn" type="button" data-t="m_about">About · disclaimer</button>
-  <div class="mi bt" id="buildtag">v1.39</div>
+  <div class="mi bt" id="buildtag">v1.40</div>
 </div>
 <div class="panel" id="lay" hidden role="dialog" aria-labelledby="layh"><div class="pgrab"></div>
   <div class="ph"><b id="layh" data-t="m_layers">Map layers</b><button type="button" class="px" data-close="lay" data-t-aria="btn_close" aria-label="Close">✕</button></div>
@@ -915,7 +949,7 @@ body.lite #mycard,body.lite .panel{background:#000;border-color:#666}body.lite .
   <div class="mapctl"><button id="laybtn" type="button" data-t-title="m_layers" data-t-aria="m_layers" title="Map layers" aria-label="Map layers"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 3 8l9 5 9-5-9-5z"/><path d="m3 13 9 5 9-5"/></svg></button><button id="zin" type="button" aria-label="+">+</button><button id="zout" type="button" aria-label="−">−</button><button id="zkyiv" type="button" data-t-title="t_center" data-t-aria="t_center" title="Centre on my place">◎</button><button id="impbtn" type="button" data-t-title="t_hist" data-t-aria="t_hist" title="History of explosions and confirmed shoot-downs: off / 24 h / 48 h / 72 h" ><svg class="impico" viewBox="-14 -14 28 28" aria-hidden="true"><path d="M0-10 L2-3 L9-6 L4 0 L10 4 L3 3 L2 10 L-1 4 L-8 7 L-4 0 L-10-3 L-3-2 Z"/></svg><small id="imph"></small></button></div>
   <div class="tip" id="tip" hidden></div>
   <div id="heatleg" hidden><div class="hlh"><b data-t="hm_title">Where drones were reported</b><button type="button" id="heatx" data-t-aria="hm_off" aria-label="Hide">✕</button></div>
-    <div class="hlw" id="heatw"></div><div class="hlt" id="heattop"></div><div class="hlr" id="heatramp"></div><div class="hln" data-t="hm_not_live">Not live.</div></div>
+    <div class="hlw" id="heatw"></div><div class="hlt" id="heattop"></div><div class="hlr" id="heatramp"></div><div class="hln" data-t="hm_not_live">Not live.</div><div class="hln" data-t="hm_alerts">Official alerts are outlined while it is on.</div></div>
   <div id="litetag">BLACKOUT</div>
   <div id="modetag"></div>
 </div>
@@ -952,6 +986,7 @@ body.lite #mycard,body.lite .panel{background:#000;border-color:#666}body.lite .
   <div id="discfoot"></div>
   <button type="button" class="dok" id="discok" data-t="d_ok">I understand</button></div></div>
 
+<script type="speculationrules">{"prerender":[{"where":{"href_matches":"/light"},"eagerness":"moderate"}]}</script>
 <script src="/static/i18n.js"></script>
 <script src="/static/glyphs.js"></script>
 <script src="/static/live.js"></script>
@@ -1255,17 +1290,28 @@ function toggleCity(on){ CITY=on; svg.classList.toggle('city',CITY); {const z=$(
 // The places the posts named (/api/drone_heat: town and district level, shoot-downs and hits left out), counted over
 // 24 h / 7 d / 30 d and drawn as a density whose spread keeps its size on the screen — so it is layered by zoom:
 // out, the corridors across the region; in, the villages and the Kyiv districts. The most-named places in view are
-// written on it and listed in its legend. Under every mark, in violet (no alert colour), off at every opening.
+// written on it and listed in its legend. Under every mark, off at every opening.
+// 1.40: the colour is the number of reports — pale yellow for a few, orange, red for the most (it was violet). Each
+// place adds its count around itself; the sum is read on a scale set by the busiest place of the period, or the
+// busiest spot in view if that is more — so a quiet corner never turns red because it is zoomed in on. The legend
+// says "not live, not alerts", and the layer is soft discs around places, never a filled raion.
 // (var, not let: applyLayers() runs before this line at start, and a let read there stops the whole page.)
-const HEAT_DARK=[[43,37,86],[61,52,136],[84,70,179],[111,95,214],[148,134,236],[192,183,247],[240,236,255]];
-const HEAT_DAY=[[214,208,248],[180,170,240],[148,134,232],[116,98,214],[88,70,190],[62,46,152],[38,26,104]];
+const HEAT_DARK=[[255,236,140],[255,206,64],[255,160,32],[255,112,24],[238,62,30],[204,18,40]];
+const HEAT_DAY=[[246,204,38],[240,170,22],[232,128,16],[220,88,18],[196,44,26],[158,10,32]];
 var HEAT_D=7, HEAT={}, HEAT_T=0; try{ const v=+sessionStorage.getItem('heatd'); if([1,7,30].includes(v)) HEAT_D=v; }catch(e){}
 async function loadHeat(){ const d=HEAT_D, c=HEAT[d]; if(c&&Date.now()-c.t<600e3) return c.v;
   try{ const v=await jget('/api/drone_heat?days='+d,15000); HEAT[d]={t:Date.now(),v}; return v; }catch(e){ return null; } }
-function heatPal(stops){ const p=new Uint8ClampedArray(1024);
-  for(let a=0;a<256;a++){ const f=a/255*(stops.length-1), i=Math.min(stops.length-2,Math.floor(f)), r=f-i;
-    for(let k=0;k<3;k++) p[a*4+k]=stops[i][k]+(stops[i+1][k]-stops[i][k])*r; p[a*4+3]=a<6?0:Math.min(235,40+a*1.2); }
-  return p; }
+// the ramp at t in 0..1 (t = √(reports here ÷ the scale), so the middle of the scale is not lost)
+function heatRGB(stops,t){ const f=Math.max(0,Math.min(1,t))*(stops.length-1), i=Math.min(stops.length-2,Math.floor(f)), r=f-i;
+  return [0,1,2].map(k=>Math.round(stops[i][k]+(stops[i+1][k]-stops[i][k])*r)); }
+// counts → a grid a quarter of the screen's pixels: each place adds n × a smooth bump of `rad` px around it
+function heatGrid(pts,W,H,rad,q){ const GW=Math.ceil(W/q), GH=Math.ceil(H/q), R=rad/q, R2=R*R, I=new Float32Array(GW*GH), C=new Float32Array(GW*GH);
+  const ri=Math.ceil(R);
+  for(const p of pts){ const cx=p.px/q, cy=p.py/q, x0=Math.max(0,Math.floor(cx-ri)), x1=Math.min(GW-1,Math.ceil(cx+ri)), y0=Math.max(0,Math.floor(cy-ri)), y1=Math.min(GH-1,Math.ceil(cy+ri));
+    for(let y=y0;y<=y1;y++) for(let x=x0;x<=x1;x++){ const d2=(x-cx)*(x-cx)+(y-cy)*(y-cy); if(d2>=R2) continue;
+      const k=(1-d2/R2)*(1-d2/R2), j=y*GW+x; I[j]+=p.n*k; if(k>C[j]) C[j]=k; } }
+  let mx=0; for(let j=0;j<I.length;j++) if(I[j]>mx) mx=I[j];
+  return {GW,GH,I,C,mx}; }
 const placeLbl=pl=>{ const b=BRG.find(x=>BRIDGE_UK_NAME[x[0]]===pl); return b?t('br_'+b[0]):pn(pl); };
 function drawHeat(){ clearTimeout(HEAT_T); HEAT_T=setTimeout(drawHeatNow,90); }
 async function drawHeatNow(){ const g=$('heatg'), leg=$('heatleg'); if(!g) return;
@@ -1274,20 +1320,19 @@ async function drawHeatNow(){ const g=$('heatg'), leg=$('heatleg'); if(!g) retur
   $('heatw').innerHTML=[1,7,30].map(d=>`<button type="button" class="${d===HEAT_D?'on':''}" data-d="${d}">${t('hm_'+d)}</button>`).join('');
   const v=await loadHeat(); if(!LAYERS.heat) return;
   const day=document.body.classList.contains('m-day'), stops=day?HEAT_DAY:HEAT_DARK;
-  $('heatramp').innerHTML=`${esc(t('hm_fewer'))}${stops.slice(1).map(c=>`<i style="background:rgb(${c.join(',')})"></i>`).join('')}${esc(t('hm_more'))}`;
-  if(!v){ g.innerHTML=''; $('heattop').innerHTML=`<div class="hle">${esc(t('hm_err'))}</div>`; return; }
+  if(!v){ g.innerHTML=''; $('heatramp').innerHTML=''; $('heattop').innerHTML=`<div class="hle">${esc(t('hm_err'))}</div>`; return; }
   const r=svg.getBoundingClientRect(), dpr=Math.min(2,window.devicePixelRatio||1);
   const W=Math.max(2,Math.min(1800,Math.round(r.width*dpr))), H=Math.max(2,Math.min(2600,Math.round(r.height*dpr)));
-  const sx=W/VB.w, sy=H/VB.h, rad=Math.round(26*dpr);
+  const sx=W/VB.w, sy=H/VB.h, rad=Math.round(30*dpr), q=4;
   const pts=[]; for(const p of v.points||[]){ const [x,y]=proj(p[0],p[1]); const px=(x-VB.x)*sx, py=(y-VB.y)*sy;
     if(px>-rad&&py>-rad&&px<W+rad&&py<H+rad) pts.push({px,py,n:p[2],pl:p[3]}); }
+  const top=Math.max(1,...(v.points||[]).map(p=>p[2]||0)), G=heatGrid(pts,W,H,rad,q), scale=Math.max(top,G.mx);
+  $('heatramp').innerHTML=`<span>1</span><i style="background:linear-gradient(90deg,${[0,.25,.5,.75,1].map(x=>`rgb(${heatRGB(stops,x).join(',')})`).join(',')})"></i><span>${Math.round(scale)}+</span>`;
   const cv=document.createElement('canvas'); cv.width=W; cv.height=H; const ctx=cv.getContext('2d');
-  const mx=Math.max(1,...pts.map(p=>p.n));
-  for(const p of pts){ const a=.12+.5*Math.log1p(p.n)/Math.log1p(mx); const gr=ctx.createRadialGradient(p.px,p.py,0,p.px,p.py,rad);
-    gr.addColorStop(0,`rgba(0,0,0,${a.toFixed(3)})`); gr.addColorStop(1,'rgba(0,0,0,0)'); ctx.fillStyle=gr; ctx.fillRect(p.px-rad,p.py-rad,2*rad,2*rad); }
-  if(pts.length){ const img=ctx.getImageData(0,0,W,H), d=img.data, pal=heatPal(stops);
-    for(let i=3;i<d.length;i+=4){ const a=d[i]; if(!a) continue; const j=a*4; d[i-3]=pal[j]; d[i-2]=pal[j+1]; d[i-1]=pal[j+2]; d[i]=pal[j+3]; }
-    ctx.putImageData(img,0,0); }
+  if(pts.length){ const sm=document.createElement('canvas'); sm.width=G.GW; sm.height=G.GH; const sc=sm.getContext('2d'), img=sc.createImageData(G.GW,G.GH), d=img.data;
+    for(let j=0;j<G.I.length;j++){ const c=G.C[j]; if(c<=0) continue; const tt=Math.sqrt(G.I[j]/scale), rgb=heatRGB(stops,tt);
+      d[j*4]=rgb[0]; d[j*4+1]=rgb[1]; d[j*4+2]=rgb[2]; d[j*4+3]=Math.round(255*Math.min(1,c*1.8)*(0.16+0.78*Math.min(1,tt))); }
+    sc.putImageData(img,0,0); ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high'; ctx.drawImage(sm,0,0,W,H); }
   // the most-named places in view, never on top of each other
   const keep=[]; for(const p of [...pts].sort((a,b)=>b.n-a.n)){ if(keep.length>=(r.width<600?7:12)) break; if(p.px<0||p.py<0||p.px>W||p.py>H) continue;
     if(keep.some(q=>Math.abs(q.px-p.px)<70*dpr&&Math.abs(q.py-p.py)<18*dpr)) continue; keep.push(p); }
@@ -1550,8 +1595,14 @@ function renderHomeList(q){const s=(q||'').toLowerCase();const rows=PLACES_ALL.f
 // 1.36: three panels instead of one menu — the bell (what makes this phone ring), "more" (settings, about) and the
 // map's layers. One open at a time; a tap outside, the ✕ or Escape closes it.
 const PANELS=['bell','menu','lay'];
-function closePanels(){ for(const id of PANELS){ const p=$(id); if(p) p.hidden=true; } }
-function togglePanel(id){ const p=$(id); if(!p) return; const show=p.hidden; closePanels(); p.hidden=!show; }
+// 1.40: a panel leaves with a short animation (none in blackout mode or with "reduce motion"); `hidden` is set after
+const CALM=()=>document.body.classList.contains('lite')||(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches);
+function hidePanel(p){ if(!p||p.hidden||p.classList.contains('closing')) return; if(CALM()){ p.hidden=true; return; }
+  p.classList.add('closing'); clearTimeout(p._ct); p._ct=setTimeout(()=>{ p.hidden=true; p.classList.remove('closing'); },160); }
+function showPanel(p){ clearTimeout(p._ct); p.classList.remove('closing'); [...p.children].forEach((c,i)=>c.style.setProperty('--i',Math.min(i,14))); p.hidden=false; }
+function panelOpen(p){ return p&&!p.hidden&&!p.classList.contains('closing'); }
+function closePanels(){ for(const id of PANELS) hidePanel($(id)); }
+function togglePanel(id){ const p=$(id); if(!p) return; const show=!panelOpen(p); for(const x of PANELS) if(x!==id) hidePanel($(x)); if(show) showPanel(p); else hidePanel(p); }
 $('bellbtn').onclick=e=>{e.stopPropagation();togglePanel('bell');};
 $('menubtn').onclick=e=>{e.stopPropagation();togglePanel('menu');};
 $('laybtn').onclick=e=>{e.stopPropagation();togglePanel('lay');};
@@ -2725,7 +2776,7 @@ function renderStats(){ if(!STATS) return; const el=$('stats'); if(!el) return; 
 // =====================================================================================
 // ---------------------------------------------------------------------------------------------------
 // The contacts (CONTACT) and the footer (footerHTML, shareApp) are in static/i18n.js since 1.39, shared with Light.
-const APP_VERSION='1.39';
+const APP_VERSION='1.40';
 const DONATE=CONTACT.ngo;
 const ls=(k,v)=>{try{return v===undefined?localStorage.getItem(k):(localStorage.setItem(k,v),v);}catch(e){return null;}};
 
@@ -2996,7 +3047,12 @@ function connect(){
 }
 const TABS=['near','feedwrap','alerts','hist'];
 function showTab(id){ document.querySelectorAll('#tabs button').forEach(x=>{ const on=x.dataset.tab===id; x.classList.toggle('on',on); x.setAttribute('aria-selected',on?'true':'false'); });
-  TABS.forEach(x=>{ const el=$(x); if(el) el.hidden=x!==id; }); }
+  TABS.forEach(x=>{ const el=$(x); if(el) el.hidden=x!==id; }); tabInd(); }
+// 1.40: one orange line under the tabs that slides to the chosen one
+function tabInd(){ const T=$('tabs'), b=T&&T.querySelector('button.on'); if(!b||!b.offsetWidth) return;
+  T.style.setProperty('--tx',b.offsetLeft+'px'); T.style.setProperty('--tw',b.offsetWidth+'px'); T.classList.add('ind'); }
+window.addEventListener('resize',()=>tabInd());
+tabInd(); if(document.fonts&&document.fonts.ready) document.fonts.ready.then(tabInd);
 document.querySelectorAll('#tabs button').forEach(b=>b.onclick=e=>{ e.stopPropagation(); showTab(b.dataset.tab);
   if(window.innerWidth<1000&&drawerState()==='') setDrawer('half'); });
 // a tap on the bar between the tabs: up one step, and from the top back down
@@ -3069,7 +3125,7 @@ setInterval(()=>{
   if(LIVE_SYNC&&!liveOK()){ LIVE_SYNC=false; try{es.close();}catch(e){} setTimeout(connect,500); pulse(true); }
   updAge();
 },1000);
-schedulePulse();setInterval(()=>{if(!document.hidden)render();},30000);setInterval(()=>{if(!document.hidden)loadHist();},180000);
+whenShown(schedulePulse);setInterval(()=>{if(!document.hidden)render();},30000);setInterval(()=>{if(!document.hidden)loadHist();},180000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){schedulePulse();pulse(true);}});
 window.addEventListener('online',()=>{schedulePulse();pulse(true);});
 window.addEventListener('focus',()=>{ if(Date.now()-lastPing>4000) pulse(true); });
@@ -3078,7 +3134,7 @@ window.addEventListener('focus',()=>{ if(Date.now()-lastPing>4000) pulse(true); 
   paintFooters();
   {const q=new URLSearchParams(location.search);            // home-screen shortcuts from the manifest
    if(q.get('city')==='1') toggleCity(true);
-   if(q.get('help')==='1') setTimeout(()=>{$('disc').hidden=true;helpSheet();},400);}$('imph').textContent=IMP_H?IMP_H+'h':'';loadImpacts();await loadHist();connect();scheduleTick();})();
+   if(q.get('help')==='1') setTimeout(()=>{$('disc').hidden=true;helpSheet();},400);}$('imph').textContent=IMP_H?IMP_H+'h':'';loadImpacts();await loadHist();whenShown(connect);scheduleTick();})();
 </script>
 </body>
 </html>

@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.39** · last updated 2026-10-06
+**Documented version: 1.40** · last updated 2026-10-06
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -788,9 +788,15 @@ Main parts:
 - **the heat layer** (1.34; Layers since 1.36, off at every opening — never remembered): where drones and
   unidentified targets were reported over 24 h / 7 days / 30 days (`GET /api/drone_heat`: the places the posts named,
   town and district level, the number of posts — shoot-downs and hits left out, never an oblast's centre or "Kyiv"
-  alone), drawn as a violet density whose spread keeps its size on the screen, so it is layered by zoom (out: the
+  alone), drawn as a density whose spread keeps its size on the screen, so it is layered by zoom (out: the
   corridors across the region; in: the villages and the Kyiv districts); the most-named places in view written on it
-  and listed in its legend; under every mark. (1.33's alert hours by oblast stay in the dashboard's Analytics.)
+  and listed in its legend; under every mark. 1.40: **the colour is the number of reports** — pale yellow, orange,
+  red for the most (it was violet). `heatGrid()` adds each place's count around it on a grid a quarter of the
+  screen's pixels (a smooth bump of 30 px); a spot's colour is √(its sum ÷ the scale), the scale being the busiest
+  place of the period or the busiest spot in view if that is more — so a quiet corner never turns red because it is
+  zoomed in on; a place with few reports is faint as well as yellow. The legend's ramp reads "1 … N+" and says "not
+  live, not alerts"; while the layer is on, the official alert colours are drawn as outlines over a faint fill
+  (`svg:not(.no-heat)`), so the two are never read as one colour. Dark map: blended with `screen`; day: `multiply`. (1.33's alert hours by oblast stay in the dashboard's Analytics.)
 - tabs: **Near** (1.36, above); **Feed**; **Alerts** (the live tally of what is on the map, then the official alerts); **Stats** — the Air
   Force's official figures only, weapon by weapon since 1.32 (§7.5): for 24 h / 7 d / 30 d (`windows[…].af`) a
   row per type — launched and ↓ shot down, ✓ when used without a number — and the hit locations; a key under the
@@ -864,6 +870,30 @@ One place, what concerns it, nothing else. Built to load and be read on 2G (page
 Both pages carry the **LIGHT | TACTICAL** switch (UK: ПРОСТА | ТАКТИЧНА, FR: LÉGÈRE | TACTIQUE): a full-width
 two-segment control on Light, each half captioned; a high-contrast pill in the Tactical header.
 
+1.40: **a toggle, not a reload.** The orange half is one thumb (`::before`); a tap on the other half (`a[data-sw]`,
+handled in `static/i18n.js`, `swGo()`) slides it across in 0.2 s, then opens the other page. Three things keep the
+screen from going blank in between:
+
+- **cross-document view transitions** (`@view-transition{navigation:auto}` in Tactical, Light and the guide): the
+  browser keeps the old page on screen until the new one has painted, then fades one into the other (0.16 s out,
+  0.24 s in, a 6 px rise). Chrome and Edge 126+, Safari 18.2+; elsewhere an ordinary navigation.
+- **speculation rules**: Tactical prerenders `/light` on hover or press (`moderate`), Light prerenders `/m` only on
+  the press (`conservative` — Light is the 2G page); the page is usually ready when the thumb has finished.
+- a prerendered page is not a visit until it is shown: it opens no live line and sends no ping (`whenShown()` waits
+  for `prerenderingchange`), and the server does not count a load that carries `Sec-Purpose: prefetch`.
+
+Nothing is carried between the two: both read the same places, language and settings from the phone. With
+"reduce motion" the thumb does not slide and the pages do not fade.
+
+### 10.3b Motion (1.40)
+
+Short, eased, never bouncy, and none in blackout mode or with "reduce motion" (`CALM()`): a panel (bell, More,
+Layers) rises in on a phone and drops in on a computer (0.26 s), its rows following 14 ms apart, and leaves in
+0.16 s (`hidePanel()` sets `hidden` after the animation); one orange line slides under the drawer's tabs to the
+chosen one (`tabInd()`); a tab's content fades in; switches move their knob with a slight ease; buttons give a
+little under the finger (`scale(.95)`); sheets and the drawer use the same easing. Light: the place picker and the
+target card slide in.
+
 ### 10.4 Languages
 
 `static/i18n.js`: every string in EN / UK / FR (`t()`, `tn()` for plurals), place, raion, river and district
@@ -900,7 +930,7 @@ then `localStorage.lang` (shared with the two pages; the УКР / EN / FR button
   never on a command line, in a file, in the logs, in `config.json` or in the repository. Revoke it in Telegram:
   Settings → Devices → "Clear Sky server" → Terminate.
 - Usage counters (`usage`, `usage_seen`): a daily salted hash, no IP address, no location, no per-person
-  history.
+  history. A page the browser loads ahead of a tap (prerender, `Sec-Purpose: prefetch`) is not counted (1.40).
 - Flags and the corpus review are behind `ADMIN_KEY`.
 - The weather (1.33) asks Open-Meteo for seven fixed points (six launch areas and Kyiv) — nothing about a reader.
 - No secret is committed: `config.json`, `vapid.json`, `.env`, `*.pem`, databases and `.flyapp` are
