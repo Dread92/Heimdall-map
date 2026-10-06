@@ -2,6 +2,22 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.41.0 — 2026-10-06
+
+### Added
+- **The dashboard says why the app went off.** Live → Server: the program's CPU, the CPU the host took away (on
+  the shared Fly CPU, the throttling that makes pages time out), memory, late wake-ups, requests over 2 s, and every
+  start with its build — a start with the same build is a crash or an out-of-memory kill, a new build is a release.
+- **`scripts\diagnose.bat`**: one double-click writes Fly's status, the machine's events (exit codes, out of
+  memory), the recent logs and 20 timed pings to `diag\fly-diag.txt`, for Claude to read.
+
+### Changed
+- **The app opens even when the server does not answer.** The two pages and their files are kept on the phone and
+  used only when the network fails or the server answers with an error; Tactical then says "No connection to
+  Heimdall — retrying" at the top, and that the sirens and «Повітряна тривога» do not depend on it. Light says so
+  after 15 s (was 60). No data is ever kept: no old alert status is ever shown as current.
+- Tactical no longer says "updated 5 s ago" before anything has arrived ("connecting…").
+
 ## 1.40.1 — 2026-10-06
 
 ### Fixed

@@ -397,7 +397,7 @@ function alertedShapes(){
 }
 function mapLayer(p,kx,loc,iz){
   if(!LM) return '';
-  // outline km (the full map's grid, centred on Kyiv) → radar units around the place, the frame the markers are in
+  // outline km (Kyiv-centred grid) → radar units around the place
   const sx=kx/LM.kx, tx=(LM.center[0]-p.lon)*kx, ty=(p.lat-LM.center[1])*LM.ky;
   const T=`transform="translate(${(tx*S).toFixed(2)} ${(ty*S).toFixed(2)}) scale(${(sx*S).toFixed(4)} ${S})"`;
   const d=rings=>rings.map(g=>'M'+g.map(q=>q[0]+' '+q[1]).join('L')+'Z').join('');
@@ -533,7 +533,7 @@ function paint(){
     const sc=/missile/.test(m.type)&&m.type!=='banderol_missiles'?.42:.34;
     q+=`<g class="t" transform="rotate(${markOrient(m)}) scale(${sc})"><g class="${silCls(m)}" style="--c:${c}">${G[silKey(m)]||''}</g></g>`;
     if(m.type==='unknown'){
-      // nobody said what it is: the warning sign stays upright; a reported course is a small orange arrow beside it
+      // unknown type: upright warning sign; a reported course is a small arrow beside it
       if(statedCourse(m)) q+=`<path class="t" transform="rotate(${m.heading}) translate(0 -5.6)" d="M0 -1.8 L1.5 1.2 L0 .5 L-1.5 1.2 Z" fill="${ORA}"/>`;
     } else if(!statedCourse(m)) q+=`<text class="qm" x="0" y="-4.4">?</text>`;   // upright because no course was reported
     // its number in the list below, and how many
@@ -665,7 +665,7 @@ function connectLive(){ if(typeof EventSource==='undefined'||!window.LiveSync) r
     if(full) refresh(true); else { upd(); if(changed) paint(); } });
   esL.onerror=()=>{ LIVE_ON=false; try{esL.close();}catch(e){} setTimeout(connectLive,5000); }; }
 function upd(){ $('up').textContent=LAST_OK?t('lt_upd',fmtT(new Date(LAST_OK).toISOString())):''; showNotice(STATE&&STATE.notice); showNuke(STATE&&STATE.nuke); showBrg(STATE&&STATE.bridges); checkMove(STATE); }
-// 1.34: a target reported on or near a Kyiv bridge (the server's state, bridge by bridge); a vibration when one reaches "at".
+// 1.34: a target on or near a Kyiv bridge (server state); a vibration when one reaches "at".
 // 1.38: one line — the bridge that matters most, and how many others
 let BRP=null;
 function showBrg(B){ const el=$('brg'), R={hit:1,near:2,at:3}; B=B||{};
@@ -701,7 +701,7 @@ async function refresh(force){
   try{
     const [a,b]=await Promise.all([fetch('/api/state',{cache:'no-store'}),fetch('/api/markers',{cache:'no-store'})]);
     STATE=await a.json(); const m=await b.json(); MKS=m.markers||[]; HL.st=STATE.h||null; HL.mk=m.h||null; LAST_OK=Date.now(); $('off').hidden=true;
-  }catch(e){ if(Date.now()-LAST_OK>60000){ $('off').hidden=false; $('off').textContent=t('lt_offline'); } }
+  }catch(e){ if(Date.now()-LAST_OK>15000){ $('off').hidden=false; $('off').textContent=t('lt_offline'); } }
   upd();
   paint();
 }
@@ -752,6 +752,7 @@ $('pickx').onclick=()=>$('pick').classList.remove('show');
   $('dmt').textContent=t('d_title'); ['dm1','dm2','dm3'].forEach((id,i)=>{ $(id).innerHTML=t('d_p'+(i+1)); });
   $('dmok').textContent=t('d_ok'); $('dm').hidden=false; $('dmok').onclick=()=>{ $('dm').hidden=true; }; })();
 usePlace(); refresh(true).then(()=>whenShown(connectLive)); setInterval(refresh,15000);
+if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(()=>{});
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden) refresh(!liveOK()); });
 </script>
 </body>

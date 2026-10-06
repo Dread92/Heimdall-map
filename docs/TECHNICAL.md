@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.40** · last updated 2026-10-06
+**Documented version: 1.41** · last updated 2026-10-06
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -128,7 +128,7 @@ clear-sky/
 │   ├── admin.html          private dashboard: usage, source health, channels, lead time (/admin, ADMIN_KEY)
 │   ├── index.html, mobile.html   older desktop / mobile views (/desktop, /ua)
 │   ├── guide.html          what to do, weapon by weapon (/guide, 1.35): self-contained, content in its JSON block
-│   ├── sw.js               service worker: push display, notification clicks, the guide kept for offline
+│   ├── sw.js               service worker: push display, notification clicks, the pages and the guide kept for when the server is unreachable
 │   ├── manifest.json, light.webmanifest   the two PWAs
 │   ├── logo-cs*.png        the Clear Sky logo: app icons (any / maskable), favicon, badge, the notice
 │   └── logo*.png (NGO 07300), bf-logo*.png (Black Flame Studio), ukraine-map.LICENSE.md
@@ -163,6 +163,7 @@ clear-sky/
 | `Ubilling` | oblast-level mirror; applies only while the raion source is down | 30 s |
 | `Telegram` | reads the channels' `t.me/s/` previews (all but those the API reads) | 30 s; 10 s while a missile threat is open or a threat is within 12 km of a Kyiv bridge (1.34) |
 | `TelegramAPI` | reads `telegram_api_channels` (chyste_nebo) through the Telegram client API — polls the channel, **never subscribes to updates** | last 20 posts every 15 s (8 s in a missile threat) |
+| `Vitals` | 1.41: the process's own CPU, the CPU the host took away (steal — on a shared Fly vCPU, throttling), memory, how late its own clock woke it; every request over 2 s (path and time only); every start with its build (`kv.boots`, last 100). On the dashboard's Live tab (`/api/online` → `process`) | 10 s |
 | `Watchdog` | the database and alert-state locks must be free within 15 s; a held lock logs every thread's stack, five in a row (~2 min) → exit, Fly restarts it; a starved process is only logged (load, not a deadlock) | 20 s |
 | `Digests` | each night (18:00–08:00 Kyiv) after `digest_hour`, and each Monday for the week: the figures (`State.digest_facts`), and with `ANTHROPIC_API_KEY` a written summary in EN + UK; stored in `digests` | 5 min check |
 | `Translations` | machine-translates feed posts into a language somebody reads | on demand, ~3 calls/s max |
@@ -914,9 +915,17 @@ then `localStorage.lang` (shared with the two pages; the УКР / EN / FR button
   `rad`); the **emergency numbers** as `tel:` links; the **sources**, with what is not taken from them said.
 - Every rule comes from the listed official guidance (ДСНС, National Police, Ministry of Health, Poltava ОВА) —
   [SAFETY.md](SAFETY.md#the-guide-says-what-the-official-guidance-says). The checked date is in the footer.
-- **Offline**: the page registers `sw.js`; the worker stores `/guide`, `glyphs.js` and the logo at install
-  (`heimdall-guide-N`) and answers those three paths **network first**, the stored copy only when the network
-  fails. Nothing else goes through it. "Saved on this phone" appears only once `caches.match('/guide')` finds it.
+- **Offline**: the page registers `sw.js`; the worker stores `/guide`, `glyphs.js` and the logo at install and
+  answers those paths **network first**, the stored copy only when the network fails. "Saved on this phone" appears
+  only once `caches.match('/guide')` finds it.
+- **1.41: the two pages too.** Tactical and Light register the same worker on every phone (not only when push is
+  on); it keeps `/m`, `/light`, `i18n.js`, `live.js`, `glyphs.js`, the logos, `light-map.json`, `kyiv-districts.json`
+  and the manifests (`heimdall-shell-N`), network first, and answers from the stored copy when the network fails **or
+  the server answers 5xx** (a deploy, a restart, an overloaded host). The app then opens and says so — Tactical: a
+  red bar at the top after 15 s without the server ("No connection to Heimdall — retrying; the sirens and «Повітряна
+  тривога» do not depend on Heimdall"), and "connecting…" instead of "updated 5 s ago" before anything arrived;
+  Light: its offline line after 15 s (was 60). **No data is ever stored** (`/api/…`): an old alert status shown as
+  current would be worse than none.
 - **Print**: `@media print` — black on white, no buttons, cards kept whole, three columns; two A4 pages in each language.
 - Linked from the Tactical More panel (About, `m_guide`), the card (What to do →, and the ballistic warning's button), the top of the help sheet (`.gdl`), the Light footer (`#gdl`)
   and the nuclear-event banner (`/guide#rad`, `static/nuke.js`). The page asks the server for nothing.
@@ -1055,6 +1064,23 @@ failing there). `static/i18n.js` must evaluate with no browser globals at all.
   (sign-in in the browser; no token is ever typed or stored by the script) and pushes; run again to push new
   commits. Optional auto-deploy: add the repository secret `FLY_API_TOKEN` and `fly-deploy.yml` deploys every
   push to `main`.
+
+### When the app "goes off"
+
+Four causes look the same from a phone, and the dashboard (Live → **Server**, 1.41) tells them apart:
+
+- **a release** — a start with a new build in the list of starts: every deploy restarts the one machine (the
+  database is on its volume), a few seconds to half a minute without answers. Deploy outside attacks.
+- **a crash or an out-of-memory kill** — "starts without a new version" above zero; `scripts\diagnose.bat`
+  shows the machine's events (`exit_code`, `oom_killed`) and the last logs.
+- **throttling** — "taken by the host (steal)" above ~10 %, late wake-ups, slow requests: the shared vCPU has
+  spent its burst balance and runs at its 6.25 % baseline (Fly's CPU quota). Remedy: a bigger machine
+  (`fly scale vm performance-1x`, or more shared CPUs), or less work per minute.
+- **a slow piece of work** — slow requests on one path with normal steal; the watchdog's stack dump in the logs
+  names it.
+
+`scripts\diagnose.bat` (double-click on the owner's PC) writes `fly status`, the machines and their event logs, the
+recent logs and 20 timed pings to `diag\fly-diag.txt` (git-ignored): no key, no token, nobody's address.
 
 ## 16. Maintenance recipes
 

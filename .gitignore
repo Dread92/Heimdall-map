@@ -37,3 +37,6 @@ _to_delete/
 
 # marketing assets (44 MB of images and a zip): kept on the PC, not in the code repository
 docs/brandkit/
+
+# ---- 1.41: scripts\diagnose.bat writes here ----
+diag/

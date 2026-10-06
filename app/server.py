@@ -336,7 +336,7 @@ def build_id():
 
 # The version the front end shows in its footer, kept here too so /api/version can answer "what is actually
 # running" without anybody reading it off a screenshot. tests/test_version.py pins the two to each other.
-APP_VERSION = "1.40"
+APP_VERSION = "1.41"
 APP_NAME = "Heimdall"
 BUILD = None    # filled at startup
 
@@ -3883,6 +3883,113 @@ class Digests(threading.Thread):
                     self.cond.wait(300)
 
 
+class Vitals(threading.Thread):
+    """1.41: is the server itself well? "The app goes off sometimes" can be four different things, and each needs a
+    different answer: a new version being deployed (a start with a new build), a crash or an out-of-memory kill (a
+    start with the same build), the host taking the CPU away (on a shared Fly vCPU, past its baseline the machine is
+    throttled: the guest sees it as "steal" time and every request waits), or one slow piece of work holding the rest.
+    Every 10 s this records the process's own CPU, the steal, the memory and how late its own clock woke it; every
+    request over 2 s is noted (path and time only — never who); every start is kept with its build. All of it is on
+    the dashboard (Live), so the next time it happens the cause is on screen instead of guessed."""
+    INTERVAL, SLOW_MS = 10, 2000
+
+    def __init__(self, state):
+        super().__init__(daemon=True, name="vitals")
+        self.state = state
+        self.samples = collections.deque(maxlen=360)        # one hour
+        self.slow = collections.deque(maxlen=60)
+        self.started = now_iso()
+        self._t0 = time.monotonic()
+        self._prev = None
+        self.boots = self._record_boot()
+
+    def _record_boot(self):
+        try:
+            b = json.loads(self.state.store.kv_get("boots") or "[]")
+        except Exception:
+            b = []
+        b = (b + [{"ts": self.started, "build": BUILD, "app": APP_VERSION}])[-100:]
+        try:
+            self.state.store.kv_set("boots", json.dumps(b))
+        except Exception:
+            pass
+        return b
+
+    @staticmethod
+    def read():
+        """(process CPU seconds, all-CPU jiffies, steal jiffies, RSS MB, available MB, total MB) — Linux only."""
+        out = [None] * 6
+        try:
+            with open("/proc/self/stat") as f:
+                fs = f.read().rsplit(")", 1)[1].split()
+            out[0] = (int(fs[11]) + int(fs[12])) / os.sysconf("SC_CLK_TCK")
+        except Exception:
+            pass
+        try:
+            with open("/proc/stat") as f:
+                v = [int(x) for x in f.readline().split()[1:9]]
+            out[1], out[2] = sum(v), v[7]
+        except Exception:
+            pass
+        try:
+            with open("/proc/self/status") as f:
+                for line in f:
+                    if line.startswith("VmRSS:"):
+                        out[3] = round(int(line.split()[1]) / 1024)
+            with open("/proc/meminfo") as f:
+                for line in f:
+                    if line.startswith("MemAvailable:"):
+                        out[4] = round(int(line.split()[1]) / 1024)
+                    elif line.startswith("MemTotal:"):
+                        out[5] = round(int(line.split()[1]) / 1024)
+        except Exception:
+            pass
+        return out
+
+    def sample(self):
+        now, r = time.monotonic(), self.read()
+        p, self._prev = self._prev, (now, r)
+        if not p:
+            return
+        dt = now - p[0]
+        cpu = round(100 * (r[0] - p[1][0]) / dt, 1) if r[0] is not None and p[1][0] is not None and dt > 0 else None
+        tot = (r[1] - p[1][1]) if r[1] is not None and p[1][1] is not None else 0
+        steal = round(100 * (r[2] - p[1][2]) / tot, 1) if tot > 0 else None
+        self.samples.append({"ts": now_iso(), "cpu": cpu, "steal": steal, "rss": r[3], "avail": r[4], "total": r[5],
+                             "late": round(max(0.0, dt - self.INTERVAL), 1)})
+
+    def run(self):
+        while True:
+            try:
+                self.sample()
+            except Exception as e:
+                log("vitals:", e)
+            time.sleep(self.INTERVAL)
+
+    def note(self, path, ms):
+        if ms >= self.SLOW_MS and not path.startswith("/api/stream"):
+            self.slow.append({"ts": now_iso(), "path": path[:60], "ms": int(ms)})
+
+    def report(self):
+        s = list(self.samples)
+
+        def col(k):
+            return [x[k] for x in s if x.get(k) is not None]
+
+        def stat(v):
+            return {"now": v[-1], "avg": round(sum(v) / len(v), 1), "max": max(v)} if v else None
+        hour = (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat()
+        week = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
+        recent = [b for b in self.boots if b["ts"] >= week]
+        same = sum(1 for i, b in enumerate(self.boots) if i and b["ts"] >= week and self.boots[i - 1]["build"] == b["build"])
+        return {"started": self.started, "uptime_s": int(time.monotonic() - self._t0), "build": BUILD, "app": APP_VERSION,
+                "cpu": stat(col("cpu")), "steal": stat(col("steal")), "late": stat(col("late")),
+                "rss": stat(col("rss")), "avail_min": min(col("avail")) if col("avail") else None,
+                "mem_total": (col("total") or [None])[-1],
+                "slow_1h": [x for x in self.slow if x["ts"] >= hour][-10:], "slow_1h_n": sum(1 for x in self.slow if x["ts"] >= hour),
+                "starts_7d": len(recent), "restarts_same_build_7d": same, "boots": self.boots[-12:]}
+
+
 class Watchdog(threading.Thread):
     """A service people take shelter by must never hang in silence.
 
@@ -4800,6 +4907,15 @@ class Handler(BaseHTTPRequestHandler):
         return any(c.strip() == f"uak={key}" for c in cookie.split(";"))
 
     def do_GET(self):
+        t0 = time.monotonic()
+        try:
+            return self._get()
+        finally:
+            v = getattr(self.state, "vitals", None)
+            if v:
+                v.note(self.path.split("?")[0], (time.monotonic() - t0) * 1000)
+
+    def _get(self):
         u = urlparse(self.path)
         q = parse_qs(u.query)
         st = self.state
@@ -4892,8 +5008,10 @@ class Handler(BaseHTTPRequestHandler):
                     return self._json({"error": "unauthorized"}, 401)
                 hub = getattr(st, "hub", None)
                 pu = getattr(st, "pusher", None)
+                vt = getattr(st, "vitals", None)
                 return self._json({"online": hub.online() if hub else None, "notice": st.notice_now(), "nuke": st.nuke,
-                                   "push_last": getattr(pu, "last_fanout", None), "now": now_iso()})
+                                   "push_last": getattr(pu, "last_fanout", None), "now": now_iso(),
+                                   "process": vt.report() if vt else None})
             if u.path == "/api/version":
                 usage = getattr(st, "usage", None)
                 if usage:
@@ -5263,6 +5381,8 @@ def main():
     BUILD = build_id()
     log("build", BUILD)
     state = State(store, cfg)
+    state.vitals = Vitals(state)
+    state.vitals.start()
     state.usage = Usage(store)
     state.pusher = Pusher(store)
     log("push notifications:", "enabled (VAPID key ready)" if state.pusher.enabled else "disabled — pip install cryptography to enable")

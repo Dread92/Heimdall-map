@@ -60,6 +60,11 @@ tr.m-trial td:first-child{color:#ffd9a8}tr.m-off td{color:var(--ink3)}
 .ops{display:grid;grid-template-columns:minmax(200px,260px) 1fr;gap:12px;margin:4px 0 20px}
 @media (max-width:640px){.ops{grid-template-columns:1fr}}
 .onl{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--green);padding:12px 14px}
+/* 1.41: is the server itself well — CPU, the CPU the host took away, memory, slow requests, starts */
+.opsl{display:grid;gap:12px;align-content:start;min-width:0}
+.srv{background:var(--panel);border:1px solid var(--line);border-left:3px solid #9cc0ff;padding:10px 14px;font:12px/1.55 var(--sans);color:var(--ink2)}
+.srv>b{display:block;font:500 10.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);margin-bottom:4px}
+.srv .bad{color:#ff8a80;font-weight:600}.srv .ok{color:var(--green)}.srv code{font:11px var(--mono)}
 .onl .v{font:800 40px/1 var(--cond)}.onl .l{font:500 10.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);margin-top:4px}
 .onl .d{font:12px/1.5 var(--sans);color:var(--ink2);margin-top:8px}.onl .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);margin-right:6px;animation:bl 2s infinite}
 @keyframes bl{50%{opacity:.35}}
@@ -180,7 +185,8 @@ table.airtab td,table.airtab th{font-size:12.5px;padding:5px 4px;white-space:now
 
 <section class="tabsec" id="tab-live">
 <div class="ops" id="ops">
-  <div class="onl"><div class="v" id="onl_n">—</div><div class="l"><span class="dot"></span><span data-tr="on_now">online now</span></div><div class="d" id="onl_d"></div></div>
+  <div class="opsl"><div class="onl"><div class="v" id="onl_n">—</div><div class="l"><span class="dot"></span><span data-tr="on_now">online now</span></div><div class="d" id="onl_d"></div></div>
+  <div class="srv" id="srv"><b data-tr="sv_h">Server</b><div id="srv_d">—</div></div></div>
   <div class="msg">
     <h3 data-tr="nt_h">Message to every reader</h3>
     <label class="t" for="nt_uk">Українська</label><textarea id="nt_uk" maxlength="500"></textarea>
@@ -315,7 +321,7 @@ const T={
   h_tr:'Translation',tr_av:'in use: {0}',tr_none:'no translation service reachable — offline glossary only',tr_paused:'paused after an error: {0}',
   ago_m:'{0} min ago',ago_h:'{0} h ago',ago_d:'{0} d ago',never:'never',
   gen:'generated {0}',
-  on_now:'online now',on_d:'{0} Tactical · {1} Light — pages open with a live line, counted as they are, nothing kept about who.',on_peak:'Peak today: {0} at {1}',
+  sv_h:'Server',sv_up:'Up since {0} · version {1}',sv_cpu:'CPU (this program): {0}% now · {1}% avg · {2}% max (last hour)',sv_steal:'Taken by the host (steal): {0}% now · {1}% max — above ~10% the shared CPU is being throttled and pages time out',sv_mem:'Memory: {0} MB used · {1} MB free at the lowest · {2} MB in all',sv_late:'Late wake-ups: {0} s max (busy or throttled when above 2 s)',sv_slow:'Slow requests (over 2 s) in the last hour: {0}',sv_starts:'Starts in 7 days: {0} · without a new version (crash, out of memory, watchdog): {1}',sv_na:'no figures yet (they start 10 s after a start)',on_now:'online now',on_d:'{0} Tactical · {1} Light — pages open with a live line, counted as they are, nothing kept about who.',on_peak:'Peak today: {0} at {1}',
   on_push:'Last push: {0} phones in {1} s ({2} delivered)',on_na:'the live counter starts with the stream hub (1.29)',
   nt_h:'Message to every reader',nt_info:'Information',nt_warn:'Warning',nt_alert:'Urgent',nt_until:'until cleared',
   nt_push:'also as a push notification to every phone (uses the Ukrainian text)',nt_send:'Publish',nt_clear:'Remove the current message',
@@ -400,7 +406,7 @@ const T={
   h_tr:'Переклад',tr_av:'працює: {0}',tr_none:'жоден сервіс перекладу недоступний — лише офлайн-глосарій',tr_paused:'призупинено після помилки: {0}',
   ago_m:'{0} хв тому',ago_h:'{0} год тому',ago_d:'{0} д тому',never:'ніколи',
   gen:'згенеровано {0}',
-  on_now:'онлайн зараз',on_d:'{0} Tactical · {1} Light — відкриті сторінки з живим з’єднанням; лише кількість, нічого про те, хто.',on_peak:'Пік сьогодні: {0} о {1}',
+  sv_h:'Сервер',sv_up:'Працює з {0} · версія {1}',sv_cpu:'CPU (ця програма): {0}% зараз · {1}% середнє · {2}% макс. (за годину)',sv_steal:'Забрав хост (steal): {0}% зараз · {1}% макс. — понад ~10% спільний CPU обмежують, і сторінки не відповідають',sv_mem:'Пам’ять: {0} МБ зайнято · {1} МБ вільно в мінімумі · {2} МБ усього',sv_late:'Запізнення пробудження: {0} с макс. (понад 2 с — навантаження чи обмеження)',sv_slow:'Повільні запити (понад 2 с) за годину: {0}',sv_starts:'Запусків за 7 днів: {0} · без нової версії (збій, нестача пам’яті, watchdog): {1}',sv_na:'даних ще немає (з’являються через 10 с після запуску)',on_now:'онлайн зараз',on_d:'{0} Tactical · {1} Light — відкриті сторінки з живим з’єднанням; лише кількість, нічого про те, хто.',on_peak:'Пік сьогодні: {0} о {1}',
   on_push:'Останні сповіщення: {0} телефонів за {1} с (доставлено {2})',on_na:'лічильник працює з 1.29',
   nt_h:'Повідомлення всім читачам',nt_info:'Інформація',nt_warn:'Попередження',nt_alert:'Терміново',nt_until:'доки не прибрати',
   nt_push:'також push-сповіщенням на кожен телефон (український текст)',nt_send:'Опублікувати',nt_clear:'Прибрати поточне повідомлення',
@@ -565,10 +571,22 @@ async function loadHealth(){
 
 // ---- online now + the message to every reader (1.29) ------------------------------------------------------
 let ON=null;
+function drawSrv(P){ const el=$('srv_d'); if(!el) return; if(!P){ el.textContent=tr('sv_na'); return; }
+  const tm=x=>new Date(x).toLocaleString(L==='uk'?'uk-UA':'en-GB',{timeZone:'Europe/Kyiv',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+  const row=(cls,txt)=>`<div${cls?` class="${cls}"`:''}>${esc(txt)}</div>`, L1=[];
+  L1.push(row('',tr('sv_up',tm(P.started),P.app+(P.build?' · '+P.build:''))));
+  if(P.cpu) L1.push(row(P.cpu.avg>6?'bad':'',tr('sv_cpu',P.cpu.now,P.cpu.avg,P.cpu.max)));
+  if(P.steal) L1.push(row(P.steal.max>10?'bad':'',tr('sv_steal',P.steal.now,P.steal.max)));
+  if(P.rss) L1.push(row(P.avail_min!=null&&P.avail_min<40?'bad':'',tr('sv_mem',P.rss.now,P.avail_min==null?'—':P.avail_min,P.mem_total==null?'—':P.mem_total)));
+  if(P.late) L1.push(row(P.late.max>2?'bad':'',tr('sv_late',P.late.max)));
+  L1.push(row(P.slow_1h_n?'bad':'',tr('sv_slow',P.slow_1h_n)+(P.slow_1h.length?' — '+P.slow_1h.slice(-3).map(x=>x.path+' '+(x.ms/1000).toFixed(1)+' s').join(', '):'')));
+  L1.push(row(P.restarts_same_build_7d?'bad':'',tr('sv_starts',P.starts_7d,P.restarts_same_build_7d)));
+  el.innerHTML=L1.join(''); }
 function drawOps(){
   document.querySelectorAll('[data-tr]').forEach(el=>{ el.textContent=tr(el.dataset.tr); });
   ntPreview();
   if(!ON){ return; }
+  drawSrv(ON.process);
   const o=ON.online;
   $('onl_n').textContent=o?fmt(o.total):'—';
   const pk=o&&o.peak_today&&o.peak_today.n?tr('on_peak',fmt(o.peak_today.n),new Date(o.peak_today.at).toLocaleTimeString(L==='uk'?'uk-UA':'en-GB',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Kyiv'})):'';

@@ -559,6 +559,8 @@ body.lite .leader{stroke:#fff;stroke-opacity:.6}body.lite .anchor{fill:#fff}
 .nbar .tgl{flex:none;white-space:nowrap}.nbar .x{flex:none;background:none;border:0;color:var(--ink3);font:600 16px var(--mono);padding:0 4px}
 #updbar{bottom:calc(var(--peek) + var(--sab) + 8px);border-left-color:var(--green)}
 #pwabar{bottom:calc(var(--peek) + var(--sab) + 8px)}
+/* 1.41: the server does not answer — said plainly, at the top, with what does not depend on it */
+#netbar{top:calc(var(--sat) + var(--top) + 8px);border-left-color:var(--red2)}@media (min-width:1000px){#netbar{left:376px;right:396px}}
 #updbar:not([hidden]) ~ #pwabar{bottom:calc(var(--peek) + var(--sab) + 72px)}
 @media (min-width:1000px){#updbar,#pwabar{left:auto;right:396px;width:360px;bottom:16px}}
 .sup{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);padding:8px 10px;margin-top:8px;font:600 14px var(--mono);word-break:break-all}
@@ -907,7 +909,7 @@ body.lite #mycard,body.lite .panel{background:#000;border-color:#666}body.lite .
   <button class="mi" id="supbtn" type="button" data-t="m_support">Support the project</button>
   <a class="mi" id="tgbtn" data-t="m_tg" target="_blank" rel="noopener" hidden>Community on Telegram</a>
   <button class="mi" id="aboutbtn" type="button" data-t="m_about">About · disclaimer</button>
-  <div class="mi bt" id="buildtag">v1.40</div>
+  <div class="mi bt" id="buildtag">v1.41</div>
 </div>
 <div class="panel" id="lay" hidden role="dialog" aria-labelledby="layh"><div class="pgrab"></div>
   <div class="ph"><b id="layh" data-t="m_layers">Map layers</b><button type="button" class="px" data-close="lay" data-t-aria="btn_close" aria-label="Close">✕</button></div>
@@ -955,6 +957,7 @@ body.lite #mycard,body.lite .panel{background:#000;border-color:#666}body.lite .
 </div>
 </div>
 
+<div class="nbar" id="netbar" hidden role="status"><div class="bt"><b id="netT"></b><small id="netB"></small></div></div>
 <div class="nbar" id="updbar" hidden><div class="bt"><b id="updT"></b><small id="updB"></small></div><button class="tgl on" id="updGo"></button><button class="x" id="updX">✕</button></div>
 <div class="nbar" id="pwabar" hidden><div class="bt"><b id="pwaT"></b><small id="pwaB"></small></div><button class="tgl on" id="pwaGo"></button><button class="x" id="pwaX">✕</button></div>
 
@@ -1100,6 +1103,8 @@ $('sndtest').onclick=()=>{ if(!soundOn) return; beep('l2',1); setTimeout(()=>bee
 volUI();
 // ---- Web Push: works with the page closed (Android Chrome; iPhone: add to home screen first) ----
 let PUSH_SUB=null;
+// 1.41: the worker also keeps the page for when the server cannot be reached — registered on every phone, push or not
+if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(()=>{});
 async function pushInit(){ if(!('serviceWorker' in navigator)||!('PushManager' in window)){$('pushbtn').classList.add('na');$('pushbtn').querySelector('small').textContent=t('m_push_ns');return;}
   try{ const reg=await navigator.serviceWorker.register('/sw.js'); PUSH_SUB=await reg.pushManager.getSubscription(); }catch(e){}
   pushLabel();
@@ -2776,7 +2781,7 @@ function renderStats(){ if(!STATS) return; const el=$('stats'); if(!el) return; 
 // =====================================================================================
 // ---------------------------------------------------------------------------------------------------
 // The contacts (CONTACT) and the footer (footerHTML, shareApp) are in static/i18n.js since 1.39, shared with Light.
-const APP_VERSION='1.40';
+const APP_VERSION='1.41';
 const DONATE=CONTACT.ngo;
 const ls=(k,v)=>{try{return v===undefined?localStorage.getItem(k):(localStorage.setItem(k,v),v);}catch(e){return null;}};
 
@@ -2992,7 +2997,7 @@ const H={mk:null,st:null,fd:null};            // the server's version (hash) of 
 let LIVE_SYNC=false, liveLast=0, liveHb=15, lastPingAt=0;
 const liveOK=()=>LIVE_SYNC&&Date.now()-liveLast<Math.max(3*liveHb*1000,8000);
 function liveBeat(d){ LIVE_SYNC=true; liveLast=Date.now(); liveHb=d.hb||15; if(d.v) lastV=d.v; setMsl(d.msl);
-  lastUpd=nowKyiv(); netOK=true; lastPing=Date.now(); }
+  lastUpd=nowKyiv(); netOK=true; everOK=true; lastPing=Date.now(); }
 function applySync(d){ const L=window.LiveSync; if(!L) return;
   if(d.mk){ const r=L.part('mk',d.mk,H.mk,MK); if(r===null) loadMarkers();
     else if(r!=='same'){ MK=r.v; H.mk=d.mk.h; linkStatus(); if(CITY)paintDistricts(); } }
@@ -3092,7 +3097,7 @@ async function pulse(force){
   if(pulseBusy){ if(Date.now()-pulseStarted<20000) return; pulseBusy=false; }   // a wedged round never blocks the next
   if(document.hidden&&!force) return;
   // the live line carries everything and beats every few seconds: asking is a safety net, once a minute
-  if(liveOK()&&!force&&Date.now()-lastPingAt<60000){ netOK=true; lastPing=Date.now(); return; }
+  if(liveOK()&&!force&&Date.now()-lastPingAt<60000){ netOK=true; everOK=true; lastPing=Date.now(); return; }
   pulseBusy=true; pulseStarted=Date.now();
   try{
     const v=await jget('/api/version',MSLLVL>=2?4000:8000); lastPingAt=Date.now(); checkBuild(v);
@@ -3100,7 +3105,7 @@ async function pulse(force){
     if(liveOK()){ if(Date.now()-lastFull>600000) await refreshAll(); else lastUpd=nowKyiv(); }
     else if(v.v!==lastV||Date.now()-lastFull>60000){lastV=v.v;await refreshAll();}
     else lastUpd=nowKyiv();
-    netOK=true; lastPing=Date.now();
+    netOK=true; everOK=true; lastPing=Date.now();
   }catch(e){ netOK=false; }
   finally{ pulseBusy=false; }
 }
@@ -3109,12 +3114,16 @@ const nowKyiv=()=>new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'
 // data may be out of date; past 10, the target in the card greys out. On 2G this is the line that matters.
 function updAge(){ const el=$('upd'); if(!el) return;
   const last=Math.max(lastPing||0,LIVE_SYNC?liveLast:0), sec=Math.max(0,Math.round((Date.now()-last)/1000));
+  // 1.41: never "updated 5 s ago" before anything arrived; after 15 s without the server, a bar says so
+  const down=everOK?(!netOK&&sec>15):Date.now()-T_LOAD>15000, nb=$('netbar');
+  if(nb&&nb.hidden===down){ nb.hidden=!down; if(down){ $('netT').textContent=t('net_t'); $('netB').textContent=t('net_b'); } }
+  if(!everOK){ const cls='upd'+(down?' off':''), txt=t(down?'net_t':'net_wait'); if(el.className!==cls) el.className=cls; if(el.textContent!==txt) el.textContent=txt; return; }
   let cls='upd', txt;
   if(sec>120||(!netOK&&sec>30)){ cls+=netOK?' stale':' off'; txt=t('mc_stale',Math.max(1,Math.round(sec/60))); }
   else txt=sec<60?t('mc_upd_s',sec):t('mc_upd_m',Math.round(sec/60));
   if(el.className!==cls) el.className=cls; if(el.textContent!==txt) el.textContent=txt;
   const ch=$('mych'); if(ch) ch.classList.toggle('old',sec>600); }
-let netOK=true,lastPing=Date.now();
+let netOK=true,lastPing=Date.now(),everOK=false;const T_LOAD=Date.now();
 function schedulePulse(){ clearInterval(pulseTimer); const iv=pulseIv(); nextPulse=Date.now()+iv;
   pulseTimer=setInterval(()=>{nextPulse=Date.now()+iv;pulse();},iv); }
 // A phone throttles background timers, so the interval alone is not a guarantee. This second-by-second check is

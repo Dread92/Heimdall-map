@@ -115,10 +115,10 @@ def test_it_asks_for_nothing_and_loads_nothing_from_elsewhere():
 def test_it_is_served_and_kept_for_when_there_is_no_network():
     i = SRC.index('if u.path == "/guide":')
     assert 'self._file("guide.html", "text/html; charset=utf-8")' in SRC[i:i + 120]
-    # the worker answers only the guide's three paths, GET only, network first
+    # the worker keeps the guide's three paths (1.41: and the two pages), GET only, network first
     assert "const GUIDE = ['/guide', '/static/glyphs.js', '/static/heimdall-64.png'];" in SW
-    assert "e.request.method !== 'GET'" in SW and "!GUIDE.includes(u.pathname)) return;" in SW
-    assert SW.index("fetch(e.request)") < SW.index("caches.match(u.pathname)")
+    assert "e.request.method !== 'GET'" in SW and "if (!KEEP.includes(key)) return;" in SW and "GUIDE.concat(SHELL" in SW
+    assert SW.index("fetch(e.request)") < SW.index("caches.match(key)")
     assert ".catch(() => {})" in SW.split("addEventListener('install'")[1].split("});")[0]   # never blocks the install
     assert "navigator.serviceWorker.register('/sw.js')" in PAGE and "caches.match('/guide')" in PAGE
 
