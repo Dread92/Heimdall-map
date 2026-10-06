@@ -79,3 +79,14 @@ def test_the_diagnostics_script_writes_where_git_never_looks():
     assert "fly machine status" in bat and "fly logs" in bat and "diag\\fly-diag.txt" in bat
     assert "auth token" not in bat and "secrets" not in bat                  # never a key or a token
     assert "diag/" in _read(".gitignore")
+
+
+def test_production_runs_on_a_dedicated_cpu_and_the_docs_say_so():
+    toml = _read("fly.toml")
+    vm = toml[toml.index("[[vm]]"):]
+    assert 'size = "performance-1x"' in vm and 'memory = "2gb"' in vm   # a shared CPU is throttled on busy nights
+    assert "shared-cpu" not in vm
+    for doc in ("README.md", "docs/DEPLOY.md", "docs/TECHNICAL.md"):
+        text = _read(doc)
+        assert "performance-1x" in text, doc
+        assert "Runs as one `shared-cpu-1x`" not in text and "One `shared-cpu-1x` / 256 MB machine in Amsterdam" not in text, doc

@@ -2,8 +2,10 @@
 
 ## Fly.io (what this repo is set up for)
 
-One `shared-cpu-1x` / 256 MB machine in Amsterdam with a 1 GB volume for the history. Inside the
-free allowance, but Fly requires a payment method on the account before it will create apps.
+One `performance-1x` machine (a dedicated CPU, 2 GB) in Amsterdam with a 1 GB volume for the history —
+about $34 a month in Amsterdam (Fly's price list, Oct 2026). Until 1.41.1 it was a `shared-cpu-1x` / 256 MB machine
+(a few dollars), whose CPU Fly throttles once its burst is spent: the pages timed out on busy nights. The size is
+`[[vm]]` in `fly.toml`; `fly deploy` applies it. Fly requires a payment method on the account.
 
 ### First time
 

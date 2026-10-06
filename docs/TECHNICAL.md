@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.41** · last updated 2026-10-06
+**Documented version: 1.41** · last updated 2026-10-06 (1.41.1)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -59,8 +59,8 @@ and serves two web pages from the same data:
 
 Both install as separate PWAs (manifest ids `/m` and `/light` — unchanged by the 1.29 rename, so Android offers
 the new name and icon as an update of the installed app; an iPhone keeps an installed app's name and icon until
-it is added again). Production runs on Fly.io as `kyiv-air-watch-gb` (one shared-cpu-1x machine, 256 MB, a 1 GB
-volume for the database).
+it is added again). Production runs on Fly.io as `kyiv-air-watch-gb` (one performance-1x machine — a dedicated CPU —
+with 2 GB since 1.41.1, a 1 GB volume for the database; `[[vm]]` in `fly.toml`, which every deploy applies).
 
 ## 2. Principles the code enforces
 
@@ -192,8 +192,9 @@ socket, and Linux's default of 1,024 would stop the server long before the hub d
 ### 5.4 The live line (1.29)
 
 Before 1.29 each open page held one server thread in `/api/stream`, and every new post made every page
-download the marks, the feed and the alerts again — five requests per page per post. On the 256 MB machine
-Linux allows ~2,000 threads, so ~1,700 open pages was a hard stop, and the CPU cost grew with pages × posts.
+download the marks, the feed and the alerts again — five requests per page per post. On the 256 MB machine of
+the time Linux allowed ~2,000 threads, so ~1,700 open pages was a hard stop, and the CPU cost grew with pages ×
+posts.
 
 Now `Handler._stream` sends the headers and hands the socket to **`StreamHub`** (the connection is not closed:
 `Server.shutdown_request` skips it). The hub writes to every page from one thread, each message serialised
@@ -1074,8 +1075,10 @@ Four causes look the same from a phone, and the dashboard (Live → **Server**, 
 - **a crash or an out-of-memory kill** — "starts without a new version" above zero; `scripts\diagnose.bat`
   shows the machine's events (`exit_code`, `oom_killed`) and the last logs.
 - **throttling** — "taken by the host (steal)" above ~10 %, late wake-ups, slow requests: the shared vCPU has
-  spent its burst balance and runs at its 6.25 % baseline (Fly's CPU quota). Remedy: a bigger machine
-  (`fly scale vm performance-1x`, or more shared CPUs), or less work per minute.
+  spent its burst balance and runs at its 6.25 % baseline (Fly's CPU quota). Remedy: a bigger machine, or
+  less work per minute. Since 1.41.1 production runs on a dedicated CPU (`performance-1x`, 2 GB), which has no
+  burst balance to spend: steal should stay near 0. The size is `[[vm]]` in `fly.toml` — `fly deploy` resets the
+  machine to it, so a `fly scale vm` without editing the file lasts only until the next release.
 - **a slow piece of work** — slow requests on one path with normal steal; the watchdog's stack dump in the logs
   names it.
 

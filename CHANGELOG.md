@@ -2,6 +2,14 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.41.1 — 2026-10-06
+
+### Changed
+- **A bigger machine.** Production moves from one shared CPU with 256 MB to one dedicated CPU with 2 GB
+  (`performance-1x`, about $34 a month in Amsterdam instead of a few dollars). A shared CPU is slowed to a sixteenth
+  of its speed once its short burst is used up — on attack nights, when everyone opens the app at once — and the
+  pages time out. The size is in `fly.toml`, so every release keeps it.
+
 ## 1.41.0 — 2026-10-06
 
 ### Added

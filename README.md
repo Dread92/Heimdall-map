@@ -215,15 +215,15 @@ front-end scripts, and verifies that every UI string exists in all three languag
 fly deploy                  # Windows: scripts\release.bat ships a patch (deploy + push); deploy-fly.bat the first time
 ```
 
-Runs as one `shared-cpu-1x` machine with a 1 GB volume for the history. Full walkthrough, including Render
-and running it at home behind a tunnel: [docs/DEPLOY.md](docs/DEPLOY.md).
+Runs as one `performance-1x` machine (a dedicated CPU, 2 GB — 1.41.1) with a 1 GB volume for the history. Full
+walkthrough, including Render and running it at home behind a tunnel: [docs/DEPLOY.md](docs/DEPLOY.md).
 
 **How many readers.** Installed apps that are closed cost the server nothing; what counts is pages open at the
 same moment. Since 1.29 one thread holds every open page's live line and sends each change once: measured on a
 single core, 9,000 open pages took 8 threads, 62 MB and ~80 ms of CPU per second, and a change reached the last
 page ~0.1 s after the first. Before 1.29 each open page held a thread (a hard stop near 1,700 on 256 MB) and
-downloaded three answers again after every post. For a big wave of readers, 512 MB–1 GB of memory is cheap
-headroom (`[[vm]]` in `fly.toml`).
+downloaded three answers again after every post. The machine's size is `[[vm]]` in `fly.toml`: every deploy
+applies it.
 
 **Its own address.** Buy the domain, then double-click `scripts\set-domain.bat`: it asks Fly for the HTTPS
 certificates, shows the DNS records to add at the registrar, and — once the certificate is issued — tells pages
