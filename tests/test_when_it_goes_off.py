@@ -90,3 +90,11 @@ def test_production_runs_on_a_dedicated_cpu_and_the_docs_say_so():
         text = _read(doc)
         assert "performance-1x" in text, doc
         assert "Runs as one `shared-cpu-1x`" not in text and "One `shared-cpu-1x` / 256 MB machine in Amsterdam" not in text, doc
+
+
+def test_a_release_tries_the_other_builder_once_before_giving_up():
+    bat = _read("scripts/release.bat")
+    i = bat.index("--depot=false")
+    assert bat.index("--depot=true") > i                                  # Fly's builder first, then Depot once
+    assert bat.index("git push") > bat.index("--depot=true")              # GitHub only after a deploy succeeded
+    assert "Deploy failed twice" in bat

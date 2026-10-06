@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.41** · last updated 2026-10-06 (1.41.3)
+**Documented version: 1.41** · last updated 2026-10-06 (1.41.4)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -1064,7 +1064,9 @@ failing there). `static/i18n.js` must evaluate with no browser globals at all.
   **Dread92/clear-sky**. Patches are committed there.
 - **Shipping a patch**: double-click **`scripts\release.bat`**. It refuses to run if anything is not committed,
   deploys to Fly.io, pushes to GitHub, and prints the live `/api/version` — the version shown must be the
-  new one.
+  new one. The image is built by Fly's own builder (`--depot=false`); if that deploy fails — its builder machine
+  sometimes does not answer ("failed to get status … unable to upgrade to h2c, received 500") — it tries once more
+  with Fly's other builder, Depot (1.41.4). GitHub is pushed only after a deploy succeeded.
 - **First deployment, or changing a key**: `deploy-fly.bat` (Windows) — sign-in, app, volume, the dashboard
   key, the optional DeepL key, deploy. Details in [DEPLOY.md](DEPLOY.md). `fly deploy -a kyiv-air-watch-gb`
   alone also works.

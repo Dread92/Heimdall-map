@@ -28,8 +28,15 @@ rem 2. Deploy to Fly.io
 where fly >nul 2>&1 || (echo flyctl not found - run deploy-fly.bat once first. & pause & exit /b 1)
 fly auth whoami >nul 2>&1 || fly auth login
 echo === 1/2 Deploying to Fly.io ===
+rem Fly's own builder first. Its builder machine sometimes fails to answer ("failed to get status ... unable to
+rem upgrade to h2c, received 500", 6 Oct 2026): then once more with Fly's other builder, Depot, before giving up.
 fly deploy -a %APP% --ha=false --depot=false
-if errorlevel 1 (echo *** Deploy failed - see above. GitHub was not touched. & pause & exit /b 1)
+if errorlevel 1 (
+  echo.
+  echo *** Fly's builder failed. Trying once more with the other builder - Depot...
+  fly deploy -a %APP% --ha=false --depot=true
+  if errorlevel 1 (echo *** Deploy failed twice - see above. GitHub was not touched. & pause & exit /b 1)
+)
 
 rem 3. Push to GitHub (the GitHub CLI sign-in is remembered; no password is asked)
 echo.

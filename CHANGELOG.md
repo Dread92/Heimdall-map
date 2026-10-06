@@ -2,6 +2,13 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.41.4 — 2026-10-06
+
+### Fixed
+- **`release.bat` no longer stops at the first builder failure.** Fly's builder machine sometimes does not answer
+  ("failed to get status … unable to upgrade to h2c, received 500"); the release then tries once more with Fly's other
+  builder (Depot) before giving up. GitHub is still pushed only after a deploy succeeded.
+
 ## 1.41.3 — 2026-10-06
 
 ### Fixed
