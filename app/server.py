@@ -1794,22 +1794,40 @@ class State:
     # a one-time code valid for two minutes), then FIRE with that code and the phrase typed in full. Ending it is one
     # step. Every change is logged. It travels in the alerts state (`nuke`), like the admin's message.
     NUKE_PHRASE = "NUCLEAR EVENT"
+    # 1.42.2: the phrase in Ukrainian too — an admin on a Ukrainian keyboard could not type the English one
+    NUKE_PHRASES = ("NUCLEAR EVENT", "ЯДЕРНА ПОДІЯ")
 
     def nuke_arm(self):
         import secrets
         code = "".join(secrets.choice("ABCDEFGHJKLMNPQRSTUVWXYZ23456789") for _ in range(6))
         self._nuke_arm = (code, time.time() + 120)
+        # 1.42.2: kept in the database too. The arming lived in the process only, and the process restarted often
+        # (every release, and in the crashes of the shared-CPU nights): an arming made a minute before a restart was
+        # gone, and the fire answered "not armed". Still one attempt, still two minutes.
+        self.store.kv_set("nuke_arm", json.dumps({"code": code, "until": self._nuke_arm[1]}))
         log("NUKE: armed from the dashboard (code valid 2 min)")
         return code
 
+    @staticmethod
+    def _nuke_norm(s):
+        # case and spacing never matter: "nuclear  event" is the phrase
+        return re.sub(r"\s+", " ", (s or "").strip().upper())
+
     def nuke_fire(self, code, phrase, text):
         arm, self._nuke_arm = self._nuke_arm, None           # one attempt per arming, right or wrong
+        if not arm:
+            try:
+                kv = json.loads(self.store.kv_get("nuke_arm") or "null")
+                arm = (kv["code"], float(kv["until"])) if kv else None
+            except Exception:
+                arm = None
+        self.store.kv_set("nuke_arm", "")
         if not arm or time.time() > arm[1]:
             return False, "not armed, or the arming expired — arm again"
         if (code or "").strip().upper() != arm[0]:
             return False, "wrong code — arm again"
-        if (phrase or "").strip().upper() != self.NUKE_PHRASE:
-            return False, f"type the phrase exactly: {self.NUKE_PHRASE}"
+        if self._nuke_norm(phrase) not in self.NUKE_PHRASES:
+            return False, f"type the phrase exactly: {self.NUKE_PHRASE} (or {self.NUKE_PHRASES[1]})"
         self.nuke = {"id": f"k{int(time.time() * 1000)}", "since": now_iso(), "text": text}
         self.store.kv_set("nuke", json.dumps(self.nuke, ensure_ascii=False))
         log("NUKE: nuclear event ACTIVATED from the dashboard")
@@ -1820,6 +1838,7 @@ class State:
         was = self.nuke
         self.nuke, self._nuke_arm = None, None
         self.store.kv_set("nuke", "")
+        self.store.kv_set("nuke_arm", "")
         if was:
             log("NUKE: nuclear event ended from the dashboard")
         self.publish({"kind": "nuke", "ts": now_iso(), "nuke": None})

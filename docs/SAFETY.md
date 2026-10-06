@@ -108,8 +108,9 @@ back on trial or switched off in one click, and its posts leave the map at once.
 The dashboard can cover the map on every page with the radiation symbol (1.32). A false one would be the worst
 thing this app could ever show — people leaving shelters, or panicking in a city at night — so it sits behind
 three locks: folded away in a danger zone; armed first, which makes the **server** issue a one-time code valid two
-minutes with one attempt, right or wrong; then the code and the phrase `NUCLEAR EVENT` typed in full and the button
-held for three seconds. It is for a nuclear or radiological emergency **confirmed by the authorities or by certain
+minutes with one attempt, right or wrong; then the code and the phrase `NUCLEAR EVENT` (or `ЯДЕРНА ПОДІЯ`) typed in
+full and the button held for three seconds. It is never tested on the live service: the dashboard's **Preview** shows
+what the readers would see, on that screen only. It is for a nuclear or radiological emergency **confirmed by the authorities or by certain
 evidence**, never a rumour in a channel. Its banner says the app is unofficial and sends the reader to ДСНС and
 the local authorities; the prefilled advice (go indoors, close up, iodine only on official instruction) is the
 authorities' standard advice and is meant to be edited. It pulses once every 1.6 s — a flash rate that can

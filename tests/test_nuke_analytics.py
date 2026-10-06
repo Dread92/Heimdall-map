@@ -153,3 +153,34 @@ def test_every_dashboard_string_exists_in_both_languages():
     assert not missing, missing
     for tab in ("live", "analytics", "nights", "sources", "usage"):
         assert f'data-tab="{tab}"' in ADMIN and f'id="tab-{tab}"' in ADMIN
+
+
+def test_142_2_an_arming_survives_a_restart_and_is_still_one_attempt():
+    store = server.Store(":memory:")
+    st = server.State(store, {})
+    code = st.nuke_arm()
+    st2 = server.State(store, {})                       # the process restarted between arming and firing
+    assert st2.nuke_fire(code, "NUCLEAR EVENT", TEXT)[0] is True
+    st2.nuke_end()
+    code = st2.nuke_arm()
+    st3 = server.State(store, {})
+    assert st3.nuke_fire("ZZZZZZ", "NUCLEAR EVENT", TEXT)[0] is False           # wrong: spent, in the database too
+    assert server.State(store, {}).nuke_fire(code, "NUCLEAR EVENT", TEXT)[0] is False
+    assert store.kv_get("nuke_arm") in (None, "")
+
+
+def test_142_2_the_phrase_in_ukrainian_too_never_a_part_of_it():
+    st = _state()
+    assert st.nuke_fire(st.nuke_arm(), "  ядерна   подія ", TEXT)[0] is True
+    st.nuke_end()
+    assert st.nuke_fire(st.nuke_arm(), "ЯДЕРНА", TEXT)[0] is False
+    assert "NK_PHRASES=['NUCLEAR EVENT','ЯДЕРНА ПОДІЯ']" in ADMIN
+
+
+def test_142_2_the_hold_survives_a_drift_and_a_preview_sends_nothing():
+    assert "$('nk_fire').setPointerCapture(e.pointerId)" in ADMIN
+    i = ADMIN.index("function nkPreview(open)")
+    body = ADMIN[i:ADMIN.index("\n$('nk_prev')", i)]
+    assert "HNuke.show(" in body and "nkPost" not in body and "fetch(" not in body          # drawn here, never sent
+    assert 'id="nk_prev"' in ADMIN and 'id="nk_pv"' in ADMIN
+    assert "tr('nk_wrong',d.error||d.message||'?')" in ADMIN                   # what the server said, in full

@@ -2,6 +2,19 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.42.2 — 2026-10-07
+
+### Fixed
+- **The nuclear event could fail to switch on.** The one-time code lived only in the server's memory, so a restart
+  between arming and firing (every release, and the server's restarts on busy nights) made it answer "not armed". It
+  is now kept in the database too — still valid two minutes, still one attempt. Holding the button no longer stops
+  when the pointer drifts off it, the phrase can also be typed in Ukrainian (`ЯДЕРНА ПОДІЯ`), and a refusal shows the
+  server's exact reason.
+
+### Added
+- **Preview** in the nuclear event's danger zone: the radiation symbol and the banner with your text, on your screen
+  only — nothing is sent to anyone. Use it to test; never switch the real one on to try it.
+
 ## 1.42.1 — 2026-10-07
 
 ### Fixed

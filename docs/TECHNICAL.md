@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.42** · last updated 2026-10-07 (1.42.1)
+**Documented version: 1.42** · last updated 2026-10-07 (1.42.2)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -656,9 +656,14 @@ type. Nothing about a reader is in it.
   that colour while it is written.
 - **The nuclear event** (1.32): the one message that covers the map. On the dashboard (Live tab) it is folded
   away in a danger zone with three locks: **Arm** (the server hands back a one-time 6-character code, valid 2
-  minutes, **one attempt** right or wrong — `State.nuke_arm`), then the code and the phrase `NUCLEAR EVENT` typed
-  in full (the button unlocks only then), then the button **held for 3 s**; `State.nuke_fire` checks the code,
-  its age and the phrase again. The text (UK / EN / FR, prefilled with shelter-in-place advice to edit) and an
+  minutes, **one attempt** right or wrong — `State.nuke_arm`), then the code and the phrase `NUCLEAR EVENT` (or,
+  1.42.2, `ЯДЕРНА ПОДІЯ` — case and spacing never matter) typed in full (the button unlocks only then), then the
+  button **held for 3 s** (it keeps the pointer while held — `setPointerCapture` — so a drift off it does not stop the
+  hold; Space or Enter held works too); `State.nuke_fire` checks the code, its age and the phrase again. 1.42.2: the
+  arming is also kept in `kv.nuke_arm`, so a restart between arming and firing (every release, and the crashes of the
+  shared-CPU nights) no longer answers "not armed"; still one attempt, still two minutes. A failed fire shows the
+  server's answer in full. **Preview** draws the symbol and the banner with the text written above in a window of the
+  dashboard only — nothing is sent or stored; it is the way to test. The text (UK / EN / FR, prefilled with shelter-in-place advice to edit) and an
   optional push to every phone (confirmed). It is stored in `kv.nuke`, logged, published as a `nuke` event and
   carried in the alerts state (`nuke`), so it survives restarts and reaches every open page in seconds. The pages
   download `static/nuke.js` only while one is on: the radiation trefoil over the whole map (Light: over the

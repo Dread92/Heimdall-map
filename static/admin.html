@@ -110,6 +110,12 @@ tr.m-trial td:first-child{color:#ffd9a8}tr.m-off td{color:var(--ink3)}
 .nkin2 input{background:#0b0d11;border:1px solid var(--line);color:var(--ink);padding:9px 10px;font:600 16px var(--mono);letter-spacing:.12em;text-transform:uppercase}
 .nkhold{position:relative;overflow:hidden;background:#3a0d0a;border:2px solid var(--red);color:#fff;font:800 15px var(--cond);letter-spacing:.12em;text-transform:uppercase;padding:12px 20px;cursor:pointer;border-radius:2px;margin-right:8px;touch-action:none;-webkit-user-select:none;user-select:none}
 .nkhold:disabled{opacity:.4;cursor:not-allowed}
+.nkres{display:block;margin-top:8px;font:600 13px var(--sans);color:#ffb3ad}.nkok{margin-top:8px;font:12px var(--sans);color:#ffd9a0}
+.nkprev{margin-right:8px}
+.nkpv{position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;padding:16px}.nkpv[hidden]{display:none}
+.nkpvb{width:min(420px,100%);max-height:100%;overflow:auto;background:#0b0d11;border:1px solid var(--line);border-radius:10px;padding:10px}
+.nkpvh{display:flex;align-items:center;gap:10px;margin-bottom:8px}.nkpvh b{flex:1;font:700 13px var(--sans);color:var(--ua-yellow)}
+.nkpvp{border:1px solid var(--line);border-radius:6px;overflow:hidden;background:#12151b}.nkpvm{position:relative;height:300px;background:#0a0c10}
 .nkhold i{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--red)}.nkhold span{position:relative}
 .nkon{padding:12px;border:2px solid var(--red);background:#3a0d0a;margin-bottom:6px}
 .nkst{font:14px var(--sans);margin-bottom:8px}.nkst b{color:#fff;letter-spacing:.04em}#nk_since{color:#ffb3ad;font:12px var(--mono);margin-left:6px}
@@ -218,18 +224,23 @@ table.airtab td,table.airtab th{font-size:12.5px;padding:5px 4px;white-space:now
       <label class="t" for="nk_en">English</label><textarea id="nk_en" maxlength="600"></textarea>
       <label class="t" for="nk_fr">Français</label><textarea id="nk_fr" maxlength="600"></textarea>
       <label class="nkrow"><input type="checkbox" id="nk_push"> <span data-tr="nk_push">also a push notification to every phone (Ukrainian text)</span></label>
+      <button class="dgb nkprev" id="nk_prev" type="button" data-tr="nk_prev">Preview on this screen — nobody else sees it</button>
       <button class="dgb nkarm" id="nk_arm" data-tr="nk_arm">1 · Arm</button>
       <div class="nkarmed" id="nk_armed" hidden>
         <div class="nkcl"><span data-tr="nk_code">One-time code</span> <span class="nkcode" id="nk_code"></span> <span class="nkleft" id="nk_left"></span></div>
         <div class="nkin2"><label><span data-tr="nk_type_code">Type the code</span><input id="nk_c" autocomplete="off" spellcheck="false" maxlength="6"></label>
-          <label><span data-tr="nk_type_phrase">Type the phrase</span> <code>NUCLEAR EVENT</code><input id="nk_p" autocomplete="off" spellcheck="false" maxlength="20"></label></div>
+          <label><span data-tr="nk_type_phrase">Type the phrase</span> <code>NUCLEAR EVENT</code> <span data-tr="nk_or">or</span> <code>ЯДЕРНА ПОДІЯ</code><input id="nk_p" autocomplete="off" spellcheck="false" maxlength="20"></label></div>
         <button class="nkhold" id="nk_fire" type="button" disabled><i></i><span data-tr="nk_hold">2 · Hold 3 s to activate</span></button>
         <button class="dgb" id="nk_cancel" data-tr="nk_cancel">Cancel</button>
+        <div class="nkok" id="nk_ok" hidden></div>
       </div>
     </div>
-    <span class="res" id="nk_res"></span>
+    <span class="res nkres" id="nk_res" role="status"></span>
   </div>
 </details>
+<!-- 1.42.2: what the readers would see, here only: nothing is sent, nothing is stored -->
+<div class="nkpv" id="nk_pv" hidden role="dialog" aria-modal="true"><div class="nkpvb"><div class="nkpvh"><b data-tr="nk_pv_h">Preview — only on this screen</b><button type="button" class="dgb" id="nk_pvx" data-tr="nk_pv_x">Close the preview</button></div>
+  <div class="nkpvp"><div class="nkpvc" id="nk_pvc"></div><div class="nkpvm" id="nk_pvm"></div></div></div></div>
 </section>
 
 <section class="tabsec" id="tab-analytics" hidden>
@@ -258,7 +269,7 @@ const T={
   nk_active:'ACTIVE — covering the map on every page',nk_since:'since {0}',nk_end:'End the nuclear event',
   nk_end_q:'End the nuclear event? The symbol leaves every page within seconds.',nk_push_q:'Also send a push notification to EVERY subscribed phone?',
   nk_expired:'The arming expired — arm again.',nk_empty:'Write the message in at least one language.',nk_on:'Activated.',nk_off:'Ended.',
-  nk_needs:'Type the code and the phrase exactly: the button unlocks.',nk_already:'A nuclear event is already active.',
+  nk_needs:'Type the code and the phrase exactly: the button unlocks.',nk_or:'or',nk_prev:'Preview on this screen — nobody else sees it',nk_pv_h:'Preview — only on this screen, nothing is sent',nk_pv_x:'Close the preview',nk_wrong:'Not activated — the server said: {0}',nk_ready:'Ready: press and hold the red button for 3 seconds (or hold Space).',nk_already:'A nuclear event is already active.',
   an_loading:'Loading the figures…',an_nodata:'Nothing in this period.',an_wd:'Mon,Tue,Wed,Thu,Fri,Sat,Sun',an_vsprev:'vs previous',
   an_gen:'figures of {0} · kept 5 min',an_nosum:'no Air Force summary for this date',an_heat_lo:'fewer',an_heat_hi:'more',
   an_k_drones:'Drones launched · {0} d',an_k_missiles:'Missiles launched · {0} d (where counted)',an_k_rate:'Drones shot down / suppressed',
@@ -343,7 +354,7 @@ const T={
   nk_active:'УВІМКНЕНО — накриває мапу на кожній сторінці',nk_since:'з {0}',nk_end:'Завершити ядерну подію',
   nk_end_q:'Завершити ядерну подію? Знак зникне з усіх сторінок за кілька секунд.',nk_push_q:'Також надіслати push-сповіщення на КОЖЕН підписаний телефон?',
   nk_expired:'Час вийшов — зніміть запобіжник знову.',nk_empty:'Напишіть повідомлення хоча б однією мовою.',nk_on:'Увімкнено.',nk_off:'Завершено.',
-  nk_needs:'Введіть код і фразу точно — кнопка розблокується.',nk_already:'Ядерна подія вже ввімкнена.',
+  nk_needs:'Введіть код і фразу точно — кнопка розблокується.',nk_or:'або',nk_prev:'Переглянути на цьому екрані — ніхто інший не побачить',nk_pv_h:'Перегляд — лише на цьому екрані, нічого не надсилається',nk_pv_x:'Закрити перегляд',nk_wrong:'Не ввімкнено — сервер відповів: {0}',nk_ready:'Готово: натисніть і утримуйте червону кнопку 3 секунди (або утримуйте пробіл).',nk_already:'Ядерна подія вже ввімкнена.',
   an_loading:'Завантаження даних…',an_nodata:'За цей період нічого.',an_wd:'Пн,Вт,Ср,Чт,Пт,Сб,Нд',an_vsprev:'до попереднього',
   an_gen:'дані на {0} · зберігаються 5 хв',an_nosum:'за цю дату немає зведення Повітряних сил',an_heat_lo:'менше',an_heat_hi:'більше',
   an_k_drones:'Запущено БпЛА · {0} д',an_k_missiles:'Запущено ракет · {0} д (де вказано)',an_k_rate:'БпЛА збито / подавлено',
@@ -626,12 +637,12 @@ const NK_DEF={
   fr:'Danger radiologique. Rentrez immédiatement à l’intérieur, fermez bien portes et fenêtres, coupez ventilation et climatisation. Restez à l’intérieur jusqu’à nouvel ordre des autorités. Ne prenez d’iode que sur instruction des autorités. Suivez les annonces officielles du Service d’urgence de l’État (ДСНС) et des autorités locales.'};
 ['uk','en','fr'].forEach(k=>{ if(!$('nk_'+k).value) $('nk_'+k).value=NK_DEF[k]; });
 let NK_ARM=null, NK_TICK=null, NK_HOLD=null;
-const NK_PHRASE='NUCLEAR EVENT';
+const NK_PHRASE='NUCLEAR EVENT', NK_PHRASES=['NUCLEAR EVENT','ЯДЕРНА ПОДІЯ'];
 async function nkPost(body){ const r=await fetch('/api/admin/nuke'+(KEYQ?'?'+KEYQ.slice(1):''),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}); return r.json(); }
 function nkDisarm(msg){ NK_ARM=null; clearInterval(NK_TICK); NK_TICK=null; nkHoldStop(); $('nk_armed').hidden=true; $('nk_arm').disabled=false;
   $('nk_c').value=''; $('nk_p').value=''; if(msg!=null) $('nk_res').textContent=msg; }
-function nkReady(){ return !!NK_ARM&&$('nk_c').value.trim().toUpperCase()===NK_ARM.code&&$('nk_p').value.trim().toUpperCase()===NK_PHRASE; }
-function nkCheck(){ const ok=nkReady(); $('nk_fire').disabled=!ok; if(NK_ARM) $('nk_res').textContent=ok?'':tr('nk_needs'); }
+function nkReady(){ return !!NK_ARM&&$('nk_c').value.trim().toUpperCase()===NK_ARM.code&&NK_PHRASES.includes($('nk_p').value.trim().replace(/\s+/g,' ').toUpperCase()); }
+function nkCheck(){ const ok=nkReady(); $('nk_fire').disabled=!ok; if(NK_ARM) $('nk_res').textContent=ok?tr('nk_ready'):tr('nk_needs'); }
 function nkTick(){ if(!NK_ARM) return; const s=Math.round((NK_ARM.until-Date.now())/1000);
   if(s<=0){ nkDisarm(tr('nk_expired')); return; } $('nk_left').textContent=tr('nk_left',s); }
 $('nk_arm').onclick=async()=>{ if(NK_ARM) return; $('nk_arm').disabled=true; $('nk_res').textContent='';
@@ -640,9 +651,18 @@ $('nk_arm').onclick=async()=>{ if(NK_ARM) return; $('nk_arm').disabled=true; $('
   NK_ARM={code:String(d.code).toUpperCase(),until:Date.now()+(d.expires_s||120)*1000};
   $('nk_code').textContent=NK_ARM.code; $('nk_armed').hidden=false; nkTick(); NK_TICK=setInterval(nkTick,1000); nkCheck(); $('nk_c').focus(); };
 $('nk_cancel').onclick=()=>nkDisarm('');
+// 1.42.2: the preview — the same symbol and banner the readers would get, with the text written above, drawn here only
+function nkPreview(open){ const pv=$('nk_pv'); pv.hidden=!open; const go=()=>{ if(!window.HNuke) return;
+    HNuke.show(open?{id:'preview'+Date.now(),since:new Date().toISOString(),text:{uk:$('nk_uk').value.trim(),en:$('nk_en').value.trim(),fr:$('nk_fr').value.trim()}}:null,
+      {host:$('nk_pvm'),before:$('nk_pvm'),lang:L==='uk'?'uk':'en'}); };
+  if(window.HNuke||!open) return go();
+  const s=document.createElement('script'); s.src='/static/nuke.js'; s.onload=go; document.head.appendChild(s); }
+$('nk_prev').onclick=()=>nkPreview(true); $('nk_pvx').onclick=()=>nkPreview(false);
 ['nk_c','nk_p'].forEach(i=>$(i).addEventListener('input',nkCheck));
 // held for 3 s: the fill runs from left to right; letting go before the end does nothing
 function nkHoldStart(e){ if($('nk_fire').disabled||NK_HOLD) return; if(e) e.preventDefault();
+  // 1.42.2: the button keeps the pointer while it is held — a finger or a trackpad drifting off it no longer stops the hold
+  try{ if(e&&e.pointerId!=null) $('nk_fire').setPointerCapture(e.pointerId); }catch(_){}
   const t0=performance.now(), fill=$('nk_fire').querySelector('i'), lab=$('nk_fire').querySelector('span');
   lab.textContent=tr('nk_holding');
   const step=now=>{ if(!NK_HOLD) return; const p=Math.min(1,(now-t0)/3000); fill.style.width=(p*100)+'%';
@@ -661,7 +681,7 @@ async function nkFire(){ const text={uk:$('nk_uk').value.trim(),en:$('nk_en').va
   const push=$('nk_push').checked; if(push&&!confirm(tr('nk_push_q'))){ nkHoldStop(); return; }
   const code=$('nk_c').value.trim(), phrase=$('nk_p').value.trim();
   const d=await nkPost({action:'fire',code,phrase,text,push}).catch(e=>({error:String(e)}));
-  nkDisarm(d.ok?tr('nk_on'):(d.error||d.message||'?'));                 // the server spent the arming either way
+  nkDisarm(d.ok?tr('nk_on'):tr('nk_wrong',d.error||d.message||'?'));    // the server spent the arming either way
   $('nk_push').checked=false; loadOnline(); }
 $('nk_end').onclick=async()=>{ if(!confirm(tr('nk_end_q'))) return; $('nk_end').disabled=true;
   const d=await nkPost({action:'end'}).catch(e=>({error:String(e)})); $('nk_end').disabled=false;
