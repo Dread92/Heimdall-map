@@ -2,6 +2,25 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.42.1 — 2026-10-07
+
+### Fixed
+- **The map comes first on a phone.** A ballistic warning, the admin's message and a mark's details left the map a
+  third of the screen — almost nothing with the details open. The card is tighter, the message keeps to two lines (tap
+  to read it all), and a mark's details take the lower half while the card folds to one line: the map stays visible.
+- **A ballistic report with no official alert where you are says so.** On 7 October at 01:14 the channels relayed a
+  ballistic launch "towards Kyiv" that turned out to be a glitch of the military system; Kyiv was never under alert,
+  and the app said "shelter now, do not wait for the siren" for eight minutes. Without an official alert over your
+  place it now says "no official alert here yet — be ready, go the moment the siren sounds" and greys out after four
+  minutes. With an official alert, the full warning, as before.
+- **A channel taking it back ends it.** "Probably a system lag", "the launch was not confirmed": the channels'
+  ballistic marks and warnings from before it are removed. Never an official alert.
+- **"Heading for Kyiv" is not "at Kyiv".** A missile reported only by where it is going no longer shows "0 km from
+  Kyiv · near zone".
+- **єРадар's towns are used.** "Jet drone past Piskivka towards Kyiv oblast, Makariv / Nalyvaikivka" now points at
+  Makariv, not the oblast's centre; "from Boromlia towards Poltava oblast" stands at Boromlia, not the centre of Sumy
+  oblast (Boromlia and Nalyvaikivka added to the places).
+
 ## 1.42.0 — 2026-10-07
 
 ### Added

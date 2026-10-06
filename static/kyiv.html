@@ -104,6 +104,8 @@ body.m-day .notice{background:#e8f0ff;color:#12161c}body.m-day .notice.lv-warn{b
 .tstrip{font:800 16px/1.25 var(--sans);letter-spacing:.02em;text-transform:uppercase;padding:10px 12px;border-radius:10px;background:#3a1030;color:#ffd0f0;border:1px solid #7a2a6a;animation:tpulse 1.6s ease-in-out infinite}.tstrip small{display:block;font:600 13.5px/1.35 var(--sans);color:inherit;opacity:.92;text-transform:none;letter-spacing:0;margin-top:3px}
 .tstrip.bal{background:#7a0f16;color:#fff;border-color:#b3262e}.tstrip.mig{background:#5b2fa8;color:#fff;border-color:#7a45f0}.tstrip[hidden]{display:none}
 .tstrip .tsgo{display:block;margin-top:5px;font:700 14.5px/1.3 var(--sans);text-transform:none;letter-spacing:0}
+.tsrow{display:flex;flex-wrap:wrap;align-items:center;column-gap:10px}.tsrow .tsgo{flex:1 1 200px;min-width:0}.tsrow .tsbtn{flex:none}
+.shact{margin-top:8px;display:flex;gap:8px;justify-content:flex-end}
 .tstrip .tsbtn{display:inline-flex;align-items:center;min-height:44px;margin-top:6px;padding:0 16px;border-radius:10px;background:#fff;color:#1d0c3f;font:800 15px var(--sans);text-transform:none;letter-spacing:0;text-decoration:none}
 @media (prefers-reduced-motion:reduce){.tstrip{animation:none}}
 /* past the freshness window it stops shouting: no pulse, muted amber, past tense, age on the face of it */
@@ -891,6 +893,28 @@ body.m-day .band.N{background:#d8f0e2;border-color:#0d6b3f}body.m-day .band.N .b
 body.m-night .panel,body.m-night #mycard,body.m-night .hb,body.m-night .slotrow button{background:#070a0f;color:#8fa3b8;border-color:#1c242f}
 body.m-night .band.R,body.m-night .band.A{background:#5a1a16;border-color:#5a1a16;color:#e8c9c6}body.m-night .band.N .big{color:#7fa395}
 body.m-night .tstrip.bal,body.m-night .tstrip.mig,body.m-night .tstrip.offr{background:#2a0e14;color:#d8b7bd;border-color:#4a1a22}
+/* 1.42.1: on a phone the map comes first. On 7 Oct at 01:20 a ballistic warning, the admin's message and a mark's sheet
+   left the map 260 px of an 860 px screen — and 7 px with the sheet open. The card is tighter (slots, warning, foot on
+   one line), the warning's "what to do" sits beside its sentence, the caveat under "nothing within 30 km" steps aside
+   while a warning shows, the admin's message keeps to two lines (a tap opens it), and a mark's sheet takes the lower
+   half while the card folds to its line and the message steps aside. */
+@media (max-width:999px){
+  #mycard{gap:4px;padding:4px}
+  .slotrow button{height:40px}
+  .tstrip{font-size:15px;padding:8px 10px}.tstrip small{font-size:12.5px}
+  .tsrow{margin-top:4px}.tstrip .tsgo{margin-top:0;font-size:13.5px}.tstrip .tsbtn{margin-top:0;min-height:38px;padding:0 12px;font-size:14px}
+  #mycard:has(.tstrip:not([hidden]):not(.calm):not(.old)) .mych.calm small{display:none}
+  .mcfoot{display:flex;flex-wrap:wrap;align-items:center;column-gap:10px;row-gap:0;min-height:36px}
+  .mcfold{width:38px;height:38px;margin-left:auto}
+  .notice{padding:6px 10px}.notice .ntb{cursor:pointer}
+  .notice:not(.open) .ntx{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:normal}
+  body.shmk #notice,body.shmk #moved{display:none!important}
+  .sheet.mark{max-height:52vh;max-height:52dvh;padding-top:10px}
+  .sheet.mark .type{font-size:20px}
+  .sheet.mark .shact{position:sticky;bottom:calc(-14px - var(--sab));margin:8px -14px calc(-14px - var(--sab));padding:8px 14px calc(10px + var(--sab));background:inherit;border-top:1px solid var(--line)}
+  .toast{padding:8px 10px}.toast b{font-size:14.5px}
+  .toast div{font-size:12.5px!important;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+}
 /* 1.42: daylight and night, everywhere. The 1.36 panels had their own colours for both modes but the bottom sheets
    (how it works, support, the place pickers, a mark's details), the buttons inside the panels, the cards' links, the
    statistics and the bars did not: dark text on a dark sheet in daylight, grey on black at night. Colours made for a
@@ -1264,7 +1288,7 @@ function alertVol(m,hi){ if(m&&IMMEDIATE.has(m.type)) return 2;
 // once every 10 s, unless the level is higher than the last one played: a raid of thirty marks is not thirty alarms.
 const VIB_L={2:[120],3:[400,120,400],4:[300,120,300,120,600]};
 let TONE={t:0,l:0};
-function notify(title,body,kind,vol,level){ const el=$('toast'); el.style.borderLeftColor=kind==='end'?'var(--green)':kind==='threat'?'var(--yellow)':'var(--red)'; el.innerHTML=`<b>${esc(title)}</b><div style="color:var(--muted);font-size:13.5px;margin-top:3px">${esc(body||'')}</div>`; el.classList.add('show'); clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('show'),7000);
+function notify(title,body,kind,vol,level){ const el=$('toast'); el.style.borderLeftColor=kind==='end'?'var(--green)':kind==='threat'?'var(--yellow)':'var(--red)'; el.innerHTML=`<b>${esc(title)}</b><div style="color:var(--muted);font-size:13.5px;margin-top:3px">${esc(body||'')}</div>`; el.classList.add('show'); el.onclick=()=>el.classList.remove('show'); clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('show'),7000);
   if(level){ const now=Date.now(); if(now-TONE.t<10000&&level<=TONE.l) return; TONE={t:now,l:level};
     beep('l'+level,vol); if(vibOn&&navigator.vibrate&&VIB_L[level]) navigator.vibrate(VIB_L[level]); return; }
   beep(kind,vol); if(vibOn&&navigator.vibrate) navigator.vibrate(kind==='end'?[80]:(vol!=null&&vol>1.2)?[300,80,300,80,300]:[200,100,200]); }
@@ -1918,7 +1942,10 @@ function tick(){
     b.g.classList.toggle('tohome',hi.inbound||(hi.near&&!m.status&&!m.endedBy)); if(hi.inbound||hi.near){ if(!m.status&&!m.endedBy){ homeThreats++; if(hi.named) homeNamedN++; if(hi.inbound&&(!homeNearest||hi.dist<homeNearest.dist)) homeNearest={...hi,m}; if(!homeAlerted.has(m.id)){homeAlerted.add(m.id);
       // A ballistic warning names no distance and no ETA: at this speed neither is something the reader can
       // act on, and printing "112 km" invites exactly the wrong decision — that there is time.
-      if(hi.immediate) notify(`🚨 ${t('n_imm',THREAT[m.type]?.[1]||'')}`,`${t('n_rep')} ${pn(m.place)} ${fmtT(m.ts)} · ${t('n_imm_b')}`,'start',alertVol(m,hi),4);
+      // 1.42.1: as in the strip — with no official alert over the place, it says so and asks to be ready, a level lower;
+      // and a mark drawn at the town it is heading for is "heading for", never "reported near"
+      if(hi.immediate){ const uo=m.type==='ballistic_missiles'&&!officialLevel(); const at=m.approach?t('n_rep_to',pn(m.place),fmtT(m.ts)):`${t('n_rep')} ${pn(m.place)} ${fmtT(m.ts)}`;
+        notify(uo?t('ts_bal_unoff'):`🚨 ${t('n_imm',THREAT[m.type]?.[1]||'')}`,`${at} · ${uo?t('ts_bal_ready'):t('n_imm_b')}`,'start',alertVol(m,hi),uo?3:4); }
       else notify(`🏠 ${hi.inbound?t('n_hto'):t('n_hnear')} ${homeName()} — ${m.type==='drones'?(m.jet?t('k_jet_l'):t('k_shahed')):THREAT[m.type]?.[1]}`,`${Math.round(hi.dist)} km${hi.inbound?' · '+t('n_hway'):''} · ${t('n_rep')} ${pn(m.place)} ${fmtT(m.ts)}`,'start',alertVol(m,hi),hi.zone==='near'?3:2);} } }
     // The other half of a warning: what became of it.
     //
@@ -2176,13 +2203,15 @@ function moveTip(e){const w=$('mapwrap').getBoundingClientRect(); const tip=$('t
   tip.style.top=Math.max(4,Math.min(y,Math.max(4,w.height-th-4)))+'px';}
 function openSheet(id){
   const m=MK.find(x=>x.id===id); if(!m) return; $('tip').hidden=true; const [x,y,x0,y0]=posOf(m,Date.now()); const info=inboundInfo(m,x,y);
-  const th=THREAT[m.type]||THREAT.unknown; const placeEn=m.place==='область'?oblWhere(m):pn(m.place);
+  const th=THREAT[m.type]||THREAT.unknown; const appr=!!m.approach&&!m.status&&!m.endedBy; const placeEn=m.place==='область'?oblWhere(m):pn(m.place);
   const kind=m.status?`${statusIco(m.status)} ${statusName(m.status)}`:`${m.type==='drones'&&m.jet?t('k_jet'):m.type==='drones'?t('k_shahed'):m.type==='unknown'?'⚠ '+t('th_unknown2'):th[1]}`;
   const ev=m.evidence||{}; const cor=corroboration(m); const closer=m.endedBy; const closed=m.closes?MK.find(o=>o.id===m.closes):null;
   const overall=ev.position?.confidence==='high'&&(m.status||ev.heading?.confidence==='high'||ev.heading?.confidence==='medium')?'high':ev.position?.confidence==='high'?'medium':'low';
   const src=`${esc(CH[m.channel]||'@'+m.channel)} · ${fmtT(m.ts)} (${t('tp_ago',Math.round(agoMin(m.ts)))})`;
   // one-line situation
-  const where=[esc(placeEn), m.status?'':(m.heading==null?t('sh_hnr'):`→ ${dirName(m.heading)}${m.target?' '+t('sh_towards')+' '+esc(tgtName(m)):''}`), `${t('sh_fromkyiv',Math.round(info.dist))}${info.inbound&&!m.stale&&!closer?` · <b style="color:#ffb3b5">${t('tp_tokyiv')}</b>`:''}`].filter(Boolean).join(' · ');
+  // 1.42.1: "Балістика курсом на Київ" names where it is going, not where it is: the sheet said "Kyiv · 0 km from Kyiv"
+  // and "near zone, up to 10 km" — read as "it is over Kyiv". It says "heading for Kyiv — position not given" now.
+  const where=appr?`<b>${esc(t('sh_appr',pn(m.place)))}</b>`:[esc(placeEn), m.status?'':(m.heading==null?t('sh_hnr'):`→ ${dirName(m.heading)}${m.target?' '+t('sh_towards')+' '+esc(tgtName(m)):''}`), `${t('sh_fromkyiv',Math.round(info.dist))}${info.inbound&&!m.stale&&!closer?` · <b style="color:#ffb3b5">${t('tp_tokyiv')}</b>`:''}`].filter(Boolean).join(' · ');
   const state=closer?`<div class="kv1 green">✕ ${statusName(closer.status)} ${t('tp_near')} ${esc(pn(closer.place))} ${t('tp_at')} ${fmtT(closer.ts)} (${esc(CH[closer.channel]||closer.channel)})</div>`
     :m.stale&&!m.status?`<div class="kv1 yellow">${t('sh_stale',m.stale,esc(placeEn),fmtT(m.ts))}</div>`
     :closed?`<div class="kv1 green">${t('sh_closes',closed.type==='drones'?(closed.jet?t('k_jet_l'):t('k_shahed')):THREAT[closed.type]?.[1],esc(pn(closed.place)),fmtT(closed.ts))}</div>`:'';
@@ -2195,7 +2224,7 @@ function openSheet(id){
   $('sheetbody').innerHTML=`<div class="type">${kind}${m.count?` <span class="chip">×${m.count}</span>`:''}${altChip}${m.status?'':phaseChip(m)}${info.inbound&&!m.stale&&!closer?` <span class="chip red">${t('lb_tokyiv')}</span>`:''}<span class="chip ${CONF[overall][0]}" style="margin-left:auto">${cf(overall)}</span></div>
     <div class="kv1 muted">${src} · <a href="https://t.me/${esc(m.id.split('#')[0])}" target="_blank" rel="noopener">${t('sh_post')}</a></div>
     <div class="kv1">${where}</div>${state}${merged}${track}
-    ${(()=>{ if(!HOME||m.status||m.endedBy) return '';
+    ${(()=>{ if(!HOME||m.status||m.endedBy||appr) return '';
       const [mx,my]=posOf(m,Date.now()); const hz=homeInfo(m,mx,my);
       const z=hz.zone; const eb=etaBand(m,hz.dist);
       if(!z&&!eb) return '';
@@ -2219,11 +2248,13 @@ function openSheet(id){
     ${alt?`<div class="kv1 muted" style="font-size:11.5px">${esc(alt.state?(ALTL[alt.state]||alt.state):(alt.m+' m'))}: “${esc(alt.matched)}” — ${esc(t('alt_src'))}</div>`:''}
     ${(()=>{const gsd=groundSpeed(m); return gsd?`<div class="kv1 muted" style="font-size:11.5px">${esc(t('tel_gs',gsd.kmh))} — ${esc(t('tel_gs_src',gsd.mins))}</div>`:'';})()}
     ${contactLost(m)?`<div class="kv1 yellow">✖ ${esc(t('lost_t'))}<div style="color:var(--muted);font-size:11.5px;margin-top:3px">${esc(t('lost_b',m.stale))}</div></div>`:''}
-    <div style="margin-top:8px;display:flex;gap:8px;justify-content:flex-end"><button class="tgl" id="flagbtn" data-fid="${esc(m.id)}">${t('flag_btn')}</button><button class="tgl" id="shbtn">${t('share_btn')}</button><button class="tgl" onclick="closeSheet()">${t('btn_close')}</button></div>`;
+    <div class="shact"><button class="tgl" id="flagbtn" data-fid="${esc(m.id)}">${t('flag_btn')}</button><button class="tgl" id="shbtn">${t('share_btn')}</button><button class="tgl" onclick="closeSheet()">${t('btn_close')}</button></div>`;
   $('shbtn').onclick=()=>shareMarker(m.id,$('shbtn'));
-  $('sheet').classList.add('show');
+  $('sheet').classList.add('show','mark'); document.body.classList.add('shmk'); syncMini();
 }
-function closeSheet(){$('sheet').classList.remove('show','top');}
+// 1.42.1: a mark's sheet takes the lower half on a phone, the card folds to its line and the admin's message steps
+// aside — the map stays visible between them (it was 7 px on a phone with a ballistic warning and a message showing)
+function closeSheet(){$('sheet').classList.remove('show','top','mark'); if(document.body.classList.contains('shmk')){ document.body.classList.remove('shmk'); syncMini(); }}
 // ---- oblast selection: tap an oblast to show its cities (and zoom to it from the whole-Ukraine view) ----
 let SEL_OBL=null;
 // ---- my oblast: the status band follows the oblast the user chose (default Kyiv) ----
@@ -2434,7 +2465,7 @@ function raionKey(title){const t=(title||'').toLowerCase();for(const [st,k] of R
 // later, and "МІГ-31К У ПОВІТРІ" with no age on it reads as *now* however old it is. After TS_FRESH_MIN the
 // banner switches to the past tense, says how long it has gone unconfirmed, and loses the alarm colours — it
 // is not deleted, because a sortie can still end in a launch and silence is not an all-clear.
-const TS_FRESH_MIN=8, TS_MAX_MIN=20;
+const TS_FRESH_MIN=8, TS_MAX_MIN=20, TS_FRESH_BAL_UNOFF=4;
 const tsAge=x=>Math.max(0,Math.round((Date.now()-Date.parse(x.ts))/60000));
 function threatStrip(){
   if(!S) return; const now=Date.now(); const thr=[];
@@ -2442,10 +2473,13 @@ function threatStrip(){
   const recent=lastPosts.filter(p=>(now-Date.parse(p.ts))/60000<=25);
   const cancelledAfter=(ts,kind)=>recent.some(p=>p.ts>ts&&(p.tags||[]).includes('clear')&&((p.tags||[]).includes(kind)||/міг|mig|баліст|ballistic|посадк|landing/i.test(p.text+' '+(p.text_en||''))));
   for(const a of S.active) for(const th of (a.threats||[])){ const ty=th.threat_type; const kyiv=a.oblast_uid==='31'||a.oblast_uid==='14'; const ts=th.started_at||a.started_at; if((now-Date.parse(ts))/60000>TS_MAX_MIN) continue;
-    if((ty==='mig31k_departure'||(kyiv&&(ty==='ballistic_missiles'||ty==='cruise_missiles'||ty==='strategic_aircraft_activity')))&&!cancelledAfter(ts,ty)) thr.push({ty,ts,src:a.notes||a.source,where:a.location_title_en||a.location_title}); }
+    if((ty==='mig31k_departure'||(kyiv&&(ty==='ballistic_missiles'||ty==='cruise_missiles'||ty==='strategic_aircraft_activity')))&&!cancelledAfter(ts,ty)) thr.push({ty,ts,src:a.notes||a.source,where:a.location_title_en||a.location_title,official:true}); }
   // a nightly assessment ("оцінка загроз на ніч", "#обстановка", "може відбутись") is a forecast, never a live threat
   const FORECAST=/оцінка загроз|загальна оцінка|#обстановка|прогноз|може відбутись|впродовж ночі|forecast|assessment/i;
-  for(const p of recent){ const tg=p.tags||[]; if(tg.includes('clear')||tg.includes('forecast')||FORECAST.test(p.text||'')) continue;
+  // 1.42.1: a channel taking a missile report back ("ймовірно лаг системи", tagged 'retract' by the server) ends the
+  // warnings the channels raised before it — never an official one: only the official data ends an alert
+  const retracted=ts=>recent.some(p=>p.ts>ts&&(p.tags||[]).includes('retract'));
+  for(const p of recent){ const tg=p.tags||[]; if(tg.includes('clear')||tg.includes('forecast')||tg.includes('retract')||FORECAST.test(p.text||'')||retracted(p.ts)) continue;
     if(tg.includes('mig31k_departure')){ if(!cancelledAfter(p.ts,'mig31k_departure')) thr.push({ty:'mig31k_departure',ts:p.ts,src:CH[p.channel]||p.channel,where:''}); }
     else if(tg.includes('ballistic_missiles')&&(/(?:^|[^а-яіїє])пуск|запуск[а-яіїє]*\s+(?:баліст|іскандер|кинджал|кінжал)|швидкісн[а-яіїє]*\s+ціл|балістик[а-яіїє]*\s+(?:на|по)\s+ки[їєе]в|загроза\s+(?:застосування\s+)?баліст[а-яіїє]*\s+(?:для|по|на)?\s*ки[їєе]в|ballistic.*kyiv|launch/i.test(p.text+' '+(p.text_en||''))||(tg.includes('kyiv')&&tg.includes('official')))){ if(!cancelledAfter(p.ts,'ballistic_missiles')) thr.push({ty:'ballistic_missiles',ts:p.ts,src:CH[p.channel]||p.channel,where:''}); } }
   const el=$('tstrip');
@@ -2469,10 +2503,13 @@ function threatStrip(){
   // freshness outranks type: an unconfirmed MiG from a quarter of an hour ago must never sit on top of a
   // ballistic warning that came in a minute ago
   thr.sort((a,b)=>((tsAge(a)>TS_FRESH_MIN)-(tsAge(b)>TS_FRESH_MIN))||(pri[a.ty]-pri[b.ty])||(a.ts<b.ts?1:-1));
-  const tt=thr[0]; const age=tsAge(tt); const old=age>TS_FRESH_MIN; TS_TOP={ty:tt.ty,old};
-  const label=(old?{mig31k_departure:t('ts_mig_old'),ballistic_missiles:t('ts_bal_old'),strategic_aircraft_activity:t('ts_strat_old'),cruise_missiles:t('ts_cruise_old')}
-                  :{mig31k_departure:t('ts_mig'),ballistic_missiles:t('ts_bal'),strategic_aircraft_activity:t('ts_strat'),cruise_missiles:t('ts_cruise')})[tt.ty];
-  const lvl=officialLevel();
+  // 1.42.1: a ballistic report from the channels while no official alert covers the reader's place said "shelter
+  // now, do not wait for the siren" for eight minutes — on 7 Oct at 01:14 with Kyiv city never under alert. It now
+  // says the official alert is not there yet, asks the reader to be ready and to go at the siren, and turns grey
+  // after four minutes. With an official alert over the place, the warning is the full one, at once.
+  const lvl=officialLevel(); const unoff=x=>x.ty==='ballistic_missiles'&&!lvl&&!x.official;
+  const fresh=x=>unoff(x)?TS_FRESH_BAL_UNOFF:TS_FRESH_MIN;
+  const tt=thr[0]; const age=tsAge(tt); const old=age>fresh(tt); TS_TOP={ty:tt.ty,old};
   el.className='tstrip '+(old?'old':lvl==='R'?'offr':lvl==='Y'?'offy'
     :tt.ty==='mig31k_departure'?'mig':tt.ty==='cruise_missiles'?'':'bal'); el.hidden=false;
   // Everything after the first one used to be dropped on the floor. A MiG airborne AND a ballistic launch
@@ -2480,15 +2517,15 @@ function threatStrip(){
   // urgent stays on the line, the rest fold behind a count that opens in place. In the header, never over
   // the map, and never as a pop-up — nothing here may cover what somebody is trying to look at.
   const rest=thr.slice(1);
-  const one=x=>{const a=tsAge(x); const o=a>TS_FRESH_MIN;
+  const one=x=>{const a=tsAge(x); const o=a>fresh(x);
     const lb=(o?{mig31k_departure:t('ts_mig_old'),ballistic_missiles:t('ts_bal_old'),strategic_aircraft_activity:t('ts_strat_old'),cruise_missiles:t('ts_cruise_old')}
-               :{mig31k_departure:t('ts_mig'),ballistic_missiles:t('ts_bal'),strategic_aircraft_activity:t('ts_strat'),cruise_missiles:t('ts_cruise')})[x.ty];
+               :{mig31k_departure:t('ts_mig'),ballistic_missiles:unoff(x)?t('ts_bal_unoff'):t('ts_bal'),strategic_aircraft_activity:t('ts_strat'),cruise_missiles:t('ts_cruise')})[x.ty];
     const n=x.srcs?x.srcs.size:(x.src?1:0);
     return `${esc(lb)} <small>· ${fmtT(x.ts)} · ${esc(o?t('ts_unconf',a):t('ts_ago',a))}${x.src?' · '+esc(x.src):''}${n>1?' · '+esc(t('ts_conf',n)):''}</small>`;};
   // 1.36: a fresh ballistic or MiG-31K warning says what to do, in words, with the guide one tap away
   const now1=!old&&(tt.ty==='ballistic_missiles'||tt.ty==='mig31k_departure');
   el.innerHTML=one(tt)
-    +(now1?`<span class="tsgo">${esc(t('mc_go_now'))}</span><a class="tsbtn" href="/guide#w-ballistic">${esc(t('mc_what'))}</a>`:'')
+    +(now1?`<div class="tsrow"><span class="tsgo">${esc(unoff(tt)?t('ts_bal_ready'):t('mc_go_now'))}</span><a class="tsbtn" href="/guide#w-ballistic">${esc(t('mc_what'))}</a></div>`:'')
     +(rest.length?` <button type="button" class="tsmore" id="tsmore" aria-expanded="${TS_OPEN?'true':'false'}">${esc(t('ts_more',rest.length))} ${TS_OPEN?'▴':'▾'}</button>`:'')
     +(rest.length&&TS_OPEN?`<div class="tsrest">${rest.map(x=>`<div class="tsr">${one(x)}</div>`).join('')}</div>`:'');
   syncTop();
@@ -2615,7 +2652,7 @@ const warnOn=ts=>!!ts&&!ts.hidden&&!/\b(calm|old)\b/.test(ts.className);
 function warnKey(){ const ts=$('tstrip'), bb=$('brgbar'); const a=warnOn(ts)?ts.className:'', b=bb&&!bb.hidden?bb.className:''; return a||b?a+'|'+b:''; }
 function foldShut(){ if(!FOLD.on) return false; const k=warnKey(); return LEVEL<=FOLD.at&&(k===''||k===FOLD.key); }
 // 1.42: during a replay the card shows its one line, so the map has the room — unless something live and near matters
-function miniWanted(){ return window.innerWidth<1000&&(drawerState()!==''||foldShut()||(document.body.classList.contains('rp')&&LEVEL<=1&&warnKey()==='')); }
+function miniWanted(){ const b=document.body.classList; return window.innerWidth<1000&&(drawerState()!==''||foldShut()||b.contains('shmk')||(b.contains('rp')&&LEVEL<=1&&warnKey()==='')); }
 function setFold(on){ FOLD.on=on; if(on){ FOLD.at=Math.max(1,LEVEL||0); FOLD.key=warnKey(); } try{ localStorage.setItem('card_fold',on?'1':'0'); }catch(e){} syncMini(); }
 $('mcfold').onclick=()=>setFold(true);
 $('mcmini').onclick=()=>{ if(FOLD.on) setFold(false); if(drawerState()!=='') setDrawer(''); };
@@ -3125,7 +3162,7 @@ function showNuke(n){ showNuke.n=n;
 function showNotice(n){ const el=$('notice'); if(!el) return; let gone=null; try{gone=localStorage.getItem('notice_x');}catch(e){}
   const tx=n&&n.text?(n.text[LANG]||n.text.uk||n.text.en||n.text.fr||''):'';
   const hide=!tx||gone===n.id;
-  if(!hide){ el.className='notice lv-'+(n.level||'info'); el.querySelector('.ntx').textContent=tx;
+  if(!hide){ el.className='notice lv-'+(n.level||'info'); el.querySelector('.ntx').textContent=tx; el.querySelector('.ntb').onclick=()=>{ el.classList.toggle('open'); syncTop(); };
     el.querySelector('.nx').onclick=()=>{ try{localStorage.setItem('notice_x',n.id);}catch(e){} el.hidden=true; syncTop(); }; }
   if(el.hidden!==hide){ el.hidden=hide; syncTop(); } }
 function histSoon(){ if(histT) return; histT=setTimeout(()=>{histT=null;loadHist();},2000+Math.random()*18000); }

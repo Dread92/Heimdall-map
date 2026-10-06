@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.42** · last updated 2026-10-07
+**Documented version: 1.42** · last updated 2026-10-07 (1.42.1)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -415,7 +415,14 @@ publishes a `feed` event. Tagging order matters: forecasts first (`FORECAST_RX` 
 anything), then the news guard (`geo.looks_like_news`: strong news words, reported speech and consequences, length,
 summaries, and since 1.41.2 `looks_like_explainer` — a live tracker talking *about* the sky: "до прикладу",
 "розповім про балістику", "по цій темі", "я описую ціль", "якщо ціль знищена …", "ворог планує"), then threat
-tags. `parse_for_channel` applies `looks_like_explainer` to every channel's parser, so none of it is ever a mark. `banderol_missiles` removes
+tags. `parse_for_channel` applies `looks_like_explainer` to every channel's parser, so none of it is ever a mark.
+1.42.1: **a retraction** comes before all of it (`is_retraction()`): a glitch of the system ("лаг системи", "збій
+системи", "хибне спрацювання") on its own, or "not confirmed" / a false alert about something missile-shaped (a speed,
+a launch, a rocket, a MiG) — "Хибна ціль" is not one, that is a decoy, which flies. It is tagged `retract` and nothing
+else, kept (`is_relevant`), and it ends what the channels said before it: a ballistic or supersonic mark of the 20
+minutes before (`_drop_retracted()`, also in the replay), the missile mode (`_missile_active()` stops at it), and the
+warning strip's channel-raised ballistic / MiG-31K warnings. Never an official one — only the official data ends an
+alert. "… не підтвердився" about anything else is an explainer: no mark. `banderol_missiles` removes
 `cruise_missiles` and `unspecified_missiles`.
 
 ### 7.3 From post to mark (`geo.py`)
@@ -443,6 +450,8 @@ block for every value:
 - **Count**, **altitude** (only when written: "знижується", "низько", metres "висота 2200", a bare "1600, Вороньків"
   in a short live post, kilometres "висота 4,4км"), **phase** (`PHASE_LADDER`:
   prep → launch → entering…, with a per-sentence hedge guard: "може відбутись" is preparation, not a launch).
+- **The oblast, then its towns** (1.42.1): "курсом на Київщину, Макарів / Наливайківку" — a town the post names
+  right after the oblast it is in is the destination, not the oblast's centre.
 - **The next target** (1.41.3, `_split_next`) — an outcome followed by a sentence starting "наступний", "ще один",
   "другий" or "інший" ("1 знищено.\nНаступний Нивки") is two reports. The outcome keeps only its own words (on a live
   channel the previous position, `needs_context`; otherwise no mark); the place after the word is the next target's
@@ -903,6 +912,23 @@ connection: both close their live line on `pagehide` (when the page is being kep
 (`persisted`) — Tactical with `connect()` and a `pulse(true)`, Light with `connectLive()` and `refresh(true)` — so
 what changed meanwhile arrives at once. The pages are served `no-cache` with an ETag, never `no-store`, which would
 keep them out of that memory too.
+
+### 10.3e The map first on a phone (1.42.1)
+
+On 7 Oct 2026 at 01:20 a ballistic warning, the admin's message and a mark's sheet left the map 260 px of an 860 px
+phone screen — 7 px with the sheet open. On a phone (`max-width:999px`): the slots are 40 px; the warning's "what to
+do" sits beside its sentence (`.tsrow`); the caveat under "nothing within 30 km" steps aside while a warning shows; the
+card's foot is one line; the admin's message keeps to two lines (a tap opens it whole); the toast puts itself away on a
+tap. A mark's sheet (`.sheet.mark`) takes the lower half (52 vh, its buttons pinned at the foot) while the card folds to
+its one line (`body.shmk` in `miniWanted()`) and the admin's message steps aside. Measured: 364 px of map with the
+warning and the message, 460 px with a sheet open.
+
+**A ballistic report while no official alert covers the place** (`officialLevel()` null, and not an official threat)
+says so — "Ballistic threat reported — no official alert here yet" — asks the reader to be ready and to go the moment
+the siren sounds (not "do not wait for the siren"), and turns grey after 4 minutes (`TS_FRESH_BAL_UNOFF`, 8 for the
+rest). The in-app toast says the same, one tone level lower. With an official alert over the place, the full warning
+at once. A mark drawn at the town it is heading for (`approach`) is "heading for Kyiv — where it is now was not
+given" in its sheet, with no distance and no zone (it said "Kyiv · 0 km from Kyiv · near zone, up to 10 km").
 
 ### 10.3d Daylight and night (1.42)
 

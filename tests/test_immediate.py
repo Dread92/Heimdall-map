@@ -94,8 +94,8 @@ def test_the_pages_region_span_matches_the_servers():
 
 
 def test_the_in_app_alert_for_them_names_no_distance_and_no_eta():
-    i = PAGE.index("if(hi.immediate) notify(")
-    line = PAGE[i:PAGE.index("\n", i)]
+    i = PAGE.index("if(hi.immediate){ const uo=")              # 1.42.1: two lines (the unconfirmed ballistic variant)
+    line = PAGE[i:PAGE.index("}", PAGE.index("notify(", i))]
     assert "n_imm" in line
     for banned in ("hi.dist", "eta", "n_hway"):
         assert banned not in line, f"the ballistic toast leaks {banned!r} — that reads as 'there is time'"

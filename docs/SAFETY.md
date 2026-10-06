@@ -259,6 +259,16 @@ still gives the place's official status in words. It counts the places posts nam
 shoot-downs or the hits, which would map where the air defence works. It is off at every opening of the app:
 nobody should open the map at 3 a.m. and see last week.
 
+## A ballistic report is not an official alert, and a retraction ends it
+
+On 7 Oct 2026 at 01:14 three channels relayed a ballistic launch "towards Kyiv" that the military's own system had
+shown by mistake (a speed of 6000, "probably a system lag"). Kyiv city was never under an official alert; the app said
+"shelter now, do not wait for the siren" for eight minutes and drew the missile "0 km from Kyiv". Now: with no official
+alert over the reader's place, the warning says exactly that and asks the reader to be ready and to go at the siren,
+then turns grey after four minutes; a mark at the town a missile is heading for is "heading for", never a position;
+and a channel's retraction ("лаг системи", "не підтвердився пуск") ends the channels' ballistic marks and warnings of
+the 20 minutes before it — never an official alert, which only the official data ends.
+
 ## The replay is the past, and looks like it
 
 The replay (1.42) puts a past night on the map. It must never be read as the present, nor say more about the past than

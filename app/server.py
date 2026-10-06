@@ -200,7 +200,7 @@ NEWS_CHANNELS = {"kyiv_times_official", "eRadarrua", "kievinfo_kyiv"}
 def is_relevant(text, tags, channel=None):
     """Keep only posts about the air situation: a threat / alert / outcome keyword, a parsed position, or an
     official alert message. Everything else (news, fundraising, culture, ads) is dropped before storage."""
-    if "af_summary" in tags:
+    if "af_summary" in tags or "retract" in tags:
         return True
     if channel in NEWS_CHANNELS:
         if channel == "eRadarrua" and "◦" in text:
@@ -245,12 +245,32 @@ FORECAST_RX = re.compile(r"оцінка\s+загроз|загальна\s+оці
                          r"(?:ворог|противник|рф|росі\w*|окупант\w*)\s+план\w*|план\w*\s+(?:запустити|атакувати|завдати|застосувати)", re.I)
 
 
+# 1.42.1: a channel taking a missile report back. On 7 Oct 2026 at 01:14 the channels relayed a ballistic launch "towards
+# Kyiv" that the military's own system had shown by mistake ("швидкість 6000 була, ймовірно лаг системи"); the
+# retraction was not even kept (no threat word), and the warning stood until it aged out. A retraction says the system
+# glitched or the report was not confirmed, about something missile-shaped (a speed, a launch, a rocket). "Хибна ціль"
+# is NOT one: that is a decoy drone, which flies.
+# A glitch of the system ("лаг системи", "хибне спрацювання") is one on its own; "not confirmed" only about something
+# missile-shaped — "Вибух у Броварах не підтвердився" must not end a ballistic warning.
+RETRACT_RX = re.compile(r"(?:лаг\w*|збій|збої)\s+(?:\S+\s+)?(?:систем|радар|ПРО|ППО)\w*|(?:хибн|помилков)\w*\s+спрацюв\w*", re.I)
+RETRACT_WEAK_RX = re.compile(r"(?:хибн|помилков)\w*\s+(?:тривог|інформац|відмітк)\w*|не\s+підтверд(?:и|ж)\w*", re.I)
+RETRACT_CTX_RX = re.compile(r"баліст|ракет|швидк|пуск|м[іи]г|кинджал|кінжал|іскандер", re.I)
+
+
+def is_retraction(text):
+    t = text or ""
+    return bool(RETRACT_RX.search(t) or (RETRACT_WEAK_RX.search(t) and RETRACT_CTX_RX.search(t)))
+
+
 def tag_feed_text(text, channel=None):
     # 1.32: the Air Force's summary of a night or a day. It was being read as news (dropped, so the statistics lost
     # every summary from 25 Sep); it is also not a live threat — "балістичними ракетами" in a morning summary must
     # never light the ballistic banner. It is kept, with this one tag.
     if channel in AF_SUMMARY_CHANNELS and parse_af_report(text):
         return ["af_summary"]
+    # a retraction carries no threat of its own — "балістика була хибною відміткою" is not a ballistic warning
+    if is_retraction(text):
+        return ["retract"] + (["kyiv"] if KYIV_RE.search(text) else [])
     tags = [name for name, rx in FEED_TAGS if rx.search(text)]
     if FORECAST_RX.search(text) and not re.search(r"\bпуск\b|зафіксовано\s+пуск|швидкісн\w*\s+ціл|зліт\s+міг|злетів|у\s+повітрі\s+міг", text, re.I):
         return [t for t in tags if t == "alert"] + ["forecast"]
@@ -2053,7 +2073,20 @@ class State:
                     else:
                         ev = cached
                 out.append(dict(m, id=f"{p['post_id']}#{i}", ts=p["ts"], text=p["text"], text_en=p.get("text_en"), channel=p["channel"], tags=p["tags"], evidence=ev))
-        return out
+        return self._drop_retracted(out, posts)
+
+    @staticmethod
+    def _drop_retracted(out, posts):
+        """1.42.1: a ballistic or supersonic mark reported in the 20 minutes before a channel's retraction is gone."""
+        rts = [t for t in (parse_iso(p["ts"]) for p in posts if "retract" in (p.get("tags") or [])) if t]
+        if not rts:
+            return out
+        fast = ("ballistic_missiles", "supersonic_missiles")
+
+        def taken_back(m):
+            t = parse_iso(m.get("ts"))
+            return m.get("type") in fast and not m.get("status") and t and any(0 <= (r - t).total_seconds() <= 1200 for r in rts)
+        return [m for m in out if not taken_back(m)]
 
     # -- one computation for everybody --------------------------------------------------------------------------
     # 25 Sep 2026, during an attack: every new post made EVERY open page ask for the marks, the feed and the
@@ -2832,8 +2865,10 @@ class State:
                         return self.MSL_BALLISTIC          # nothing outranks this, stop looking
                     if ty in kinds:
                         level = self.MSL_CRUISE
-        for p in self.store.feed_since(10, limit=60, translate=False):
+        for p in self.store.feed_since(10, limit=60, translate=False):      # newest first
             tags = set(p.get("tags") or [])
+            if "retract" in tags:
+                break                                  # what was reported before a retraction no longer counts
             if bal & tags:
                 return self.MSL_BALLISTIC
             if kinds & tags:
