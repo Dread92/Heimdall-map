@@ -595,6 +595,48 @@ body.m-day{--bg:#f2f3f5;--ink:#0a0c10;--ink2:#2c3138;--ink3:#565c66;--line:#9aa1
 /* The map surface itself, not just the chrome around it. The base map is painted dark by its own fills and
    by the tile layer's invert(1); leaving those alone gave a light interface wrapped around a black map,
    which is the worst of both — the glare is still there and the contrast has gone. */
+/* 1.42: the replay — a past window of the last 7 days on the map (static/replay.js). While it is on, nothing live is
+   drawn on the map (the band above stays live), and nothing personal: no watched place, no pin, no ring. */
+body.rp #markers,body.rp #trails,body.rp #edges,body.rp #impactsg,body.rp #heatg,body.rp #oblevt,body.rp #homeg,body.rp #zones,body.rp #bridgeg,
+body.rp .livebar,body.rp #heatleg,body.rp #pinhold,body.rp #zkyiv,body.rp #impbtn,body.rp #rpbtn,body.rp #kdistg{display:none!important}
+#rpg{pointer-events:none}
+.mk.rp .glyph{animation:none!important;filter:none!important}
+.rptr{fill:none;stroke:#ff8a3d;stroke-width:calc(var(--k,1)*1.8px);stroke-linecap:round;stroke-linejoin:round;opacity:.6}
+.rpdot{fill:#ff8a3d;opacity:.7}
+.mk.rp.unknown .rptr,.mk.rp[class*=missiles] .rptr{stroke:#ff5c61}.mk.rp.unknown .rpdot,.mk.rp[class*=missiles] .rpdot{fill:#ff5c61}
+.mk.rp.appr .rptr{display:none}
+.rpl{font:700 calc(var(--k,1)*10.5px) var(--mono);fill:#fff;paint-order:stroke;stroke:#080b10;stroke-width:calc(var(--k,1)*3px)}
+svg.veryfar .rpl{display:none}
+#rpbar{position:absolute;left:8px;right:60px;bottom:8px;z-index:8;background:rgba(18,21,27,.96);border:1px solid var(--line);border-radius:12px;padding:8px 10px 9px;color:var(--ink);font:13px/1.35 var(--sans);box-shadow:0 6px 24px rgba(0,0,0,.45)}
+#rpbar[hidden]{display:none}
+.rph{display:flex;align-items:center;gap:8px;min-width:0}
+.rptag{font:800 10.5px var(--mono);letter-spacing:.12em;color:#fff;background:#c62828;border-radius:4px;padding:2px 6px;flex:none}
+#rptime{font:800 26px/1 var(--cond);letter-spacing:.02em;font-variant-numeric:tabular-nums}
+#rpdate{color:var(--ink2);font:600 13px var(--sans);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rpx{margin-left:auto;flex:none;width:36px;height:36px;border:1px solid var(--line);border-radius:9px;background:transparent;color:var(--ink);font:600 16px var(--sans)}
+.rpdays{display:flex;gap:6px;overflow-x:auto;margin:7px 0 4px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.rpdays::-webkit-scrollbar{display:none}
+.rpdays button{flex:none;height:30px;padding:0 10px;border:1px solid var(--line);border-radius:15px;background:var(--panel2);color:var(--ink2);font:600 12px var(--sans);white-space:nowrap}
+.rpdays button.on{background:var(--ua-yellow);border-color:var(--ua-yellow);color:#111}
+.rptrack{position:relative;height:40px}
+#rpcv{position:absolute;left:8px;right:8px;top:0;height:20px;width:calc(100% - 16px)}
+#rprange{position:absolute;left:0;right:0;bottom:0;width:100%;height:22px;margin:0;accent-color:#ff8a3d;cursor:pointer}
+.rpctl{display:flex;align-items:center;gap:6px;margin-top:4px}
+.rpctl button{min-width:44px;height:36px;padding:0 8px;white-space:nowrap;border:1px solid var(--line);border-radius:9px;background:var(--panel2);color:var(--ink);font:700 13px var(--mono)}
+.rpctl .rpp{min-width:52px;background:#ff8a3d;border-color:#ff8a3d;color:#111;font-size:16px}
+#rpcount{margin-left:auto;color:var(--ink2);font:12px var(--mono);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.rpnote{color:var(--ink3);font:11px/1.35 var(--sans);margin-top:6px}
+.rpns{display:none}
+@media (max-width:480px){.rpnl{display:none}.rpns{display:inline}#rptime{font-size:22px}.rpnote{margin-top:4px}}
+@media (max-width:999px){#rpbar{bottom:36px}}   /* above the drawer's ▴ tab */
+@media (min-width:1000px){#rpbar{left:12px;right:70px;max-width:780px}}
+body.m-day #rpbar{background:rgba(255,255,255,.97);color:#14171c;border-color:#c3c9d2;box-shadow:0 6px 24px rgba(0,0,0,.18)}
+body.m-day #rpdate,body.m-day #rpcount{color:#3b4350}body.m-day .rpnote{color:#59616e}
+body.m-day .rpdays button,body.m-day .rpctl button,body.m-day .rpx{background:#f1f3f6;border-color:#c3c9d2;color:#14171c}
+body.m-day .rpdays button.on{background:#ffd500;border-color:#c9a800;color:#111}body.m-day .rpctl .rpp{background:#ff8a3d;color:#111}
+body.m-day .rpl{fill:#111;stroke:#fff}
+body.m-night #rpbar{background:#070a0f;color:#8fa3b8;border-color:#1c242f}body.m-night .rpctl .rpp{background:#7a3f17;border-color:#7a3f17;color:#e9d6c8}
+body.lite #rpbar{background:#000;border-color:#fff;color:#fff}body.lite .rpctl .rpp{background:#fff;color:#000}
 body.m-day .mapwrap{background:#e9ebef}
 body.m-day #tiles{filter:brightness(1.04) contrast(1.10) saturate(.62)}
 body.m-day #tiles image{opacity:1}
@@ -632,7 +674,7 @@ body.m-day .tstrip.calm{background:#d8f0e2;color:#04321d;border-color:#0d6b3f}
 body.m-day .tstrip.offy{background:#ffe9a8;color:#3a2c00;border-color:#8a6d00}
 body.m-day .tstrip.offr,body.m-day .tstrip.bal,body.m-day .tstrip.mig{background:#b3140d;color:#fff;border-color:#6d0b06;animation:none}
 
-body.m-night{--bg:#04060a;--ink:#8fa3b8;--ink2:#61748a;--ink3:#3f4e5e;--line:#18202b;--panel:#070a0f;--panel2:#0b1017;
+body.m-night{--bg:#04060a;--ink:#8fa3b8;--ink2:#61748a;--ink3:#566a80;--line:#18202b;--panel:#070a0f;--panel2:#0b1017;
   --red:#8c2a26;--red2:#a83b34;--yellow:#7a6a20;--green:#2a6b4d;--orange:#8a5626;--purple:#5c4a8a;--blue:#2f5480}
 body.m-night #tiles{filter:brightness(.42) saturate(.35) contrast(.9)}
 body.m-night .mk .glyph{filter:none!important;animation:none!important;fill:#9fb4c9!important;stroke:#04060a;stroke-width:.8px}
@@ -849,6 +891,36 @@ body.m-day .band.N{background:#d8f0e2;border-color:#0d6b3f}body.m-day .band.N .b
 body.m-night .panel,body.m-night #mycard,body.m-night .hb,body.m-night .slotrow button{background:#070a0f;color:#8fa3b8;border-color:#1c242f}
 body.m-night .band.R,body.m-night .band.A{background:#5a1a16;border-color:#5a1a16;color:#e8c9c6}body.m-night .band.N .big{color:#7fa395}
 body.m-night .tstrip.bal,body.m-night .tstrip.mig,body.m-night .tstrip.offr{background:#2a0e14;color:#d8b7bd;border-color:#4a1a22}
+/* 1.42: daylight and night, everywhere. The 1.36 panels had their own colours for both modes but the bottom sheets
+   (how it works, support, the place pickers, a mark's details), the buttons inside the panels, the cards' links, the
+   statistics and the bars did not: dark text on a dark sheet in daylight, grey on black at night. Colours made for a
+   dark screen (pale blue links, mint green, pale orange, yellow) are swapped for ones that read on white. */
+body.m-day .sheet,body.m-day .nbar{background:#fff;color:var(--ink);box-shadow:0 -8px 30px rgba(0,0,0,.18)}
+body.m-day .nbar{box-shadow:0 10px 30px rgba(0,0,0,.2)}
+body.m-day .dok{box-shadow:0 -12px 22px 6px #fff}
+body.m-day .panel .mi2{background:#eceef2;border-color:#8d95a1;color:#12161c}body.m-day .panel .mi2:hover{background:#e1e4e9}
+body.m-day .panel .mi2.on,body.m-day .menu .mi2.on{background:#12161c;border-color:#12161c;color:#fff}
+body.m-day .mi2.on,body.m-day .tgl.on,body.m-day .ib.on,body.m-day .mapctl button.on{color:#7a5f00;border-color:#8a6d00}
+body.m-day .ib.on{background:#fff6cc}body.m-day .mi2:hover{background:#e1e4e9}
+body.m-day .menu .mg{background:#eceef2}
+body.m-day .fnote{background:#eef1f5;color:var(--ink2)}
+body.m-day .card .mo,body.m-day .mcwhat,body.m-day .mych.set em,body.m-day .sheet a,body.m-day .kv1 a,body.m-day #stats a,body.m-day .afh a,body.m-day .hfoot a{color:#14459c}
+body.m-day .mych.set{border-left-color:#14459c}
+body.m-day .afl,body.m-day .afchip b{color:#b8480a}
+body.m-day .afd,body.m-day .aftot,body.m-day .afchip i,body.m-day .kv1.green{color:#0d6b3f}
+body.m-day .kv1.yellow,body.m-day .sup b,body.m-day .upd .cd,body.m-day .card .rep{color:#7a5f00}body.m-day .card .rep{border-color:#8a6d00}
+body.m-day .sfoot.warn{color:#4a4128}
+body.m-day .mcfoot .upd.stale{color:#7a5f00}body.m-day .mcfoot .upd.stale::before{background:#c99700}body.m-day .mcfoot .upd.off{color:#b3140d}
+body.m-day .grow{background:#fff;color:var(--ink)}body.m-day .grow.flagr.on{background:#fff6cc}
+body.m-day #impbtn{color:#b3140d}body.m-day #impbtn:not(.on){color:#4a515c}
+body.m-day .warnbox{background:#fdecea}
+.lvr{color:#ffd9d6}.lvp{color:#ffb3c5}
+body.m-day .lvr,body.m-day .lvp,body.m-day .chip.red{color:#b3140d}body.m-day .chip.orange{color:#b8480a}body.m-day .chip.green{color:#0d6b3f}
+body.m-day .chip.yellow{color:#7a5f00}body.m-day .chip.blue{color:#14459c}body.m-day .nrh button{color:#14459c}
+/* night: --ink3 (section titles, "unofficial · not radar", the channels' names) was #3f4e5e, 2.3:1 on black; now 3.6:1 */
+body.m-night .sheet,body.m-night .nbar,body.m-night .mbox{background:#070a0f;color:var(--ink);border-color:#1c242f}
+body.m-night .dok{box-shadow:0 -12px 22px 6px #070a0f}
+body.m-night .fnote,body.m-night .grow{background:#0b1017}
 body.lite #mycard,body.lite .panel{background:#000;border-color:#666}body.lite .mych{background:#111}body.lite .band.N{background:#000;border-color:#fff}
 @media (prefers-reduced-motion:reduce){.mi.tg::before{transition:none}}
 </style>
@@ -909,11 +981,12 @@ body.lite #mycard,body.lite .panel{background:#000;border-color:#666}body.lite .
   <button class="mi" id="supbtn" type="button" data-t="m_support">Support the project</button>
   <a class="mi" id="tgbtn" data-t="m_tg" target="_blank" rel="noopener" hidden>Community on Telegram</a>
   <button class="mi" id="aboutbtn" type="button" data-t="m_about">About · disclaimer</button>
-  <div class="mi bt" id="buildtag">v1.41</div>
+  <div class="mi bt" id="buildtag">v1.42</div>
 </div>
 <div class="panel" id="lay" hidden role="dialog" aria-labelledby="layh"><div class="pgrab"></div>
   <div class="ph"><b id="layh" data-t="m_layers">Map layers</b><button type="button" class="px" data-close="lay" data-t-aria="btn_close" aria-label="Close">✕</button></div>
   <div class="layermenu" id="layerbox"><label><input type="checkbox" data-l="tiles"> <span data-t="l_tiles">Streets &amp; buildings (OSM, zoomed in)</span></label><label><input type="checkbox" data-l="heat"> <span data-t="l_heat">Heat map: where drones were reported (not live)</span></label><label><input type="checkbox" data-l="himp"> <span data-t="l_himp">History: explosions ✸</span></label><label><input type="checkbox" data-l="hdown"> <span data-t="l_hdown">History: confirmed shot down ✕</span></label><label><input type="checkbox" data-l="trails"> <span data-t="l_trails">Tracks</span></label><label><input type="checkbox" data-l="cones"> <span data-t="l_cones">Course rays</span></label><label><input type="checkbox" data-l="rivers"> <span data-t="l_rivers">Rivers</span></label><label><input type="checkbox" data-l="roads"> <span data-t="l_roads">Roads</span></label><label><input type="checkbox" data-l="infra"> <span data-t="l_infra">Airports / plants</span></label><label><input type="checkbox" data-l="rings"> <span data-t="l_rings">Rings</span></label><label><input type="checkbox" data-l="minor"> <span data-t="l_minor">Villages &amp; small towns (off by default — clutters the phone)</span></label></div>
+  <button class="mi" id="rpmenu" type="button" data-t="rp_open">Replay — the last 7 days</button>
   <button class="mi tg" id="zcity2" type="button"><span class="lb" data-t="m_city">Kyiv city map (10 districts) — toggle</span></button>
   <button class="mi tg" id="est" type="button"><span class="lb" data-t="m_est">Estimate motion along heading (EST)</span></button>
   <div class="mrow z"><span class="ml" data-t="m_zoom">Zoom out</span><button class="mi2" id="zobl" type="button" data-t="m_z_obl">Oblast</button><button class="mi2" id="zreg" type="button" data-t="m_z_reg">Region</button><button class="mi2" id="zua" type="button" data-t="m_z_ua">Ukraine</button></div>
@@ -948,7 +1021,7 @@ body.lite #mycard,body.lite .panel{background:#000;border-color:#666}body.lite .
   <div class="attrib" id="attrib" hidden>© OpenStreetMap contributors</div>
   <div id="pinhold"></div>
   <div id="pinarm" hidden><span data-t="sl_pin_arm">Tap the map where the pin goes</span><button type="button" id="pinarmx" data-t="sl_pin_cancel">Cancel</button></div>
-  <div class="mapctl"><button id="laybtn" type="button" data-t-title="m_layers" data-t-aria="m_layers" title="Map layers" aria-label="Map layers"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 3 8l9 5 9-5-9-5z"/><path d="m3 13 9 5 9-5"/></svg></button><button id="zin" type="button" aria-label="+">+</button><button id="zout" type="button" aria-label="−">−</button><button id="zkyiv" type="button" data-t-title="t_center" data-t-aria="t_center" title="Centre on my place">◎</button><button id="impbtn" type="button" data-t-title="t_hist" data-t-aria="t_hist" title="History of explosions and confirmed shoot-downs: off / 24 h / 48 h / 72 h" ><svg class="impico" viewBox="-14 -14 28 28" aria-hidden="true"><path d="M0-10 L2-3 L9-6 L4 0 L10 4 L3 3 L2 10 L-1 4 L-8 7 L-4 0 L-10-3 L-3-2 Z"/></svg><small id="imph"></small></button></div>
+  <div class="mapctl"><button id="laybtn" type="button" data-t-title="m_layers" data-t-aria="m_layers" title="Map layers" aria-label="Map layers"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 3 8l9 5 9-5-9-5z"/><path d="m3 13 9 5 9-5"/></svg></button><button id="zin" type="button" aria-label="+">+</button><button id="zout" type="button" aria-label="−">−</button><button id="zkyiv" type="button" data-t-title="t_center" data-t-aria="t_center" title="Centre on my place">◎</button><button id="impbtn" type="button" data-t-title="t_hist" data-t-aria="t_hist" title="History of explosions and confirmed shoot-downs: off / 24 h / 48 h / 72 h" ><svg class="impico" viewBox="-14 -14 28 28" aria-hidden="true"><path d="M0-10 L2-3 L9-6 L4 0 L10 4 L3 3 L2 10 L-1 4 L-8 7 L-4 0 L-10-3 L-3-2 Z"/></svg><small id="imph"></small></button><button id="rpbtn" type="button" data-t-title="rp_open" data-t-aria="rp_open" title="Replay — the last 7 days" aria-label="Replay — the last 7 days"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1"/><path d="M3 4v4.5h4.5"/><path d="M12 7.5V12l3 2"/></svg></button></div>
   <div class="tip" id="tip" hidden></div>
   <div id="heatleg" hidden><div class="hlh"><b data-t="hm_title">Where drones were reported</b><button type="button" id="heatx" data-t-aria="hm_off" aria-label="Hide">✕</button></div>
     <div class="hlw" id="heatw"></div><div class="hlt" id="heattop"></div><div class="hlr" id="heatramp"></div><div class="hln" data-t="hm_not_live">Not live.</div><div class="hln" data-t="hm_alerts">Official alerts are outlined while it is on.</div></div>
@@ -1270,7 +1343,7 @@ function translit(s){let out='';for(let i=0;i<s.length;i++){const c=s[i],l=c.toL
 const svg=$('map'); const VB={x:-75,y:-100,w:150,h:200};
 const ASPECT=()=>{const r=svg.getBoundingClientRect();return r.width?r.height/r.width:1.33;};
 let KPX=1;
-function applyVB(){svg.setAttribute('viewBox',`${VB.x} ${VB.y} ${VB.w} ${VB.h}`);if(typeof drawHome==='function'&&HOME){setTimeout(drawHome,0);if(typeof drawZones==='function')setTimeout(drawZones,0);}const r=svg.getBoundingClientRect();KPX=r.width?VB.w/r.width:1;if(typeof placeBrgLabels==='function')placeBrgLabels();svg.style.setProperty('--k',KPX);svg.classList.toggle('far',VB.w>90);svg.classList.toggle('close',VB.w<40);svg.classList.toggle('vclose',VB.w<22);svg.classList.toggle('veryfar',VB.w>230);svg.classList.toggle('ua',VB.w>900);if(typeof applySelOblast==='function'&&(VB.w<=300)!==applyVB._zin){applyVB._zin=VB.w<=300;applySelOblast();}{const kz=document.querySelector('.kozak'); if(kz){kz.querySelector('.kz').setAttribute('transform',`scale(${(2.2*KPX).toFixed(3)})`); const ts=kz.querySelectorAll('text'); ts[0].setAttribute('y',(14*KPX).toFixed(2)); ts[1].setAttribute('y',(25*KPX).toFixed(2));}}clearTimeout(applyVB._t);applyVB._t=setTimeout(()=>{applyVB._t=null;if(typeof LAYERS!=='undefined'&&LAYERS.heat&&typeof drawHeat==='function')drawHeat();if(typeof IMP_H!=='undefined'&&IMP_H)drawImpacts();if(typeof updateTiles==='function'){updateTiles();layoutTownLabels();}},120);}
+function applyVB(){svg.setAttribute('viewBox',`${VB.x} ${VB.y} ${VB.w} ${VB.h}`);if(typeof drawHome==='function'&&HOME){setTimeout(drawHome,0);if(typeof drawZones==='function')setTimeout(drawZones,0);}const r=svg.getBoundingClientRect();KPX=r.width?VB.w/r.width:1;if(typeof placeBrgLabels==='function')placeBrgLabels();svg.style.setProperty('--k',KPX);if(window.RP&&RP.on&&RP.frame)RP.frame();svg.classList.toggle('far',VB.w>90);svg.classList.toggle('close',VB.w<40);svg.classList.toggle('vclose',VB.w<22);svg.classList.toggle('veryfar',VB.w>230);svg.classList.toggle('ua',VB.w>900);if(typeof applySelOblast==='function'&&(VB.w<=300)!==applyVB._zin){applyVB._zin=VB.w<=300;applySelOblast();}{const kz=document.querySelector('.kozak'); if(kz){kz.querySelector('.kz').setAttribute('transform',`scale(${(2.2*KPX).toFixed(3)})`); const ts=kz.querySelectorAll('text'); ts[0].setAttribute('y',(14*KPX).toFixed(2)); ts[1].setAttribute('y',(25*KPX).toFixed(2));}}clearTimeout(applyVB._t);applyVB._t=setTimeout(()=>{applyVB._t=null;if(typeof LAYERS!=='undefined'&&LAYERS.heat&&typeof drawHeat==='function')drawHeat();if(typeof IMP_H!=='undefined'&&IMP_H)drawImpacts();if(typeof updateTiles==='function'){updateTiles();layoutTownLabels();}},120);}
 function setView(cx,cy,w){VB.w=Math.max(8,Math.min(1500,w));VB.h=VB.w*ASPECT();VB.x=cx-VB.w/2;VB.y=cy-VB.h/2;applyVB();}
 function zoomAt(f,cx,cy){const nw=Math.max(8,Math.min(1500,VB.w/f)),nh=nw*ASPECT();VB.x=cx-(cx-VB.x)*(nw/VB.w);VB.y=cy-(cy-VB.y)*(nh/VB.h);VB.w=nw;VB.h=nh;applyVB();}
 function toSvg(px,py){const r=svg.getBoundingClientRect();return [VB.x+(px-r.left)/r.width*VB.w, VB.y+(py-r.top)/r.height*VB.h];}
@@ -1969,8 +2042,8 @@ function tick(){
     const anchor=side==='R'?'end':(side==='L'?'start':'middle'); const o=12*KPX; const tx=side==='R'?ex-o:side==='L'?ex+o:ex; const ty=side==='T'?ey+o+4*KPX:side==='B'?ey-o:ey+4*KPX;
     return `<g class="edge ${info.inbound?'inbound':''}"><polygon class="arrow" points="0,-3 6,0 0,3" transform="translate(${ex.toFixed(1)} ${ey.toFixed(1)}) rotate(${ang.toFixed(0)}) scale(${(1.6*KPX).toFixed(2)})"/><text class="etxt" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anchor}">${esc(txt)}</text></g>`;
   }).join('');
-  const parts=[]; if(tracked){ const tot=[totShahed?`<b>${totShahed}</b> ${t('lb_shahed')}`:'',totJet?`<b>${totJet}</b> ${t('lb_jet')}`:'',totMsl?`<b>${totMsl}</b> ${t('lb_msl')}`:'',totUnk?`<b>${totUnk}</b> ⚠`:'',totStale?`<b>${totStale}</b> ?`:''].filter(Boolean).join(' · '); parts.push(tot||`<b>${tracked}</b> ${t('lb_targets')}`); } if(inboundCount) parts.push(`<b style="color:#ffd9d6">${inboundCount} ${t('lb_tokyiv')}</b>`); if(HOME&&homeNamedN) parts.push(`<b style="color:#ffb3c5">${homeNamedN} → ${esc(homeName())}</b>`);
-  else if(HOME&&homeThreats) parts.push(`<b style="color:#ffd9d6">${homeThreats} ${t('lb_nearhome',esc(homeName()))}</b>`); if(ESTIMATE) parts.push('EST'); 
+  const parts=[]; if(tracked){ const tot=[totShahed?`<b>${totShahed}</b> ${t('lb_shahed')}`:'',totJet?`<b>${totJet}</b> ${t('lb_jet')}`:'',totMsl?`<b>${totMsl}</b> ${t('lb_msl')}`:'',totUnk?`<b>${totUnk}</b> ⚠`:'',totStale?`<b>${totStale}</b> ?`:''].filter(Boolean).join(' · '); parts.push(tot||`<b>${tracked}</b> ${t('lb_targets')}`); } if(inboundCount) parts.push(`<b class="lvr">${inboundCount} ${t('lb_tokyiv')}</b>`); if(HOME&&homeNamedN) parts.push(`<b class="lvp">${homeNamedN} → ${esc(homeName())}</b>`);
+  else if(HOME&&homeThreats) parts.push(`<b class="lvr">${homeThreats} ${t('lb_nearhome',esc(homeName()))}</b>`); if(ESTIMATE) parts.push('EST'); 
   // The counters live in the Statistics tab now, not across the bottom of the map. A running tally is
   // something you read once and then reason about; the map is for the thing you are watching move. LIVE
   // keeps them so the tab can render them without recounting.
@@ -2275,6 +2348,7 @@ function drawImpacts(){
 function fmtD(ts){const d=new Date(ts);const tm=d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',timeZone:TZ});const today=new Date().toLocaleDateString('en-GB',{timeZone:TZ})===d.toLocaleDateString('en-GB',{timeZone:TZ});return today?tm:d.toLocaleDateString(LOCALE(),{day:'2-digit',month:'short',timeZone:TZ})+' '+tm;}
 async function loadImpacts(){ if(!IMP_H){IMP=[];drawImpacts();return;} try{const d=await jget('/api/impacts?hours='+IMP_H,12000);IMP=d.impacts||[];}catch(e){IMP=[];} drawImpacts(); }
 $('impbtn').onclick=()=>{IMP_H=IMP_STEPS[(IMP_STEPS.indexOf(IMP_H)+1)%IMP_STEPS.length];try{localStorage.setItem('imph',String(IMP_H));}catch(e){};loadImpacts();};
+$('rpbtn').onclick=openReplay; $('rpmenu').onclick=()=>{ closePanels(); openReplay(); };
 // Beyond 24 h the history belongs in a report, not on the map. The chips open it; it fetches its own window
 // so the live layer is never reloaded at 7 days, and it groups by place so a night reads as "Kyiv ×12, last
 // at 03:41" instead of two hundred dots.
@@ -2540,7 +2614,8 @@ try{ FOLD.on=localStorage.getItem('card_fold')==='1'; }catch(e){}
 const warnOn=ts=>!!ts&&!ts.hidden&&!/\b(calm|old)\b/.test(ts.className);
 function warnKey(){ const ts=$('tstrip'), bb=$('brgbar'); const a=warnOn(ts)?ts.className:'', b=bb&&!bb.hidden?bb.className:''; return a||b?a+'|'+b:''; }
 function foldShut(){ if(!FOLD.on) return false; const k=warnKey(); return LEVEL<=FOLD.at&&(k===''||k===FOLD.key); }
-function miniWanted(){ return window.innerWidth<1000&&(drawerState()!==''||foldShut()); }
+// 1.42: during a replay the card shows its one line, so the map has the room — unless something live and near matters
+function miniWanted(){ return window.innerWidth<1000&&(drawerState()!==''||foldShut()||(document.body.classList.contains('rp')&&LEVEL<=1&&warnKey()==='')); }
 function setFold(on){ FOLD.on=on; if(on){ FOLD.at=Math.max(1,LEVEL||0); FOLD.key=warnKey(); } try{ localStorage.setItem('card_fold',on?'1':'0'); }catch(e){} syncMini(); }
 $('mcfold').onclick=()=>setFold(true);
 $('mcmini').onclick=()=>{ if(FOLD.on) setFold(false); if(drawerState()!=='') setDrawer(''); };
@@ -2625,6 +2700,32 @@ function idleLine(){
     +`${alive.length?` · <button type="button" class="tsmore" id="tsua">${esc(t('ts_calm_ua'))}</button>`:''}</small>`];
   return bits.filter(Boolean).join(' ');
 }
+// 1.42: what the official alerts paint on the map — the raions of Kyiv oblast, the city, and the oblasts around with
+// their raions — computed from a list of alerts (the live one, or a past moment's in the replay) without touching the
+// page; applyAlertMap() then paints it. `k` is the city's oblast summary (S.oblasts['31']) when there is one.
+function alertMap(active,k){
+  const lvl=x=>x==='yellow'?'Y':'R';                 // no level reported (mirror) = full red alert
+  const maxL=(a,b)=>(a==='R'||b==='R')?'R':(a||b||'');
+  k=k||{}; const cls=new Map(), per={};
+  const kW=active.find(a=>a.oblast_uid==='14'&&a.location_type==='oblast'); const kFill=kW?lvl(kW.alert_level):null; const kc=active.find(a=>a.oblast_uid==='31'&&(a.location_type==='oblast'||a.location_type==='city')); const kCity=kc?lvl(kc.alert_level):(k.status==='A'?lvl(k.level):null);
+  const krst={}; for(const a of active.filter(a=>a.oblast_uid==='14'&&a.location_type!=='oblast')){const rk=a.raion_key||raionKey(a.location_title); if(rk) krst[rk]=(krst[rk]==='R'||lvl(a.alert_level)==='R')?'R':'Y';}
+  // raion fills (red = red level / full alert, yellow = yellow level)
+  document.querySelectorAll('#raionsg .rn').forEach(p=>{const r=p.dataset.r; if(r==='kyiv-city'){cls.set(p,`rn city ${kCity||''}`);return;} const l=maxL(kFill,krst[r]); cls.set(p,`rn ${l}`);});
+  // surrounding oblasts: per-raion colours when raion alerts are reported (єТривога / oblast channels / keyed API),
+  // otherwise the oblast-wide on/off from the mirror is painted on the oblast outline only
+  const REG=['10','25','20','19','24','4']; const rkey=t=>translit(String(t||'').trim().split(/\s+/)[0]).toLowerCase().replace(/[^a-z]/g,'');
+  for(const o0 of (MAP?MAP.oblasts:[])){ const uid=o0.uid; if(uid==='14'||uid==='31') continue; const isReg=REG.includes(uid); const occ=o0.occupied;
+    const ra=active.filter(a=>a.oblast_uid===uid&&(a.location_type==='raion'||a.location_type==='hromada'||a.location_type==='city')).map(a=>({a,k:rkey(a.location_title),L:lvl(a.alert_level)}));
+    const rl={}, paths=document.querySelectorAll(`#neighbors .nb[data-o="${uid}"]`), lv=new Map();
+    paths.forEach(pth=>{const st=pth.dataset.stem,key=pth.dataset.key; let l='';
+      for(const r of ra){ if((key&&r.a.raion_key===key)||(key&&r.k&&(r.k===key||key.startsWith(r.k.replace(/skyi$|ska$/,''))))||(st&&new RegExp(st,'i').test((r.a.location_title||'').toLowerCase()))){ l=(l==='R'||r.L==='R')?'R':'Y'; } }
+      if(l) rl[key||st]=l; lv.set(pth,l);});
+    const ow=active.find(a=>a.oblast_uid===uid&&a.location_type==='oblast'); const oL=ow?lvl(ow.alert_level):''; const op=document.querySelector(`#oblastsg .ob[data-o="${uid}"]`); if(op) cls.set(op,`ob ${isReg?'region':'far'} ${occ?'occ':''} ${oL}`);
+    paths.forEach(pth=>{const l=lv.get(pth); cls.set(pth,'nb '+(occ?'occ ':'')+(l||(oL?'o'+oL:'')));});
+    per[uid]={rl,oL}; }
+  return {cls,per};
+}
+function applyAlertMap(am){ for(const [el,c] of am.cls) if(el.getAttribute('class')!==c) el.setAttribute('class',c); }
 function render(){
   if(!S) return; const ob=S.oblasts; threatStrip(); drawBridges();
   {const all=Object.entries(S.sources),ok=all.filter(([k,v])=>v.ok).length; $('srcs').innerHTML=`<i class="${ok===all.length?'ok':ok?'warn':'bad'}"></i><span class="sn">${ok}/${all.length}</span>`; $('srcs').title=all.map(([k,v])=>`${v.ok?'●':'○'} ${k}`).join('\n');}
@@ -2638,8 +2739,6 @@ function render(){
   const oblWide=S.active.find(a=>a.oblast_uid===MYU&&a.location_type==='oblast'); const cityWide=isK?S.active.find(a=>a.oblast_uid==='31'&&(a.location_type==='oblast'||a.location_type==='city')):null;
   const cityL=isK?(cityWide?lvl(cityWide.alert_level):(k.status==='A'?lvl(k.level):null)):null, oblL=oblWide?lvl(oblWide.alert_level):null;
   const maxL=(a,b)=>(a==='R'||b==='R')?'R':(a||b||'');
-  const kW=S.active.find(a=>a.oblast_uid==='14'&&a.location_type==='oblast'); const kFill=kW?lvl(kW.alert_level):null; const kc=S.active.find(a=>a.oblast_uid==='31'&&(a.location_type==='oblast'||a.location_type==='city')); const kCity=kc?lvl(kc.alert_level):(k.status==='A'?lvl(k.level):null);
-  const krst={}; for(const a of S.active.filter(a=>a.oblast_uid==='14'&&a.location_type!=='oblast')){const rk=a.raion_key||raionKey(a.location_title); if(rk) krst[rk]=(krst[rk]==='R'||lvl(a.alert_level)==='R')?'R':'Y';}
   const rname=r=>RAION[r]||r;
   const rst={}; for(const a of raionAlerts){const rk=isK?(a.raion_key||raionKey(a.location_title)):pn(String(a.location_title||'').replace(/\s*район\s*$/i,'')); if(rk) rst[rk]=(rst[rk]==='R'||lvl(a.alert_level)==='R')?'R':'Y';}
   const anyR=cityL==='R'||oblL==='R'||Object.values(rst).includes('R'), anyY=cityL==='Y'||oblL==='Y'||Object.values(rst).includes('Y');
@@ -2662,18 +2761,12 @@ function render(){
   document.title=(tst==='R'||tst==='A'?'🔴 ':tst==='Y'||tst==='P'?'🟡 ':'')+'Heimdall';
   // the watched place: its chips, what is near it, the escalation level (1.36)
   paintSlots(); paintCard(true);
-  // raion chips + fills (red = red level / full alert, yellow = yellow level)
-  document.querySelectorAll('#raionsg .rn').forEach(p=>{const r=p.dataset.r; if(r==='kyiv-city'){p.setAttribute('class',`rn city ${kCity||''}`);return;} const l=maxL(kFill,krst[r]); p.setAttribute('class',`rn ${l}`);});
-  // surrounding oblasts: per-raion colours when raion alerts are reported (єТривога / oblast channels / keyed API),
-  // otherwise the oblast-wide on/off from the mirror is painted on the oblast outline only
-  const REG=['10','25','20','19','24','4']; const regTags=[]; const rkey=t=>translit(String(t||'').trim().split(/\s+/)[0]).toLowerCase().replace(/[^a-z]/g,'');
-  for(const o0 of (MAP?MAP.oblasts:[])){ const uid=o0.uid; if(uid==='14'||uid==='31') continue; const o=ob[uid]; const isReg=REG.includes(uid); const occ=o0.occupied;
-    const ra=S.active.filter(a=>a.oblast_uid===uid&&(a.location_type==='raion'||a.location_type==='hromada'||a.location_type==='city')).map(a=>({a,k:rkey(a.location_title),L:lvl(a.alert_level)}));
-    const rl={}; document.querySelectorAll(`#neighbors .nb[data-o="${uid}"]`).forEach(pth=>{const st=pth.dataset.stem,key=pth.dataset.key; let l='';
-      for(const r of ra){ if((key&&r.a.raion_key===key)||(key&&r.k&&(r.k===key||key.startsWith(r.k.replace(/skyi$|ska$/,''))))||(st&&new RegExp(st,'i').test((r.a.location_title||'').toLowerCase()))){ l=(l==='R'||r.L==='R')?'R':'Y'; } }
-      if(l) rl[key||st]=l; pth.setAttribute('class','nb '+(occ?'occ ':'')+l);});
-    const ow=S.active.find(a=>a.oblast_uid===uid&&a.location_type==='oblast'); const oL=ow?lvl(ow.alert_level):''; const op=document.querySelector(`#oblastsg .ob[data-o="${uid}"]`); if(op) op.setAttribute('class',`ob ${isReg?'region':'far'} ${occ?'occ':''} ${oL}`);
-    if(oL) document.querySelectorAll(`#neighbors .nb[data-o="${uid}"]`).forEach(pth=>{const cur=pth.getAttribute('class'); if(!/\b[RY]$/.test(cur)) pth.setAttribute('class','nb '+(occ?'occ ':'')+'o'+oL);});
+  // the map's colours: the raions, the city, the oblasts around (1.42: one function, shared with the replay, which
+  // paints the alerts of a past moment with it — the live colours are not painted while a replay is on)
+  const AM=alertMap(S.active,k); if(!(window.RP&&RP.on)) applyAlertMap(AM);
+  const REG=['10','25','20','19','24','4']; const regTags=[];
+  for(const o0 of (MAP?MAP.oblasts:[])){ const uid=o0.uid; if(uid==='14'||uid==='31') continue; const o=ob[uid]; const isReg=REG.includes(uid);
+    const {rl,oL}=AM.per[uid]||{rl:{},oL:''};
     if(!isReg||!o) continue;
     const nR=Object.values(rl).filter(x=>x==='R').length,nY=Object.values(rl).filter(x=>x==='Y').length;
     const er=S.eradar&&agoMin(S.eradar.ts)<=25?S.eradar.counts[uid]:null; const ers=er?[er.drones?`${er.drones} ${t('rg_uav')}`:'',er.jet?`${er.jet} ${t('rg_jet')}`:'',er.missiles?`${er.missiles} ${t('rg_msl')}`:''].filter(Boolean).join(' · '):'';
@@ -2781,7 +2874,7 @@ function renderStats(){ if(!STATS) return; const el=$('stats'); if(!el) return; 
 // =====================================================================================
 // ---------------------------------------------------------------------------------------------------
 // The contacts (CONTACT) and the footer (footerHTML, shareApp) are in static/i18n.js since 1.39, shared with Light.
-const APP_VERSION='1.41';
+const APP_VERSION='1.42';
 const DONATE=CONTACT.ngo;
 const ls=(k,v)=>{try{return v===undefined?localStorage.getItem(k):(localStorage.setItem(k,v),v);}catch(e){return null;}};
 
@@ -3018,6 +3111,9 @@ function checkMove(st){ const el=$('moved'); if(!el) return; const c=st&&st.conf
   const a=el.querySelector('a'); a.textContent=t('mv_go',c); a.href='https://'+c+location.pathname+(b?'#carry='+b:'');
   el.querySelector('.nx').onclick=()=>{ try{sessionStorage.setItem('moved_x','1');}catch(e){} el.hidden=true; if(typeof syncTop==='function') syncTop(); };
   if(el.hidden){ el.hidden=false; if(typeof syncTop==='function') syncTop(); } }
+// 1.42: the replay — static/replay.js, downloaded only when somebody opens it (a Tactical page on 2G never pays for it)
+function openReplay(){ if(window.RP&&RP.open) return RP.open(); if(openReplay.l) return; openReplay.l=1;
+  const s=document.createElement('script'); s.src='/static/replay.js?v='+APP_VERSION; s.onload=()=>{ if(window.RP) RP.open(); }; s.onerror=()=>{ openReplay.l=0; }; document.head.appendChild(s); }
 // 1.32: a nuclear event, switched on from the dashboard behind two locks (S.nuke). static/nuke.js draws it — the
 // radiation symbol over the map and a banner in the header — and is only downloaded when there is one.
 function showNuke(n){ showNuke.n=n;
@@ -3050,6 +3146,10 @@ function connect(){
   es.addEventListener('feed',ev=>{const d=JSON.parse(ev.data);if(!LIVE_SYNC||LITE)loadFeed(true);if(!LIVE_SYNC)loadMarkers();if(!HOME&&(d.post.tags||[]).includes('kyiv')&&!(d.post.tags||[]).includes('official'))notify(t('n_kyivarea')+' — '+(CH[d.post.channel]||d.post.channel),ptxt(d.post).slice(0,160),'threat');});
   es.onerror=()=>{LIVE_SYNC=false;es.close();setTimeout(connect,3000);};
 }
+// 1.42: the switch to Light and back can keep this page in the browser's memory (back/forward cache). The live line is
+// closed when the page is put away and opened again when it comes back; what changed meanwhile arrives with 'hello'.
+addEventListener('pagehide',e=>{ if(e.persisted) try{ es&&es.close(); }catch(_){} });
+addEventListener('pageshow',e=>{ if(!e.persisted) return; LIVE_SYNC=false; connect(); pulse(true); });
 const TABS=['near','feedwrap','alerts','hist'];
 function showTab(id){ document.querySelectorAll('#tabs button').forEach(x=>{ const on=x.dataset.tab===id; x.classList.toggle('on',on); x.setAttribute('aria-selected',on?'true':'false'); });
   TABS.forEach(x=>{ const el=$(x); if(el) el.hidden=x!==id; }); tabInd(); }
@@ -3143,7 +3243,7 @@ window.addEventListener('focus',()=>{ if(Date.now()-lastPing>4000) pulse(true); 
   paintFooters();
   {const q=new URLSearchParams(location.search);            // home-screen shortcuts from the manifest
    if(q.get('city')==='1') toggleCity(true);
-   if(q.get('help')==='1') setTimeout(()=>{$('disc').hidden=true;helpSheet();},400);}$('imph').textContent=IMP_H?IMP_H+'h':'';loadImpacts();await loadHist();whenShown(connect);scheduleTick();})();
+   if(q.get('help')==='1') setTimeout(()=>{$('disc').hidden=true;helpSheet();},400);}$('imph').textContent=IMP_H?IMP_H+'h':'';loadImpacts();await loadHist();whenShown(connect);scheduleTick();if(location.hash==='#replay')openReplay();})();
 </script>
 </body>
 </html>

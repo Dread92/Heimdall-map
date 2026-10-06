@@ -88,7 +88,7 @@ def test_a_banderol_post_carries_no_cruise_tag():
 
 
 def test_a_banderol_track_is_never_continued_by_a_cruise_report():
-    body = SRC[SRC.index("def _chain_and_prune"):]
+    body = SRC[SRC.index("def _chain(ms):"):]          # 1.42: the chaining is its own function, shared with the replay
     fam = body[body.index("def fam(m):"):body.index("for i, m in enumerate(tracks)")]
     assert '"banderol_missiles"' in fam and 'return "banderol"' in fam
 

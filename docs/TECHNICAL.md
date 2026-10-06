@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.41** · last updated 2026-10-06 (1.41.4)
+**Documented version: 1.42** · last updated 2026-10-07
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -894,6 +894,25 @@ screen from going blank in between:
 Nothing is carried between the two: both read the same places, language and settings from the phone. With
 "reduce motion" the thumb does not slide and the pages do not fade.
 
+1.42: **flipping, not loading.** When the other version is the page just before or just after this one in the
+history — the reader came from it — `swNav()` goes back (or forward) to it instead of loading it again
+(`navigation.back()` / `forward()`, only where the Navigation API can say which page that entry is; the paths `/`,
+`/k`, `/kyiv` count as `/m`, `/l` as `/light`). The browser keeps the page it left in memory (back/forward cache), so
+after the first switch both versions flip at once, as they were left. To be kept there a page must hold no open
+connection: both close their live line on `pagehide` (when the page is being kept) and open it again on `pageshow`
+(`persisted`) — Tactical with `connect()` and a `pulse(true)`, Light with `connectLive()` and `refresh(true)` — so
+what changed meanwhile arrives at once. The pages are served `no-cache` with an ETag, never `no-store`, which would
+keep them out of that memory too.
+
+### 10.3d Daylight and night (1.42)
+
+The display modes recolour everything, not only the map: the bottom sheets (how it works, support, the place pickers, a
+mark's details), the buttons inside the panels, the cards' links, the statistics, the live-count chips and the bars.
+Daylight swaps the colours made for a dark screen — pale blue links, mint green, pale orange, yellow, pale pink — for
+ones that read on white (`#14459c`, `#0d6b3f`, `#b8480a`, `#7a5f00`, `#b3140d`, all ≥ 4.5:1); night's faintest grey
+(`--ink3`) is `#566a80`, 3.6:1 on black (it was 2.3:1). Checked by a contrast scan of every text on every panel, sheet,
+tab and bar in the four modes (`tests/test_replay.py` keeps the key values).
+
 ### 10.3b Motion (1.40)
 
 Short, eased, never bouncy, and none in blackout mode or with "reduce motion" (`CALM()`): a panel (bell, More,
@@ -902,6 +921,37 @@ Layers) rises in on a phone and drops in on a computer (0.26 s), its rows follow
 chosen one (`tabInd()`); a tab's content fades in; switches move their knob with a slight ease; buttons give a
 little under the finger (`scale(.95)`); sheets and the drawer use the same easing. Light: the place picker and the
 target card slide in.
+
+### 10.3c The replay (1.42)
+
+A past window on the Tactical map, like a weather-radar loop: the ⟲ button on the map (and "Replay — the last 7 days"
+in Layers) opens a bar at the foot of the map with the window (the last 24 h, or one of the last seven nights, each
+12:00 → 12:00 Kyiv time), a strip of the reports per quarter-hour with the time Kyiv city or oblast was under an
+official alert, a slider, −10′ / ▶ / +10′ and the speed (2, 10 or 30 minutes of replay per second). Keys: space,
+← / → (a minute), Esc. It starts ten minutes before the attack (the first ten minutes with at least a quarter of the
+busiest ten minutes' reports). `/m#replay` opens it at once (for a presentation). `static/replay.js` is downloaded only when it
+is opened.
+
+- **The alerts**: `GET /api/replay` rebuilds them as intervals from the start / end **events** (§13) — the `alerts`
+  table cannot answer "what was on at 02:14": it keeps one row per region and alert type, and a region's second alert
+  overwrites its first. A restart loses the alerts the process held without writing an end (the first reading after
+  it writes a start for everything still on, and nothing for what ended while it was down), so a restart — recorded
+  in `boots` since 1.41, and before that seen as a start for a region already on — closes every interval not started
+  again within five minutes, at the restart. The page paints a moment's alerts with the live map's own function
+  (`alertMap()` / `applyAlertMap()`), only when they change; the live colours are not painted while it is on.
+- **The targets**: the stored posts of the window are read with **today's rules** — `_marks_from_posts()` and
+  `_chain()`, the live map's own functions — so a reading fixed since is fixed in the replay too; scope as on the map;
+  no outcome. Each target stands where the latest post before that moment put it, until the next post moved it or its
+  time ran out (the live clocks: a drone fades after 5 min and goes at 15, a missile at 12, an unspecified sign at 5),
+  with its reported positions of the last 20 minutes as a trail — a leg longer than the target could have flown between
+  the two posts is two targets joined, and the trail stops there. Nothing is extrapolated; a course is drawn only where
+  a post stated one.
+- **While it is on** nothing live and nothing personal is on the map — no live mark, history, heat, bridge, watched
+  place, pin or ring (for a screen shared in a presentation); the band and the card at the top stay live (the card
+  folds to its line unless something near matters). The bar says "official alerts, and the targets where the channels'
+  posts put them — not radar".
+- Server: a window of at most 26 h within the last 7 days, in whole minutes; built once an hour for a window in the
+  past, once a minute for one that reaches now; twelve windows kept (`replay_cached()`). About 12 kB gzipped a day.
 
 ### 10.4 Languages
 
@@ -976,6 +1026,7 @@ All JSON unless stated. Public unless marked 🔒 (`ADMIN_KEY`).
 | `GET /api/history?hours=&oblast=` | past alerts (1–168 h; cached, one query per change for every page) |
 | `GET /api/events_log?limit=` | alert events |
 | `GET /api/impacts?hours=` | explosions and confirmed shoot-downs |
+| `GET /api/replay?from=&to=` | the replay (§10.3c), Unix seconds, ≤ 26 h within the last 7 days: `alerts` `[{k, o, lt, rk, lv, at, ti, s, e}]` (intervals, `e` null while on) and `tracks` `[{ty, jet, n, ap, h, ch, p: [[t, lon, lat, place]]}]` |
 | `GET /api/stats?days=` | statistics; the Stats tab reads only `windows` (with `af`: launched / down by type, used, impacts, debris) and `af_days` (the Air Force summaries, each with its `post`) |
 | `GET /api/places?oblast=` | gazetteer (names, coordinates, oblast) |
 | `GET /api/drone_heat?days=1|7|30` | the heat layer: `points` `[lon, lat, posts, place, oblast]` — where drones and unidentified targets were reported (cached 10 min) |
@@ -998,8 +1049,8 @@ SQLite in WAL mode (`DB_PATH`; on Fly, the volume). Tables:
 
 | Table | Holds |
 |---|---|
-| `alerts` | every alert seen (active and finished) — the normalised shape |
-| `events` | start / end / threat / update events |
+| `alerts` | every alert seen (active and finished) — the normalised shape. One row per region and alert type: a region's next alert overwrites the row (its start stays the first one), so it is not a history — the replay reads `events` |
+| `events` | start / end / threat / update events — the alert history the replay rebuilds intervals from (§10.3c) |
 | `feed` | posts: `post_id, channel, ts, text, tags, text_en, text_fr, en_mt` |
 | `kv` | small settings: the VAPID key pair, the usage counter's daily salt, the channels (`channels`), the admin's message (`notice`), the nuclear event (`nuke`), and similar |
 | `push_subs` | push subscriptions with a ~10 km cell, the topics asked for (`bridges`) and the language |

@@ -338,7 +338,7 @@ def build_id():
 
 # The version the front end shows in its footer, kept here too so /api/version can answer "what is actually
 # running" without anybody reading it off a screenshot. tests/test_version.py pins the two to each other.
-APP_VERSION = "1.41"
+APP_VERSION = "1.42"
 APP_NAME = "Heimdall"
 BUILD = None    # filled at startup
 
@@ -1478,6 +1478,27 @@ class Store:
         return [{"post_id": r[0], "channel": r[1], "ts": r[2], "text": _clean_post(r[3]), "tags": json.loads(r[4]),
                  "text_en": r[5] or (_tr.translate_offline(r[3]) if (translate and _tr) else None)} for r in rows]
 
+    def feed_between(self, start, end):
+        """1.42 (replay): the posts of a past window, oldest first — only channels on the map, never a network call."""
+        with self.lock:
+            rows = self.conn.execute("SELECT post_id,channel,ts,text,tags FROM feed WHERE ts>=? AND ts<=? ORDER BY ts", (start, end)).fetchall()
+        return [{"post_id": r[0], "channel": r[1], "ts": r[2], "text": _clean_post(r[3]), "tags": json.loads(r[4])}
+                for r in rows if self.mode_of(r[1]) == "map"]
+
+    def alert_events_between(self, start, end):
+        """1.42 (replay): every official start and end of the window, in order. The alerts table cannot answer "what
+        was on at 02:14": it keeps one row per region and alert type, so a region's second alert overwrites its first."""
+        with self.lock:
+            return self.conn.execute(
+                "SELECT ts,kind,key,location_uid,location_title,alert_type,oblast_uid FROM events "
+                "WHERE ts>=? AND ts<=? AND kind IN ('start','end') ORDER BY ts, id", (start, end)).fetchall()
+
+    def alert_meta(self):
+        """key -> (location type, last level, English title) for every alert ever stored."""
+        with self.lock:
+            rows = self.conn.execute("SELECT key,location_type,alert_level,location_title_en FROM alerts").fetchall()
+        return {r[0]: (r[1], r[2], r[3]) for r in rows}
+
     def feed(self, limit=80):
         """The feed as the pages show it. A channel switched off is left out; a channel on trial is shown with its
         place tags only and "trial" — no threat tag, so nothing on the page is raised by it."""
@@ -1894,9 +1915,33 @@ class State:
 
     def markers(self):
         ttl = int(self.cfg.get("marker_ttl_minutes", 45))
-        out = []
         if not geo:
-            return out
+            return []
+        kyiv_ends = self.kyiv_city_all_clears(ttl)
+        out = self._marks_from_posts(sorted(self.store.feed_since(ttl), key=lambda p: p["ts"]), kyiv_ends, self._marker_cache)
+        # Kyiv, its oblast, the five oblasts around it, and Sumy — the corridor most Shaheds into Kyiv arrive
+        # through. Everything else is dropped here rather than hidden in the page, so a raid over Odesa never
+        # reaches the Kyiv map, the counts, the proximity pushes or the light page. A mark with no oblast is kept
+        # only if it sits close enough to still be about Kyiv.
+        out = [m for m in out if in_scope(m)]
+        out = self._chain_and_prune(out, ttl, kyiv_ends)
+        out.sort(key=lambda m: m["ts"], reverse=True)
+        # Keep what the app decided, not just what it was told. INSERT OR IGNORE keyed on the marker id, so
+        # recomputing the same window many times a minute writes each marker exactly once.
+        try:
+            self.store.log_markers(out)
+        except Exception as e:
+            log(f"marker log failed: {e}")
+        if len(self._marker_cache) > 2000:
+            self._marker_cache.clear()
+            self._ev_cache.clear()
+        return out
+
+    def _marks_from_posts(self, posts, kyiv_ends, cache, evidence=True):
+        """Posts (oldest first) → the marks they place, each read in the context of the channel's previous post.
+        The live map (markers) and the replay (1.42) read posts through this one function, so a replayed night is
+        read exactly the way the map reads a live one — with today's rules."""
+        out = []
         seen = []
         # channel -> (when its position was reported, marker, that time as text) — for the live-tracking channels'
         # bare lines ("Видубичі", "На Таращу", "Вибух"). 1.38: the clock is the POSITION's. A line that only says
@@ -1904,15 +1949,14 @@ class State:
         # used to restart that position's clock, so on 5 October a target destroyed at Vydubychi at 20:25 stood
         # there, "1 min ago", until 20:37, carried by lines about another target 100 km south.
         last_by_channel = {}
-        kyiv_ends = self.kyiv_city_all_clears(ttl)
-        for p in sorted(self.store.feed_since(ttl), key=lambda p: p["ts"]):
-            ms = self._marker_cache.get(p["post_id"])
+        for p in posts:
+            ms = cache.get(p["post_id"])
             if ms is None:
                 try:
                     ms = geo.parse_for_channel(p["channel"], p["text"])
                 except Exception:
                     ms = []
-                self._marker_cache[p["post_id"]] = ms
+                cache[p["post_id"]] = ms
             pts = parse_iso(p["ts"])
             ctx = last_by_channel.get(p["channel"])
             # the official all-clear for Kyiv city ends every position a channel holds inside the city: whatever is
@@ -1989,6 +2033,9 @@ class State:
                     continue
                 seen.append((pts, m["type"], m.get("status"), p["channel"], m["lon"], m["lat"]))
                 ev = m.get("evidence")
+                if not evidence:
+                    out.append(dict(m, id=f"{p['post_id']}#{i}", ts=p["ts"], channel=p["channel"]))
+                    continue
                 if ev and _tr:
                     ck = (p["post_id"], i)
                     cached = self._ev_cache.get(ck)
@@ -2006,22 +2053,6 @@ class State:
                     else:
                         ev = cached
                 out.append(dict(m, id=f"{p['post_id']}#{i}", ts=p["ts"], text=p["text"], text_en=p.get("text_en"), channel=p["channel"], tags=p["tags"], evidence=ev))
-        # Kyiv, its oblast, the five oblasts around it, and Sumy — the corridor most Shaheds into Kyiv arrive
-        # through. Everything else is dropped here rather than hidden in the page, so a raid over Odesa never
-        # reaches the Kyiv map, the counts, the proximity pushes or the light page. A mark with no oblast is kept
-        # only if it sits close enough to still be about Kyiv.
-        out = [m for m in out if in_scope(m)]
-        out = self._chain_and_prune(out, ttl, kyiv_ends)
-        out.sort(key=lambda m: m["ts"], reverse=True)
-        # Keep what the app decided, not just what it was told. INSERT OR IGNORE keyed on the marker id, so
-        # recomputing the same window many times a minute writes each marker exactly once.
-        try:
-            self.store.log_markers(out)
-        except Exception as e:
-            log(f"marker log failed: {e}")
-        if len(self._marker_cache) > 2000:
-            self._marker_cache.clear()
-            self._ev_cache.clear()
         return out
 
     # -- one computation for everybody --------------------------------------------------------------------------
@@ -2848,21 +2879,163 @@ class State:
         self._impact_res[hours] = (now, out)
         return out
 
+    # -- replay (1.42) ---------------------------------------------------------------------------------------------
+    # A past window — at most 26 hours, within the last 7 days — for the time bar in Tactical: the official alerts as
+    # intervals and the targets as tracks of reported positions. The targets are read from the stored posts with
+    # today's rules (the same _marks_from_posts and _chain as the live map), so a reading fixed since is fixed in the
+    # replay too. Nothing is extrapolated: a target stands where a post put it, until the next post moved it or its
+    # time ran out. Outcomes (explosions, shoot-downs) are not part of it.
+    REPLAY_MAX_H = 26
+    REPLAY_DAYS = 7
+    _replay_parse = {}
+    _replay_keys = []
+
+    def replay_cached(self, t0, t1):
+        """The cached answer for one window: a window wholly in the past is built once an hour, one that reaches now
+        once a minute. At most twelve windows are kept."""
+        name = f"replay:{t0}:{t1}"
+        if name not in self._replay_keys:
+            self._replay_keys.append(name)
+            while len(self._replay_keys) > 12:
+                self._resp.pop(self._replay_keys.pop(0), None)
+        past = t1 < time.time() - 600
+        return self.cached(name, 3600 if past else 60, lambda: self.replay(t0, t1))
+
+    def replay(self, t0, t1):
+        start = datetime.fromtimestamp(t0, timezone.utc)
+        end = datetime.fromtimestamp(t1, timezone.utc)
+        alerts = self._replay_alerts(start, end)
+        tracks = self._replay_tracks(start, end, alerts)
+        if len(self._replay_parse) > 30000:
+            self._replay_parse.clear()
+        return {"from": t0, "to": t1, "now": int(time.time()), "alerts": alerts, "tracks": tracks}
+
+    def _replay_alerts(self, start, end):
+        """Official alert intervals overlapping [start, end], rebuilt from the start / end events.
+
+        A restart loses the alerts the process held without writing an end: the first reading after it writes a
+        start for everything still on, and nothing for what ended while it was down. So a restart — recorded since
+        1.41 ("boots"), and before that seen as a start for a region already on — closes every interval that is not
+        started again within five minutes of it, at the moment of the restart."""
+        look = start - timedelta(days=3)
+        rows = self.store.alert_events_between(look.isoformat(), end.isoformat())
+        meta = self.store.alert_meta()
+        evs = [(parse_iso(r[0]), r) for r in rows]
+        evs = [(t, r) for t, r in evs if t]
+        starts = collections.defaultdict(list)
+        open_, boots = set(), []
+        for t, r in evs:
+            if r[1] == "start":
+                starts[r[2]].append(t)
+                if r[2] in open_:
+                    boots.append(t)
+                open_.add(r[2])
+            else:
+                open_.discard(r[2])
+        try:
+            for b in json.loads(self.store.kv_get("boots") or "[]"):
+                bt = parse_iso(b.get("ts"))
+                if bt and look <= bt <= end:
+                    boots.append(bt)
+        except Exception:
+            pass
+        B = []
+        for b in sorted(boots):
+            if not B or (b - B[-1]).total_seconds() > 90:
+                B.append(b)
+
+        def again(key, b):
+            ts = starts.get(key) or ()                  # in time order: the first start at or after b - 5 s
+            i = bisect.bisect_left(ts, b - timedelta(seconds=5))
+            return i < len(ts) and ts[i] <= b + timedelta(seconds=300)
+        cur, iv, bi = {}, [], 0
+        for t, r in evs:
+            while bi < len(B) and B[bi] <= t:
+                for key in [k for k in cur if not again(k, B[bi])]:
+                    s0, r0 = cur.pop(key)
+                    iv.append((s0, B[bi], r0))
+                bi += 1
+            if r[1] == "start":
+                if r[2] not in cur:
+                    cur[r[2]] = (t, r)
+            elif r[2] in cur:
+                s0, r0 = cur.pop(r[2])
+                iv.append((s0, t, r0))
+        for b in B[bi:]:
+            for key in [k for k in cur if not again(k, b)]:
+                s0, r0 = cur.pop(key)
+                iv.append((s0, b, r0))
+        for s0, r0 in cur.values():
+            iv.append((s0, None, r0))
+        # what is on now and began before the look-back (an occupied oblast's alert of many months)
+        seen = {r[2] for _, r in evs}
+        with self.lock:
+            act = [dict(a) for a in self.active.values()]
+        for a in act:
+            if a["key"] not in seen:
+                iv.append((look, None, (None, "start", a["key"], a["location_uid"], a["location_title"], a["alert_type"], a["oblast_uid"])))
+        uar = ua_regions()
+
+        def raion_key(uid):
+            rid = uid[3:] if (uid or "").startswith("ua-") else None
+            if not rid:
+                return None
+            d = uar["districts"].get(rid)
+            if not d:
+                c = uar["communities"].get(rid) or {}
+                d = uar["districts"].get(c.get("d") or "")
+            return (d or {}).get("key")
+        out = []
+        for s0, e0, r in iv:
+            if s0 >= end or (e0 is not None and e0 <= start):
+                continue
+            lt, lv, _en = meta.get(r[2], (None, None, None))
+            out.append({"k": r[3], "o": r[6], "lt": lt or ("oblast" if (r[3] or "") == r[6] else "raion"), "rk": raion_key(r[3]),
+                        "lv": lv, "at": r[5] or "air_raid", "ti": r[4], "s": int(s0.timestamp()),
+                        "e": int(e0.timestamp()) if e0 else None})
+        out.sort(key=lambda a: a["s"])
+        return out
+
+    def _replay_tracks(self, start, end, alerts):
+        """The targets of the window as tracks: each one's reported positions, oldest first."""
+        if not geo:
+            return []
+        lead = start - timedelta(minutes=30)
+        # the official all-clears for Kyiv city in the window: what a channel said before one is not carried past it
+        city = [(a["s"], a["e"]) for a in alerts if a["o"] == "31" and a["at"] == "air_raid"]
+        kyiv_ends = sorted(datetime.fromtimestamp(e, timezone.utc) for i, (s_, e) in enumerate(city)
+                           if e and not any(j != i and s2 <= e and (e2 is None or e2 > e) for j, (s2, e2) in enumerate(city)))
+        posts = self.store.feed_between(lead.isoformat(), end.isoformat())
+        ms = self._marks_from_posts(posts, kyiv_ends, self._replay_parse, evidence=False)
+        ms = [m for m in ms if not m.get("status") and m.get("lon") is not None and in_scope(m)]
+        ms = self._chain(ms)
+        out = []
+        for m in ms:
+            if m.get("superseded_by") or m.get("absorbed") or m.get("status"):
+                continue
+            pts = [(h["ts"], h["lon"], h["lat"], h.get("place")) for h in m.get("history") or []] + [(m["ts"], m["lon"], m["lat"], m.get("place"))]
+            pts = [[int(parse_iso(t).timestamp()), round(lo, 3), round(la, 3), pl] for t, lo, la, pl in pts if parse_iso(t)]
+            if not pts or pts[-1][0] < lead.timestamp():
+                continue
+            hev = ((m.get("evidence") or {}).get("heading") or {})
+            stated = m.get("heading") is not None and hev.get("confidence") not in (None, "none")
+            out.append({"ty": m["type"], "jet": 1 if m.get("jet") else 0, "n": m.get("count") or 1,
+                        "ap": 1 if m.get("approach") else 0, "h": round(m["heading"]) if stated else None,
+                        "ch": m.get("channel"), "p": pts})
+        out.sort(key=lambda x: x["p"][0][0])
+        return out
+
     # -- track lifecycle ------------------------------------------------
     # A target must be *re-reported* to stay on the map. Each new report is matched to the most plausible
     # earlier report of the same family (same channel preferred): dt ≤ 30 min, distance ≤ max_speed·dt + 25 km,
     # roughly ahead of the earlier heading. The earlier report is then superseded (kept only as history).
     # A report that is neither updated within `stale_minutes` nor closed by an outcome is dropped, and every
     # report in an oblast whose air-raid alert has ended is dropped once the alert has been over for 3 min.
-    def _chain_and_prune(self, ms, ttl, kyiv_ends=()):
-        stale = int(self.cfg.get("track_stale_minutes", 5))
-        now = datetime.now(timezone.utc)
-        obl_status = {}
-        with self.lock:
-            # any alert in the oblast keeps its reports alive: with alerts by raion, an oblast whose three raions
-            # are under alert has no oblast-wide alert at all, and its drones must not vanish after 3 minutes
-            for a in self.active.values():
-                obl_status[a["oblast_uid"]] = "A"
+    @staticmethod
+    def _chain(ms):
+        """Each report of a target is matched to the most plausible earlier report of the same family, which it
+        then supersedes (keeping it as history). Returns the reports oldest first. Shared by the live map and the
+        replay (1.42)."""
         ms = sorted(ms, key=lambda m: m["ts"])
         tracks = [m for m in ms if not m.get("status")]
         for m in tracks:
@@ -2922,6 +3095,18 @@ class State:
                 m["history"] = pm["history"] + ([] if pm.get("approach") else [{"id": pm["id"], "lon": pm["lon"], "lat": pm["lat"], "ts": pm["ts"], "channel": pm["channel"],
                                                  "place": pm.get("place"), "alt_m": (pm.get("alt") or {}).get("m"),
                                                  "alt_state": (pm.get("alt") or {}).get("state")}])
+        return ms
+
+    def _chain_and_prune(self, ms, ttl, kyiv_ends=()):
+        stale = int(self.cfg.get("track_stale_minutes", 5))
+        now = datetime.now(timezone.utc)
+        obl_status = {}
+        with self.lock:
+            # any alert in the oblast keeps its reports alive: with alerts by raion, an oblast whose three raions
+            # are under alert has no oblast-wide alert at all, and its drones must not vanish after 3 minutes
+            for a in self.active.values():
+                obl_status[a["oblast_uid"]] = "A"
+        ms = self._chain(ms)
         keep = []
         for m in ms:
             if m.get("superseded_by") or m.get("absorbed"):
@@ -5027,6 +5212,19 @@ class Handler(BaseHTTPRequestHandler):
             if u.path == "/api/stats":
                 days = max(1, min(int(q.get("days", ["14"])[0]), 30))
                 return self._send_cached(st.cached(f"stats:{days}", 120, lambda: st.stats(days)))
+            if u.path == "/api/replay":
+                # 1.42: a past window for the time bar — at most 26 h, within the last 7 days (whole minutes, so the
+                # pages asking for the same window share one answer)
+                try:
+                    t0, t1 = int(q.get("from", [""])[0]), int(q.get("to", [""])[0])
+                except ValueError:
+                    return self._json({"error": "from and to are Unix seconds"}, 400)
+                now = int(time.time())
+                t0, t1 = max(t0, now - (st.REPLAY_DAYS + 1) * 86400), min(t1, now + 60)
+                t0, t1 = t0 - t0 % 60, t1 - t1 % 60
+                if t1 <= t0 or t1 - t0 > st.REPLAY_MAX_H * 3600:
+                    return self._json({"error": "a window of at most 26 hours within the last 7 days"}, 400)
+                return self._send_cached(st.replay_cached(t0, t1))
             if u.path == "/api/impacts":
                 hours = max(1, min(int(q.get("hours", ["24"])[0]), 168))
                 return self._send_cached(st.cached(f"impacts:{hours}", 30, lambda: {"now": now_iso(), "hours": hours, "impacts": st.impacts(hours)}))

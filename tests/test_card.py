@@ -148,7 +148,7 @@ def test_the_reader_can_fold_the_card_and_it_opens_itself_when_something_matters
     body = PAGE[i:PAGE.index("\n", i)]
     assert "LEVEL<=FOLD.at" in body and "k===FOLD.key" in body
     assert "FOLD.at=Math.max(1,LEVEL||0)" in PAGE and "FOLD.key=warnKey()" in PAGE
-    assert "window.innerWidth<1000&&(drawerState()!==''||foldShut())" in PAGE
+    assert "window.innerWidth<1000&&(drawerState()!==''||foldShut()||" in PAGE        # 1.42: and during a replay
     # the folded line: the official status and the place, or the live warning in its own colour
     assert "t('lt_'+dk)" in CARD_JS and "' w '+tw.className" in CARD_JS
     assert "!/\\b(calm|old)\\b/.test(ts.className)" in PAGE

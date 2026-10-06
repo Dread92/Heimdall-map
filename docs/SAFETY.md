@@ -259,6 +259,17 @@ still gives the place's official status in words. It counts the places posts nam
 shoot-downs or the hits, which would map where the air defence works. It is off at every opening of the app:
 nobody should open the map at 3 a.m. and see last week.
 
+## The replay is the past, and looks like it
+
+The replay (1.42) puts a past night on the map. It must never be read as the present, nor say more about the past than
+the posts did. So: a red "REPLAY" tag, the replayed date and time in large type, and the bar under the map for as long
+as it is on; nothing live on the map meanwhile (no live mark, history, heat or bridge) — and the band at the top stays
+live, so an alert that starts during a presentation is still seen. The alert colours are the official ones of that
+moment. A target stands where a post put it — never moved along a course, never joined into a route across a leap no
+drone could fly — and points only where a post stated a course; outcomes are not drawn. The posts are read with
+today's rules, so a reading corrected since (a lesson read as a missile, "next: Nyvky" read as a shoot-down) is corrected
+in the replay too. Nothing personal is drawn — no watched place, pin or ring — because the replay is made to be shown.
+
 ## The guide says what the official guidance says
 
 The what-to-do page (1.35, `/guide`) is the one place where the app tells people how to act, so it carries nothing

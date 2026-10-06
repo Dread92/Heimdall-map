@@ -2,6 +2,30 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.42.0 — 2026-10-07
+
+### Added
+- **Replay — the last 7 days.** A new button on the Tactical map (⟲, also in Layers) opens a time bar under the map,
+  like a weather-radar loop: choose the last 24 hours or one of the last seven nights, drag the slider or press ▶
+  (2, 10 or 30 minutes per second), step ±10 minutes. The official alerts colour the raions as they were at that
+  moment; the targets appear where the channels' posts put them, with a short trail of their reported positions. A strip
+  above the slider shows when there were reports and when Kyiv was under alert, so the attack is easy to find.
+  Nothing is extrapolated and no course is drawn that no post stated; it says "not radar". While it is on, the map
+  shows nothing live and nothing personal (no watched place, no pin) — safe on a projector; the band at the top stays
+  live. `/m#replay` opens it directly.
+
+### Changed
+- **Tactical ⇄ Light flips instead of reloading.** After the first switch, both versions stay in the phone's memory and
+  the switch goes back and forth between them at once, as they were left; their live line reconnects as they come back.
+- **Daylight and night modes are readable everywhere.** In daylight the sheets (how it works, support, choosing a
+  place or an oblast, a mark's details) were dark with dark text, and the buttons inside the menus too; links, the
+  statistics and some chips used colours made for a dark screen. Night mode's faintest grey was too faint. Every text
+  in every panel, sheet, tab and bar now has enough contrast in all four modes.
+
+### Fixed
+- The record of official alerts could not say what was on at a given moment: a region's second alert overwrote its
+  first. The replay rebuilds the alerts from the start and end events instead (the dashboard's figures are unchanged).
+
 ## 1.41.4 — 2026-10-06
 
 ### Fixed

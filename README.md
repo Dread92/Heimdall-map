@@ -59,6 +59,7 @@ and opens the browser. Linux/macOS: `scripts/start.sh`.
 | **Live, without asking** | The server sends each open page what changed — a new mark, a new post, an alert — the moment it knows, in one small message, and beats every 15 s (5 s with cruise missiles up, 2 s with a ballistic one). A page asks for nothing while its line is alive, and falls back to asking by itself when it is not. |
 | **Missile mode** | The server reads its sources faster while a ballistic or cruise-missile threat is open, and the live line beats faster with it. |
 | **History layer** | Explosions ✸ and confirmed shoot-downs ✕ over the last 24 / 48 / 72 h. |
+| **Replay** | The last 24 hours or any of the last seven nights, played back on the map like a weather-radar loop: the official alert colours of each moment and the targets where the posts put them, with a time bar to drag, play and step. Nothing live or personal on the map while it plays — made for presentations (`/m#replay`). |
 | **Stats** | The Air Force's own figures for all of Ukraine (24 h / 7 d / 30 d), weapon by weapon: drones (jet ones apart), Banderol, cruise, ballistic, aeroballistic, anti-ship and guided missiles — launched and shot down, "used" when the summary gives no number — and the hit locations, then each night's and day's summary with a link to it. |
 | **Three languages** | Full UI in 🇬🇧 English, 🇺🇦 Ukrainian, 🇫🇷 French — including place names, raions, districts and channel names. See [docs/I18N.md](docs/I18N.md). |
 | **Altitude when it is stated** | A post saying `знижується` marks the target ↓ DESCENDING in crimson — it is diving. Climbing, low, high and values in metres are read the same way. Never inferred: no public source publishes altitude. |
@@ -146,6 +147,7 @@ the admin routes: [docs/TECHNICAL.md §12](docs/TECHNICAL.md#12-http-api).
 | `GET /api/state` | Active alerts, per-oblast status, threats, source health, єРадар counts. |
 | `GET /api/markers` | Live targets with position, heading, count, staleness, and full evidence. |
 | `GET /api/impacts?hours=24` | Explosions and confirmed shoot-downs in the window. |
+| `GET /api/replay?from=&to=` | A past window (≤ 26 h, last 7 days): official alert intervals and the targets' reported positions. |
 | `GET /api/stats?days=14` | Daily series, hour-of-day histogram, launch totals, per-oblast outcomes. |
 | `GET /light` | The Light version (also `/l`). |
 | `GET /api/feed?limit=150&lang=en` | Recent parsed posts with tags and translations (`lang` asks for machine translation). |
