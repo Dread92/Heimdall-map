@@ -2,6 +2,14 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.41.3 — 2026-10-06
+
+### Fixed
+- **"1 destroyed. Next: Nyvky" is two targets.** @eRadarrua's "1 знищено. Наступний Нивки" was drawn as a confirmed
+  shoot-down at Nyvky, which the 24-hour history layer then kept showing the next day. The shoot-down's place was
+  never given; Nyvky is where the next one was. An outcome followed by "next", "another" or "the second" now keeps only
+  what its own words say, and the place after it is the next target's position.
+
 ## 1.41.2 — 2026-10-06
 
 ### Fixed

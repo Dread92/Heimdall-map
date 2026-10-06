@@ -1503,6 +1503,26 @@ def parse_for_channel(channel, text):
     return [m for m in _parse_for_channel(channel, text) if m.get("type") not in NEVER_PLACED]
 
 
+# 1.41.2: "1 знищено.\nНаступний Нивки" (@eRadarrua, 6 Oct 2026, 05:45) is two reports: one target destroyed —
+# where, the line does not say — and the NEXT one at Nyvky. Read as one sentence it was a confirmed shoot-down at
+# Nyvky, kept for 24 hours in the history layer. A sentence that starts with "наступний", "ще один", "другий" or
+# "інший" after an outcome is another target: the outcome keeps only what its own words say (on a live channel, the
+# channel's previous position; otherwise nothing), and the place after the word is the next target's position.
+NEXT_RX = re.compile(r"(?:^|(?<=[.!?;\n]))\s*(?:наступн(?:ий|а|і|ого)|ще\s+(?:один|одна|одного)|друг(?:ий|а)|інш(?:ий|а))\b", re.I)
+
+
+def _split_next(text):
+    """(the outcome, the next target) when an outcome is followed by a sentence about the next target, else None."""
+    t = _norm(text)
+    m = NEXT_RX.search(t)
+    if not m or not t[:m.start()].strip():
+        return None
+    before, after = text[:m.start()].strip(), text[m.end():].strip(" :—–-\n")
+    if not any(rx.search(_norm(before)) for _, rx in STATUS_RX):
+        return None
+    return before, after
+
+
 def _parse_for_channel(channel, text):
     if channel == "eRadarrua" and "◦" in text:
         return []          # per-oblast group-count summary: counts only, no positions (see parse_eradar_summary)
@@ -1511,6 +1531,16 @@ def _parse_for_channel(channel, text):
     # tracker's short post can say "поранені" and still be a live report.)
     if NEWS_STRONG_RX.search(_norm(text)) or looks_like_explainer(_norm(text)):
         return []
+    sp = _split_next(text)
+    if sp:
+        before, after = sp
+        out = _parse_for_channel(channel, before)
+        if after:
+            nxt = _parse_for_channel(channel, after)
+            if not nxt and len(after.split()) <= 6:
+                nxt = _parse_live(after, "14")          # "Наступний Нивки": a bare place is the next target's position
+            out += [m for m in nxt if not m.get("status")]
+        return out
     fn = CHANNEL_PARSER.get(channel)
     if fn:
         r = fn(text)

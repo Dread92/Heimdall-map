@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.41** · last updated 2026-10-06 (1.41.2)
+**Documented version: 1.41** · last updated 2026-10-06 (1.41.3)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -443,6 +443,10 @@ block for every value:
 - **Count**, **altitude** (only when written: "знижується", "низько", metres "висота 2200", a bare "1600, Вороньків"
   in a short live post, kilometres "висота 4,4км"), **phase** (`PHASE_LADDER`:
   prep → launch → entering…, with a per-sentence hedge guard: "може відбутись" is preparation, not a launch).
+- **The next target** (1.41.3, `_split_next`) — an outcome followed by a sentence starting "наступний", "ще один",
+  "другий" or "інший" ("1 знищено.\nНаступний Нивки") is two reports. The outcome keeps only its own words (on a live
+  channel the previous position, `needs_context`; otherwise no mark); the place after the word is the next target's
+  position, never an outcome. Read whole, it was a confirmed shoot-down at Nyvky, shown 24 h in the history layer.
 - **Immediate types** — `IMMEDIATE_TYPES = {ballistic, supersonic, mig31k}`, `REGION_ALERT_KM = 150`.
 
 ### 7.4 Scope, chaining, staleness
