@@ -1037,7 +1037,9 @@ place.
 CI (`.github/workflows/ci.yml`) runs ruff and pytest on Python 3.9 and 3.12, starts the service and checks it
 answers; a **front-end** job checks that the page scripts parse and that every English string exists in Ukrainian
 and French (a plural counts when Ukrainian has its `_2` and `_5` forms for English's `_n`). `test_scripts_parse`
-runs that job's steps as written, so it cannot fail only on GitHub.
+runs that job's steps as written, so it cannot fail only on GitHub — and, since 1.40.1, without a global `navigator`,
+as on the job's Node 20 (Node 21+ has one: `static/i18n.js` read `navigator.language` at load and passed here while
+failing there). `static/i18n.js` must evaluate with no browser globals at all.
 
 ## 15. Deployment and the GitHub repository
 

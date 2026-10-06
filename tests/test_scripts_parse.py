@@ -53,6 +53,12 @@ def test_the_ci_front_end_job_passes_here_too():
             i += 1
         steps.append(textwrap.dedent("\n".join(body)))
     assert len(steps) >= 2
+    # 1.40.1: the job runs on Node 20, which has no global `navigator`; Node 21+ does, so i18n.js passed here and
+    # failed on GitHub ("navigator is not defined"). Run it here without one, as there.
+    env = dict(os.environ)
+    major = int(subprocess.run([NODE, "-v"], capture_output=True, text=True).stdout.strip().lstrip("v").split(".")[0] or 0)
+    if major >= 21:
+        env["NODE_OPTIONS"] = (env.get("NODE_OPTIONS", "") + " --no-experimental-global-navigator").strip()
     for step in steps:
-        r = subprocess.run(["bash", "-e", "-c", step], cwd=ROOT, capture_output=True, text=True)
+        r = subprocess.run(["bash", "-e", "-c", step], cwd=ROOT, capture_output=True, text=True, env=env)
         assert r.returncode == 0, f"{step.strip().splitlines()[0]} … → {(r.stderr or r.stdout).strip()[:400]}"

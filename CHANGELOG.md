@@ -2,6 +2,13 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.40.1 — 2026-10-06
+
+### Fixed
+- **CI, front-end job**: `static/i18n.js` read `navigator.language` while loading; the job runs on Node 20, which has
+  no `navigator`, so the key check stopped with "navigator is not defined". The language guess now checks that
+  `navigator` exists (no change in a browser), and the local test runs the job without one, as GitHub does.
+
 ## 1.40.0 — 2026-10-06
 
 ### Changed
