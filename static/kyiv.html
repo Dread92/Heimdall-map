@@ -35,6 +35,7 @@ button{font:inherit;cursor:pointer}
 #top .r1{height:52px;display:flex;align-items:center;gap:6px;padding:0 6px 0 8px}
 #top .logo{width:28px;height:28px;flex:none}#top .logo.ngo{width:24px;height:24px;margin-left:-3px}
 .dlogo{display:block;width:170px;height:auto;margin:0 auto 8px}body.lite .dlogo{display:none}
+.mbox .type.dtitle{text-align:center;letter-spacing:.04em}.dlangrow{display:flex;justify-content:center;margin:6px 0 4px}.dlangrow .lsel{margin:0 auto;max-width:80%}
 #stats a{color:#8fb4ff}
 /* the one way out of the notice: big, full width, centred, well clear of the links above it — a small button
    at the edge was missed, and the tap landed on something else */
@@ -49,7 +50,11 @@ button{font:inherit;cursor:pointer}
 .upd .cd.on{color:var(--green,#2fbf71);letter-spacing:.08em}
 /* the Air Force figures, type by type (1.32) */
 .aft .srow b.afc{display:flex;flex-direction:column;align-items:flex-end;gap:0;min-width:58px}.afl{color:#ffb15c}.afd{color:#a8f0cf;font-size:11px}.afn{color:var(--muted)}
-.aft .srow.sub span:first-child{padding-left:14px;color:var(--ink3,#9aa)}.afdb{color:var(--muted)!important}
+.aft .srow.sub span:first-child{padding-left:14px;color:var(--ink3,#9aa)}
+.gico{width:18px;height:18px;flex:none;vertical-align:-4px;margin-right:6px}.aft .srow>span:first-child{display:flex;align-items:center;min-width:0}.afchip .gico{width:14px;height:14px;margin-right:3px;vertical-align:-3px}.afdb{color:var(--muted)!important}
+/* 1.39: the key under the table, one sample per line (it was one run-on sentence, and on a phone its end fell under the screen's edge) */
+.aflg{display:grid;grid-template-columns:auto 1fr;gap:2px 8px;align-items:baseline;margin:8px 0 2px;font:12.5px/1.35 var(--sans);color:var(--muted)}.aflg b{text-align:right;font:700 14px var(--cond);min-width:22px}.aflg b.afd{font-size:12px}
+#drawer .body::after{content:'';display:block;height:24px}
 .aflist{display:flex;flex-direction:column;gap:6px;margin-top:4px}.afrow{border-bottom:1px solid var(--line);padding:4px 0 6px}
 .afh{font:600 12px var(--sans);color:var(--ink2);display:flex;gap:6px;align-items:baseline;flex-wrap:wrap}.afh a{color:#8fb4ff}.aftot{margin-left:auto;color:#a8f0cf;font:700 12px var(--mono)}
 .afchips{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}.afchip{font:500 11.5px var(--sans);border:1px solid var(--line);border-radius:3px;padding:1px 6px;color:var(--ink2)}
@@ -131,14 +136,16 @@ body.lite .tstrip.old{background:#111;color:#ddd;border-color:#555}
 .mrow.vol #sndtest{min-width:40px;padding:6px 0;text-align:center}.mrow.vol b{min-width:40px;text-align:right;font:600 11.5px var(--mono);color:var(--ink2)}.mrow.vol.off b,.mrow.vol.off .ml{color:var(--muted)}.mrow.vol.off #sndtest{opacity:.4;pointer-events:none}
 #top .name small{display:block;font:500 9.5px/1 var(--mono);letter-spacing:.14em;color:var(--ink3);margin-top:3px}
 .srcs{display:flex;gap:4px;margin-left:2px;align-items:center}.srcs i{width:6px;height:6px;background:var(--ink3);display:inline-block}.srcs i.ok{background:var(--green)}.srcs i.warn{background:var(--yellow)}.srcs i.bad{background:var(--red)}.srcs .sn{font:600 10px var(--mono);color:var(--ink3);letter-spacing:.02em}@media (max-width:999px){.srcs .sn{display:none}}
-#top .sp{flex:1}
+#top .sp{display:none}
 /* Light | Tactical — the two versions, one tap apart, where the eye lands first */
-#top .vsw{display:flex;flex:none;border:2px solid var(--orange,#ff8a3d);border-radius:7px;overflow:hidden;box-shadow:0 0 0 3px rgba(255,138,61,.14)}
-#top .vsw>*{display:flex;align-items:center;min-height:44px;font:800 12.5px/1 var(--sans);letter-spacing:.08em;padding:0 12px;color:#fff;text-decoration:none;background:#1a202b;white-space:nowrap}
+/* 1.39: the switch takes the room between the logos and the two buttons, centred in it, and its words shrink with the
+   screen (clamp) instead of being cut — "ПРОСТА›" was clipped on narrow phones */
+#top .vsw{display:flex;flex:1 1 auto;min-width:0;max-width:340px;margin:0 auto;border:2px solid var(--orange,#ff8a3d);border-radius:7px;overflow:hidden;box-shadow:0 0 0 3px rgba(255,138,61,.14)}
+#top .vsw>*{flex:1 1 0;min-width:0;display:flex;align-items:center;justify-content:center;min-height:44px;font:800 clamp(10.5px,3.3vw,12.5px)/1 var(--sans);letter-spacing:clamp(.01em,.45vw,.08em);padding:0 clamp(3px,1.5vw,12px);color:#fff;text-decoration:none;background:#1a202b;white-space:nowrap}
 #top .vsw .on{background:var(--orange,#ff8a3d);color:#14100a}
 #top .vsw a::after{content:' ›'}
 #top .vsw a:hover,#top .vsw a:focus{background:#242c3a}
-@media (max-width:380px){#top .vsw>*{padding:0 8px;font-size:11.5px;letter-spacing:.05em}#top .logo.ngo{display:none}}
+@media (max-width:380px){#top .logo.ngo{display:none}}
 body.m-day #top .vsw{border-color:#b9b2a4}body.m-day #top .vsw>*{background:#fff;color:#333}body.m-day #top .vsw .on{background:#e0701f;color:#fff}
 body.lite #top .vsw .on{background:#fff;color:#000}
 .ib{width:34px;height:30px;border:1px solid var(--line);background:var(--panel);color:var(--ink2);border-radius:2px;font:600 12px var(--mono);display:inline-flex;align-items:center;justify-content:center;padding:0}
@@ -209,7 +216,7 @@ button.chip{cursor:pointer;font-family:var(--mono)}button.chip:hover{border-colo
 .mapctl button{width:44px;height:44px;border:1px solid var(--line);background:rgba(18,21,27,.94);color:var(--ink);border-radius:10px;font:600 18px var(--mono);padding:0;display:flex;align-items:center;justify-content:center}
 .mapctl svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2;stroke-linejoin:round}
 .mapctl button.on{color:var(--ua-yellow);border-color:#5a4d00}
-#impbtn{position:relative;color:#ff8a80}#impbtn:not(.on){color:#8f9bb0}#impbtn small{position:absolute;right:3px;bottom:2px;font:700 10px var(--mono);color:var(--ua-yellow)}
+#impbtn{position:relative;color:#ff8a80}#impbtn .impico{width:22px;height:22px;fill:currentColor}#impbtn:not(.on){color:#8f9bb0}#impbtn small{position:absolute;right:3px;bottom:2px;font:700 10px var(--mono);color:var(--ua-yellow)}
 .imp{cursor:pointer}
 .imp .ig{fill:#ff3b2f;stroke:#fff;stroke-width:calc(var(--k,1)*.8px);filter:drop-shadow(0 0 calc(var(--k,1)*3px) rgba(255,70,50,.95))}
 .imp .ir{fill:none;stroke:#ff3b2f;stroke-width:1.6;vector-effect:non-scaling-stroke;opacity:.55}
@@ -301,6 +308,7 @@ body.lite #drawer .dchev{background:#111;border-color:#fff;color:#fff}
 .layermenu label{display:flex;gap:5px;align-items:center;white-space:nowrap}.layermenu .lbl{color:var(--ink3);letter-spacing:.1em;text-transform:uppercase}
 /* sheets & toast */
 .sheet{position:fixed;left:0;right:0;bottom:0;z-index:30;background:#14171d;border-top:2px solid var(--ua-yellow);padding:12px 14px calc(14px + var(--sab));transform:translateY(105%);transition:transform .22s;max-height:82vh;max-height:82dvh;overflow:auto}
+.sheet.top{z-index:65}   /* the support sheet opened from the welcome notice (z 60) sits above it */
 .sheet.show{transform:none}
 .sheet .grab{display:none}
 .sheet .type{font:800 22px/1.05 var(--cond);letter-spacing:.03em;text-transform:uppercase;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
@@ -401,8 +409,8 @@ svg.veryfar .town:not(.big):not(.rg):not(.uac){display:none}svg.veryfar .rnlbl{d
 .road.ring2{stroke:#4a5870;stroke-width:1.6px}
 .roadlbl{fill:#5f6b80;font:600 calc(var(--k,1)*9px) system-ui;paint-order:stroke;stroke:#080b10;stroke-width:calc(var(--k,1)*2.5px);pointer-events:none}
 .bridge{fill:#8fa3c0;stroke:#080b10;stroke-width:.6px;vector-effect:non-scaling-stroke}
-.poi{font:calc(var(--k,1)*12px) system-ui;pointer-events:none;paint-order:stroke;stroke:#080b10;stroke-width:calc(var(--k,1)*2px)}
-.poi.air{fill:#9fb7dc}.poi.pow{fill:#f5b940}
+.poi{pointer-events:none}.poi .pg,.homemk .ico .pg{transform:scale(calc(var(--k,1)*.55));stroke:#080b10;stroke-width:1.4px;vector-effect:non-scaling-stroke;paint-order:stroke}
+.poi.air{fill:#9fb7dc}.poi.pow{fill:#f5b940}.poi.nuc{fill:#ffd23f}
 .poilbl{fill:#8f9bb0;font:500 calc(var(--k,1)*9.5px) system-ui;paint-order:stroke;stroke:#080b10;stroke-width:calc(var(--k,1)*2.5px);pointer-events:none}
 svg.far .poilbl{display:none}svg:not(.close) .poi,svg:not(.close) .poilbl{display:none}
 .kd{fill:#161c26;stroke:#5b6f95;stroke-width:1.2px;vector-effect:non-scaling-stroke}.kd.Y{fill:rgba(245,185,64,.3)}.kd.R{fill:rgba(229,72,77,.4)}.kd.hot{stroke:#ff4d57;stroke-width:2.2px}
@@ -514,7 +522,7 @@ body.lite .mk.st-impact .glyph.x{fill:#fff;filter:none;animation:none}
 body.lite .trail.hist line{stroke:#000}
 .mk .cone{fill:#ff8a3d;fill-opacity:.07;stroke:none}.mk.inbound .cone{fill:#ff3b3f;fill-opacity:.10}
 .homemk .ring{stroke:#5b9cff;stroke-opacity:.5;stroke-dasharray:3 3}
-.homemk .ico{font:calc(var(--k,1)*16px) system-ui;paint-order:stroke;stroke:#080b10;stroke-width:calc(var(--k,1)*3px)}
+.homemk .ico{fill:#ffd9a8}.homemk .ico .pg{transform:scale(calc(var(--k,1)*.8))}
 .homemk .hl{fill:#bcd5ff;font:700 calc(var(--k,1)*11px) system-ui;paint-order:stroke;stroke:#080b10;stroke-width:calc(var(--k,1)*3px)}
 .mk.tohome .glyph{fill:#ff2d55}.mk.tohome .halo{stroke:#ff2d55;animation-duration:.8s}.mk.tohome .ahead{stroke:#ff2d55}.mk.tohome .lbl2{fill:#ffb3c5}
 svg.no-trails .trail{display:none}svg.no-cones .ahead,svg.no-cones .cone{display:none}svg.no-rivers .river,svg.no-rivers .rvlbl{display:none}
@@ -540,9 +548,6 @@ body.lite .leader{stroke:#fff;stroke-opacity:.6}body.lite .anchor{fill:#fff}
 @media (min-width:1000px){#updbar,#pwabar{left:auto;right:396px;width:360px;bottom:16px}}
 .sup{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);padding:8px 10px;margin-top:8px;font:600 14px var(--mono);word-break:break-all}
 .sup b{flex:1;font-weight:600;color:var(--ua-yellow)}
-.credit{display:flex;align-items:center;gap:8px;margin-top:12px;padding-top:10px;border-top:1px solid var(--line);color:var(--ink3);font:500 12px/1.4 var(--sans)}
-.credit img{width:26px;height:26px;flex:none;opacity:.75}
-.credit a{color:#8fb4ff}.credit .cn{font-weight:600;color:var(--ink2);letter-spacing:.02em}
 .hsec{margin-top:12px}.hsec h4{margin:0 0 3px;font:700 14px var(--cond);letter-spacing:.04em;text-transform:uppercase;color:var(--ink)}
 .hsec p{margin:0;font:400 13.5px/1.45 var(--sans);color:var(--ink2)}
 .warnbox{border-left:3px solid var(--red);background:rgba(224,52,44,.08);padding:8px 10px;font:500 13px/1.4 var(--sans);margin-top:8px}
@@ -666,7 +671,7 @@ body.m-night #modetag,body.m-day #modetag{display:block}
 
 /* blackout mode: 2G, weak signal, OLED. Pure black and white, no tiles, no images, minimal payload. */
 body.lite{--bg:#000;--panel:#0a0a0a;--panel2:#111;--line:#3a3a3a;--ink:#fff;--ink2:#cfcfcf;--ink3:#8a8a8a}
-body.lite #tiles,body.lite .attrib,body.lite .kozak,body.lite .credit img,body.lite #top .logo{display:none}
+body.lite #tiles,body.lite .attrib,body.lite .kozak,body.lite .hf-cr img,body.lite #top .logo{display:none}
 body.lite .river,body.lite .road,body.lite .roadlbl,body.lite .rvlbl,body.lite .poi,body.lite .poilbl,body.lite .ring,body.lite .ringlbl,body.lite .town.minor,body.lite .towndot.minor{display:none}
 body.lite .nb{fill:#000;stroke:#666}body.lite .nb.R,body.lite .nb.oR{fill:#fff;fill-opacity:.42}body.lite .nb.Y,body.lite .nb.oY{fill:#fff;fill-opacity:.18}
 body.lite .rn{fill:#000;stroke:#777}body.lite .rn.R{fill:#fff;fill-opacity:.45}body.lite .rn.Y{fill:#fff;fill-opacity:.2}
@@ -708,6 +713,9 @@ body.lite .mk.inbound .lbl2,body.lite .mk.tohome .lbl2{fill:#ff9ab0}
 .hb .bdot{position:absolute;top:8px;right:9px;width:10px;height:10px;border-radius:50%;border:2px solid var(--panel);display:none}
 .bdot.l1{display:block;background:var(--yellow)}.bdot.l2{display:block;background:var(--orange)}.bdot.l3{display:block;background:var(--red2)}.bdot.l4{display:block;background:#8e5cff}
 #mycard{margin:2px 8px 6px;padding:5px;display:flex;flex-direction:column;gap:5px;background:var(--panel);border:1px solid var(--line);border-radius:14px}
+/* 1.39: on a computer the card is a column of fixed height that scrolls: its blocks keep their height (the "nothing
+   reported" line, min-height 0, was squeezed under the footer when a warning made the card tall) */
+#mycard>*{flex-shrink:0}
 #mycard.lv2{border-color:#8a4a1c}#mycard.lv3{border-color:var(--red2);box-shadow:inset 0 0 0 1px var(--red2)}#mycard.lv4{border-color:#7a45f0;box-shadow:inset 0 0 0 1px #7a45f0}
 .slotrow{display:flex;gap:6px}
 .slotrow button{flex:1 1 0;min-width:0;height:44px;display:flex;align-items:center;justify-content:center;gap:5px;padding:0 4px;border:1px solid transparent;border-radius:10px;background:var(--panel2);color:var(--ink2);font:600 14px/1 var(--sans);white-space:nowrap;cursor:pointer}
@@ -764,7 +772,7 @@ body.lite .mcmini.w{background:#fff;color:#000}
 .panel .mrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--line)}
 .panel .mrow .ml{font:500 15px var(--sans);color:var(--ink2);margin-right:auto}
 .panel .mi2{min-height:44px;padding:0 14px;border-radius:8px;font:600 14px var(--sans)}
-.panel .mrow.z:not(.vol) .ml{flex:1 0 100%}.panel .mrow.z:not(.vol) .mi2{flex:1 1 0;min-width:0;padding:0 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.panel .mrow.z:not(.vol) .ml{flex:1 0 100%}.panel .mrow.z:not(.vol) .mi2{flex:1 1 0;min-width:0;padding:4px 4px;font-size:clamp(12px,3.6vw,14px);line-height:1.15;overflow-wrap:anywhere}
 .panel .mrow.vol input{min-width:110px;height:44px}.panel .mrow.vol b{font:600 13px var(--mono)}.panel .mrow.vol #sndtest{min-width:56px;padding:0 10px}
 .mi.tg{position:relative;display:flex!important;flex-direction:column;align-items:flex-start;padding-right:88px!important}
 .mi.tg .lb{font:600 15.5px/1.3 var(--sans);color:var(--ink)}.mi.tg small{font:500 13px/1.3 var(--sans);color:var(--ink2);margin-top:2px}
@@ -860,11 +868,12 @@ body.lite #mycard,body.lite .panel{background:#000;border-color:#666}body.lite .
   <a class="mi" href="/light" data-t="m_light">Heimdall Light — only your place</a>
   <div class="mg" data-t="m_g_info">About</div>
   <a class="mi gdm" href="/guide" data-t="m_guide">What to do — threat cheat sheet</a>
+  <button class="mi" type="button" data-hf="share" data-t="share_app">Share the app</button>
   <button class="mi" id="helpbtn" type="button" data-t="m_help">How this app works</button>
   <button class="mi" id="supbtn" type="button" data-t="m_support">Support the project</button>
   <a class="mi" id="tgbtn" data-t="m_tg" target="_blank" rel="noopener" hidden>Community on Telegram</a>
   <button class="mi" id="aboutbtn" type="button" data-t="m_about">About · disclaimer</button>
-  <div class="mi bt" id="buildtag">v1.38</div>
+  <div class="mi bt" id="buildtag">v1.39</div>
 </div>
 <div class="panel" id="lay" hidden role="dialog" aria-labelledby="layh"><div class="pgrab"></div>
   <div class="ph"><b id="layh" data-t="m_layers">Map layers</b><button type="button" class="px" data-close="lay" data-t-aria="btn_close" aria-label="Close">✕</button></div>
@@ -903,7 +912,7 @@ body.lite #mycard,body.lite .panel{background:#000;border-color:#666}body.lite .
   <div class="attrib" id="attrib" hidden>© OpenStreetMap contributors</div>
   <div id="pinhold"></div>
   <div id="pinarm" hidden><span data-t="sl_pin_arm">Tap the map where the pin goes</span><button type="button" id="pinarmx" data-t="sl_pin_cancel">Cancel</button></div>
-  <div class="mapctl"><button id="laybtn" type="button" data-t-title="m_layers" data-t-aria="m_layers" title="Map layers" aria-label="Map layers"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 3 8l9 5 9-5-9-5z"/><path d="m3 13 9 5 9-5"/></svg></button><button id="zin" type="button" aria-label="+">+</button><button id="zout" type="button" aria-label="−">−</button><button id="zkyiv" type="button" data-t-title="t_center" data-t-aria="t_center" title="Centre on my place">◎</button><button id="impbtn" type="button" data-t-title="t_hist" data-t-aria="t_hist" title="History of explosions and confirmed shoot-downs: off / 24 h / 48 h / 72 h">✸<small id="imph"></small></button></div>
+  <div class="mapctl"><button id="laybtn" type="button" data-t-title="m_layers" data-t-aria="m_layers" title="Map layers" aria-label="Map layers"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 3 8l9 5 9-5-9-5z"/><path d="m3 13 9 5 9-5"/></svg></button><button id="zin" type="button" aria-label="+">+</button><button id="zout" type="button" aria-label="−">−</button><button id="zkyiv" type="button" data-t-title="t_center" data-t-aria="t_center" title="Centre on my place">◎</button><button id="impbtn" type="button" data-t-title="t_hist" data-t-aria="t_hist" title="History of explosions and confirmed shoot-downs: off / 24 h / 48 h / 72 h" ><svg class="impico" viewBox="-14 -14 28 28" aria-hidden="true"><path d="M0-10 L2-3 L9-6 L4 0 L10 4 L3 3 L2 10 L-1 4 L-8 7 L-4 0 L-10-3 L-3-2 Z"/></svg><small id="imph"></small></button></div>
   <div class="tip" id="tip" hidden></div>
   <div id="heatleg" hidden><div class="hlh"><b data-t="hm_title">Where drones were reported</b><button type="button" id="heatx" data-t-aria="hm_off" aria-label="Hide">✕</button></div>
     <div class="hlw" id="heatw"></div><div class="hlt" id="heattop"></div><div class="hlr" id="heatramp"></div><div class="hln" data-t="hm_not_live">Not live.</div></div>
@@ -934,13 +943,12 @@ body.lite #mycard,body.lite .panel{background:#000;border-color:#666}body.lite .
 <div style="margin-top:8px;display:flex;justify-content:space-between"><button class="tgl" id="homeclear" data-t="btn_clear">Clear</button><button class="tgl" onclick="$('homesheet').classList.remove('show')" data-t="btn_close">Close</button></div></div>
 <div class="sheet" id="sheet"><div class="grab"></div><div id="sheetbody"></div></div>
 <div class="toast" id="toast"></div>
-<div class="modal" id="disc" hidden><div class="mbox"><img class="dlogo" src="/static/heimdall-full.webp" alt="Heimdall" width="170" height="157" loading="lazy"><div class="type" style="display:flex;align-items:center;gap:8px"><span data-t="d_title">Heimdall — please read</span><select class="lsel" id="dlang" style="margin-left:auto" aria-label="Language"></select></div>
+<div class="modal" id="disc" hidden><div class="mbox"><img class="dlogo" src="/static/heimdall-full.webp" alt="Heimdall" width="170" height="157" loading="lazy"><div class="type dtitle" data-t="d_title">IMPORTANT INFORMATION</div><div class="dlangrow"><select class="lsel" id="dlang" aria-label="Language"></select></div>
   <p data-t-html="d_p1"></p>
   <p data-t-html="d_p2"></p>
   <p data-t-html="d_p3"></p>
   <div class="dset"><label><span data-t="d_obl">My oblast</span><select id="discobl"></select></label>
     <label><span data-t="d_home">Precise place to watch — optional</span><button class="tgl" id="dischome" type="button"></button></label></div>
-  <div style="font:500 12px/1.4 var(--sans);color:var(--ink3);margin-top:10px" data-t="sup_free"></div>
   <div id="discfoot"></div>
   <button type="button" class="dok" id="discok" data-t="d_ok">I understand</button></div></div>
 
@@ -1088,11 +1096,9 @@ pushInit();
   $('discobl').onchange=e=>setMyOblast(e.target.value);
   $('dischome').onclick=async()=>{$('disc').hidden=true;await $('homebtn').onclick();};})();
 // the entry screen offers the two "watch" settings straight away: my oblast (status band, alerts) + an optional precise place
-function paintFooters(){ const h=footerHTML();
-  const a=$('discfoot'); if(a) a.innerHTML=h;
-  const b2=$('mapfoot'); if(b2) b2.innerHTML=h;
-  const c=$('panelfoot'); if(c) c.innerHTML=`<div style="margin-bottom:6px">${esc(t('sup_free'))}</div>`+h;
-  document.querySelectorAll('#bt2').forEach(e=>{ if(MYBUILD) e.textContent=' · '+t('build_lbl')+' '+MYBUILD; });
+// 1.39: one footer everywhere (footerHTML in static/i18n.js) — the welcome notice and the bottom of the drawer
+function paintFooters(){ const h=footerHTML({support:true,build:MYBUILD});
+  for(const id of ['discfoot','panelfoot']){ const el=$(id); if(el) el.innerHTML=h; }
   const tg=$('tgbtn'); if(tg){ if(CONTACT.telegram){ tg.href=CONTACT.telegram; tg.hidden=false; } else tg.hidden=true; }
   const bt=$('buildtag'); if(bt) bt.textContent='v'+APP_VERSION+(MYBUILD?' · '+t('build_lbl')+' '+MYBUILD:''); }
 function discHomeLabel(){ const b=$('dischome'); if(b) b.textContent=HOME?`${t('d_home_set')}: ${homeName()} ✓`:t('d_home_btn'); }
@@ -1203,15 +1209,21 @@ async function loadMap(){
     ['E-95 Chernihiv',[[30.58,50.49],[30.62,50.60],[30.72,50.80],[30.88,50.95],[31.0,51.15],[31.29,51.50]]],
     ['T-1019 Kaniv',[[30.95,50.35],[31.10,50.20],[31.30,50.10],[31.45,50.07],[31.47,49.75]]]];
   const RING=[[30.45,50.56],[30.38,50.53],[30.34,50.48],[30.33,50.43],[30.36,50.37],[30.42,50.34],[30.50,50.33],[30.57,50.34],[30.60,50.36]];
-  const POIS=[['✈','Boryspil airport',30.89,50.34],['✈','Zhuliany airport',30.45,50.40],['✈','Hostomel airfield',30.19,50.60],['✈','Vasylkiv airbase',30.30,50.23],['✈','Bila Tserkva airfield',30.16,49.79],['✈','Ozerne airbase',28.74,50.16],
-    ['⚡','Trypillia TPP',30.77,50.13],['⚡','Kyiv HPP dam',30.52,50.60],['⚡','Kyiv CHP-5',30.55,50.38],['⚡','Kyiv CHP-6',30.60,50.52],['⚡','Darnytsia TPP',30.63,50.43],['☢','Chornobyl NPP',30.10,51.39],['⚡','Zmiiv? no',0,0]].filter(p=>p[2]);
+  const POIS=[['air','Boryspil airport',30.89,50.34],['air','Zhuliany airport',30.45,50.40],['air','Hostomel airfield',30.19,50.60],['air','Vasylkiv airbase',30.30,50.23],['air','Bila Tserkva airfield',30.16,49.79],['air','Ozerne airbase',28.74,50.16],
+    ['pow','Trypillia TPP',30.77,50.13],['pow','Kyiv HPP dam',30.52,50.60],['pow','Kyiv CHP-5',30.55,50.38],['pow','Kyiv CHP-6',30.60,50.52],['pow','Darnytsia TPP',30.63,50.43],['nuc','Chornobyl NPP',30.10,51.39]];
   const rp=pts=>pts.map(p=>proj(p[0],p[1]).map(v=>v.toFixed(1)).join(',')).join(' ');
   $('infra').innerHTML=ROADS.map(([n,pts])=>{const mid=pts[Math.floor(pts.length/2)];const [lx,ly]=proj(mid[0],mid[1]);return `<polyline class="road" points="${rp(pts)}"/><text class="roadlbl minor" x="${(lx+1).toFixed(1)}" y="${(ly-1).toFixed(1)}">${n}</text>`;}).join('')
     +`<polyline class="road ring2" points="${rp(RING)}"/>`
-    +POIS.map(([ic,n,lo,la])=>{const [x,y]=proj(lo,la);return `<text class="poi ${ic==='✈'?'air':'pow'}" x="${x.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="middle">${ic}</text><text class="poilbl minor" x="${(x+2).toFixed(1)}" y="${(y+1.2).toFixed(1)}">${poiName(n)}</text>`;}).join('');
+    +POIS.map(([ic,n,lo,la])=>{const [x,y]=proj(lo,la);return `<g class="poi ${ic}" transform="translate(${x.toFixed(2)} ${y.toFixed(2)})"><g class="pg">${POI_G[ic]}</g></g><text class="poilbl minor" x="${(x+2).toFixed(1)}" y="${(y+1.2).toFixed(1)}">${poiName(n)}</text>`;}).join('');
   $('towns').innerHTML=TOWNS.map(([n,lo,la,big])=>{const [x,y]=proj(lo,la);const rg=big===2,ua=big===3;return `<circle class="towndot${rg?' rg':''}${ua?' uac':''}" data-n="${n}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${big===1?1.6:.9}" style="r:calc(var(--k,1)*${big===1?4:2.5}px)"/><text class="town ${big===1?'big':''}${rg?' rg':''}${ua?' uac':''}" data-n="${n}" x="${(x+2).toFixed(1)}" y="${(y+1.5).toFixed(1)}">${townName(n)}</text>`;}).join('')
     +minor.map(p=>{const [x,y]=proj(p.lon,p.lat);const d=p.oblast_uid==='31'?' district':'';return `<circle class="towndot minor${d}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r=".7" style="r:calc(var(--k,1)*2px)"/><text class="town minor${d}" x="${(x+1.5).toFixed(1)}" y="${(y+1.2).toFixed(1)}">${esc(pn(p.name))}</text>`;}).join('');
 }
+// 1.39: airports, power plants, the nuclear plant and the watched place are drawn, not typed as emoji — the same on
+// every phone. Centred on 0,0, ~22 units across; .pg scales them to screen pixels (var(--k)).
+const POI_G={air:'<path d="M0-11 L1.5-7.5 L1.5-3 L10 2.5 L10 4.5 L1.5 1.8 L1.5 7 L4.2 9.6 L4.2 11 L0 9.8 L-4.2 11 L-4.2 9.6 L-1.5 7 L-1.5 1.8 L-10 4.5 L-10 2.5 L-1.5-3 L-1.5-7.5 Z"/>',
+  pow:'<path d="M2.5-11 L-7 2 L-1 2 L-3.5 11 L7-2 L1-2 Z"/>',
+  nuc:'<circle r="2.4"/>'+[0,120,240].map(a=>`<path transform="rotate(${a})" d="M-1.75-3.03 L-5-8.66 A10 10 0 0 1 5-8.66 L1.75-3.03 A3.5 3.5 0 0 0 -1.75-3.03 Z"/>`).join(''),
+  home:'<path d="M0-10 L10-1.5 L7-1.5 L7 9 L2 9 L2 3 L-2 3 L-2 9 L-7 9 L-7-1.5 L-10-1.5 Z"/>'};
 const TR={а:'a',б:'b',в:'v',г:'h',ґ:'g',д:'d',е:'e',є:'ie',ж:'zh',з:'z',и:'y',і:'i',ї:'i',й:'i',к:'k',л:'l',м:'m',н:'n',о:'o',п:'p',р:'r',с:'s',т:'t',у:'u',ф:'f',х:'kh',ц:'ts',ч:'ch',ш:'sh',щ:'shch',ь:'',ю:'iu',я:'ia',"'":'',"ʼ":''};
 function translit(s){let out='';for(let i=0;i<s.length;i++){const c=s[i],l=c.toLowerCase();let t;if(l==='є'&&i===0)t='ye';else if(l==='ї'&&i===0)t='yi';else if(l==='й'&&i===0)t='y';else if(l==='ю'&&i===0)t='yu';else if(l==='я'&&i===0)t='ya';else t=TR[l]??c;if(c!==l&&t)t=t[0].toUpperCase()+t.slice(1);out+=t;}return out;}
 // pan/zoom
@@ -1483,7 +1495,7 @@ function etaBand(m,dist){
   return {lo:Math.max(0,lo),hi:hi,off:off};
 }
 function drawHome(){ if(!MAP) return; if(!HOME){$('homeg').innerHTML='';return;} const [x,y]=proj(HOME.lon,HOME.lat);
-  $('homeg').innerHTML=`<g class="homemk"><circle class="ring" cx="${x}" cy="${y}" r="5" fill="none" style="stroke-width:1px;vector-effect:non-scaling-stroke"/><circle class="ring" cx="${x}" cy="${y}" r="10" fill="none" style="stroke-width:1px;vector-effect:non-scaling-stroke"/><text class="ico" x="${x}" y="${y+1}" text-anchor="middle" dominant-baseline="middle">🏠</text><text class="hl" x="${x}" y="${(y-8*KPX).toFixed(1)}" text-anchor="middle">${esc(homeName())}</text></g>`; }
+  $('homeg').innerHTML=`<g class="homemk"><circle class="ring" cx="${x}" cy="${y}" r="5" fill="none" style="stroke-width:1px;vector-effect:non-scaling-stroke"/><circle class="ring" cx="${x}" cy="${y}" r="10" fill="none" style="stroke-width:1px;vector-effect:non-scaling-stroke"/><g class="ico" transform="translate(${x} ${y})"><g class="pg">${POI_G.home}</g></g><text class="hl" x="${x}" y="${(y-8*KPX).toFixed(1)}" text-anchor="middle">${esc(homeName())}</text></g>`; }
 function paintSlots(){ const el=$('slotrow'); if(!el) return;
   const html=SLOT_IDS.map(id=>{const p=SLOTS[id]; const on=id===ACTIVE&&p;
     // The role, not the place. Shorter, so the four fit one line on a phone — and the place a child is at does
@@ -2082,7 +2094,7 @@ function openSheet(id){
   $('shbtn').onclick=()=>shareMarker(m.id,$('shbtn'));
   $('sheet').classList.add('show');
 }
-function closeSheet(){$('sheet').classList.remove('show');}
+function closeSheet(){$('sheet').classList.remove('show','top');}
 // ---- oblast selection: tap an oblast to show its cities (and zoom to it from the whole-Ukraine view) ----
 let SEL_OBL=null;
 // ---- my oblast: the status band follows the oblast the user chose (default Kyiv) ----
@@ -2362,6 +2374,11 @@ let TS_TOP=null;   // the preventive warning on top of the strip right now ({ty,
 // oblast has no point to measure from, and a weapon that outruns any radius gets no distance at all.
 const KIND_COL=m=>m.type==='drones'?(m.jet?'#ffb15c':'#ff8a3d'):/missile/.test(m.type)?'#ff5b52':(m.type==='guided_aerial_bombs'||/aircraft|mig31k/.test(m.type))?'#b07cff':'#a9a79f';
 const kindOf=m=>m.type==='drones'?(m.jet?t('k_jet'):t('k_shahed')):m.type==='unknown'?t('k_unknown'):(THREAT[m.type]?.[1]||m.type);
+// 1.39: a silhouette as a small inline icon — the Stats tab, the Alerts tab, the map's places of interest
+const gIco=(k,col,cls)=>`<svg class="gico" viewBox="-14 -14 28 28" aria-hidden="true"><g class="sil${cls?' '+cls:''}" style="--c:${col}">${G[k]||''}</g></svg>`;
+// an official threat type as its silhouette (a type with none — air defence, "Kyiv", "clear" — gets no icon)
+const thrIco=(ty,col)=>{ const g=GLYPH_BY_TYPE[ty]; if(!g) return '';
+  return gIco(g,col||(ty==='drones'?'#ff8a3d':/aircraft|mig31k|guided_aerial_bombs/.test(ty)?'#b07cff':'#ff5b52'),ty==='ballistic_missiles'?'bal':ty==='supersonic_missiles'?'sup':''); };
 function silSvg(m,col){ const k=glyphKey(m)==='arrow'?((m.type==='drones'&&m.jet)?'jetdrone':(GLYPH_BY_TYPE[m.type]||'missile')):glyphKey(m);
   const cls='sil'+((m.type==='drones'&&m.jet)?' jet':'')+(m.type==='ballistic_missiles'?' bal':'')+(m.type==='supersonic_missiles'?' sup':'');
   return `<svg viewBox="-14 -14 28 28" aria-hidden="true"><g class="${cls}" style="--c:${col||KIND_COL(m)}">${G[k]||''}</g></svg>`; }
@@ -2573,7 +2590,7 @@ function render(){
   const hasRaions=Object.keys(rst).length>0; const oblFill=oblL;
   const st=cityL?cityL:(oblL?maxL(oblL,anyR?'R':''):(hasRaions?(anyR?'R':'Y'):((isK&&k.status==='P')||ko.status==='P'?'P':'N')));
   const since=(isK?k.since:null)||ko.since||(raionAlerts[0]&&raionAlerts[0].started_at);
-  const thr=[...new Set([...(isK?k.threats:[]),...(ko.threats||[])].map(t=>`${THREAT[t.threat_type]?.[0]||''} ${THREAT[t.threat_type]?.[1]||t.threat_type}`))];
+  const thr=[...new Set([...(isK?k.threats:[]),...(ko.threats||[])].map(t=>`${thrIco(t.threat_type,'currentColor')}${THREAT[t.threat_type]?.[1]||t.threat_type}`))];
   const el=$('kyiv'); el.className='band '+st;
   const nR=Object.values(rst).filter(l=>l==='R').length,nY=Object.values(rst).filter(l=>l==='Y').length;
   const ON=oblFull(MYU); const KY=t('b_kyiv');
@@ -2612,7 +2629,7 @@ function render(){
   // alerts tab: what is in the air right now (the live tally, moved out of Stats in 1.19), then the official alerts
   const act=[...S.active].sort((a,b)=>((b.oblast_uid==='31'||b.oblast_uid==='14')-(a.oblast_uid==='31'||a.oblast_uid==='14'))||(a.started_at<b.started_at?1:-1));
   $('alerts').innerHTML='<div id="livecounts"></div>'+(act.length?act.map(a=>`<div class="card plain ${a.alert_level||''} ${(a.oblast_uid==='31'||a.oblast_uid==='14')?'kyiv':''}"><div class="title">${esc(LANG==='uk'?a.location_title:(a.location_title_en||a.location_title))} ${LANG==='uk'?'':`<span style="color:var(--muted);font-weight:400">· ${esc(a.location_title)}</span>`}</div>
-     <div class="meta">${ATYPE[a.alert_type]||a.alert_type} · ${LT(a.location_type)}${a.since_known===false?'':` · ${t('al_since')} ${fmtT(a.started_at)} (${dur(a.started_at)})`}${a.notes?' · '+esc(a.notes):''}${(a.threats||[]).length?' · '+a.threats.map(x=>THREAT[x.threat_type]?.[0]||'').join(''):''}</div></div>`).join('')
+     <div class="meta">${ATYPE[a.alert_type]||a.alert_type} · ${LT(a.location_type)}${a.since_known===false?'':` · ${t('al_since')} ${fmtT(a.started_at)} (${dur(a.started_at)})`}${a.notes?' · '+esc(a.notes):''}${(a.threats||[]).length?' · '+[...new Set(a.threats.map(x=>x.threat_type))].map(ty=>thrIco(ty)).join(''):''}</div></div>`).join('')
      :`<div class="empty">${t('al_none')}</div>`);
   renderLiveCounts();
 }
@@ -2675,24 +2692,28 @@ function renderStats(){ if(!STATS) return; const el=$('stats'); if(!el) return; 
   // a summary names without a number is shown as used (✓), never as 0. Nothing this app counted itself.
   const W=d.windows||{}, AF=d.af_days||[], ws=['1','7','30'];
   const af=w=>(W[w]||{}).af||{launched:{},down:{},used:[]};
-  const TYPES=[['drones','🛸'],['jet','↳'],['banderol','🏍'],['cruise','🚀'],['ballistic','🎯'],['aeroballistic','⚡'],['antiship','🌊'],['guided','✈'],['decoys','👻']];
+  // 1.39: the app's own silhouettes (static/glyphs.js), not the phone's emoji — the same on every phone, and the same
+  // shapes the map draws. [type, glyph, colour, extra class]
+  const TYPES=[['drones','drone','#ff8a3d'],['jet','jetdrone','#ffb15c','jet'],['banderol','banderol','#ffb15c'],['cruise','missile','#ff5b52'],
+    ['ballistic','ballistic','#ff5b52','bal'],['aeroballistic','ballistic','#ff5b52','bal'],['antiship','supersonic','#ff6a00','sup'],
+    ['guided','missile','#ff8a7a'],['decoys','drone','#a9a79f']];
   const has=k=>ws.some(w=>{const a=af(w);return (a.launched||{})[k]||(a.down||{})[k]||(a.used||[]).includes(k);});
   const cell=(a,k)=>{ const l=(a.launched||{})[k], dn=(a.down||{})[k], u=(a.used||[]).includes(k), pt=(a.partial||[]).includes(k);
     const L=l!=null?`<span class="afl"${pt?` title="${esc(t('af_atleast'))}"`:''}>${l}${pt?'+':''}</span>`:u?`<span class="afl" title="${esc(t('af_used'))}">✓</span>`:(dn!=null?`<span class="afl">✓</span>`:'<span class="afn">—</span>');
     return `<b class="afc">${L}${dn!=null?`<span class="afd">↓${dn}</span>`:''}</b>`; };
   const head=labels=>`<div class="srow hd"><span></span>${labels.map(x=>`<b>${esc(x)}</b>`).join('')}</div>`;
   const hasAF=!!((W['30']||{}).summaries);
-  const rows=TYPES.filter(([k])=>has(k)).map(([k,ic])=>`<div class="srow${k==='jet'?' sub':''}"><span>${ic} ${esc(t('af_t_'+k))}</span>${ws.map(w=>cell(af(w),k)).join('')}</div>`).join('');
-  const hits=ws.some(w=>af(w).impacts)?`<div class="srow"><span>💥 ${esc(t('af_hits'))}</span>${ws.map(w=>`<b class="afc"><span class="afl">${af(w).impacts||0}</span>${af(w).debris?`<span class="afd afdb">${esc(t('af_debris_s',af(w).debris))}</span>`:''}</b>`).join('')}</div>`:'';
+  const rows=TYPES.filter(([k])=>has(k)).map(([k,g,c,x])=>`<div class="srow${k==='jet'?' sub':''}"><span>${gIco(g,c,x)}${esc(t('af_t_'+k))}</span>${ws.map(w=>cell(af(w),k)).join('')}</div>`).join('');
+  const hits=ws.some(w=>af(w).impacts)?`<div class="srow"><span>${gIco('impact','#ffb347')}${esc(t('af_hits'))}</span>${ws.map(w=>`<b class="afc"><span class="afl">${af(w).impacts||0}</span>${af(w).debris?`<span class="afd afdb">${esc(t('af_debris_s',af(w).debris))}</span>`:''}</b>`).join('')}</div>`:'';
   const afTable=hasAF?`<div class="wtab aft">${head([t('s_w1'),t('s_w7'),t('s_w30')])}${rows}${hits}</div>
-    <div class="sfoot" style="margin-top:4px">${esc(t('af_legend'))}</div>`
+    <div class="aflg"><b class="afl">12</b><span>${esc(t('af_lg_l'))}</span><b class="afd">↓9</b><span>${esc(t('af_lg_d'))}</span><b class="afl">✓</b><span>${esc(t('af_lg_u'))}</span><b class="afl">8+</b><span>${esc(t('af_lg_p'))}</span></div>`
    :`<div class="sfoot" style="margin-top:4px">${esc(t('s_nosum'))}</div>`;
   // each summary, newest first, with the post it was read from
   const fd=x=>{ try{ return new Date(x+'T12:00:00Z').toLocaleDateString(LOCALE(),{day:'numeric',month:'short',timeZone:'UTC'}); }catch(e){ return x; } };
   const chip=(k,x)=>{ const l=(x.launched||{})[k], dn=(x.down_by||{})[k], u=(x.used||[]).includes(k); if(l==null&&dn==null&&!u) return '';
     return `<span class="afchip">${esc(t('af_t_'+k))} <b>${l!=null?l:'✓'}</b>${dn!=null?` <i>↓${dn}</i>`:''}</span>`; };
   const list=AF.length?`<div class="aflist">${AF.map(x=>`<div class="afrow"><div class="afh">${esc(fd(x.day))} · ${esc(t(x.period==='day'?'af_day':'af_night'))}${x.post?` · <a href="https://t.me/${esc(x.post)}" target="_blank" rel="noopener">${esc(t('st_af_post'))}</a>`:''}${(x.down_by||{}).total!=null?`<span class="aftot">↓ ${(x.down_by||{}).total}</span>`:''}</div>
-      <div class="afchips">${TYPES.map(([k])=>chip(k,x)).join('')}${x.impacts!=null?`<span class="afchip">💥 ${esc(t('af_hits_n',x.impacts))}</span>`:''}${x.debris!=null?`<span class="afchip">${esc(t('af_debris_s',x.debris))}</span>`:''}</div>
+      <div class="afchips">${TYPES.map(([k])=>chip(k,x)).join('')}${x.impacts!=null?`<span class="afchip">${gIco('impact','#ffb347')}${esc(t('af_hits_n',x.impacts))}</span>`:''}${x.debris!=null?`<span class="afchip">${esc(t('af_debris_s',x.debris))}</span>`:''}</div>
       ${(x.models||[]).length?`<div class="afm">${esc((x.models||[]).join(' · '))}</div>`:''}</div>`).join('')}</div>`:'';
   el.innerHTML=`<div class="card plain">
     <div class="slbl" style="margin-top:0">${esc(t('st_launched'))}</div>${afTable}
@@ -2703,14 +2724,8 @@ function renderStats(){ if(!STATS) return; const el=$('stats'); if(!el) return; 
 // Update notice, install prompt, support, sharing, blackout mode, proximity alerts
 // =====================================================================================
 // ---------------------------------------------------------------------------------------------------
-// Contacts — the only place to edit them. A channel left empty simply does not appear, so no dead link
-// ever ships: fill TELEGRAM in when the channel exists.
-const APP_VERSION='1.38';
-const CONTACT={
-  hosting:'nomakievip@gmail.com',      // hosting & development  ← replace when there is a separate address
-  ngo:'nomakievip@gmail.com',          // NGO 07300 volunteer work
-  telegram:'https://t.me/blackflamestudio'   // community & feedback — hidden while empty
-};
+// The contacts (CONTACT) and the footer (footerHTML, shareApp) are in static/i18n.js since 1.39, shared with Light.
+const APP_VERSION='1.39';
 const DONATE=CONTACT.ngo;
 const ls=(k,v)=>{try{return v===undefined?localStorage.getItem(k):(localStorage.setItem(k,v),v);}catch(e){return null;}};
 
@@ -2750,24 +2765,18 @@ function supportSheet(){
     <div class="kv1">${esc(t('sup_free'))}</div>
     ${same?row(t('sup_hosting')+' · '+t('sup_ngo'),CONTACT.ngo,'cp1')
           :row(t('sup_hosting'),CONTACT.hosting,'cp1')+row(t('sup_ngo'),CONTACT.ngo,'cp2')}
-    ${CONTACT.telegram?`<div class="kv1" style="margin-top:12px">💬 <a href="${esc(CONTACT.telegram)}" target="_blank" rel="noopener">${esc(t('sup_community'))}</a></div>`:''}
     <div class="kv1 muted" style="margin-top:8px">${esc(t('sup_thanks'))}</div>
-    ${footerHTML()}
+    ${footerHTML({free:false,build:MYBUILD})}
     <div style="margin-top:10px;display:flex;justify-content:space-between;align-items:center">
       <button class="tgl" id="donnever" style="font-size:11px">${t('sup_never')}</button>
       <button class="tgl" onclick="closeSheet()">${t('btn_close')}</button></div>`;
   $('sheetbody').querySelectorAll('[data-copy]').forEach(btn=>btn.onclick=()=>copyText(btn.dataset.copy,btn,t('sup_copied')));
   $('donnever').onclick=()=>{ls('sup_never','1');closeSheet();};
   $('sheet').classList.add('show'); }
-// one footer, used on the welcome screen, at the bottom of the drawer and of the support sheet
-function footerHTML(){
-  return `<div class="credit"><img src="/static/bf-logo.png" alt=""><div>
-    <span class="cn">© 2026 Black Flame Studio &amp; NGO 07300</span><br>
-    ${esc(t('credits_dev'))} · ${esc(t('sup_ver'))} ${APP_VERSION}<span id="bt2"></span>
-    ${CONTACT.telegram?` · <a href="${esc(CONTACT.telegram)}" target="_blank" rel="noopener">💬 ${esc(t('sup_community'))}</a>`:''}
-    </div></div>`;
-}
 $('supbtn').onclick=()=>{closePanels();supportSheet();};
+// the footer's "Support" link (static/i18n.js): the support sheet — above the welcome notice when it is opened from it
+document.addEventListener('click',e=>{ const b=e.target.closest('[data-hf="support"]'); if(!b) return;
+  const fromNotice=!!b.closest('#disc'); closePanels(); supportSheet(); $('sheet').classList.toggle('top',fromNotice); });
 // a reminder at most once every 14 days, only after the app has actually been used, never during an alert
 function maybeRemindSupport(){ if(ls('sup_never')==='1') return; const last=+(ls('sup_seen')||0);
   if(Date.now()-last < 14*864e5) return;
@@ -2913,7 +2922,7 @@ function helpSheet(){
     <div class="warnbox">${esc(t('help_warn'))}</div>
     <a class="gdl" href="/guide">${esc(t('m_guide'))} →</a>
     ${secs}
-    <div class="credit"><img src="/static/bf-logo.png" alt=""><div><span class="cn">${esc(t('credits'))}</span><br>${esc(t('credits_dev'))}</div></div>
+    ${footerHTML({support:true,build:MYBUILD})}
     <div style="margin-top:10px;text-align:right"><button class="tgl" onclick="closeSheet()">${t('btn_close')}</button></div>`;
   $('sheet').classList.add('show'); }
 // the livebar is rebuilt on every render, so the chips are handled by one delegated listener

@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.38** · last updated 2026-10-05
+**Documented version: 1.39** · last updated 2026-10-06
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -712,7 +712,10 @@ level-of-detail classes by zoom, OSM tiles under the vector layers below 150 km 
 **The screen (1.36)** — the reader's own place first, the map second, everything else one tap away:
 
 - **Header**: the two logos, the LIGHT | TACTICAL switch, the **bell** (`#bellbtn`, a dot in the escalation
-  level's colour) and **More** (`#menubtn`). No clock, no rotating ticker.
+  level's colour) and **More** (`#menubtn`). No clock, no rotating ticker. 1.39: the switch (`#top .vsw`) takes the
+  room between the logos and the icons (`flex:1 1 auto`, at most 340 px, centred), its two halves equal, its text
+  sized with `clamp()` so "ПРОСТА / ТАКТИЧНА" or "LÉGÈRE / TACTIQUE" is never cut; under 380 px the NGO logo steps
+  aside. Checked at 320 / 360 / 390 / 1440 px in the three languages.
 - **The card "My place"** (`#mycard`), in the header's flow — never over the map; `syncTop()` measures it:
   the four places as 44 px chips, each with its **own official status** as a dot (`placeLevel()`: R / Y over the
   place's raion or the city, H a hromada inside its raion, G none, U not known — `unitAt()` finds the unit on the
@@ -749,11 +752,23 @@ level-of-detail classes by zoom, OSM tiles under the vector layers below 150 km 
 - **Panels** (`#bell`, `#menu`, `#lay`; a sheet from the bottom on a phone, a drop-down under the header on a
   computer; outside tap or Escape closes): **the bell** — push, warn near my position, Kyiv bridges, sound, volume and
   test, vibration, as switches with a line saying what each does; **More** — places (priority place, my oblast),
-  view (language, normal / day / night, blackout, Light), about (What to do, how it works, support, Telegram,
-  about, build tag); **Layers** — the map layers, Kyiv's 10 districts, EST, zoom out to oblast / region / Ukraine,
+  view (language, normal / day / night, blackout, Light), about (What to do, Share the app, how it works, support,
+  Telegram, about, build tag); **Layers** — the map layers, Kyiv's 10 districts, EST, zoom out to oblast / region / Ukraine,
   and the legend behind a button.
 - **Computer** (≥ 1000 px): the card is a 360 px column on the left with the Near list under it, the map in the
-  middle, the drawer on the right opening on the Feed.
+  middle, the drawer on the right opening on the Feed. The column is a flex column of fixed height that scrolls:
+  its blocks never shrink (`#mycard>*{flex-shrink:0}`, 1.39 — the "nothing reported" line was squeezed under the
+  card's foot when a warning made the card tall).
+- **The footer** (1.39) is one component, `footerHTML(o)` in `static/i18n.js`, the same under the notice
+  (`#discfoot`), under Near (`#panelfoot`), in the support and help sheets and on Light (`#hfoot`): the "free
+  service" line with **🔗 Support** (`CONTACT.donate` when the owner sets a donation link; until then it opens the
+  support sheet with the addresses — above the notice when tapped from it, `.sheet.top`), **Share the app**, the
+  © line with the two logos (`o.logos:false` on Light: no images on 2G), "Built by Dread92 · version · build", and
+  **💬 Community & feedback** (`CONTACT.telegram`) on its own line. `CONTACT` (addresses, Telegram, `ngoSite`,
+  `donate`) moved to `static/i18n.js` with it.
+- **Share the app** (1.39; the footer and More → About): `shareApp()` — the phone's own share sheet
+  (`navigator.share`), else the link copied (`navigator.clipboard`, else a hidden textarea), "Link copied" on the
+  button for 2 s. The link is the app's canonical address and nothing else — never a place, a slot or a setting.
 - Every control of the header, the card, the map, the panels and the drawer can be hit over at least 44 × 44 px
   (the "unofficial" line and the drawer's tab through an invisible margin); the card, panels and drawer use no text
   under 12 px; secondary text `--ink2` `#b5b3ab`, tertiary `--ink3` `#8f8d86` (at least 4.9:1 on the panels and
@@ -778,8 +793,11 @@ Main parts:
   and listed in its legend; under every mark. (1.33's alert hours by oblast stay in the dashboard's Analytics.)
 - tabs: **Near** (1.36, above); **Feed**; **Alerts** (the live tally of what is on the map, then the official alerts); **Stats** — the Air
   Force's official figures only, weapon by weapon since 1.32 (§7.5): for 24 h / 7 d / 30 d (`windows[…].af`) a
-  row per type — launched and ↓ shot down, ✓ when used without a number — and the hit locations; then each
-  summary (night / day) with chips and a link to its post (`af_days`). (The **Map** tab became the Layers panel in 1.36.)
+  row per type — launched and ↓ shot down, ✓ when used without a number — and the hit locations; a key under the
+  table, one sample per line (`.aflg`, 1.39: it was one sentence whose end fell under the screen's edge); then each
+  summary (night / day) with chips and a link to its post (`af_days`). Each type wears the app's own silhouette
+  (`gIco()`: the glyph of `static/glyphs.js` in a small svg, the same shape as on the map), not the phone's emoji;
+  so do the threats in the Alerts tab and the preventive strip (`thrIco()`). (The **Map** tab became the Layers panel in 1.36.)
 - **approach marks** (drawn at the town they are heading to): a dashed course coming **into** the town from the
   side the post named, no ray or cone ahead, never dead-reckoned (Est.), no ETA; label "→ Vasylkiv from the NW";
   on Light "heading for Vasylkiv — where it is now was not said";
@@ -788,6 +806,9 @@ Main parts:
   other labels, other marks' glyphs and the map's edge; placed by priority (to a watched place, inbound,
   descending, others, outcomes); an ordinary label that fits nowhere loses its second line (`nolbl2`), then is
   left out (`nolbl`). The boxes (`LBLBOX`) hide the town names under them (`layoutTownLabels`);
+- the map's own pictograms are vector shapes, not the phone's emoji (1.39): the airfields, power plants and nuclear
+  plants of the infrastructure layer (`POIS`, `POI_G`: a plane, a lightning bolt, a trefoil; shown zoomed in, hidden
+  at night and in blackout), the watched place's house, and the impacts button's burst — the same on every phone;
 - the OSM tile credit sits small in the bottom corner; the Crimea Cossack is drawn in `#obllbl`, above the raion
   outlines, one path per colour;
 - display modes: normal, day (inverted, WCAG-checked), night (dim, arrows only), blackout (2G);
@@ -796,7 +817,9 @@ Main parts:
   ("unofficial · not radar") and More → About. Changing the language inside it reloads the page **and shows it
   again** in the new language (`pickLang(l, true)` clears `disc_seen`); "I understand" is a full-width button,
   centred, and since 1.36 it stays at the bottom of the screen while the notice scrolls (`.dok`, `position:
-  sticky`). Its content is unchanged.
+  sticky`). 1.39: the owner's text — the title is "IMPORTANT INFORMATION" alone, centred, with the language
+  under it; the first paragraph opens with "HEIMDALL is an unofficial volunteer service"; the footer component
+  closes it.
 
 ### 10.2 Light (`/light`)
 
@@ -832,6 +855,8 @@ One place, what concerns it, nothing else. Built to load and be read on 2G (page
 - 1.36: each of the four place chips carries its own official status as a dot (`placeStatus()` for that place);
   the colour legend is behind a "?" button; the footer is two buttons (What to do, the Tactical map); every control
   44 px, no text under 13 px, the same secondary-text colours as Tactical.
+- 1.39: under the two buttons, the same footer component as Tactical (`footerHTML({logos:false})`, §10.1) —
+  without the two logos, which would cost 20 KB on 2G; it is drawn again when the language changes.
 - Immediate types: a banner for the whole region, no distance, no countdown.
 
 ### 10.3 The switch

@@ -97,7 +97,7 @@ def test_the_new_logo_is_the_app_icon_and_the_partner_logos_stay():
         assert 'rel="apple-touch-icon" href="/static/heimdall-apple-180.png"' in page     # an iPhone's home screen
         assert "Clear Sky" not in page
     assert 'src="/static/logo-64.png" alt="07300"' in PAGE          # NGO 07300 stays in the header
-    assert "/static/bf-logo.png" in PAGE                             # Black Flame stays in the credits
+    assert "/static/bf-logo.png" in I18N and "footerHTML(" in PAGE  # Black Flame stays in the credits (1.39: the shared footer)
     assert '"heimdall-64.png"' in SRC                                 # the favicon
     assert "Clear Sky" not in I18N
 

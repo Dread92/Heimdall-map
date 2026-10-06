@@ -2,6 +2,37 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.39.0 — 2026-10-06
+
+### Changed
+- **The opening notice, in the owner's words.** The title is "ВАЖЛИВА ІНФОРМАЦІЯ" alone, centred, the language
+  under it; the first paragraph opens with "HEIMDALL — це неофіційний волонтерський сервіс"; new Ukrainian text for
+  the three paragraphs (English and French follow it).
+- **One footer, everywhere.** The notice, the Near tab, the support and help sheets and Light now share one
+  footer (`footerHTML()` in `static/i18n.js`): the "free service" line for the NGO «07300 — Люди для Людей» with
+  🔗 Support, Share the app, © Black Flame Studio & NGO 07300 with their logos, "Built by Dread92 · version ·
+  build", and 💬 Community & feedback on its own line. The old sentence under Near ("буде дуже вдячно прийнята") is
+  gone with it. Light shows it without the logos (2G).
+- **The LIGHT | TACTICAL switch** takes the room between the logos and the icons, centred, and its text scales so it
+  is never cut (checked at 320, 360, 390 and 1440 px in the three languages).
+- **The bell's lines** say what each switch does, in the owner's Ukrainian: push — targets within your radius, a
+  ballistic threat, a MiG-31K take-off (a take-off is a warning for the whole country, not a target near you);
+  bridges — a target on a bridge or within 3.5 km (6 km for jet drones and missiles, as the code measures); sound —
+  a distinct tone per threat level; vibration — long for a ballistic threat or a MiG-31K take-off.
+- **The app's own pictograms instead of the phone's emoji**: the weapon types in Stats and its summaries, the
+  threats in the Alerts tab, the airfields, power plants, nuclear plants and the watched place on the map, and the
+  impacts button — the same shapes on every phone.
+
+### Added
+- **Share the app** — under the notice, in every footer and in More: the phone's share sheet, or the link copied.
+  The link is the app's address only; never a place.
+
+### Fixed
+- The key under the Stats table is one sample per line; as one sentence its end ("· ✓: …") fell under the
+  screen's edge.
+- On a computer the "nothing reported" line was squeezed under the card's foot when a warning made the card tall.
+- "Звичайний ✓" was cut in the display-mode buttons on a 360 px phone.
+
 ## 1.38.0 — 2026-10-05
 
 ### Fixed
