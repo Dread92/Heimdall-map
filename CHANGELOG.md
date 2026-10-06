@@ -2,6 +2,18 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.41.2 — 2026-10-06
+
+### Fixed
+- **A channel explaining is not a channel reporting.** Between two waves on 6 October, @chyste_nebo explained how
+  ballistics works: "for example — the direction of Brovary and whatever is behind it …". The example was drawn as a
+  ballistic missile heading for Brovary, which also sends the region's "shelter now" notification; the next post
+  ("if the target is destroyed over Kyiv …") became two shoot-downs, over Kyiv and Bila Tserkva. An example, a
+  lesson or a channel describing its own method now places nothing, raises nothing and ends nothing.
+- **What the enemy "plans" is a forecast.** "From 01:30 to 03:00 the enemy plans to launch up to 40 ballistic
+  missiles …" was drawn as a ballistic missile at Dnipro; it is now tagged as a forecast, like the nightly
+  assessments.
+
 ## 1.41.1 — 2026-10-06
 
 ### Changed

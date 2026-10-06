@@ -127,7 +127,12 @@ raises it is deliberately narrow:
 - **Never raises it:** a nightly *assessment* — "Загальна оцінка загроз на ніч…", "#обстановка",
   "Запуск може відбутись у будь-який момент", "ймовірні додаткові запуски". These are forecasts.
   They are tagged `forecast`, stripped of their threat tags on the server, and filtered again on the
-  client. Tested in `tests/test_tagging.py`.
+  client. Tested in `tests/test_tagging.py`. What the enemy is said to *plan* ("ворог планує запустити …") is
+  a forecast too (1.41.2).
+- **Never raises it, never draws anything:** a live tracker explaining rather than reporting — an example
+  ("до прикладу — напрямок Бровари …"), a lesson ("розповім про балістику"), the channel describing its own
+  method ("якщо ціль знищена над Києвом …"). On 6 Oct 2026 such an example became a ballistic missile at
+  Brovary and the region's "shelter now" push. Tested in `tests/test_talk_about_the_sky.py`.
 - The banner **cancels itself** as soon as a later post lifts it (`відбій`, `посадка`, "загроза
   минула") and never outlives 20 minutes without a new report.
 

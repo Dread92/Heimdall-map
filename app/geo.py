@@ -681,13 +681,40 @@ def looks_like_summary(t):
     return bool(SUMMARY_RX.search(t))
 
 
+# 1.41.2: talk ABOUT the sky, from the live trackers themselves. On 6 Oct 2026, between two waves, @chyste_nebo
+# wrote three posts on how ballistics works: "Поки вас тут багато, я дещо розповім про балістику", then "До
+# прикладу- напрямок Бровари і все що за ними може бути ціль ми не вгадаємо з вами … Балістика відносна штука",
+# then "І останнє по цій темі. Я описую ціль до зникнення … Якщо ціль знищена над Києвом …". The example became a
+# ballistic missile heading for Brovary — and with it the "shelter now" push for the region — and the last post two
+# shoot-downs, over Kyiv and Bila Tserkva. An example, a lesson or the channel describing its own method names
+# places and weapons, and none of it is something seen in the sky. Any one of these signs is enough.
+EXPLAIN_RX = re.compile(
+    r"(?:до|для)\s+прикладу|\bнаприклад\b|\bприміром\b|"                      # for example
+    r"розпов(?:ім|ідаю|імо)\b|поясн(?:ю|юю|юємо|имо)\b|лікбез|пам'?ятк|"          # I'll tell you, I explain, a primer
+    r"по\s+ці[йї]\s+темі|на\s+цю\s+тему|"                                      # on this topic
+    r"не\s+вгада\w*|не\s+чекайте\s+точн|відносна\s+(?:штука|річ)|"              # we won't guess, don't expect accuracy
+    r"якщо\s+(?:ви\s+)?(?:побачили|побачите|бачите|почули|почуєте|чуєте)\s+(?:\S+\s+){0,2}?(?:напис|надпис|сирен|тривог|слово)|"
+    r"\bя\s+(?:описую|буду\s+писати|даю\s+точки)|"                                # the channel on its own method
+    r"якщо\s+ціль\s+(?:\S+\s+)?(?:знищен|збит)", re.I)                          # a supposed outcome
+# What the enemy is said to plan: "Від 01:30 по 03:00 ворог планує запустити загалом до 40 балістичних ракет по
+# Києву/Київщині, Харкову, Дніпрі" (same night) drew a ballistic missile at Dnipro. A plan is not a launch. Not a bare
+# "планує": the channels also use it for a glide ("КАБ планує на …").
+PLAN_RX = re.compile(r"(?:ворог|противник|рф|росі\w*|окупант\w*)\s+план\w*|"
+                     r"план\w*\s+(?:запустити|атакувати|завдати|застосувати)", re.I)
+
+
+def looks_like_explainer(t):
+    """An example, a lesson, the channel's own method, or the enemy's supposed plan — never a position."""
+    return bool(EXPLAIN_RX.search(t) or PLAN_RX.search(t))
+
+
 def looks_like_news(t):
     """A post about something rather than a sighting of something — whatever threat words it contains.
 
     Policy and money, a long post, a retrospective tally, an event, a court case; or the voice of a report
     (who said it, what happened as a result, when). A news item that mentions ballistic missiles in its fourth
     sentence used to put a ballistic missile on the map and light the red strip telling people to shelter."""
-    if NEWS_RX.search(t) or NEWS_STRONG_RX.search(t) or len(t) > NEWS_MAX_CHARS or looks_like_summary(t):
+    if NEWS_RX.search(t) or NEWS_STRONG_RX.search(t) or len(t) > NEWS_MAX_CHARS or looks_like_summary(t) or looks_like_explainer(t):
         return True
     soft = len(NEWS_SOFT_RX.findall(t))
     return soft >= 2 or (soft >= 1 and len(t) > NEWS_SOFT_LONG)
@@ -1482,7 +1509,7 @@ def _parse_for_channel(channel, text):
     # A notice that is plainly not about the sky — a press release, a metro timetable — places nothing, whichever
     # channel posted it and whichever parser would read it. (The softer news signs are left to the tagger: a live
     # tracker's short post can say "поранені" and still be a live report.)
-    if NEWS_STRONG_RX.search(_norm(text)):
+    if NEWS_STRONG_RX.search(_norm(text)) or looks_like_explainer(_norm(text)):
         return []
     fn = CHANNEL_PARSER.get(channel)
     if fn:

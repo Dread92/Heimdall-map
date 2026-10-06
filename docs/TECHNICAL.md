@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.41** · last updated 2026-10-06 (1.41.1)
+**Documented version: 1.41** · last updated 2026-10-06 (1.41.2)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -411,8 +411,11 @@ from a preview. The preview reader skips a channel the API is reading (`api_chan
 `Telegram.ingest()` skips posts already stored, runs `tag_feed_text()` and
 `is_relevant()` (news, fundraising, culture → dropped), stores the post with the **offline** English (§8) and
 publishes a `feed` event. Tagging order matters: forecasts first (`FORECAST_RX` — "оцінка загроз", "може
-відбутись у будь-який момент" — never raise anything), then the news guard (`geo.looks_like_news`: strong news
-words, reported speech and consequences, length, summaries), then threat tags. `banderol_missiles` removes
+відбутись у будь-який момент", and since 1.41.2 what the enemy "plans": "ворог планує запустити …" — never raise
+anything), then the news guard (`geo.looks_like_news`: strong news words, reported speech and consequences, length,
+summaries, and since 1.41.2 `looks_like_explainer` — a live tracker talking *about* the sky: "до прикладу",
+"розповім про балістику", "по цій темі", "я описую ціль", "якщо ціль знищена …", "ворог планує"), then threat
+tags. `parse_for_channel` applies `looks_like_explainer` to every channel's parser, so none of it is ever a mark. `banderol_missiles` removes
 `cruise_missiles` and `unspecified_missiles`.
 
 ### 7.3 From post to mark (`geo.py`)
