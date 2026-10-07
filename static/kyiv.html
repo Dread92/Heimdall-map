@@ -1005,7 +1005,7 @@ body.lite #mycard,body.lite .panel{background:#000;border-color:#666}body.lite .
   <button class="mi" id="supbtn" type="button" data-t="m_support">Support the project</button>
   <a class="mi" id="tgbtn" data-t="m_tg" target="_blank" rel="noopener" hidden>Community on Telegram</a>
   <button class="mi" id="aboutbtn" type="button" data-t="m_about">About · disclaimer</button>
-  <div class="mi bt" id="buildtag">v1.43</div>
+  <div class="mi bt" id="buildtag">v1.44</div>
 </div>
 <div class="panel" id="lay" hidden role="dialog" aria-labelledby="layh"><div class="pgrab"></div>
   <div class="ph"><b id="layh" data-t="m_layers">Map layers</b><button type="button" class="px" data-close="lay" data-t-aria="btn_close" aria-label="Close">✕</button></div>
@@ -2768,7 +2768,7 @@ function alertMap(active,k){
   return {cls,per};
 }
 // 1.43: the oblasts the map covers come from the server (the dashboard switches them); Kyiv and its oblast aside
-function scopeRegs(){ const sc=(S&&S.scope)||['14','31','10','25','20','19','24','4','18','22','9']; return sc.filter(u=>u!=='14'&&u!=='31'); }
+function scopeRegs(){ const sc=(S&&S.scope)||['14','31','10','25','20','19','24','4','18','22','9','17']; return sc.filter(u=>u!=='14'&&u!=='31'); }
 // the reader's oblasts: the one picked, and the ones the watched places are in — a regional channel's warning is for them
 function myOblasts(){ const o=new Set([MYOBL.uid]); for(const p of Object.values(SLOTS)) if(p){ const u=unitAt(p.lon,p.lat); if(u&&u.obl) o.add(u.obl==='31'?'14':u.obl); } return o; }
 function applyAlertMap(am){ for(const [el,c] of am.cls) if(el.getAttribute('class')!==c) el.setAttribute('class',c); }
@@ -2920,7 +2920,7 @@ function renderStats(){ if(!STATS) return; const el=$('stats'); if(!el) return; 
 // =====================================================================================
 // ---------------------------------------------------------------------------------------------------
 // The contacts (CONTACT) and the footer (footerHTML, shareApp) are in static/i18n.js since 1.39, shared with Light.
-const APP_VERSION='1.43';
+const APP_VERSION='1.44';
 const DONATE=CONTACT.ngo;
 const ls=(k,v)=>{try{return v===undefined?localStorage.getItem(k):(localStorage.setItem(k,v),v);}catch(e){return null;}};
 

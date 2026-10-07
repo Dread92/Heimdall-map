@@ -285,8 +285,9 @@ def test_an_oblast_heading_does_not_become_a_marker():
     next line was actually about."""
     ms = geo.parse_for_channel("eRadarrua", ERADAR)
     assert not [m for m in ms if m["place"] == "область" and m["oblast_uid"] == "14"]
-    # the Poltava line names a town the gazetteer does not have, so ITS oblast fallback is legitimate
-    assert [m["oblast_uid"] for m in ms if m["place"] == "область"] == ["19"]
+    # the Poltava line names a village: 1.44, Poltava's villages are read under "Полтавщина" (it used to be the oblast)
+    assert not [m for m in ms if m["place"] == "область"]
+    assert [(m["place"], m["oblast_uid"]) for m in ms if m["oblast_uid"] == "19"] == [("Ромодан", "19")]
 
 
 def test_the_weapon_belongs_to_the_line_that_names_it():

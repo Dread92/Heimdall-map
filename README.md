@@ -5,12 +5,12 @@
 # Heimdall
 
 **Unofficial air-raid and drone tracker for Kyiv, Kyiv oblast and the oblasts around it — and, since 1.43, Odesa,
-Kharkiv and Dnipro oblasts.**
+Kharkiv and Dnipro oblasts (1.44: Mykolaiv too).**
 *Formerly Clear Sky — same app, same address, new name (1.29).*
 
 A single Python service (standard library only) reads the official «Повітряна тривога» alert data raion
-by raion, and eleven public Telegram channels — the Air Force, the live trackers of the Kyiv sky, and one tracker
-each for Chernihiv, Odesa, Cherkasy, Kharkiv and Dnipro — parses the Ukrainian (and Russian) text, and shows what was reported in two ways: **Tactical** (`/m`), the full map with the evidence
+by raion, and sixteen public Telegram channels — the Air Force, the live trackers of the Kyiv sky, and one tracker
+each for Chernihiv, Odesa, Cherkasy, Kharkiv, Dnipro, Sumy, Mykolaiv, Poltava, Vinnytsia and Zhytomyr — parses the Ukrainian (and Russian) text, and shows what was reported in two ways: **Tactical** (`/m`), the full map with the evidence
 behind every mark, and **Light** (`/light`), one place, its raion's official status and what is within 30 km.
 
 > ### ⚠ This is not an official warning system
@@ -135,7 +135,7 @@ technical reference, updated with every patch.
 | `bind` | `0.0.0.0` | Set to `127.0.0.1` to keep it on this machine only. |
 
 Environment variables and every other key: [docs/TECHNICAL.md §5](docs/TECHNICAL.md#5-runtime-configuration-and-secrets).
-The eleven default channels are in code (`AUTHORITATIVE_CHANNELS`), not in the config; the dashboard adds others
+The sixteen default channels are in code (`AUTHORITATIVE_CHANNELS`), not in the config; the dashboard adds others
 (on trial until you put them on the map), switches any of them off, or reads one through the Telegram API.
 
 ## HTTP API
@@ -236,9 +236,10 @@ still opened on the old address that Heimdall has moved (with a button that take
 ## Sources
 
 The official «Повітряна тривога» data by raion (api.ukrainealarm.com, or its keyless proxy siren.pp.ua), with
-the ubilling mirror as a stand-in; and eleven public Telegram channels: @kyiv_airdef, @chyste_nebo,
+the ubilling mirror as a stand-in; and sixteen public Telegram channels: @kyiv_airdef, @chyste_nebo,
 @kievinfo_kyiv, @war_monitor, @eRadarrua, the Air Force @kpszsu, and the regional trackers @chernihiv_nebo,
-@monitoringodesa, @chyste_nebocherkasy, @radar_kharkov and @RadarDnepr.
+@monitoringodesa, @chyste_nebocherkasy, @radar_kharkov, @RadarDnepr, @kabusumy, @air_alert_mk, @PoltavaRadar,
+@vinnytsiappo and @zt_radar.
 Villages and city districts of the regional trackers' oblasts: [GeoNames](https://www.geonames.org/) (CC BY 4.0).
 What each one gives and how it is parsed: [docs/TECHNICAL.md §6–7](docs/TECHNICAL.md#6-official-alert-data).
 

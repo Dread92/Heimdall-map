@@ -188,7 +188,9 @@ THREAT_TAGS = {n for n, _ in FEED_TAGS}
 # picture; kpszsu is the Air Force itself. None of them sets an alert's colour — see OFFICIAL_ALERTS_FROM_TELEGRAM.
 AUTHORITATIVE_CHANNELS = ["kyiv_airdef", "chyste_nebo", "kievinfo_kyiv", "war_monitor", "eRadarrua", "kpszsu",
                           # 1.43: one live tracker per oblast — Chernihiv, Odesa, Cherkasy, Kharkiv, Dnipro
-                          "chernihiv_nebo", "monitoringodesa", "chyste_nebocherkasy", "radar_kharkov", "RadarDnepr"]
+                          "chernihiv_nebo", "monitoringodesa", "chyste_nebocherkasy", "radar_kharkov", "RadarDnepr",
+                          # 1.44: Sumy, Mykolaiv, Poltava, Vinnytsia, Zhytomyr
+                          "kabusumy", "air_alert_mk", "PoltavaRadar", "vinnytsiappo", "zt_radar"]
 
 # 1.43: the dashboard groups the channels by the oblast they speak for, and switches an oblast on or off as a whole.
 # "31" is Kyiv — the city and its oblast, always on; "ua" the channels that cover the whole country. A channel's
@@ -196,9 +198,11 @@ AUTHORITATIVE_CHANNELS = ["kyiv_airdef", "chyste_nebo", "kievinfo_kyiv", "war_mo
 CHANNEL_HOME_DEFAULT = {"kyiv_airdef": "31", "chyste_nebo": "31", "kievinfo_kyiv": "31",
                         "war_monitor": "ua", "eRadarrua": "ua", "kpszsu": "ua",
                         "chernihiv_nebo": "25", "monitoringodesa": "18", "chyste_nebocherkasy": "24",
-                        "radar_kharkov": "22", "RadarDnepr": "9"}
+                        "radar_kharkov": "22", "RadarDnepr": "9",
+                        "kabusumy": "20", "air_alert_mk": "17", "PoltavaRadar": "19", "vinnytsiappo": "4", "zt_radar": "10"}
 # The preview of the "Чисте небо" network's channels is switched off: with the Telegram API configured, read that way.
-CHANNEL_VIA_DEFAULT = {"chyste_nebocherkasy": "api"}
+# 1.44: so is @kabusumy's (Sumy).
+CHANNEL_VIA_DEFAULT = {"chyste_nebocherkasy": "api", "kabusumy": "api"}
 
 # Whether a Telegram post may start or end an alert. It may not. The colour of the alert — red, yellow,
 # green — comes only from the official «Повітряна тривога» data (alerts.in.ua / ukrainealarm, or the ubilling
@@ -238,8 +242,8 @@ KYIV_RE = re.compile(r"київ|столиц|бровар|бориспіл|бу�
 REGION_UIDS = {"14", "31", "10", "25", "20", "19", "24", "4"}
 # 1.43: the oblasts the map covers. Kyiv and the six around it, as before, and the three with a tracker of their own —
 # Odesa 18, Kharkiv 22, Dnipro 9. The dashboard switches any oblast on or off (State.region_set); this set is what
-# in_scope reads, updated in place.
-DEFAULT_SCOPE = REGION_UIDS | {"18", "22", "9"}
+# in_scope reads, updated in place. 1.44: Mykolaiv 17, with its tracker.
+DEFAULT_SCOPE = REGION_UIDS | {"18", "22", "9", "17"}
 SCOPE_UIDS = set(DEFAULT_SCOPE)
 # channels that speak for one surrounding oblast (their posts are "region", not "kyiv", unless Kyiv is named)
 REGION_CHANNELS = {"cherkasy_alerts", "cherkasy_monitor", "poltavskaODA", "zhytomyrskaODA", "chernihiv_alert", "Zhytomyr_alert", "sumy_alert", "sumy_alerts"}
@@ -386,7 +390,7 @@ def build_id():
 
 # The version the front end shows in its footer, kept here too so /api/version can answer "what is actually
 # running" without anybody reading it off a screenshot. tests/test_version.py pins the two to each other.
-APP_VERSION = "1.43"
+APP_VERSION = "1.44"
 APP_NAME = "Heimdall"
 BUILD = None    # filled at startup
 
@@ -2181,6 +2185,10 @@ class State:
                 if m.get("needs_context"):
                     if ctx and pts and (pts - ctx[0]).total_seconds() <= 8 * 60:
                         m.update(lon=ctx[1]["lon"], lat=ctx[1]["lat"], place=ctx[1]["place"], oblast_uid=ctx[1].get("oblast_uid"), pos_ts=ctx[2])
+                        if ctx[1].get("type") == "guided_aerial_bombs" and m.get("status") == "down":
+                            # 1.44: "Впали" after a guided-bomb report (@kabusumy) — the bombs hit the ground; nothing was
+                            # shot down
+                            m.update(status="impact", type="guided_aerial_bombs")
                         ev = dict(m.get("evidence") or {}); ev["position"] = dict(ev.get("position") or {}, matched=ctx[1].get("place"), place=ctx[1].get("place"))
                         m["evidence"] = ev
                     else:
@@ -3922,7 +3930,8 @@ class Telegram(threading.Thread):
                 if rep:
                     self.state.store.af_save(post_id, ch, dt, rep)
             self.state.store.air_save(post_id, ch, dt, parse_air_report(text), text)
-            tags = tag_feed_text(text, ch)
+            # 1.44: tagged as the reader sees it — without the channel's signature ("💪 Телеграм канал ППО Вінниця")
+            tags = tag_feed_text(_clean_post(text), ch)
             if not is_relevant(text, tags, ch):
                 self.state.store.mark_seen(post_id)
                 continue          # news, fundraising, culture… — not an air-threat post, not stored

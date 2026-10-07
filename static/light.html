@@ -285,7 +285,7 @@ async function loadLM(){
   return LM;
 }
 // 1.43: the raions of Odesa, Kharkiv and Dnipro oblasts — fetched only for a place there
-async function loadLMX(o){ if(!LM||LM.x||!['18','22','9'].includes(o)) return false;
+async function loadLMX(o){ if(!LM||LM.x||!['18','22','9','17'].includes(o)) return false;
   try{ const x=await (await fetch('/static/light-map-x.json')).json(); LM.x=1; LMR=LMR.concat(x.raions.map(r=>({...r,rings:r.p.map(unflat)}))); return true; }catch(e){ return false; } }
 const kproj=(lon,lat)=>[(lon-LM.center[0])*LM.kx,-(lat-LM.center[1])*LM.ky];   // the outlines' own km grid
 function inRings(x,y,rings){ let c=false;

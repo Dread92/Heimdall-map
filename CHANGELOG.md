@@ -2,6 +2,23 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.44.0 — 2026-10-07
+
+### Added
+- **Five more regional trackers, on the map**: Sumy (@kabusumy — guided bombs and drones, village by village; read
+  through the Telegram API, its web preview is off), Mykolaiv (@air_alert_mk), Poltava (@PoltavaRadar), Vinnytsia
+  (@vinnytsiappo) and Zhytomyr (@zt_radar). Every oblast on the map now has its own tracker, Kyiv's aside.
+- **Mykolaiv oblast joins the map**; the Light page finds the raion of a place there.
+- **Their villages** (GeoNames), read like those of 1.43's oblasts: only in a post from that oblast's tracker or one
+  that names the oblast. "🛵 Полтавщина – реактивний Ромодан" is now at Ромодан, not the middle of the oblast.
+
+### Fixed
+- A channel's signature under every post ("💪 Телеграм канал ППО Вінниця", "Вінниця Радар | Підписатись") was read
+  as a place — a target on Vinnytsia under each report. The line is cut before the post is read.
+- "Впали" after guided bombs is where they hit, never "shot down". "Не фіксується" ends a Poltava target. "Летять
+  високо" is not the village of Високе. "З Дніпропетровщини на Світлогірське" from Poltava is Poltava's Світлогірське.
+- Two pending corpus cases changed reading (Коломак keyed with its raion, Ромодан placed) — to re-verify.
+
 ## 1.43.1 — 2026-10-07
 
 ### Fixed

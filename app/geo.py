@@ -435,6 +435,7 @@ REGIONAL_STOP = frozenset("""
 тихе рай хутір слобода комуна травневе жовтневе першотравневе робітниче радгоспне ракетне ракета ударне бойове
 спокійне дачне дачное лісовий лесной залізничне вокзальне аеропорт заводське промінь світанок схід сонце сонячне
 буде будет будуть будут жовтий жовтого жовта жовтої жовтий червоний червоного червона червоної зелений зеленого зелена
+високо низько далі ближче
 """.split())      # 1.43.1: "відбій буде" (Будеї, Odesa) and the alert levels ("жовтий рівень": Жовте; "червоний": Червоне)
 
 # 1.43.1: an oblast's or a district's adjective is not a village called after it: "Київська область" is not Київське
@@ -908,7 +909,8 @@ STATUS_RX = [("down", re.compile(r"збит|знищен|мінус|ліквід
              # Only a post that says nothing but fire — "пожежа в Дарницькому районі", "горить склад" — lands here.
              ("fire", re.compile(r"пожеж|пожар|займанн|загорянн|загорін|горить|горит\b|горіння", re.I)),  # narrowed by FIRE_EVENT_RX
              # 1.43.1: "Без фиксации", "Больше не фиксируется" (@radar_kharkov) — the tracker no longer sees it
-             ("lost", re.compile(r"втрачен|зник|не спостеріга|загубл|без\s+фіксаці|більше\s+не\s+фіксу", re.I)),
+             # 1.44: "Не фіксується." on its own (@PoltavaRadar) — at the start of a sentence; "загроз не фіксується" is not
+             ("lost", re.compile(r"втрачен|зник|не спостеріга|загубл|без\s+фіксаці|більше\s+не\s+фіксу|(?:^|(?<=[.!?\n]))\s*не\s+фіксу", re.I)),
              ("clear", re.compile(r"чисто|небо чисте|чист[еиої]\w*\s+небо", re.I))]
 
 
@@ -1429,7 +1431,7 @@ def prepare(text, channel=None):
 _DASH_RX = re.compile(r"([а-яіїєґыэъ']{3,})(\s*[-–]\s*)(?=([а-яіїєґыэъ']{3,}(?:\s+[а-яіїєґыэъ']{3,})?))")
 
 
-_AREA_PRE = re.compile(r"(?:район[іуеа]?|р-ні|р-не|між|поміж|околиц\w*)\s+$")
+_AREA_PRE = re.compile(r"(?:район[іуеа]?|р-ні|р-не|між|поміж|околиц\w*|сектор[іуа]?)\s+$")   # 1.44: "в секторі Іллінці - Оратів"
 
 
 def _route_arrows(t, uid=None):
@@ -1520,6 +1522,10 @@ def parse_post(text, home=None):
                 mtype, type_ev = name, {"matched": sm_.group(0), "method": "keyword"}
                 break
         ctx_uid = obl[1] if obl else home
+        # 1.44: "Реактивний БпЛА з Дніпропетровщини на Світлогірське" (@PoltavaRadar): the oblast named is where it came
+        # FROM, and the place it goes to is the Poltava village, not the Dnipro one of the same name
+        if home and seg_obl and seg_obl[1] != home and re.search(r"(?:\bз|\bіз|\bзі|\bвід)\s+$", seg[:seg_obl[0]]):
+            ctx_uid = home
         seg = _route_arrows(seg, ctx_uid)
         places = _find_places(seg, ctx_uid)
         # split at course keyword

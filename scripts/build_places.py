@@ -5,7 +5,7 @@
 The two files are GeoNames' Ukraine dumps (https://download.geonames.org/export/dump/UA.zip and
 .../alternatenames/UA.zip, CC BY 4.0 — attribution in docs/TECHNICAL.md). Without arguments both are downloaded.
 
-1.43. The gazetteer in app/geo.py holds the towns the Air Force and the Kyiv trackers name — a few hundred. A
+1.43 (1.44: and Sumy, Mykolaiv, Poltava, Vinnytsia, Zhytomyr). The gazetteer in app/geo.py holds the towns the Air Force and the Kyiv trackers name — a few hundred. A
 regional tracker names villages: "2 реакти від Куликівки на Лихачів", "Стрюково", "Троицкое", "БпЛА на Лесное -
 Пятихатки". This file holds every populated place of those oblasts with its Ukrainian name, its Russian name (the
 Odesa and Kharkiv channels write in Russian) and the raion it is in. geo.py matches these names ONLY in a post from
@@ -25,8 +25,10 @@ import zipfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# GeoNames admin1 code → the app's oblast uid. Only the oblasts that have a regional channel (1.43).
-ADMIN1 = {"02": "25", "01": "24", "17": "18", "07": "22", "04": "9"}
+# GeoNames admin1 code → the app's oblast uid. Only the oblasts that have a regional channel (1.43; 1.44: Sumy, Mykolaiv,
+# Poltava, Vinnytsia, Zhytomyr).
+ADMIN1 = {"02": "25", "01": "24", "17": "18", "07": "22", "04": "9",
+          "21": "20", "16": "17", "18": "19", "23": "4", "27": "10"}
 
 # GeoNames admin2 (the raions of the 2020 reform) → the short Ukrainian label shown after a name several villages share
 RAION = {
@@ -43,6 +45,16 @@ RAION = {
     ("04", "1202"): "Дніпровський р-н", ("04", "1204"): "Кам'янський р-н", ("04", "1206"): "Криворізький р-н",
     ("04", "1208"): "Нікопольський р-н", ("04", "1210"): "Самарівський р-н", ("04", "1212"): "Павлоградський р-н",
     ("04", "1214"): "Синельниківський р-н",
+    ("21", "5902"): "Конотопський р-н", ("21", "5904"): "Охтирський р-н", ("21", "5906"): "Роменський р-н",
+    ("21", "5908"): "Сумський р-н", ("21", "5910"): "Шосткинський р-н",
+    ("16", "4802"): "Баштанський р-н", ("16", "4804"): "Вознесенський р-н", ("16", "4806"): "Миколаївський р-н",
+    ("16", "4808"): "Первомайський р-н",
+    ("18", "5302"): "Кременчуцький р-н", ("18", "5304"): "Лубенський р-н", ("18", "5306"): "Миргородський р-н",
+    ("18", "5308"): "Полтавський р-н",
+    ("23", "0502"): "Вінницький р-н", ("23", "0504"): "Гайсинський р-н", ("23", "0506"): "Жмеринський р-н",
+    ("23", "0508"): "Могилів-Подільський р-н", ("23", "0510"): "Тульчинський р-н", ("23", "0512"): "Хмільницький р-н",
+    ("27", "1802"): "Бердичівський р-н", ("27", "1804"): "Житомирський р-н", ("27", "1806"): "Коростенський р-н",
+    ("27", "1808"): "Звягельський р-н",
 }
 
 # Kharkiv city's districts and microdistricts, which @radar_kharkov names post after post. GeoNames has them as city

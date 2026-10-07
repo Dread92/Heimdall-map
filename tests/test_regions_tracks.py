@@ -106,7 +106,7 @@ def test_everyday_words_are_not_villages():
         assert geo.parse_for_channel(ch, text) == [], text
     # an oblast's adjective is not the village named after the oblast
     assert all(m["place"] != "Київське" for m in geo.parse_for_channel("RadarDnepr", "Київська область, 2 шахеди"))
-    assert [m["place"] for m in geo.parse_for_channel("RadarDnepr", "1 шахед на Київське")] == ["→ Київське"]
+    assert [m["place"] for m in geo.parse_for_channel("RadarDnepr", "1 шахед на Київське")] == ["→ Київське (Синельниківський р-н)"]
 
 
 def test_a_town_of_the_next_oblast_over_a_hamlet_of_the_same_name():

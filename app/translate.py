@@ -398,11 +398,18 @@ _PROMO = re.compile(
 _TAIL_JUNK = re.compile(r"(?:\s*[|·•/]\s*)?(?:[\u2190-\u27bf\U0001f000-\U0001faff\ufe0f\u2600-\u26ff\s]|@[\w_]+)+$")
 
 
+# 1.44: a channel's signature line — "Вінниця Радар | Підписатись", "🔄 Моніторинг Миколаїв | Підписатись", "💪 Телеграм
+# канал ППО Вінниця". Cut from the "Підписатись" alone, the channel's name stayed, and the parser drew a target at
+# Vinnytsia under every post of @vinnytsiappo. The whole line goes (never the first: that is the warning).
+_SIGN_LINE = re.compile(r"\n[^\n]{0,80}\|\s*п[іо]дпи[сш]\w*[^\n]*|\n[^\n\w]{0,6}телеграм[\s-]+канал\b[^\n]*", re.I)
+
+
 def strip_promo(text):
     """Cut the channel's advertising tail off a post, keeping the warning itself."""
     if not text:
         return text
-    t = _PROMO.sub("", text)
+    t = _SIGN_LINE.sub("", text)
+    t = _PROMO.sub("", t)
     t = _TAIL_JUNK.sub("", t)          # trailing "| ❤️", "⚠️ @monitor_ukr", stray separators
     t = re.sub(r"[ \t]+\n", "\n", t)
     t = re.sub(r"\n{3,}", "\n\n", t)

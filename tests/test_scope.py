@@ -22,10 +22,11 @@ SRC = open(os.path.join(ROOT, "app", "server.py"), encoding="utf-8").read()
 
 # ── the channels ───────────────────────────────────────────────────────────────────────────────────────
 def test_the_default_channels_and_only_them():
-    # 1.43: the six of Kyiv and the country, and one live tracker for each oblast that has one
+    # 1.43: the six of Kyiv and the country, and one live tracker for each oblast that has one (1.44: ten oblasts)
     assert set(server.AUTHORITATIVE_CHANNELS) == {
         "war_monitor", "eRadarrua", "kyiv_airdef", "chyste_nebo", "kievinfo_kyiv", "kpszsu",
-        "chernihiv_nebo", "monitoringodesa", "chyste_nebocherkasy", "radar_kharkov", "RadarDnepr"}
+        "chernihiv_nebo", "monitoringodesa", "chyste_nebocherkasy", "radar_kharkov", "RadarDnepr",
+        "kabusumy", "air_alert_mk", "PoltavaRadar", "vinnytsiappo", "zt_radar"}
     assert set(server.CHANNEL_HOME_DEFAULT) == set(server.AUTHORITATIVE_CHANNELS)
 
 

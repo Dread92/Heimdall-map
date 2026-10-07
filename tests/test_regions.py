@@ -163,16 +163,17 @@ def test_a_name_several_villages_share_is_the_one_near_the_channels_last_report_
 
 def test_the_regional_gazetteer_is_built_from_geonames_and_kept_off_the_map_labels():
     doc = json.loads(_read("data/regional_places.json"))
-    assert set(doc["oblasts"]) == {"25", "24", "18", "22", "9"} and "GeoNames" in doc["_about"]
+    assert set(doc["oblasts"]) == {"25", "24", "18", "22", "9", "20", "17", "19", "4", "10"} and "GeoNames" in doc["_about"]
     assert "Лихачів" in geo.PLACES and "Лихачів" not in list(geo.PLACES)       # looked up, never iterated
     assert "geonames.org" in DOC.lower() and "build_places.py" in DOC
 
 
 def test_the_light_page_fetches_the_far_raions_only_for_a_place_there():
     far = json.loads(_read("static/light-map-x.json"))
-    assert {r["obl"] for r in far["raions"]} == {"18", "22", "9"}
+    assert {r["obl"] for r in far["raions"]} == {"18", "22", "9", "17"}          # 1.44: Mykolaiv
     base = json.loads(_read("static/light-map.json"))
-    assert not {r["obl"] for r in base["raions"]} & {"18", "22", "9"}
+    assert not {r["obl"] for r in base["raions"]} & {"18", "22", "9", "17"}
+    assert "['18','22','9','17'].includes(o)" in LIGHT
     assert "fetch('/static/light-map-x.json')" in LIGHT and "await loadLMX(OBL)" in LIGHT
 
 
