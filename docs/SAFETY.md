@@ -103,6 +103,29 @@ the feed, marked as such, and nothing else — no mark on the map, no banner, no
 the admin, after reading what it posts, puts it on the map. A channel that starts posting rumours can be put
 back on trial or switched off in one click, and its posts leave the map at once.
 
+## A village is read only where it is (1.43)
+
+A regional tracker names villages, and a village's name is rarely unique: there are dozens of Іванівка in Ukraine and
+six in Odesa oblast alone. So the villages of an oblast are matched only in a post from that oblast's own tracker, or
+a sentence that names the oblast — a Kyiv channel's "Іванівка" is nothing. Inside the oblast, a name several villages
+share is placed only when something says which: another place the same post names, the channel's own report of the
+last half hour nearby, or a clear choice (the only city district, the only raion centre, by far the largest). With
+none of those, nothing is drawn — a mark in the wrong village is worse than no mark. A destination nobody can tell
+apart gets no course drawn to it. "In the area of A - B" is an area, never a route.
+
+## A post in Russian says the same thing (1.43)
+
+The Kharkiv and Odesa trackers write in Russian. Their posts are read through the same rules as Ukrainian ones, after
+their words are turned into the Ukrainian ones those rules know; nothing is added that the post did not say, and the
+text the reader sees is the post as written.
+
+## A regional warning is for that oblast (1.43)
+
+A regional tracker's ballistic or MiG-31K report raises the warning strip only for readers in that oblast — the one
+they picked, or one of their watched places. Kharkiv hears ballistic launches from Belgorod every day; Kyiv must not
+be told to take cover for each of them by a Kharkiv channel. The country-wide channels and the Air Force still warn
+everyone, and the official alerts are unaffected.
+
 ## The nuclear event cannot be switched on by accident
 
 The dashboard can cover the map on every page with the radiation symbol (1.32). A false one would be the worst

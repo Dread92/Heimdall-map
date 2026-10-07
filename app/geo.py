@@ -9,11 +9,38 @@ Everything is heuristic: a place gazetteer (oblast centres + towns that the
 Air Force mentions often), oblast adjectives (Вінниччина, Київщина…), compass
 words (курс західний / північно-східний) and "курсом на <place>".
 """
+import json
 import math
+import os
 import re
 
+# 1.43: the villages and city districts of the oblasts that have a channel of their own (data/regional_places.json,
+# built from GeoNames by scripts/build_places.py). Filled at the end of this module; matched only in a regional
+# context — see _find_regional. Their coordinates answer through PLACES like any other place.
+REGIONAL = {}          # key → (lon, lat, oblast uid)
+
+
+class _Gazetteer(dict):
+    """The gazetteer. It iterates — and indexes, and lists on the map — only the core places below; a lookup by name
+    also answers for the regional ones, so every PLACES[name] in the parsers works for a village a regional channel
+    named. Iterating eight thousand villages into the town labels and the regex index would draw them all on the
+    map and match "Буки" or "Іванівка" in a post from Kyiv."""
+    def __getitem__(self, k):
+        try:
+            return dict.__getitem__(self, k)
+        except KeyError:
+            return REGIONAL[k]
+
+    def get(self, k, d=None):
+        v = dict.get(self, k)
+        return v if v is not None else REGIONAL.get(k, d)
+
+    def __contains__(self, k):
+        return dict.__contains__(self, k) or k in REGIONAL
+
+
 # lon, lat, oblast uid
-PLACES = {
+PLACES = _Gazetteer({
     # oblast centres / big cities
     "Київ": (30.52, 50.45, "31"), "Харків": (36.23, 49.99, "22"), "Одеса": (30.73, 46.48, "18"),
     "Дніпро": (35.04, 48.46, "9"), "Запоріжжя": (35.14, 47.84, "12"), "Львів": (24.03, 49.84, "27"),
@@ -206,7 +233,7 @@ PLACES = {
     "Джанкой": (34.39, 45.71, "29"), "Євпаторія": (33.37, 45.20, "29"), "Феодосія": (35.38, 45.03, "29"),
     "Керч": (36.47, 45.35, "29"), "Чорне море": (32.0, 45.5, None), "Азовське море": (36.5, 46.3, None),
     "Київське водосховище": (30.4, 50.9, "14"), "Дністровське водосховище": (27.1, 48.5, "26"),
-}
+})
 
 # oblast adjective stems -> (uid, lon, lat)  (geographic centre of the oblast)
 OBLAST_ADJ = [
@@ -258,7 +285,10 @@ TYPE_RX = [
     # a youth forum in Poltava oblast was drawn as three Tu-95 formations. It has to be the aviation.
     ("strategic_aircraft_activity", re.compile(r"ту-?95|ту-?160|ту-?22|стратегічн\w*\s+авіац|стратегіч\w*\s+борт", re.I)),
     ("tactic_aircraft_activity", re.compile(r"тактичн", re.I)),
-    ("drones", re.compile(r"бпла|шахед|дрон|безпілотн|мопед|герань|реактив|\d+\s*звичайн", re.I)),
+    # 1.43: "2 реакти", "1 реакт" — how the Chernihiv tracker writes a jet drone; FPV, "Молния" and "Ланцет" are the
+    # small strike drones the Kharkiv tracker reports near the front.
+    ("drones", re.compile(r"бпла|шахед|дрон|безпілотн|мопед|герань|реактив|\bреакт(?:и|ів|ом|а|ами)?\b|\bfpv\b|\bфпв\b|"
+                          r"молні[яюїі]|молни[яюи]|ланцет|\d+\s*звичайн", re.I)),
     # A bare rocket emoji means "a missile" on these channels, not "a ballistic missile". Reading it as
     # ballistic gave the loudest treatment in the app — white spike, one-second refresh — to an emoji.
     ("unspecified_missiles", re.compile(r"\U0001f680", re.I)),                                 # 🚀
@@ -268,14 +298,16 @@ TYPE_RX = [
 CLEAR_RX = re.compile(r"відбій|загроза минула|небезпека минула|зникл", re.I)
 ALERT_MSG_RX = re.compile(r"повітрян[а-яіїє]* тривог|відбій|рівень (тривоги|небезпеки)|загроза застосування|(прямуйте|перейдіть|пройдіть) (в|до) укритт|небезпека минула|оголошен[оа] тривог", re.I)
 MOVE_RX = re.compile(r"курс|напрям|летить|летять|летіла|рухаєт|у бік|в бік|пролітає|проходить|заходить|повз |\bнад\s|поблизу|в районі|\bбіля|з боку|зі сторони|→|➡", re.I)
-COUNT_RX = re.compile(r"(\d{1,3})\s*(?:х|x|×)\b|(\d{1,3})\s+(?:ударн\w*\s+|реактивн\w*\s+|звичайн\w*\s+)*(?:бпла|шахед|дрон|ракет|каб|реактив|бандерол)", re.I)
+COUNT_RX = re.compile(r"(\d{1,3})\s*(?:х|x|×)\b|(\d{1,3})\s+(?:ударн\w*\s+|реактивн\w*\s+|звичайн\w*\s+)*(?:бпла|шахед|дрон|ракет|каб|реакт|бандерол)", re.I)
+# a jet-powered drone: "реактивний", and the Chernihiv tracker's "реакт" / "реакти" (1.43)
+JET_RX = re.compile(r"реактив|\bреакт(?:и|ів|ом|а|ами)?\b|jet", re.I)
 GROUP_RX = re.compile(r"\bгруп", re.I)
 
 VOWELS = "аяуюоеиіїєь"
 
 
 def _norm(s):
-    return s.lower().replace("’", "'").replace("ʼ", "'").replace("`", "'")
+    return s.lower().replace("’", "'").replace("ʼ", "'").replace("`", "'").replace("ё", "е")
 
 
 def _stem(name):
@@ -327,6 +359,15 @@ ALT = {"Північний міст": [r"\bпівнічн\w{0,3}\s+м[іо]ст\
        "Санжійка": ["санжейк"], "Татарбунари": ["татарбунар"], "Овідіополь": ["овидиополь"],
        "Білгород-Дністровський": ["белгород-днестровск", "бєлгород-днєстровськ"]}
 
+# 1.43: the Russian spelling of the cities, for the channels that write in Russian (Kharkiv, Odesa). The villages'
+# Russian names come with the regional gazetteer. Not "лозов": "Русскую Лозовую" is a village 130 km from Lozova.
+for _n, _ru in {"Київ": ["киев"], "Харків": ["харьков"], "Дніпро": ["днепр"], "Чернігів": ["чернигов"], "Миколаїв": ["николаев"],
+                "Запоріжжя": ["запорож"], "Кривий Ріг": ["кривой рог", "кривом рог", "кривого рог"],
+                "Біла Церква": ["белая церк", "белой церк", "белую церк"], "Кам'янське": ["каменск"], "Нікополь": ["никопол"],
+                "Кременчук": ["кременчуг"], "Чугуїв": ["чугуев"], "Ізюм": ["изюм"], "Куп'янськ": ["купянск"],
+                "Вовчанськ": ["волчанск"], "Новомосковськ": ["новомосковск"], "Павлоград": ["павлоград"]}.items():
+    ALT.setdefault(_n, []).extend(_ru)
+
 _INDEX = []  # (stem regex, name)
 for name in PLACES:
     st = _stem(name)
@@ -376,6 +417,234 @@ def _plausible(token, name, base):
     return token[:need] == n[:need]
 
 
+# ---------------------------------------------------------------------------
+# 1.43: the regional gazetteer
+# ---------------------------------------------------------------------------
+# A regional tracker names villages: "2 реакти від Куликівки на Лихачів", "Стрюково", "БпЛА на Лесное - Пятихатки".
+# Every populated place of the oblasts that have a channel of their own is in data/regional_places.json, with its
+# Russian name (the Odesa and Kharkiv channels write in Russian). Those names are matched ONLY in that oblast's
+# context — a post from its own channel, or a post that names the oblast. "Іванівка" alone, from Kyiv, is nothing.
+#
+# Words a regional channel writes that are also some village's name are never read as the village: the compass,
+# the border, "new" ("Новий реактивний з Сумщини" is not a drone over the village of Нове), the weapons.
+REGIONAL_STOP = frozenset("""
+нове нова нові новий новое новая новые новый мирне мирний перемога прогрес зоря зоряне маяк дружба надія кордон
+прикордонне граница пограничное степове степное поле гай луки ставки берег пост коса острів остров кут балка гора
+яр шахта лиман промінь схід захід південь північ восток запад юг север центр центральне центральное східне західне
+північне південне восточное западное южное северное садове зелене веселе весела вільне вільний широке світле ясне
+тихе рай хутір слобода комуна травневе жовтневе першотравневе робітниче радгоспне ракетне ракета ударне бойове
+спокійне дачне дачное лісовий лесной залізничне вокзальне аеропорт заводське промінь світанок схід сонце сонячне
+""".split())
+
+# What a regional channel means by a bare word in its own oblast: "Далі Водосховище" from Chernihiv is the Kyiv
+# reservoir, which Chernihiv oblast borders — not any of the dozens of reservoirs that word could be elsewhere.
+REGIONAL_WORDS = {"25": {"водосховищ": "Київське водосховище"}}
+
+_REG_IDX = {}      # oblast uid → {stem: [(key, alias), …]}
+_REG_META = {}     # key → (kind: X city section / A admin centre / P place, population, raion)
+AMBIG = {}         # an ambiguity token ("≈Іванівка|18") → {"name", "uid", "keys" (best first), "default" (bool)}
+_REG_TOK = re.compile(r"[а-яіїєґыэъ'][а-яіїєґыэъ'\-]*")
+_REG_KM = 60.0     # a name shared by several villages is the one within this of another place the post names
+
+
+def _reg_stem_word(w):
+    w = w.strip("'-")
+    while len(w) > 4 and w[-1] in VOWELS + "ыэ":
+        w = w[:-1]
+    return w
+
+
+def _reg_stems(alias):
+    """The stems an alias is looked up by: its own, and the alternations the core index adds (Лихачів/Лихачова)."""
+    words = alias.split()
+    if len(words) > 1:
+        # every word of a two-word name declines ("Малую Даниловку", "Великої Данилівки"): stems of three letters and up
+        def st3(x):
+            x = x.strip("'-")
+            while len(x) > 3 and x[-1] in VOWELS + "ыэй":
+                x = x[:-1]
+            return x
+        return [" ".join(st3(x) for x in words)]
+    st = _reg_stem_word(alias)
+    out = [st]
+    if st.endswith("ів"):
+        out += [st[:-2] + "ов", st[:-2] + "ев"]
+    elif st.endswith("їв"):
+        out.append(st[:-2] + "єв")
+    elif st.endswith("ін"):
+        out.append(st[:-2] + "ен")
+    elif st.endswith("ок"):
+        out.append(st[:-2] + "к")
+    elif st.endswith("ець"):
+        out.append(st[:-3] + "ц")
+    return out
+
+
+def _ru_variants(alias):
+    """The alias, and how a channel writing in Russian spells a Ukrainian village GeoNames gives no Russian name for:
+    і as и, е or о (Лісне → Лесное, Пісочин → Песочин, Подвірки → Подворки), ї and є as и / е, no apostrophe
+    (П'ятихатки → Пятихатки). Stems drop the endings, so Васищеве and Васищево are already the same word."""
+    out = {alias}
+    if not re.search(r"[іїє'ґ]", alias):
+        return out
+    if "'я" in alias:
+        out.add(alias.replace("'я", "е"))          # Знам'янка → Знаменка
+    base = alias.replace("'", "").replace("ґ", "г").replace("є", "е")
+    slots = [i for i, c in enumerate(base) if c in "іїi"]
+    if len(slots) > 3:
+        slots = slots[:3]
+    combos = [""]
+    for _ in slots:
+        combos = [c + x for c in combos for x in "иео"]
+    for c in combos:
+        b = list(base)
+        for i, x in zip(slots, c):
+            b[i] = x
+        out.add("".join(b).replace("ї", "и"))
+    return out
+
+
+def _load_regional(path=None):
+    path = path or os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "regional_places.json")
+    try:
+        with open(path, encoding="utf-8") as f:
+            doc = json.load(f)
+    except Exception:
+        return
+    core_norm = {}
+    for n, v in dict.items(PLACES):
+        core_norm.setdefault((_norm(n).split(" (")[0], v[2]), n)
+    names = {}
+    for uid, rows in doc.get("oblasts", {}).items():
+        for r in rows:
+            nm = r[0].replace("’", "'").replace("ʼ", "'")
+            names.setdefault(nm, []).append((uid, [nm] + list(r[1:])))
+    idx_all = {}
+    for name, entries in names.items():
+        for i, (uid, r) in enumerate(entries):
+            _, lon, lat, kind, pop, raion, aliases = r
+            core = core_norm.get((_norm(name), uid))
+            if core:
+                key = core               # a town the core gazetteer has: its Russian name now finds it too
+            else:
+                key = name if len(entries) == 1 and name not in PLACES else f"{name} ({raion})" if raion else f"{name} ({uid})"
+                k2, n2 = key, 2
+                while k2 in REGIONAL:
+                    k2, n2 = f"{key} {n2}", n2 + 1
+                key = k2
+                REGIONAL[key] = (lon, lat, uid)
+                _REG_META[key] = (kind, pop, raion)
+            idx = idx_all.setdefault(uid, {})
+            for a in {v for x in aliases for v in _ru_variants(_norm(x))}:
+                if a in REGIONAL_STOP or len(a.replace(" ", "")) < 3:
+                    continue
+                for st in _reg_stems(a):
+                    lst = idx.setdefault(st, [])
+                    if (key, a) not in lst:
+                        lst.append((key, a))
+    _REG_IDX.update(idx_all)
+
+
+def _reg_lookup(idx, words):
+    """Keys whose alias these words (one, or two in a row) are a declined form of."""
+    keys = []
+    if len(words) == 1:
+        w = words[0]
+        if w in REGIONAL_STOP:
+            return []
+        for k in range(0, 4):
+            st = w[:len(w) - k]
+            if len(st) < 3 or (len(st) < 4 and k):
+                break
+            for key, alias in idx.get(st, ()):
+                if (len(st) >= 4 or st == alias) and _plausible(w, alias, st) and key not in keys:
+                    keys.append(key)
+        return keys
+    w1, w2 = words
+    for k1 in range(0, 4):
+        a = w1[:len(w1) - k1]
+        if len(a) < 3:
+            break
+        for k2 in range(0, 4):
+            b = w2[:len(w2) - k2]
+            if len(b) < 3:
+                break
+            for key, alias in idx.get(a + " " + b, ()):
+                if key not in keys:
+                    keys.append(key)
+    return keys
+
+
+def _find_regional(text, uid):
+    """(start, end, [keys]) for every regional name of oblast `uid` the text holds."""
+    idx = _REG_IDX.get(uid)
+    out = []
+    for stem, key in (REGIONAL_WORDS.get(uid) or {}).items():
+        for m in re.finditer(r"(?<![а-яіїєґ'\-])" + re.escape(stem) + r"[а-яіїєґ']{0,3}(?![а-яіїєґ'\-])", text):
+            out.append((m.start(), m.end(), [key]))
+    if not idx:
+        return out
+    toks = [(m.start(), m.end(), m.group(0)) for m in _REG_TOK.finditer(text)]
+    for i, (s0, e0, w) in enumerate(toks):
+        keys = _reg_lookup(idx, [w])
+        if keys:
+            out.append((s0, e0, keys))
+        if i + 1 < len(toks) and not text[e0:toks[i + 1][0]].strip():
+            keys = _reg_lookup(idx, [w, toks[i + 1][2]])
+            if keys:
+                out.append((s0, toks[i + 1][1], keys))
+    return out
+
+
+def _ambig_token(keys, uid, said=""):
+    """Several villages of the oblast share the name: one token, its candidates best first, and whether one of them
+    is clearly the one a post means without more to go on — the only admin centre, the only city district, or a
+    population three times the next."""
+    # the name shown is the one the post used, when one candidate is called that ("Привітне", not the old name of a
+    # renamed village that GeoNames also lists under it)
+    st = _reg_stem_word(_norm(said))[:5]
+    base = next((k.split(" (")[0] for k in keys if st and _norm(k).startswith(st)), keys[0].split(" (")[0])
+    meta = [(k, _REG_META.get(k, ("P", 0, ""))) for k in keys]
+    admin = [k for k, m in meta if m[0] == "A"]
+    city = [k for k, m in meta if m[0] == "X"]
+    pops = sorted(meta, key=lambda x: -x[1][1])
+    default = None
+    if len(city) == 1:
+        default = city[0]            # a channel of the oblast naming a district of its city ("Алексеевка", Kharkiv)
+    elif len(admin) == 1:
+        default = admin[0]
+    elif pops[0][1][1] >= 1000 and pops[0][1][1] >= 3 * (pops[1][1][1] if len(pops) > 1 else 0):
+        default = pops[0][0]
+    rest = [k for k, _ in pops if k != default]
+    if not default:
+        rest.sort(key=lambda k: k.split(" (")[0] != base)     # the candidates called what the post said, first
+    order = ([default] if default else []) + rest
+    tok = f"≈{base}|{uid}|{len(AMBIG)}"
+    AMBIG[tok] = {"name": base, "uid": uid, "keys": order, "default": bool(default)}
+    REGIONAL[tok] = PLACES[order[0]]
+    if len(AMBIG) > 5000:            # tokens are per post; a long-running process must not keep every one
+        for t in list(AMBIG)[:2500]:
+            AMBIG.pop(t, None)
+            REGIONAL.pop(t, None)
+    return tok
+
+
+def _km(a, b):
+    """Distance in km between two (lon, lat) points — flat-earth, fine at the scale of an oblast."""
+    return math.hypot((a[0] - b[0]) * 111.0 * math.cos(math.radians((a[1] + b[1]) / 2)), (a[1] - b[1]) * 111.0)
+
+
+def display_place(name):
+    """What the reader sees for a place key: the ambiguity token's plain name."""
+    if not name:
+        return name
+    pre = "→ " if name.startswith("→ ") else ""
+    n = name[len(pre):]
+    if n in AMBIG:
+        return pre + AMBIG[n]["name"]
+    return name
+
+
 def bearing(lon1, lat1, lon2, lat2):
     y = math.sin(math.radians(lon2 - lon1)) * math.cos(math.radians(lat2))
     x = math.cos(math.radians(lat1)) * math.sin(math.radians(lat2)) - math.sin(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.cos(math.radians(lon2 - lon1))
@@ -409,6 +678,13 @@ def _find_places(text, ctx_uid=None):
                 continue          # "Житомирська область" is the oblast, not the Kyiv metro station
             key = (m.start(), m.end())
             spans.setdefault(key, []).append(name)
+    # 1.43: the villages of the oblast the post is about (its channel's, or the one it names) — only then
+    if ctx_uid and (ctx_uid in _REG_IDX or ctx_uid in REGIONAL_WORDS):
+        for s0, e0, ks in _find_regional(text, ctx_uid):
+            if _OBLAST_NOUN_RX.match(text, e0):
+                continue
+            lst = spans.setdefault((s0, e0), [])
+            lst.extend(k for k in ks if k not in lst)
     # drop spans overlapped by a longer span
     keys = sorted(spans, key=lambda k: (k[0], -(k[1] - k[0])))
     found = []
@@ -420,15 +696,29 @@ def _find_places(text, ctx_uid=None):
         names = spans[k]
         pick = None
         if ctx_uid:
-            for n in names:
-                if PLACES[n][2] == ctx_uid:
-                    pick = n
-                    break
+            own = [n for n in names if PLACES[n][2] == ctx_uid]
+            core = [n for n in own if dict.__contains__(PLACES, n)]
+            if core:
+                pick = core[0]               # the town the core gazetteer lists, over a village of the same name
+            elif len(own) > 1:
+                pick = _ambig_token(own, ctx_uid, text[k[0]:k[1]])
+            elif own:
+                pick = own[0]
         if pick is None:
-            plain = [n for n in names if "(" not in n]
+            plain = [n for n in names if "(" not in n and dict.__contains__(PLACES, n)]
             pick = plain[0] if plain else names[0]
         found.append((k[0], k[1], pick))
     found.sort()
+    # A name several villages share is the one near the other places the same post names ("На Добрянку-Олешню":
+    # the Олешня next to Добрянка, not the one 100 km east). Nothing else near: left to the channel's previous report.
+    fixed = [PLACES[n][:2] for _, _, n in found if n not in AMBIG] or \
+        [PLACES[AMBIG[n]["keys"][0]][:2] for _, _, n in found if n in AMBIG and AMBIG[n]["default"]]
+    if fixed and len(found) > 1:
+        for i, (s0, e0, n) in enumerate(found):
+            if n in AMBIG:
+                best = min(AMBIG[n]["keys"], key=lambda c: min(_km(PLACES[c][:2], f) for f in fixed))
+                if min(_km(PLACES[best][:2], f) for f in fixed) <= _REG_KM:
+                    found[i] = (s0, e0, best)
     return found
 
 
@@ -536,7 +826,7 @@ def _find_oblast(text, positional=False):
 # was drawn ON Vasylkiv, turned south-east, and read as a drone that had already passed it.
 # After "на" a place in the locative says where it is, not where it goes: "на Позняках", "на Троєщині", "на Лісовій".
 _LOC_END = re.compile(r"(?:і|ї|ах|ях|ій)$")
-_DEST_PRE = re.compile(r"(?:\bна|\bв район|\bу район|\bдо|\bв напрямку|\bу напрямку|\bв бік|\bу бік|\bв сторону)\s+$")
+_DEST_PRE = re.compile(r"(?:\bна|\bв район|\bу район|\bдо|\bв напрямку|\bу напрямку|\bв бік|\bу бік|\bв сторону|→|➡️?)\s*$")
 _FROM_PRE = re.compile(r"(?:\bвід|\bз|\bзі|\bповз|\bнад|\bбіля|\bпоблизу|\bрайоні|\bр-ні)\s+$")
 _FROM_COMPASS = re.compile(r"\b(?:з|зі|від)\s+((?:півн|півд|сх|зах)[а-яіїє'-]*(?:[\s-]+(?:сх|зах)[а-яіїє'-]*)?)")
 
@@ -656,7 +946,9 @@ NEWS_STRONG_RX = re.compile(
     r"падінн|збитт|ураженн|атак|наслідк|последств|роботи\s+ппо|работы\s+пво|перехопл)|"
     r"(?:інші|ваші|другие)\s+(?:відео|видео)|надсилайте\s+(?:нам\s+)?(?:відео|фото|новин)|купимо|анонімн\w*\s+бот|"
     r"метрополітен|поїзд\w*\s+курсу|курсують\s+(?:поїзд|потяг|автобус|трамва|тролейбус)|рух\s+поїзд|електричк|"
-    r"(?:червон|синь|зелен)\w*\s+лінії\s+метро|зміни\s+в\s+роботі|рух\s+(?:громадського\s+)?транспорт|графік\w*\s+руху", re.I)
+    r"(?:червон|синь|зелен)\w*\s+лінії\s+метро|зміни\s+в\s+роботі|рух\s+(?:громадського\s+)?транспорт|графік\w*\s+руху|"
+    # 1.43: "Це вже дев'ята атака на цю дільницю від початку вересня" — a story about attacks, not a sighting
+    r"це\s+вже\s+\S+\s+атак|від\s+початку\s+(?:вересня|жовтня|листопада|грудня|січня|лютого|березня|квітня|травня|червня|липня|серпня|року|місяця|тижня)", re.I)
 # Signs of a report. One of them in a short post is normal ("за даними моніторингу, шахед над Броварами");
 # two of them, or one in a long post, is an article.
 NEWS_SOFT_RX = re.compile(
@@ -667,13 +959,24 @@ NEWS_SOFT_RX = re.compile(
     r"президент|зеленськ|кличк|міністр|депутат|голова\s+(?:ова|кмва|ода|оп)\b|\bмер\b", re.I)
 NEWS_SOFT_LONG = 250
 
+# 1.43: a request for money. The regional trackers ask for donations between reports, with a card number: "Читающие
+# Радар Харьков, для канала очень важна финансовая поддержка … MonoBank: 4874 …" named the city in the channel's own
+# name and was drawn as a target over Kharkiv — and kept, card number and all, in the feed. Never a sighting.
+FUNDRAISE_RX = re.compile(r"\b\d{4}\s?\d{4}\s?\d{4}\s?\d{4}\b|monobank|монобанк|приватбанк|privat24|send\.monobank|"
+                          r"\bдонат|задонат|на\s+кав(?:у|усю)\b|на\s+кофе|угост\w*\s+(?:\S+\s+){0,2}?кофе|"
+                          r"(?:фінансов|финансов)\w*\s+(?:підтримк|поддержк)|(?:підтримк|поддержк)\w*\s+канал|"
+                          r"реквізит|реквизит|\bзбір\s+на\s+(?:евак|авто|дрон|позашлях|машин|потреб)", re.I)
+
 
 # The morning tally: "В ніч на 17.09.26 … противник застосував … 8× балістичних ракет по Києву". It is a
 # count of what was fired LAST NIGHT, and it was being drawn as eight ballistic missiles on Kyiv right now,
 # for the 45 minutes the post stayed in the feed. Nothing in a retrospective summary is a live position.
 SUMMARY_RX = re.compile(
     r"застосував|випустив|за\s+минул\w*\s+добу|минул[ої]\W*\s*ноч|в\s+ніч\s+на\s+\d|"
-    r"протягом\s+ноч|за\s+ніч\b|#зведення|за\s+приблизними\s+оцінками|загалом\s+(?:випущ|застосов)", re.I)
+    r"протягом\s+ноч|за\s+ніч\b|#зведення|за\s+приблизними\s+оцінками|загалом\s+(?:випущ|застосов)|"
+    # 1.43: the night's tally relayed by a regional tracker: "Уночі Сили ППО збили 161 ціль ворога … Вдалося знищити або
+    # подавити 117 ударних безпілотників, 5 балістичних ракет" was drawn as ballistic missiles over Dnipro
+    r"(?:уночі|вночі)\s+(?:\S+\s+){0,3}?(?:збил|знищил|подавил)\w*\s+\d+|вдалося\s+(?:знищити|збити|подавити)", re.I)
 
 
 def looks_like_summary(t):
@@ -715,7 +1018,8 @@ def looks_like_news(t):
     Policy and money, a long post, a retrospective tally, an event, a court case; or the voice of a report
     (who said it, what happened as a result, when). A news item that mentions ballistic missiles in its fourth
     sentence used to put a ballistic missile on the map and light the red strip telling people to shelter."""
-    if NEWS_RX.search(t) or NEWS_STRONG_RX.search(t) or len(t) > NEWS_MAX_CHARS or looks_like_summary(t) or looks_like_explainer(t):
+    if NEWS_RX.search(t) or NEWS_STRONG_RX.search(t) or len(t) > NEWS_MAX_CHARS or looks_like_summary(t) or looks_like_explainer(t) \
+            or FUNDRAISE_RX.search(t):
         return True
     soft = len(NEWS_SOFT_RX.findall(t))
     return soft >= 2 or (soft >= 1 and len(t) > NEWS_SOFT_LONG)
@@ -762,13 +1066,13 @@ def _status_markers(t, status):
     for s, e, name in places:
         lon, lat, uid = PLACES[name]
         out.append({"type": mtype, "status": status, "lon": round(lon, 3), "lat": round(lat, 3), "heading": None, "place": name,
-                    "target": None, "count": cnt, "jet": bool(re.search(r"реактив", t)), "oblast_uid": uid,
+                    "target": None, "count": cnt, "jet": bool(JET_RX.search(t)), "oblast_uid": uid,
                     "evidence": {"segment": t.strip(), "type": {"matched": sm.group(0) if sm else status, "method": "outcome keyword"},
                                  "position": {"matched": t[max(0, s - 12):e].strip(), "place": name, "method": "town in gazetteer", "confidence": "high"},
                                  "heading": None, "count": ({"matched": mc.group(0), "method": "number in text"} if mc else None)}})
     if not out and obl:
         out.append({"type": mtype, "status": status, "lon": obl[2], "lat": obl[3], "heading": None, "place": "область",
-                    "target": None, "count": cnt, "jet": bool(re.search(r"реактив", t)), "oblast_uid": obl[1],
+                    "target": None, "count": cnt, "jet": bool(JET_RX.search(t)), "oblast_uid": obl[1],
                     "evidence": {"segment": t.strip(), "type": {"matched": sm.group(0) if sm else status, "method": "outcome keyword"},
                                  "position": {"matched": t[obl[0]:obl[0] + 14], "place": "oblast", "method": "oblast centre (no town named)", "confidence": "low"},
                                  "heading": None, "count": ({"matched": mc.group(0), "method": "number in text"} if mc else None)}})
@@ -984,9 +1288,126 @@ def phase_progress(mtype, phase):
     return (ladder.index(phase) + 1, len(ladder))
 
 
-def parse_post(text):
-    """Return a list of marker dicts for one post (may be empty)."""
-    t = _norm(text)
+# ---------------------------------------------------------------------------
+# 1.43: posts in Russian
+# ---------------------------------------------------------------------------
+# The Kharkiv and Odesa trackers write in Russian ("Шахед отлетел от Харькова снова на Мерефу", "Второй с Нико обл в
+# сторону Березовки"). Every rule in this module reads Ukrainian, so a Russian post is first turned into the Ukrainian
+# words those rules know — the weapons, the outcomes, the prepositions, the courses, the oblasts — and read like any
+# other. Place names are not translated: the regional gazetteer holds each village's Russian name too. The text the
+# reader sees is never changed; only what the parser reads.
+RU_CHANNELS = {"radar_kharkov", "monitoringodesa"}
+_RU_LETTERS = re.compile(r"[ыэъё]", re.I)
+_RU_WORDS = re.compile(r"(?<![а-яіїєґыэъ'])(?:что|это|ещ[её]|снова|возле|около|мимо|сейчас|летит|летят|сторону|направлении|"
+                       r"сбит\w*|сбил\w*|взрыв\w*|движется|двигается|предварительно|внимательно|области|районе|района|"
+                       r"осторожно|уничтож\w*|беспилотн\w*|крылат\w*|баллисти\w*|отбой|тревога|угроза|вдоль|границы|"
+                       r"залетел\w*|подлете|отлетел\w*|развернул\w*)(?![а-яіїєґыэъ'])", re.I)
+_B, _E = r"(?<![а-яіїєґыэъ'])", r"(?![а-яіїєґыэъ'])"
+# (pattern, Ukrainian) — whole words unless the pattern ends in a stem (then the Russian ending stays: the rules read stems)
+_RU_MAP = [(re.compile(_B + a + (_E if whole else ""), re.I), b) for a, b, whole in [
+    # weapons
+    (r"беспилотн", "безпілотн", False), (r"крылат", "крилат", False), (r"баллисти", "балісти", False),
+    (r"искандер", "іскандер", False), (r"кинжал", "кинджал", False), (r"авиабомб", "авіабомб", False),
+    (r"авиаци", "авіаці", False), (r"тактическ", "тактичн", False), (r"стратегическ", "стратегічн", False),
+    (r"сверхзвуков", "надзвуков", False), (r"самол[её]т\w*", "літак", True),
+    # outcomes and states
+    (r"сбит", "збит", False), (r"сбил", "збил", False), (r"уничтож", "знищ", False), (r"взрыв", "вибух", False),
+    (r"прил[её]т", "приліт", False), (r"попадани\w*", "влучання", True), (r"упал\w*", "впав", True),
+    (r"отбой", "відбій", True), (r"угроз\w*", "загроза", True), (r"тревог", "тривог", False),
+    (r"(?:пропал|исчез)\w*", "зник", True), (r"без\s+фиксаци\w*", "без фіксацій", True),
+    (r"предварительно", "попередньо", True), (r"ночью", "вночі", True),
+    # where it goes
+    (r"в\s+сторону", "в бік", True), (r"по\s+направлению\s+к", "в напрямку", True), (r"в\s+направлении", "в напрямку", True),
+    (r"направлени\w*", "напрям", True), (r"летит", "летить", True), (r"летят", "летять", True),
+    (r"(?:движ|двига)\w*", "рухається", True), (r"пролета\w*", "пролітає", True), (r"мимо", "повз", True),
+    (r"(?:возле|около)", "біля", True), (r"рядом\s+с", "біля", True), (r"в\s+р-не", "в районі", True),
+    (r"в\s+районе", "в районі", True), (r"района", "району", True), (r"районе", "районі", True),
+    (r"со\s+стороны", "з боку", True), (r"вдоль", "вздовж", True), (r"границ\w*", "кордону", True),
+    (r"разверну\w*", "розвернувся", True), (r"(?:снова|опять)", "знову", True), (r"ещ[её]", "ще", True),
+    (r"(?:второй|вторая|второго)", "другий", True), (r"(?:новый|новые|новых|новая)", "новий", True),
+    (r"внимательно", "уважно", True), (r"внимание", "увага", True), (r"осторожно", "обережно", True),
+    (r"на\s+подл[её]те", "на підльоті", True), (r"подлета\w*", "підлітає", True), (r"залет\w*", "залетів", True),
+    (r"отлетел\w*", "відлетів", True), (r"высот\w*", "висота", True), (r"снижа\w*", "знижується", True),
+    (r"низко", "низько", True), (r"транзит\w*", "транзитом", True),
+    # the compass — standalone, or as the adjective of a course; never inside a name ("Северная Салтовка")
+    (r"(?:с|со)\s+северо-востока", "з північного сходу", True), (r"(?:с|со)\s+северо-запада", "з північного заходу", True),
+    (r"(?:с|со)\s+юго-востока", "з південного сходу", True), (r"(?:с|со)\s+юго-запада", "з південного заходу", True),
+    (r"(?:с|со)\s+севера", "з півночі", True), (r"(?:с|со)\s+юга", "з півдня", True),
+    (r"(?:с|со)\s+востока", "зі сходу", True), (r"(?:с|со)\s+запада", "з заходу", True),
+    (r"северо-восток\w*", "північно-схід", True), (r"северо-запад\w*", "північно-захід", True),
+    (r"юго-восток\w*", "південно-схід", True), (r"юго-запад\w*", "південно-захід", True),
+    (r"север(?:а|у|е)?", "північ", True), (r"юг(?:а|у|е)?", "південь", True), (r"восток(?:а|у|е)?", "схід", True),
+    (r"запад(?:а|у|е)?", "захід", True),
+    (r"северн\w*(?=\s+(?:направлени|курс|част|окраин))", "північний", True), (r"южн\w*(?=\s+(?:направлени|курс|част|окраин))", "південний", True),
+    (r"восточн\w*(?=\s+(?:направлени|курс|част|окраин))", "східний", True), (r"западн\w*(?=\s+(?:направлени|курс|част|окраин))", "західний", True),
+    # the oblasts ("Нико обл" is how the Odesa tracker writes Mykolaiv oblast)
+    (r"нико\s+обл\w*", "миколаївська область", True), (r"харьковщин", "харківщин", False), (r"харьковск", "харківськ", False),
+    (r"(?:одесщин|одессщин)", "одещин", False), (r"одесск", "одеськ", False), (r"днепропетровщин", "дніпропетровщин", False),
+    (r"днепропетровск", "дніпропетровськ", False), (r"николаевщин", "миколаївщин", False), (r"николаевск", "миколаївськ", False),
+    (r"херсонск", "херсонськ", False), (r"запорожск", "запорізьк", False), (r"(?:донетчин|донечин)", "донеччин", False),
+    (r"донецк", "донецьк", False), (r"луганск", "луганськ", False), (r"сумск", "сумськ", False), (r"полтавск", "полтавськ", False),
+    (r"черкасск", "черкаськ", False), (r"черкасщин", "черкащин", False), (r"кировоградщин", "кіровоградщин", False),
+    (r"кировоградск", "кіровоградськ", False), (r"киевщин", "київщин", False),
+    # "Киевский район" of Kharkiv is a city district, not Kyiv oblast: only the oblast's adjective is turned
+    (r"киевск(?!\w*\s+район)", "київськ", False), (r"черниговщин", "чернігівщин", False), (r"черниговск", "чернігівськ", False),
+    (r"житомирск", "житомирськ", False), (r"(?:винниччин|винничин)", "вінниччин", False), (r"винницк", "вінницьк", False),
+    (r"области", "області", True), (r"брянщин", "брянщин", False),
+    # the small words, last — whole words only
+    (r"из", "з", True), (r"от", "від", True), (r"к", "до", True), (r"и", "і", True), (r"со", "з", True), (r"с", "з", True),
+]]
+
+
+def looks_russian(text):
+    return bool(_RU_LETTERS.search(text or "") or _RU_WORDS.search(text or ""))
+
+
+def ru_to_uk(text):
+    """A Russian post in the words the Ukrainian rules read. Idempotent on Ukrainian text."""
+    for rx, rep in _RU_MAP:
+        text = rx.sub(rep, text)
+    return text
+
+
+def prepare(text, channel=None):
+    """What the parser and the tagger read for a post: the text itself, or for a post in Russian, its Ukrainian reading."""
+    if text and (channel in RU_CHANNELS or looks_russian(text)):
+        return ru_to_uk(text)
+    return text
+
+
+# 1.43: "Любеч-Славутич", "Сновськ-Березна-Куликівка", "Лесное - Пятихатки": two places joined by a dash are a route —
+# where it is, then where it is heading — unless the joined word is itself a place ("Новгород-Сіверський").
+_DASH_RX = re.compile(r"([а-яіїєґыэъ']{3,})(\s*[-–]\s*)(?=([а-яіїєґыэъ']{3,}(?:\s+[а-яіїєґыэъ']{3,})?))")
+
+
+_AREA_PRE = re.compile(r"(?:район[іуеа]?|р-ні|р-не|між|поміж|околиц\w*)\s+$")
+
+
+def _route_arrows(t, uid=None):
+    def one(m):
+        a, b = m.group(1), m.group(3)
+        if _AREA_PRE.search(t[max(0, m.start() - 14):m.start()]):
+            return m.group(0)                # "в районі Котельва - Коломак" is an area between two places, not a course
+        joined = _find_places(f"{a}-{b.split()[0]}", uid)
+        if joined and joined[0][0] == 0 and joined[0][1] >= len(a) + 2:
+            return m.group(0)                # one hyphenated place
+        pb = _find_places(b, uid)
+        if _find_places(a, uid) and pb and pb[0][0] == 0:
+            return f"{a} → "
+        return m.group(0)
+    return _DASH_RX.sub(one, t) if ("-" in t or "–" in t) else t
+
+
+# 1.43: "2 реакти від Куликівки на Лихачів 1 реакт на Добрянку" is two reports on one line: a new one starts where
+# a count of weapons follows the words of the previous one.
+_MULTI_RX = re.compile(r"(?<=[а-яіїєґ'!.])\s+(?=\d{1,3}\s*(?:х\s*|x\s*)?(?:реакт|шахед|бпла|дрон|ракет|каб\b|ударн|калібр|мопед|герань|молні))|"
+                       r"(?<=[а-яіїєґ'])\s*,\s*(?=\d{1,3}\s+[а-яіїєґ])")
+
+
+def parse_post(text, home=None):
+    """Return a list of marker dicts for one post (may be empty). `home` (1.43): the oblast of the regional channel
+    that posted it — whose villages a sentence naming no oblast is read against."""
+    t = _norm(prepare(text))
     t = _drop_clear_sentences(t)
     if CLEAR_RX.search(t) and not re.search(r"бпла|ракет|каб", t):
         return []
@@ -1019,6 +1440,7 @@ def parse_post(text):
         return []
     # split into segments: newlines, ';', ' та ' , ' також '
     segs = [s.strip() for s in re.split(r"\n|;|\bтакож\b|(?<=[а-яіїє.])\s+та\s+(?=[а-яіїє])", t) if s.strip()]
+    segs = [x.strip() for s_ in segs for x in _MULTI_RX.split(s_) if x.strip()]
     # a clause that starts a new oblast (", на Одещині біля …") is its own report — one marker, one justification
     segs = [x.strip() for s_ in segs for x in _OBL_CLAUSE.split(s_) if x.strip()]
     lines = {_hdr_line(x) for x in re.split(r"\n|;", t)}
@@ -1048,7 +1470,9 @@ def parse_post(text):
             if sm_:
                 mtype, type_ev = name, {"matched": sm_.group(0), "method": "keyword"}
                 break
-        places = _find_places(seg, obl[1] if obl else None)
+        ctx_uid = obl[1] if obl else home
+        seg = _route_arrows(seg, ctx_uid)
+        places = _find_places(seg, ctx_uid)
         # split at course keyword
         class _M:  # pseudo-match at a position
             def __init__(self, p): self._p = p
@@ -1057,7 +1481,7 @@ def parse_post(text):
         if cm:
             cm = _M(cm.start(1))
         else:
-            cm = re.search(r"кур(?:с|сом)\b|напрям|летить|летять|рухаєт|у бік|в бік|в сторону|прямує|заходить на|заходять на", seg)
+            cm = re.search(r"кур(?:с|сом)\b|напрям|летить|летять|рухаєт|у бік|в бік|в сторону|прямує|заходить на|заходять на|→|➡", seg)
         if not cm:
             # no course word, but a place it is going to: "реактивний БпЛА на Васильків з північного заходу"
             dst = next((p for p in places if _place_role(seg, p) == "dest"), None)
@@ -1206,7 +1630,7 @@ def parse_post(text):
         if _ph:
             ev["phase"] = {"matched": _ph, "method": "stage named in the post", "confidence": "high"}
         markers.append({"type": mtype, "lon": round(lon, 3), "lat": round(lat, 3), "heading": None if heading is None else round(heading),
-                        "place": where, "target": tgt_name, "target_uid": tgt_uid, "count": cnt, "jet": bool(re.search(r"реактив|jet", seg)),
+                        "place": where, "target": tgt_name, "target_uid": tgt_uid, "count": cnt, "jet": bool(JET_RX.search(seg)),
                         # drawn at the town it is heading to, not where it is: never moved on past it, never read as there
                         "approach": approaching,
                         "alt": alt, "likely": likely,
@@ -1325,7 +1749,7 @@ def _live_lines(text, uid):
         return None
     out = []
     for ln in lines:
-        tl = _join_hyphenated(_norm(ln))
+        tl = _route_arrows(_join_hyphenated(_norm(prepare(ln))), uid)
         if len(tl.split()) > 4:
             return None
         pl = _find_places(tl, uid)
@@ -1345,12 +1769,13 @@ def _parse_live(text, uid):
     split = _live_lines(text, uid)
     if split:
         return [m for ln in split for m in _parse_live(ln, uid)]
-    t = _join_hyphenated(_norm(text))
+    home = uid if uid not in ("31", "14") else None      # 1.43: a regional channel's villages, for parse_post too
+    t = _route_arrows(_join_hyphenated(_norm(prepare(text))), uid)
     kept = _drop_clear_sentences(t)         # "Чисте небо … Київ. Васильків увага" → only Vasylkiv is a warning
     if kept != t and kept.strip():
         text, t = kept, kept
     if len(t.split()) > 8 or re.search(r"курс|напрям|у бік|летить", t):
-        r = parse_post(text)
+        r = parse_post(text, home)
         if r:
             return r
     if re.search(r"укритт|тривог", t) and not re.search(r"курс|йде|летить|над\b", t):
@@ -1366,8 +1791,8 @@ def _parse_live(text, uid):
                               "heading": None, "count": None}}]
     if not places:
         return []
-    if len(t.split()) > 6 and not re.search(r"уважн|йде|летить|на\b", t):
-        return parse_post(text)
+    if len(t.split()) > 6 and not re.search(r"уважн|йде|летить|на\b|бік|→", t):
+        return parse_post(text, home)
     # Where it is, and where it is going, by the words before each place — not "the last place when the post says
     # 'на'", which put "Від Глевахи два на Васильків" on Vasylkiv while it was still at Hlevakha.
     roles = [(p_, _place_role(t, p_)) for p_ in places]
@@ -1410,7 +1835,21 @@ def _parse_live(text, uid):
         pos_ev = {"matched": t[max(0, s - 12):e].strip(), "place": name, "confidence": "low",
                   "method": "only where it is going was given — placed at this channel's previous report when there is one, otherwise drawn at the destination"}
     rm = _ROUTE_RX.search(t)
-    if rm and len(places) >= 2:
+    arrow = t.find("→")
+    if arrow > 0 and len(places) >= 2:
+        # 1.43: a route the post wrote with a dash between two places ("Любеч-Славутич", "Лесное - Пятихатки"): at
+        # the last place before the dash, heading for the first one after it
+        a = [p_ for p_ in places if p_[1] <= arrow]
+        b = [p_ for p_ in places if p_[0] > arrow]
+        if a and b and a[-1][2] != b[0][2]:
+            name, bname = a[-1][2], b[0][2]
+            lon, lat, uid = PLACES[name]
+            blon, blat, _ = PLACES[bname]
+            heading = round(bearing(lon, lat, blon, blat))
+            target, dest_only = bname, False
+            pos_ev = {"matched": name, "place": name, "method": "first place of a route written 'A-B' in the post (gazetteer)", "confidence": "high"}
+            hev = {"matched": t[a[-1][0]:b[0][1]].strip(), "method": "route written 'A - B' in the post: at A, heading for B", "confidence": "medium"}
+    elif rm and len(places) >= 2:
         a = _find_places(rm.group(1), uid)
         b = _find_places(rm.group(2), uid)
         if a and b and a[0][2] != b[0][2]:
@@ -1426,7 +1865,7 @@ def _parse_live(text, uid):
              "place": ("→ " + name) if dest_only else name, "target": target, "count": cnt,
              "approach": dest_only, "dest_only": dest_only,
              "alt": alt,
-             "jet": bool(re.search(r"реактив", t)), "oblast_uid": uid, "live": True, "likely": (None if stated else "drones"),
+             "jet": bool(JET_RX.search(t)), "oblast_uid": uid, "live": True, "likely": (None if stated else "drones"),
              "evidence": {"segment": t.strip(), "type": {"matched": ("✈️" if plane else "(none)"), "method": kind_ev, "confidence": ("high" if (stated and not plane) else "medium" if plane else "none")},
                           "position": pos_ev,
                           "heading": hev, "count": None}}]
@@ -1483,7 +1922,7 @@ def parse_eradar(text):
         s_, e_, name = pl[0]
         lon, lat, uid = PLACES[name]
         out.append({"type": "drones", "status": None, "lon": round(lon, 3), "lat": round(lat, 3), "heading": None, "place": name, "target": name,
-                    "count": cnt, "jet": bool(re.search(r"реактив", t)), "oblast_uid": uid, "live": True,
+                    "count": cnt, "jet": bool(JET_RX.search(t)), "oblast_uid": uid, "live": True,
                     "evidence": {"segment": m.group(0).strip(), "type": {"matched": "(none)", "method": "channel convention: @eRadarrua live lines count drones heading for a town"},
                                  "position": {"matched": seg.strip(), "place": name, "method": "town the drones are reported heading to (drawn at the town — they are approaching it, exact position not given)", "confidence": "medium"},
                                  "heading": {"matched": None, "method": "not given — target town only", "confidence": "none"}, "count": {"matched": m.group(1), "method": "number before 'на'"}}})
@@ -1504,8 +1943,53 @@ CHANNEL_PARSER = {"povitryanatrivogaaa": parse_arrows, "kyiv_airdef": parse_kyiv
 NEVER_PLACED = frozenset({"strategic_aircraft_activity", "mig31k_departure"})
 
 
+# 1.43: the oblast each regional channel speaks for — set by the server from its channel list. A channel with a
+# home oblast is read as a live tracker of that oblast: its villages, its city districts, its bare names.
+CHANNEL_HOME = {}
+
+
 def parse_for_channel(channel, text):
-    return [m for m in _parse_for_channel(channel, text) if m.get("type") not in NEVER_PLACED]
+    text = prepare(text, channel)
+    return [_settle(m) for m in _parse_for_channel(channel, text) if m.get("type") not in NEVER_PLACED]
+
+
+def _settle(m):
+    """A marker whose place is a name several villages share: the candidates go with it, best first, for the server
+    to pick the one nearest the channel's previous report — or, with nothing to go on and no clear default (the only
+    raion/hromada centre, the only city district, by far the largest), to leave it off the map."""
+    for fld in ("place", "target"):
+        v = m.get(fld)
+        if not v or not isinstance(v, str):
+            continue
+        pre = "→ " if v.startswith("→ ") else ""
+        a = AMBIG.get(v[len(pre):])
+        if not a:
+            continue
+        first = a["keys"][0]
+        if fld == "place" or m.get("dest_only"):
+            m["candidates"] = [[k, PLACES[k][0], PLACES[k][1], PLACES[k][2]] for k in a["keys"][:8]]
+            m["ambiguous"] = not a["default"]
+            m[fld] = pre + first
+            ev = dict(m.get("evidence") or {})
+            pos = dict(ev.get("position") or {})
+            pos["place"] = first
+            pos["method"] = (pos.get("method") or "") + (" — several villages of the oblast are called " + a["name"] +
+                             ("; the raion/hromada centre or by far the largest, unless the channel's previous report is near another"
+                              if a["default"] else "; placed only next to this channel's previous report"))
+            pos["confidence"] = "medium" if a["default"] else "low"
+            ev["position"] = pos
+            m["evidence"] = ev
+        elif a["default"]:
+            m[fld] = first
+        else:
+            # where it is going is a name several villages share and nothing says which: no course is drawn to it
+            m[fld] = None
+            m["heading"] = None
+            ev = dict(m.get("evidence") or {})
+            ev["heading"] = {"matched": a["name"], "confidence": "none",
+                             "method": "the destination is a name several villages of the oblast share — no course drawn"}
+            m["evidence"] = ev
+    return m
 
 
 # 1.41.2: "1 знищено.\nНаступний Нивки" (@eRadarrua, 6 Oct 2026, 05:45) is two reports: one target destroyed —
@@ -1534,7 +2018,7 @@ def _parse_for_channel(channel, text):
     # A notice that is plainly not about the sky — a press release, a metro timetable — places nothing, whichever
     # channel posted it and whichever parser would read it. (The softer news signs are left to the tagger: a live
     # tracker's short post can say "поранені" and still be a live report.)
-    if NEWS_STRONG_RX.search(_norm(text)) or looks_like_explainer(_norm(text)):
+    if NEWS_STRONG_RX.search(_norm(text)) or looks_like_explainer(_norm(text)) or FUNDRAISE_RX.search(_norm(text)):
         return []
     sp = _split_next(text)
     if sp:
@@ -1543,15 +2027,19 @@ def _parse_for_channel(channel, text):
         if after:
             nxt = _parse_for_channel(channel, after)
             if not nxt and len(after.split()) <= 6:
-                nxt = _parse_live(after, "14")          # "Наступний Нивки": a bare place is the next target's position
+                # "Наступний Нивки": a bare place is the next target's position — in the channel's own oblast
+                nxt = _parse_live(after, CHANNEL_HOME.get(channel) or "14")
             out += [m for m in nxt if not m.get("status")]
         return out
     fn = CHANNEL_PARSER.get(channel)
+    home = CHANNEL_HOME.get(channel)
+    if not fn and home and home not in ("31", "14"):
+        fn = lambda t: _parse_live(t, home)          # noqa: E731
     if fn:
         r = fn(text)
         if r:
             return r
-    return parse_post(text)
+    return parse_post(text, home if home not in ("31", "14") else None)
 
 
 # ---------------------------------------------------------------------------
@@ -1748,3 +2236,6 @@ if __name__ == "__main__":
               "Швидкісна ціль на Дніпропетровщині курсом на Павлоград!", "КАБи на Донеччину.", "Відбій загрози балістики.",
               "Група ударних БпЛА на Сумщині курсом на Полтавщину", "Зліт МіГ-31К з аеродрому Саваслейка"]:
         print(s, "\n   ->", parse_post(s))
+
+
+_load_regional()

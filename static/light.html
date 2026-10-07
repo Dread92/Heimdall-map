@@ -272,7 +272,7 @@ const unflat=f=>{const o=[];for(let i=0;i<f.length;i+=2)o.push([f[i],f[i+1]]);re
 let KD=null, VIL=null;   // Kyiv districts; villages and neighbourhoods (names on the map only — nothing is sent)
 async function loadExtras(){
   try{ if(!KD) KD=(await (await fetch('/static/kyiv-districts.json')).json()).districts; }catch(e){}
-  try{ if(!VIL){ const pl=PLACES||(await (await fetch('/api/places?oblast=31,14,10,25,19,24,4,20')).json()).places;
+  try{ if(!VIL){ const pl=PLACES||(await (await fetch('/api/places?oblast=scope')).json()).places;
     // settlements and neighbourhoods only (no plants, parks, roads, aliases)
     VIL=pl.filter(x=>!/громада|берег|столиця|водосховище|море|АЕС|ГЕС|ТЕЦ|траса|шосе|проспект|вулиц|міст\b|аеропорт|район$|очисн|парк|станці|завод|\s(південь|північ|схід|захід|центр)$/i.test(x.name)); } }catch(e){}
 }
@@ -284,6 +284,9 @@ async function loadLM(){
   catch(e){ LM=null; }
   return LM;
 }
+// 1.43: the raions of Odesa, Kharkiv and Dnipro oblasts — fetched only for a place there
+async function loadLMX(o){ if(!LM||LM.x||!['18','22','9'].includes(o)) return false;
+  try{ const x=await (await fetch('/static/light-map-x.json')).json(); LM.x=1; LMR=LMR.concat(x.raions.map(r=>({...r,rings:r.p.map(unflat)}))); return true; }catch(e){ return false; } }
 const kproj=(lon,lat)=>[(lon-LM.center[0])*LM.kx,-(lat-LM.center[1])*LM.ky];   // the outlines' own km grid
 function inRings(x,y,rings){ let c=false;
   for(const g of rings) for(let i=0,j=g.length-1;i<g.length;j=i++){ const [xi,yi]=g[i],[xj,yj]=g[j];
@@ -709,7 +712,7 @@ async function usePlace(){ const p=place(); OBL=null; OBL_GUESS=false; PR=null; 
   if(!p) return;
   await loadLM(); PR=raionsOf(p);
   if(PR&&PR.length) OBL=PR[0].obl;
-  else { OBL=await oblastOf(p); if(!OBL){ OBL='31'; OBL_GUESS=true; } }
+  else { OBL=await oblastOf(p); if(OBL&&await loadLMX(OBL)){ PR=raionsOf(p); } if(!OBL){ OBL='31'; OBL_GUESS=true; } }
   paint();
   await loadExtras(); paint(); }
 
@@ -718,7 +721,7 @@ let PICK=null, PLACES=null;
 async function openPick(slot){ PICK=slot; $('pick').classList.add('show');
   $('pickh').textContent=SLOT_ICO[slot]+' '+t('sl_'+slot); $('pickp').textContent=t('lt_noplace_b');
   $('pickq').placeholder=t('lt_search'); $('pickq').value=''; $('pickloc').textContent=t('lt_locate');
-  if(!PLACES){ try{ PLACES=(await (await fetch('/api/places?oblast=31,14,10,25,19,24,4,20')).json()).places
+  if(!PLACES){ try{ PLACES=(await (await fetch('/api/places?oblast=scope')).json()).places
       .filter(x=>!/громада|берег|столиця|водосховище|море|АЕС|ГЕС|траса|шосе|проспект/i.test(x.name)); }catch(e){ PLACES=[]; } }
   listPick(''); setTimeout(()=>$('pickq').focus(),80); }
 function listPick(q){ const s=q.trim().toLowerCase();

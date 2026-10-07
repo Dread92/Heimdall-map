@@ -131,6 +131,9 @@ UID_BY_UK = {uk: uid for uid, uk, _ in OBLASTS}
 NAME_BY_UID = {uid: (uk, en) for uid, uk, en in OBLASTS}
 
 
+OBLAST_EN = {uid: en for uid, _, en in OBLASTS}
+
+
 def norm_uk(s):
     """Loose match of an oblast name in Ukrainian (handles 'Київська', 'м. Київ', 'Крим'...)."""
     s = (s or "").strip().lower()
@@ -183,7 +186,19 @@ THREAT_TAGS = {n for n, _ in FEED_TAGS}
 #
 # kyiv_airdef, chyste_nebo and kievinfo_kyiv are the fast live trackers; war_monitor and eRadarrua the wider
 # picture; kpszsu is the Air Force itself. None of them sets an alert's colour — see OFFICIAL_ALERTS_FROM_TELEGRAM.
-AUTHORITATIVE_CHANNELS = ["kyiv_airdef", "chyste_nebo", "kievinfo_kyiv", "war_monitor", "eRadarrua", "kpszsu"]
+AUTHORITATIVE_CHANNELS = ["kyiv_airdef", "chyste_nebo", "kievinfo_kyiv", "war_monitor", "eRadarrua", "kpszsu",
+                          # 1.43: one live tracker per oblast — Chernihiv, Odesa, Cherkasy, Kharkiv, Dnipro
+                          "chernihiv_nebo", "monitoringodesa", "chyste_nebocherkasy", "radar_kharkov", "RadarDnepr"]
+
+# 1.43: the dashboard groups the channels by the oblast they speak for, and switches an oblast on or off as a whole.
+# "31" is Kyiv — the city and its oblast, always on; "ua" the channels that cover the whole country. A channel's
+# home oblast is also how its posts are read: its villages, its city districts (geo.CHANNEL_HOME).
+CHANNEL_HOME_DEFAULT = {"kyiv_airdef": "31", "chyste_nebo": "31", "kievinfo_kyiv": "31",
+                        "war_monitor": "ua", "eRadarrua": "ua", "kpszsu": "ua",
+                        "chernihiv_nebo": "25", "monitoringodesa": "18", "chyste_nebocherkasy": "24",
+                        "radar_kharkov": "22", "RadarDnepr": "9"}
+# The preview of the "Чисте небо" network's channels is switched off: with the Telegram API configured, read that way.
+CHANNEL_VIA_DEFAULT = {"chyste_nebocherkasy": "api"}
 
 # Whether a Telegram post may start or end an alert. It may not. The colour of the alert — red, yellow,
 # green — comes only from the official «Повітряна тривога» data (alerts.in.ua / ukrainealarm, or the ubilling
@@ -194,7 +209,7 @@ OFFICIAL_ALERTS_FROM_TELEGRAM = False
 LIVE_TAGS = {"drones", "ballistic_missiles", "cruise_missiles", "banderol_missiles", "unspecified_missiles",
              "mig31k_departure", "strategic_aircraft_activity", "tactic_aircraft_activity", "guided_aerial_bombs", "clear"}
 # Mixed channels: live tracking at night, city news in the day. Only short posts that read as a threat are kept.
-NEWS_CHANNELS = {"kyiv_times_official", "eRadarrua", "kievinfo_kyiv"}
+NEWS_CHANNELS = {"kyiv_times_official", "eRadarrua", "kievinfo_kyiv", "RadarDnepr"}
 
 
 def is_relevant(text, tags, channel=None):
@@ -221,6 +236,11 @@ def is_relevant(text, tags, channel=None):
 KYIV_RE = re.compile(r"київ|столиц|бровар|бориспіл|бучан|фастів|вишгород|обух|біла церкв", re.I)
 # oblasts around Kyiv: Zhytomyr 10, Chernihiv 25, Sumy 20, Poltava 19, Cherkasy 24, Vinnytsia 4
 REGION_UIDS = {"14", "31", "10", "25", "20", "19", "24", "4"}
+# 1.43: the oblasts the map covers. Kyiv and the six around it, as before, and the three with a tracker of their own —
+# Odesa 18, Kharkiv 22, Dnipro 9. The dashboard switches any oblast on or off (State.region_set); this set is what
+# in_scope reads, updated in place.
+DEFAULT_SCOPE = REGION_UIDS | {"18", "22", "9"}
+SCOPE_UIDS = set(DEFAULT_SCOPE)
 # channels that speak for one surrounding oblast (their posts are "region", not "kyiv", unless Kyiv is named)
 REGION_CHANNELS = {"cherkasy_alerts", "cherkasy_monitor", "poltavskaODA", "zhytomyrskaODA", "chernihiv_alert", "Zhytomyr_alert", "sumy_alert", "sumy_alerts"}
 REGION_RE = re.compile(r"житомир|чернігів|чернигов|сум(и|ськ|щин)|полтав|черкас|вінниц|ніжин|прилук|конотоп|шостк|охтир|ромн|кременчу|лубн|миргород|умань|уман[сь]|золотонош|бердич|коростен|звягел|гайсин|жмерин|тульчин", re.I)
@@ -232,7 +252,7 @@ SCOPE_KM = 330          # Kyiv to the far edge of Sumy or Vinnytsia oblast
 def in_scope(m):
     uid = m.get("oblast_uid")
     if uid is not None:
-        return str(uid) in REGION_UIDS
+        return str(uid) in SCOPE_UIDS
     if m.get("lat") is None or m.get("lon") is None:
         return True          # an outcome with no place of its own is resolved against its track later
     return haversine_km(50.45, 30.52, m["lat"], m["lon"]) <= SCOPE_KM
@@ -268,6 +288,9 @@ def tag_feed_text(text, channel=None):
     # never light the ballistic banner. It is kept, with this one tag.
     if channel in AF_SUMMARY_CHANNELS and parse_af_report(text):
         return ["af_summary"]
+    # 1.43: a post in Russian is tagged by its Ukrainian reading — the same words the parser reads (geo.prepare)
+    if geo:
+        text = geo.prepare(text, channel)
     # a retraction carries no threat of its own — "балістика була хибною відміткою" is not a ballistic warning
     if is_retraction(text):
         return ["retract"] + (["kyiv"] if KYIV_RE.search(text) else [])
@@ -293,7 +316,7 @@ def tag_feed_text(text, channel=None):
                 tags.append(m["type"])
             if m.get("oblast_uid") in ("14", "31") and "kyiv" not in tags:
                 tags.append("kyiv")
-            if m.get("oblast_uid") in REGION_UIDS and "region" not in tags:
+            if m.get("oblast_uid") in REGION_UIDS and "region" not in tags:     # the oblasts around Kyiv, for the feed filter
                 tags.append("region")
         if ms and "geo" not in tags:
             tags.append("geo")
@@ -334,7 +357,8 @@ def parse_iso(s):
 
 
 BUILD_FILES = ("static/kyiv.html", "static/light.html", "static/light-map.json", "static/glyphs.js", "static/i18n.js", "static/live.js",
-               "static/nuke.js", "static/sw.js", "app/server.py", "app/geo.py", "app/push.py")
+               "static/nuke.js", "static/sw.js", "app/server.py", "app/geo.py", "app/push.py",
+               "static/light-map-x.json", "data/regional_places.json")
 
 
 def build_id():
@@ -358,7 +382,7 @@ def build_id():
 
 # The version the front end shows in its footer, kept here too so /api/version can answer "what is actually
 # running" without anybody reading it off a screenshot. tests/test_version.py pins the two to each other.
-APP_VERSION = "1.42"
+APP_VERSION = "1.43"
 APP_NAME = "Heimdall"
 BUILD = None    # filled at startup
 
@@ -1484,6 +1508,8 @@ class Store:
     # How each channel is used (State.channel_mode, 1.31): "map" feeds the marks, the banners and every count;
     # "trial" only shows its posts in the feed, flagged; "off" is not read and not shown. Set by State.
     mode_of = staticmethod(lambda ch: "map")
+    # 1.43: the oblast a regional channel speaks for ("" for Kyiv and the country-wide ones). Set by State.
+    home_of = staticmethod(lambda ch: "")
 
     def feed_since(self, minutes, limit=200, translate=True):
         """The posts the marks, the banners, the statistics and the summaries are computed from: only channels
@@ -1532,8 +1558,12 @@ class Store:
             tags = json.loads(r[4])
             if mode == "trial":
                 tags = [t for t in tags if t in ("kyiv", "region", "ua")] + ["trial"]
-            out.append({"post_id": r[0], "channel": r[1], "ts": r[2], "text": _clean_post(r[3]), "tags": tags,
-                        "text_en": r[5] or (_tr.translate_offline(r[3]) if _tr else r[3]), "text_fr": r[6], "en_mt": bool(r[7])})
+            item = {"post_id": r[0], "channel": r[1], "ts": r[2], "text": _clean_post(r[3]), "tags": tags,
+                    "text_en": r[5] or (_tr.translate_offline(r[3]) if _tr else r[3]), "text_fr": r[6], "en_mt": bool(r[7])}
+            home = self.home_of(r[1])
+            if home and home not in ("31", "ua"):
+                item["home"] = home          # a regional channel's warning is for the readers of that oblast (1.43)
+            out.append(item)
             if len(out) >= limit:
                 break
         return out
@@ -1687,15 +1717,21 @@ class State:
         self._nuke_arm = None
         self._channels_load()
         store.mode_of = self.channel_mode
+        store.home_of = self.channel_home
 
     # -- the Telegram channels read (1.31) -------------------------------------------------------------------------
-    # The six channels in AUTHORITATIVE_CHANNELS are the defaults, in code. The dashboard can switch any of them
-    # to trial or off, send one through the Telegram API, and add others — stored in kv "channels", so they
-    # survive a restart and a deploy. A channel added from the dashboard starts on TRIAL: its posts appear in the
-    # feed, flagged, but put nothing on the map, raise no banner and send no alert until it is switched to the
-    # map. A channel nobody vetted must not be able to put a drone over somebody's house.
+    # The channels in AUTHORITATIVE_CHANNELS are the defaults, in code. The dashboard can switch any of them to trial
+    # or off, send one through the Telegram API, and add others — stored in kv "channels", so they survive a restart
+    # and a deploy. A channel added from the dashboard starts on TRIAL: its posts appear in the feed, flagged, but put
+    # nothing on the map, raise no banner and send no alert until it is switched to the map. A channel nobody vetted
+    # must not be able to put a drone over somebody's house.
+    #
+    # 1.43: every channel belongs to a compartment — the oblast it speaks for ("home"), Kyiv ("31"), or the whole
+    # country ("ua") — and the dashboard switches a compartment on or off as a whole (kv "regions"). An oblast switched
+    # off leaves the map (SCOPE_UIDS) and its channels are not read; Kyiv cannot be switched off.
     CHANNEL_MODES = ("map", "trial", "off")
-    MAX_CHANNELS = 30
+    MAX_CHANNELS = 40
+    LOCKED_REGIONS = {"31"}
 
     def _channels_load(self):
         try:
@@ -1703,48 +1739,143 @@ class State:
         except Exception:
             saved = {}
         api = {c.lower() for c in (self.cfg.get("telegram_api_channels") or [])}
+        tga = TelegramAPI.configured(self.cfg)
         by = {e["name"].lower(): e for e in saved.get("list", []) if isinstance(e, dict) and e.get("name")}
         out = []
         for c in AUTHORITATIVE_CHANNELS:
             e = by.pop(c.lower(), {})
+            dflt_via = "api" if (c.lower() in api or (tga and CHANNEL_VIA_DEFAULT.get(c) == "api")) else "web"
             out.append({"name": c, "builtin": True, "mode": e.get("mode") if e.get("mode") in self.CHANNEL_MODES else "map",
-                        "via": e.get("via") if e.get("via") in ("web", "api") else ("api" if c.lower() in api else "web")})
+                        "via": e.get("via") if e.get("via") in ("web", "api") else dflt_via,
+                        "home": self._home_ok(e.get("home")) or CHANNEL_HOME_DEFAULT.get(c, "")})
         for e in by.values():
             out.append({"name": e["name"], "builtin": False, "mode": e.get("mode") if e.get("mode") in self.CHANNEL_MODES else "trial",
-                        "via": e.get("via") if e.get("via") in ("web", "api") else "web", "added": e.get("added")})
+                        "via": e.get("via") if e.get("via") in ("web", "api") else "web", "added": e.get("added"),
+                        "home": self._home_ok(e.get("home")) or ""})
         self.channel_list = out
         self._deleted = {k: v for k, v in (saved.get("deleted") or {}).items()}
-        self._modes = {e["name"].lower(): e["mode"] for e in out}
+        self._regions_load()
+        self._apply_channels()
+
+    def _regions_load(self):
+        try:
+            r = json.loads(self.store.kv_get("regions") or "null") or {}
+        except Exception:
+            r = {}
+        self._regions_off = {x for x in (r.get("off") or []) if self._home_ok(x) and x not in self.LOCKED_REGIONS}
+        self._regions_on = {x for x in (r.get("on") or []) if self._home_ok(x) and x != "ua"}
+
+    @staticmethod
+    def _home_ok(h):
+        """A compartment id: "ua", "31", or an oblast uid the map knows (not Kyiv oblast — it is part of "31")."""
+        h = str(h or "")
+        return h if (h == "ua" or h == "31" or (h in OBLAST_EN and h != "14")) else ""
+
+    def region_on(self, rid):
+        if rid in self.LOCKED_REGIONS:
+            return True
+        if rid in self._regions_off:
+            return False
+        if rid == "ua" or rid in self._regions_on:
+            return True
+        return rid in DEFAULT_SCOPE
+
+    def scope_uids(self):
+        return {"31", "14"} | {u for u in OBLAST_EN if u not in ("31", "14") and self.region_on(u)}
+
+    def _apply_channels(self):
+        """Everything that follows from the list and the switches: each channel's effective mode, the oblasts the map
+        keeps, and the home oblast each regional channel's posts are read against."""
+        self._modes = {}
+        homes = {}
+        for e in self.channel_list:
+            h = e.get("home") or ""
+            self._modes[e["name"].lower()] = "off" if (h and not self.region_on(h)) else e["mode"]
+            if h and h not in ("31", "ua"):
+                homes[e["name"]] = h
+        sc = self.scope_uids()
+        SCOPE_UIDS.clear()
+        SCOPE_UIDS.update(sc)
+        if geo:
+            geo.CHANNEL_HOME.clear()
+            geo.CHANNEL_HOME.update(homes)
+        self._health_res = None
 
     def _channels_save(self):
         builtin = {c.lower(): c for c in AUTHORITATIVE_CHANNELS}
+        api = {c.lower() for c in (self.cfg.get("telegram_api_channels") or [])}
+        tga = TelegramAPI.configured(self.cfg)
         keep = []
         for e in self.channel_list:
             if e["builtin"]:
-                dflt_via = "api" if e["name"].lower() in {c.lower() for c in (self.cfg.get("telegram_api_channels") or [])} else "web"
-                if e["mode"] == "map" and e["via"] == dflt_via:
+                dflt_via = "api" if (e["name"].lower() in api or (tga and CHANNEL_VIA_DEFAULT.get(e["name"]) == "api")) else "web"
+                if e["mode"] == "map" and e["via"] == dflt_via and e.get("home", "") == CHANNEL_HOME_DEFAULT.get(e["name"], ""):
                     continue            # a default left as it is: nothing to store
-            keep.append({k: e[k] for k in ("name", "mode", "via", "added") if k in e})
+            keep.append({k: e[k] for k in ("name", "mode", "via", "added", "home") if k in e})
         cut = (datetime.now(timezone.utc) - timedelta(hours=6)).isoformat()
         self._deleted = {k: v for k, v in self._deleted.items() if v >= cut and k not in builtin}
         self.store.kv_set("channels", json.dumps({"list": keep, "deleted": self._deleted}, ensure_ascii=False))
-        self._modes = {e["name"].lower(): e["mode"] for e in self.channel_list}
-        self._health_res = None
+        self.store.kv_set("regions", json.dumps({"off": sorted(self._regions_off), "on": sorted(self._regions_on)}))
+        self._apply_channels()
+        self._marker_cache.clear()                      # the posts are read against the homes and the scope just set
+        self._impact_cache.clear()
+        self._impact_res.clear()
         self.publish({"kind": "channels", "ts": now_iso()})       # the feed, the marks and the pages follow at once
 
     def channel_mode(self, ch):
         """map / trial / off. A channel removed from the dashboard stays off for the hours its posts could still
-        count; a channel never registered (an old post, the demo) counts as before 1.31."""
+        count; a channel never registered (an old post, the demo) counts as before 1.31. A channel whose oblast is
+        switched off is off (1.43)."""
         k = (ch or "").lower()
         m = self._modes.get(k)
         if m:
             return m
         return "off" if k in self._deleted else "map"
 
-    def channels_read(self, via):
-        return [e["name"] for e in self.channel_list if e["mode"] != "off" and e["via"] == via]
+    def channel_home(self, ch):
+        e = next((x for x in self.channel_list if x["name"].lower() == (ch or "").lower()), None)
+        return (e or {}).get("home") or CHANNEL_HOME_DEFAULT.get(ch or "", "")
 
-    def channel_update(self, action, name, mode=None, via=None):
+    def channels_read(self, via):
+        return [e["name"] for e in self.channel_list if self.channel_mode(e["name"]) != "off" and e["via"] == via]
+
+    def region_set(self, rid, on):
+        """The dashboard's switch for a whole oblast (1.43). Returns (ok, message)."""
+        rid = self._home_ok(rid)
+        if not rid:
+            return False, "not an oblast"
+        if rid in self.LOCKED_REGIONS:
+            return False, "Kyiv is always on"
+        with self.lock:
+            if on:
+                self._regions_off.discard(rid)
+                if rid != "ua" and rid not in DEFAULT_SCOPE:
+                    self._regions_on.add(rid)
+            else:
+                self._regions_on.discard(rid)
+                self._regions_off.add(rid)
+        self._channels_save()
+        return True, "ok"
+
+    def regions(self):
+        """For the dashboard: every compartment, on or off, with what is in it."""
+        homes = {}
+        for e in self.channel_list:
+            homes.setdefault(e.get("home") or "", []).append(e["name"])
+        out = [{"id": "31", "name": "м. Київ і Київська область", "en": "Kyiv city and oblast", "on": True, "locked": True,
+                "channels": homes.get("31", [])},
+               {"id": "ua", "name": "Уся Україна", "en": "All Ukraine", "on": self.region_on("ua"), "locked": False,
+                "channels": homes.get("ua", [])}]
+        for uid, uk, en in OBLASTS:
+            if uid in ("31", "14"):
+                continue
+            out.append({"id": uid, "name": uk, "en": en, "on": self.region_on(uid), "locked": False,
+                        "default": uid in DEFAULT_SCOPE, "channels": homes.get(uid, [])})
+        if homes.get(""):
+            out.append({"id": "", "name": "Без області", "en": "No oblast", "on": True, "locked": True, "channels": homes[""]})
+        return out
+
+    def channel_update(self, action, name, mode=None, via=None, home=None):
         """The dashboard's changes. Returns (ok, message)."""
         name = normalize_channel(name)
         if not name:
@@ -1757,7 +1888,8 @@ class State:
                 if len(self.channel_list) >= self.MAX_CHANNELS:
                     return False, f"at most {self.MAX_CHANNELS} channels"
                 self.channel_list.append({"name": name, "builtin": False, "mode": "trial",
-                                          "via": via if via in ("web", "api") else "web", "added": now_iso()})
+                                          "via": via if via in ("web", "api") else "web", "added": now_iso(),
+                                          "home": self._home_ok(home)})
                 self._deleted.pop(name.lower(), None)
             elif not e:
                 return False, "not in the list"
@@ -1766,6 +1898,8 @@ class State:
                     e["mode"] = mode
                 if via in ("web", "api"):
                     e["via"] = via
+                if home is not None:
+                    e["home"] = self._home_ok(home)
             elif action == "delete":
                 if e["builtin"]:
                     return False, "a default channel can be switched off, not deleted"
@@ -2006,6 +2140,34 @@ class State:
             fixed = []
             for m in ms:
                 m = dict(m)
+                if m.get("candidates"):
+                    # 1.43: a name several villages of the oblast share ("Ивановка", "Троицкое"). The one within 60 km of
+                    # this channel's report of the last half hour is the one it means; with no such report, the clear
+                    # default the parser chose (raion centre, city district, by far the largest) — or nothing at all.
+                    pick = None
+                    if ctx and pts and (pts - ctx[0]).total_seconds() <= 30 * 60:
+                        here = (ctx[1]["lon"], ctx[1]["lat"])
+                        best = min(m["candidates"], key=lambda c: geo._km((c[1], c[2]), here))
+                        if geo._km((best[1], best[2]), here) <= geo._REG_KM:
+                            pick = best
+                    if pick is None and m.get("ambiguous"):
+                        continue
+                    if pick is not None:
+                        key, plon, plat, puid = pick
+                        dest = bool(m.get("dest_only"))
+                        m.update(lon=round(plon, 3), lat=round(plat, 3), oblast_uid=puid,
+                                 place=("→ " + key) if dest else key)
+                        if dest:
+                            m["target"] = key
+                        elif m.get("target") in geo.PLACES and m.get("heading") is not None:
+                            tl, tt, _ = geo.PLACES[m["target"]]
+                            m["heading"] = round(geo.bearing(plon, plat, tl, tt))
+                        ev = dict(m.get("evidence") or {})
+                        ev["position"] = dict(ev.get("position") or {}, place=key, confidence="medium",
+                                              method=f"several villages are called {key.split(' (')[0]} — the one nearest this channel's previous report")
+                        m["evidence"] = ev
+                    m.pop("candidates", None)
+                    m.pop("ambiguous", None)
                 if m.get("needs_context"):
                     if ctx and pts and (pts - ctx[0]).total_seconds() <= 8 * 60:
                         m.update(lon=ctx[1]["lon"], lat=ctx[1]["lat"], place=ctx[1]["place"], oblast_uid=ctx[1].get("oblast_uid"), pos_ts=ctx[2])
@@ -2562,7 +2724,8 @@ class State:
                              "flagged_7d": w.get("flagged", 0), "ok": src.get("ok"), "checked": src.get("last"),
                              "error": src.get("error"), "via": "api" if f"tga:{ch}" in sources else ("preview" if src else None),
                              "mode": self.channel_mode(ch), "listed": ch.lower() in reg, "builtin": bool(reg.get(ch.lower(), {}).get("builtin")),
-                             "read_via": reg.get(ch.lower(), {}).get("via"), "added": reg.get(ch.lower(), {}).get("added")})
+                             "read_via": reg.get(ch.lower(), {}).get("via"), "added": reg.get(ch.lower(), {}).get("added"),
+                             "home": reg.get(ch.lower(), {}).get("home", "") if ch.lower() in reg else None})
         official = [{"name": k, **v} for k, v in sorted(sources.items()) if not k.startswith(("tg:", "tga:"))]
         tr = {"available": [], "paused": {}}
         if _tr:
@@ -2572,7 +2735,7 @@ class State:
             except Exception:
                 pass
         out = {"generated": now_iso(), "official": official, "channels": channels, "translation": tr, "lead": self.lead_times(30),
-               "tg_api": TelegramAPI.configured(self.cfg), "max_channels": self.MAX_CHANNELS}
+               "tg_api": TelegramAPI.configured(self.cfg), "max_channels": self.MAX_CHANNELS, "regions": self.regions()}
         self._health_res = (time.time(), out)
         return out
 
@@ -3247,7 +3410,7 @@ class State:
             log("bridges:", e)
             bridges = {b["id"]: {} for b in BRIDGES}
         return {"now": now_iso(), "active": active, "oblasts": by_oblast, "sources": sources, "eradar": self.eradar,
-                "notice": self.notice_now(), "nuke": self.nuke, "bridges": bridges,
+                "notice": self.notice_now(), "nuke": self.nuke, "bridges": bridges, "scope": sorted(SCOPE_UIDS, key=int),
                 "favourites": self.cfg.get("favourites") or [], "config": {"demo": bool(self.cfg.get("demo")), "canonical": canonical_host(self.cfg),
                 "has_token": bool(self.cfg.get("alerts_in_ua_token")), "channels": self.cfg.get("telegram_channels")}}
 
@@ -3745,9 +3908,12 @@ class Telegram(threading.Thread):
                 if summ:
                     self.state.set_eradar(p["ts"], summ)
                     break
+        home = self.state.channel_home(ch)
         for p in sorted(new, key=lambda p: p["ts"]):
             if self.state.channel_mode(ch) == "trial":
                 p = dict(p, tags=["trial"])       # on trial: shown in the feed, raises nothing (no toast, no banner)
+            if home and home not in ("31", "ua"):
+                p = dict(p, home=home)            # 1.43: a regional channel's warnings are for that oblast's readers
             self.state.publish({"kind": "feed", "ts": p["ts"], "post": p})
         tr = getattr(self.state, "tr", None)
         if tr and new:
@@ -5208,7 +5374,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._file("guide.html", "text/html; charset=utf-8")
             if u.path == "/api/places":
                 oq = q.get("oblast", ["14,31"])[0]
-                obl = None if oq == "all" else set(oq.split(","))
+                # 1.43: "scope" — the oblasts the map covers now, as the dashboard set them
+                obl = None if oq == "all" else set(SCOPE_UIDS) if oq == "scope" else set(oq.split(","))
                 pl = [{"name": n.split(" (")[0], "lon": v[0], "lat": v[1], "oblast_uid": v[2]} for n, v in (geo.PLACES.items() if geo else []) if obl is None or v[2] in obl]
                 return self._json({"places": pl})
             if u.path == "/api/markers":
@@ -5384,8 +5551,14 @@ class Handler(BaseHTTPRequestHandler):
                                                         "or has its web preview off" + ("; add it with “Telegram API”" if TelegramAPI.configured(st.cfg) else "")}, 400)
                     except Exception as e:
                         return self._json({"error": f"could not reach t.me: {str(e)[:120]}"}, 502)
-                ok, msg = st.channel_update(action, name, data.get("mode"), via)
+                ok, msg = st.channel_update(action, name, data.get("mode"), via, data.get("home"))
                 return self._json({"ok": ok, "message": msg, "name": name}, 200 if ok else 400)
+            if u.path == "/api/admin/region":
+                # 1.43: an oblast on or off as a whole — its channels and its place on the map
+                if not self._admin_ok(q):
+                    return self._json({"error": "unauthorized"}, 401)
+                ok, msg = st.region_set(str(data.get("id") or ""), bool(data.get("on")))
+                return self._json({"ok": ok, "message": msg}, 200 if ok else 400)
             if u.path == "/api/admin/nuke":
                 if not self._admin_ok(q):
                     return self._json({"error": "unauthorized"}, 401)

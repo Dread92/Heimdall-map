@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.42** · last updated 2026-10-07 (1.42.2)
+**Documented version: 1.43** · last updated 2026-10-07 (1.43.0)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -123,6 +123,7 @@ clear-sky/
 │   ├── glyphs.js           the weapon silhouettes (G, GLYPH_BY_TYPE), shared by both pages
 │   ├── kyiv-map.json       27 oblasts + all raions, in km around Kyiv (geoBoundaries)
 │   ├── light-map.json      raions of the 8 oblasts + nearby oblast outlines, rivers, roads, towns (built)
+│   ├── light-map-x.json    raions of Odesa, Kharkiv, Dnipro oblasts — fetched only for a place there (built, 1.43)
 │   ├── kyiv-districts.json the 10 city districts of Kyiv (OSM)
 │   ├── ukraine-map.json    oblast outlines in an affine lon/lat projection (Light page fallback lookup)
 │   ├── admin.html          private dashboard: usage, source health, channels, lead time (/admin, ADMIN_KEY)
@@ -134,9 +135,11 @@ clear-sky/
 │   └── logo*.png (NGO 07300), bf-logo*.png (Black Flame Studio), ukraine-map.LICENSE.md
 ├── data/
 │   ├── ua_regions.json     official region id → oblast / parent raion / map shape (built)
+│   ├── regional_places.json the villages and city districts of the oblasts with a tracker (GeoNames, built, 1.43)
 │   └── corpus.jsonl        regression corpus of real posts and their expected readings
 ├── scripts/
-│   ├── build_geo.py        rebuilds data/ua_regions.json and static/light-map.json
+│   ├── build_geo.py        rebuilds data/ua_regions.json and static/light-map.json (`--light`: the Light maps only)
+│   ├── build_places.py     rebuilds data/regional_places.json from GeoNames (1.43)
 │   ├── corpus.py           add / review / pull corpus cases
 │   ├── release.bat         ships a patch: checks all is committed, fly deploy, git push, shows the live version
 │   ├── telegram-login.bat  one-time Telegram sign-in for the API reader (runs telegram_login.py)
@@ -249,7 +252,7 @@ the committed template.
 | `poll_ubilling_seconds` | `30` | Mirror interval. |
 | `poll_telegram_seconds` | `30` | Telegram interval. |
 | `poll_telegram_missile_seconds` | `10` | Telegram interval while a missile threat is open. |
-| `telegram_channels` | the six | Informational only — `AUTHORITATIVE_CHANNELS` in code is what is read. |
+| `telegram_channels` | the six of 1.42 | Informational only — `AUTHORITATIVE_CHANNELS` in code is what is read. |
 | `favourites` | `["31","14"]` | Regions for history backfill and desktop notifications. |
 | `history_backfill_hours` | `6` | History pulled at start. |
 | `desktop_notifications` | `true` | Local desktop notifications (when running on a PC). |
@@ -368,7 +371,7 @@ the mirror painted when it returns. `snapshot()` merges duplicates and computes 
 
 ### 7.1 The channels
 
-The six defaults are in code (`AUTHORITATIVE_CHANNELS` — deployed configs list 33 channels, and a config
+The defaults are in code (`AUTHORITATIVE_CHANNELS` — deployed configs list 33 channels, and a config
 whitelist would have changed nothing on any machine; `telegram_channels` in a config is still ignored). Since
 1.31 the **dashboard** manages the list on top of them (`State.channel_list`, stored in `kv.channels`, so it
 survives restarts and deploys):
@@ -380,7 +383,7 @@ survives restarts and deploys):
 - **added** channels start on **Trial** — a channel nobody has vetted must not be able to put a drone over
   somebody's house; the admin promotes it after judging what it posts and the share of it the app reads;
 - the defaults can be switched off, never deleted; a deleted channel stays off for 6 h so its recent posts stop
-  counting at once; at most 30 channels.
+  counting at once; at most 40 channels.
 
 How: `Store.feed_since` (every computation — marks, the missile level, statistics, summaries) keeps only Map
 channels; `Store.feed` (what the pages show) drops Off ones and strips a Trial one's threat tags; the `feed`
@@ -395,6 +398,24 @@ event of a Trial post carries `tags: ["trial"]` only. Both readers take the list
 | `war_monitor` | wider picture, jet drones | general `parse_post` |
 | `eRadarrua` | per-oblast group counts + live lines | `parse_eradar`, `parse_eradar_summary` (counts on oblast tags, never marks) |
 | `kpszsu` | the Air Force | general parser + its summaries, read weapon by weapon (`parse_af_report`, §7.5) |
+| `chernihiv_nebo` | live tracker of Chernihiv oblast (1.43) | `_parse_live(·, "25")` — Chernihiv's villages; "2 реакти … 1 реакт …" = two reports |
+| `monitoringodesa` | live tracker of Odesa oblast, **in Russian** (1.43) | `_parse_live(·, "18")` after `geo.prepare` (§7.3b); bare village names |
+| `chyste_nebocherkasy` | live tracker of Cherkasy oblast (1.43) | `_parse_live(·, "24")`; its preview is off like `chyste_nebo`'s — read through the Telegram API when it is configured (`CHANNEL_VIA_DEFAULT`) |
+| `radar_kharkov` | live tracker of Kharkiv city and oblast, **in Russian** (1.43) | `_parse_live(·, "22")` after `geo.prepare`; the city's districts by their Russian names |
+| `RadarDnepr` | live tracker of Dnipro city and oblast (1.43) | `_parse_live(·, "9")`; mixed with news and fundraising, which the news guard drops |
+
+**The oblasts as compartments (1.43).** Every channel belongs to the compartment of the oblast it speaks for (its
+`home`): an oblast uid, `31` (Kyiv city and Kyiv oblast) or `ua` (the country-wide channels) —
+`CHANNEL_HOME_DEFAULT` for the defaults, chosen when a channel is added, changed from the dashboard. The dashboard
+shows the channels oblast by oblast and switches a whole oblast on or off (`State.region_set`, kv `regions`, which
+stores only what differs from the default). An oblast switched off leaves the map — `SCOPE_UIDS`, read by
+`in_scope()` — and its channels are not read (`channel_mode()` answers `off` for them); `31` cannot be switched off.
+By default the map covers Kyiv, the six oblasts around it, and the three with a tracker of their own: Odesa,
+Kharkiv, Dnipro (`DEFAULT_SCOPE`). The pages follow: `state.scope` decides which oblasts are painted raion by raion
+(`scopeRegs()`), the place lists ask `/api/places?oblast=scope`, and the Near list keeps to `NEAR_MAX` = 350 km of the
+reader's place (a ballistic mark is "the whole region" only within `REGION_R` = 150 km). A channel's home is also how its posts are read (`geo.CHANNEL_HOME`, §7.3b), and
+the posts of a regional channel carry `home` in the feed: the Tactical page raises a regional channel's ballistic or
+MiG-31K report only for a reader whose oblast — picked, or of a watched place — is that one.
 
 A channel whose preview shows no messages is marked failed with "web preview disabled by the channel", so "no
 drones reported" and "cannot read this channel" never look the same.
@@ -458,6 +479,41 @@ block for every value:
   position, never an outcome. Read whole, it was a confirmed shoot-down at Nyvky, shown 24 h in the history layer.
 - **Immediate types** — `IMMEDIATE_TYPES = {ballistic, supersonic, mig31k}`, `REGION_ALERT_KM = 150`.
 
+### 7.3b The regional trackers: their villages, their Russian (1.43)
+
+A regional tracker names villages and city districts post after post ("2 реакти від Куликівки на Лихачів",
+"Стрюково", "БпЛА на Лесное - Пятихатки"). **`data/regional_places.json`** holds every populated place of the
+oblasts that have a channel of their own (Chernihiv, Cherkasy, Odesa, Kharkiv, Dnipro — about 6,700), built by
+**`scripts/build_places.py`** from the GeoNames dumps (<https://www.geonames.org>, CC BY 4.0): Ukrainian name,
+coordinates, kind (city section / raion or hromada centre / place), population, raion, and every Ukrainian and
+Russian name GeoNames has, plus the Russian-looking spellings of the Ukrainian name (і as и / е / о, `'я` as е, no
+apostrophe — `_ru_variants`). Kharkiv city's districts are named by hand in the builder (`CURATED_BY_NAME`).
+
+- They are answered by `PLACES[name]` like any place (`_Gazetteer`) but never iterated: not in the regex index, not
+  in the map's town labels, not in `/api/places`. **They are matched only in their oblast's context** — a post from
+  a channel whose home is that oblast, or a sentence that names the oblast (`_find_places(text, ctx_uid)` →
+  `_find_regional`). "Іванівка" alone, from Kyiv, is nothing.
+- Words that are also a village's name are never read as one (`REGIONAL_STOP`: the compass, the border, "new" …);
+  `REGIONAL_WORDS` gives a bare word its oblast's meaning ("Водосховище" from Chernihiv = the Kyiv reservoir).
+- **A name several villages share** becomes one ambiguity token (`_ambig_token`) with its candidates: the one near
+  another place the same post names (≤ 60 km) wins at once; otherwise the server takes the one nearest the channel's
+  report of the last 30 minutes (≤ 60 km, `_marks_from_posts`); with neither, the clear default — the only city
+  district, the only raion/hromada centre, or a population three times the next — or **no mark at all**. A
+  destination nobody can tell apart gets no course drawn to it.
+- **Routes**: "Любеч-Славутич", "Сновськ-Березна-Куликівка", "Лесное - Пятихатки" — two places joined by a dash are
+  at the first, heading for the second (`_route_arrows` writes "→"), unless the joined word is one place
+  ("Новгород-Сіверський") or it follows "в районі / між" ("в районі Котельва - Коломак" is an area, not a course).
+- **One line, several reports**: a count of weapons after the words of the previous report starts a new one
+  ("2 реакти … 1 реакт …"), so does ", 1 …" ("1 Райгород, 1 Буки на Бузівка, 1 на Привітне").
+- Words: "реакт / реакти" (a jet drone, `JET_RX`), FPV, "Молния", "Ланцет" (small strike drones).
+
+**Posts in Russian.** The Kharkiv and Odesa trackers write in Russian. `geo.prepare(text, channel)` turns a post
+from `RU_CHANNELS`, or one that `looks_russian()` (ы, э, ё, ъ, or a Russian-only word), into the Ukrainian words the
+rules read (`ru_to_uk`, `_RU_MAP`: the weapons, the outcomes, the prepositions, the courses, the compass, the oblasts
+— "Нико обл" is Mykolaiv oblast). Place names are not translated: the gazetteers hold their Russian names
+(Харьков, Днепр, Чернигов … in `ALT`; the villages' in the regional file). The tagger reads the same Ukrainian
+reading (`tag_feed_text`); the stored and shown text is never changed.
+
 ### 7.4 Scope, chaining, staleness
 
 `State.markers()`:
@@ -468,8 +524,9 @@ block for every value:
    `pos_ts`, and a carried position never restarts the clock (only a newly named place does); the channel's own
    down / lost / clear line ends it; and the official all-clear for Kyiv city ends every position held inside the
    city (`State.kyiv_city_all_clears`: an end of the city's air-raid alert that left no other source's alert running);
-2. drops what is outside the scope: `in_scope()` = oblast uid in `REGION_UIDS` or within `SCOPE_KM = 330` km
-   of Kyiv;
+2. drops what is outside the scope: `in_scope()` = oblast uid in `SCOPE_UIDS` (1.43: the oblasts switched on —
+   Kyiv, the six around it, Odesa, Kharkiv, Dnipro by default) or, with no oblast, within `SCOPE_KM = 330` km of
+   Kyiv. `REGION_UIDS` (Kyiv and the six around it) still decides the feed's "region" tag;
 3. `_chain_and_prune()` links consecutive reports of the same target (same family, time and distance windows,
    roughly ahead of the earlier heading) into a track with `history` — each entry keeps its own report's stated
    height (`alt_m`, `alt_state`), so the pages can show the heights the posts gave in sequence; marks `stale` after
@@ -857,8 +914,10 @@ One place, what concerns it, nothing else. Built to load and be read on 2G (page
 
 - **Status = the place's raion**, from the official data only. The raion is found **on the phone**: point in
   polygon on `light-map.json`'s raion outlines. A place within **1.5 km of a border** belongs to both raions
-  (the outlines are accurate to a few hundred metres; a house on the line gets either side's alert). Outside
-  the covered oblasts it falls back to the oblast (`ukraine-map.json`).
+  (the outlines are accurate to a few hundred metres; a house on the line gets either side's alert). 1.43: a
+  place in Odesa, Kharkiv or Dnipro oblast fetches their raions then (`light-map-x.json`, `loadLMX`), so a reader
+  there gets their raion's status without everyone else downloading those outlines. Outside the covered oblasts it
+  falls back to the oblast (`ukraine-map.json`).
 - States: **R** / **Y** (alert over the place's unit, official level + reason), **H** (a hromada inside the
   raion is under alert), **P** (raion unknown, part of the oblast), **G** (no alert over the unit — neighbours
   under alert are *named*, never painted on the place), **U** (no data). "Nothing reported" never says "safe".
@@ -1050,25 +1109,26 @@ All JSON unless stated. Public unless marked 🔒 (`ADMIN_KEY`).
 | `GET /manifest.json`, `/light.webmanifest`, `/sw.js`, `/favicon.ico`, `/static/*` | PWA files, assets (gzip + ETag) |
 | `GET /healthz` | liveness: `{"ok": true}`, or **503** when the database cannot be had within 3 s |
 | `GET /api/version` | `{v, now, missile, msl, build, app}` — the cheap ping pages poll |
-| `GET /api/state` | active alerts, per-oblast status, sources' health, єРадар counts, the admin's message, the nuclear event, the Kyiv bridges (`bridges`, §9b), config summary |
+| `GET /api/state` | active alerts, per-oblast status, sources' health, єРадар counts, the admin's message, the nuclear event, the Kyiv bridges (`bridges`, §9b), the oblasts on the map (`scope`, 1.43), config summary |
 | `GET /api/markers` | live marks with evidence, history, staleness |
-| `GET /api/feed?limit=&lang=` | recent posts (`text`, `text_en`, `text_fr`, `en_mt`, tags); `lang` asks for translation |
+| `GET /api/feed?limit=&lang=` | recent posts (`text`, `text_en`, `text_fr`, `en_mt`, tags, and `home` for a regional channel's post — 1.43); `lang` asks for translation |
 | `GET /api/stream?sync=&ev=&p=&lang=` | the live line (§5.4): `hello`, `sync` (changes of `mk`, `st`, `fd` as asked in `sync`) and, unless `ev=0`, the events `start`, `end`, `threat`, `update`, `feed`, `eradar`, `tr`, `notice`, `nuke`; `p=light` counts it as a Light page |
 | `GET /api/history?hours=&oblast=` | past alerts (1–168 h; cached, one query per change for every page) |
 | `GET /api/events_log?limit=` | alert events |
 | `GET /api/impacts?hours=` | explosions and confirmed shoot-downs |
 | `GET /api/replay?from=&to=` | the replay (§10.3c), Unix seconds, ≤ 26 h within the last 7 days: `alerts` `[{k, o, lt, rk, lv, at, ti, s, e}]` (intervals, `e` null while on) and `tracks` `[{ty, jet, n, ap, h, ch, p: [[t, lon, lat, place]]}]` |
 | `GET /api/stats?days=` | statistics; the Stats tab reads only `windows` (with `af`: launched / down by type, used, impacts, debris) and `af_days` (the Air Force summaries, each with its `post`) |
-| `GET /api/places?oblast=` | gazetteer (names, coordinates, oblast) |
+| `GET /api/places?oblast=` | gazetteer (names, coordinates, oblast): `oblast=14,31,…`, `all`, or (1.43) `scope` — the oblasts the map covers now |
 | `GET /api/drone_heat?days=1|7|30` | the heat layer: `points` `[lon, lat, posts, place, oblast]` — where drones and unidentified targets were reported (cached 10 min) |
 | `POST /api/push/subscribe`, `/api/push/unsubscribe`, `/api/push/test`; `GET /api/push/key` | Web Push; subscribe takes `{subscription, home, topics: ["bridges"], lang}` |
 | `POST /api/flag` | "this reading is wrong" report |
 | 🔒 `GET /admin`, `/api/usage` | dashboard, usage counters |
-| 🔒 `GET /api/health` | official sources (ok, last check, detail), every channel read (posts / marks 24 h, share read 7 d, last post, reader state, `mode`, `read_via`, `builtin`), translation backends, lead time over the official alert in Kyiv + oblast (30 days) |
+| 🔒 `GET /api/health` | official sources (ok, last check, detail), every channel read (posts / marks 24 h, share read 7 d, last post, reader state, `mode`, `read_via`, `builtin`, `home`), the compartments (`regions`: `id`, `name`, `en`, `on`, `locked`, `channels`), translation backends, lead time over the official alert in Kyiv + oblast (30 days) |
 | 🔒 `GET /api/online` | pages open now with a live line (`total`, `tactical`, `light`, today's peak), the current message, the nuclear event (`nuke`), the last push fan-out (phones, seconds, delivered) |
 | 🔒 `GET /api/analytics?days=` | the dashboard's Analytics (§8c), 7–365 days: `af` per date (launched, down, used, impacts, debris, periods), `af_areas`, `af_directions`, `af_models`, `kyiv` per date (city / oblast minutes, city alerts), `starts` (7 × 24), `reports` per date by type, `hours`, `headings`; since 1.33 `weather` per date (`kyiv`, `launch`), `approach` (8 sectors per date), `air` (`per_date`, `stats`, `sorties`), `obl` (`by`, `cols`, `rows`), `weather_status`; since 1.34 `places` (the heat layer's top 25) and `bridges` (`per_date`, `totals`, `recent`) |
 | 🔒 `POST /api/admin/nuke` | `{action: arm}` → `{code, expires_s, phrase}` (refused while one is on); `{action: fire, code, phrase, text: {uk, en, fr}, push}`; `{action: end}` — the nuclear event (§9) |
-| 🔒 `POST /api/admin/channel` | `{action: add|set|delete, name, mode: map|trial|off, via: web|api}` — the channels read (§7.1); `add` checks `t.me/s/<name>` for readable posts and starts it on trial |
+| 🔒 `POST /api/admin/channel` | `{action: add|set|delete, name, mode: map|trial|off, via: web|api, home}` — the channels read (§7.1); `home` is the compartment (an oblast uid, `31`, `ua`, or `""`); `add` checks `t.me/s/<name>` for readable posts and starts it on trial |
+| 🔒 `POST /api/admin/region` | `{id, on}` — an oblast on or off as a whole (1.43, §7.1): its place on the map and its channels; `31` is always on |
 | 🔒 `POST /api/admin/notice` | `{text: {uk, en, fr}, level: info|warn|alert, hours: 0–168 (0 = until removed), push: bool}` or `{clear: true}` — the team's message (§9) |
 | 🔒 `GET /api/digests` | the stored nights and weeks: figures, written summary (EN / UK), model |
 | 🔒 `POST /api/digest/run` | `{kind: night|week}` — asks the `Digests` thread to write the last one up now (never calls the model itself) |
@@ -1187,13 +1247,19 @@ then run `scripts\telegram-login.bat`: it asks for the api_id, the api_hash and 
 account (a dedicated account is best), signs in with the code Telegram sends, joins the channel, and stores the
 three secrets on Fly. If the sources panel ever shows "Telegram session no longer valid", run it again.
 
-**Add or remove a channel**: edit `AUTHORITATIVE_CHANNELS` in `server.py` (and `DEFAULT_CONFIG` for the record);
+**Add or remove a channel**: from the dashboard (Live → Telegram channels, oblast by oblast — pick its oblast; it
+starts on trial). As a default: edit `AUTHORITATIVE_CHANNELS` and `CHANNEL_HOME_DEFAULT` in `server.py` (and
+`DEFAULT_CONFIG` for the record);
 a channel whose web preview is off also goes in `telegram_api_channels`;
 a fixed format gets a parser in `geo.py` registered in `CHANNEL_PARSER`; add real posts to the corpus
 (`scripts/corpus.py add`); a mixed channel goes in `NEWS_CHANNELS`.
 
-**Change the region**: `REGION_UIDS` and `SCOPE_KM` in `server.py`, `SCOPE` in `build_geo.py` (then rebuild),
-the Light page's place list (`/api/places?oblast=…`).
+**Change the region**: an oblast on or off is a switch in the dashboard (1.43). The default is `DEFAULT_SCOPE` in
+`server.py`. An oblast with a tracker of its own also wants its villages: add its GeoNames admin1 code to `ADMIN1`
+(and its raions to `RAION`) in `scripts/build_places.py` and rebuild `data/regional_places.json`
+(`python scripts/build_places.py`); and its raions for the Light page: `SCOPE` in `build_geo.py`, then
+`python scripts/build_geo.py --light` (the oblasts after the first eight go to `static/light-map-x.json`, fetched
+only for a place there).
 
 **Add a string**: all three blocks of `i18n.js`; `test_i18n` checks.
 
@@ -1219,6 +1285,11 @@ Black Flame logos (`logo*.png`, `bf-logo*.png`) stay as they are.
   terminal (`scripts/corpus.py`, [CORPUS.md](CORPUS.md)) when needed.
 - Hromada alerts have no shapes of their own: on the Tactical map they colour their parent raion; on Light they
   are named ("alert in part of your raion").
+- 1.43: the regional villages come from GeoNames, whose Russian names are often transliterations and whose
+  Ukrainian names are sometimes a renamed village's old one; a village GeoNames does not have (Cherkasy's Mytnytsia
+  district) is not placed. `chyste_nebocherkasy` needs the Telegram API (its preview is off). The new trackers'
+  formats were read from a day of their posts: watch the first nights in the dashboard (Read 7 d) and add their
+  misreads to the corpus.
 
 ## 18. The patch checklist
 

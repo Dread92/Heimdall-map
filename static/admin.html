@@ -55,6 +55,18 @@ tr.m-trial td:first-child{color:#ffd9a8}tr.m-off td{color:var(--ink3)}
 .chadd{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0 0}.chadd input{flex:1 1 220px;min-width:0;background:#0b0d11;border:1px solid var(--line);color:var(--ink);padding:8px 9px;font:13.5px var(--sans)}
 .chadd select{background:#0b0d11;border:1px solid var(--line);color:var(--ink);padding:7px 8px;font:13px var(--sans)}.chadd .res{font:12px var(--sans);color:var(--ink2)}
 .lead{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--green);padding:12px 14px;font:14px/1.5 var(--sans)}
+/* 1.43: the channels, oblast by oblast */
+.rg{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--green);margin:0 0 10px;padding:10px 12px}
+.rg.off{border-left-color:var(--ink3);opacity:.78}
+.rgh{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:0 0 6px}.rgh b{font:700 14px var(--sans)}
+.rgh .rgn{font:12px var(--sans);color:var(--ink3)}.rgh .sp{flex:1}
+.rgsw{display:inline-flex;align-items:center;gap:6px;font:600 12px var(--sans);color:var(--ink2);cursor:pointer;border:1px solid var(--line);padding:5px 9px;border-radius:2px;background:#0b0d11}
+.rgsw input{accent-color:var(--green);width:15px;height:15px;margin:0}.rg.off .rgsw{color:var(--ink3)}
+.rglock{font:600 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)}
+.rgnone{font:12.5px var(--sans);color:var(--ink3);margin:2px 0 0}
+.rgoff{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 0}
+.rgoff button{background:#0b0d11;border:1px solid var(--line);color:var(--ink2);padding:6px 10px;font:12.5px var(--sans);border-radius:2px;cursor:pointer}
+details.rgmore{margin:4px 0 10px}details.rgmore summary{cursor:pointer;font:600 12.5px var(--sans);color:var(--ink2);padding:6px 0}
 .tscroll{overflow-x:auto}
 /* 1.29: online now, and the message to every reader */
 .ops{display:grid;grid-template-columns:minmax(200px,260px) 1fr;gap:12px;margin:4px 0 20px}
@@ -341,9 +353,15 @@ const T={
   ch_use:'Use',ch_via2:'Read via',ch_map:'Map',ch_trial:'Trial',ch_off2:'Off',ch_web:'web preview',ch_api2:'Telegram API',
   ch_del:'Remove from the list',ch_del_q:'Remove @{0} from the list? It stops being read and its posts leave the feed.',ch_removed:'removed',
   ch_add_ph:'@channel or t.me/channel',ch_add_btn:'Add — on trial',ch_saved:'saved',
+  h_channels_rg:'Telegram channels, oblast by oblast',ch_home:'Oblast',rg_on:'On the map',rg_locked:'always on',
+  rg_none:'No channel of its own — while it is on, the country-wide channels still place marks here.',
+  rg_more:'Other oblasts — off the map ({0})',rg_on_q:'Put {0} on the map? What the channels report there will be drawn, counted and pushed to the phones whose places are there.',
+  rg_off_q:'Take {0} off the map? Its channels stop being read, and nothing reported there is drawn, counted or pushed.',
+  rg_done:'{0} — saved',rg_nch:'{0} channel(s)',rg_marks:'{0} marks in 24 h',ch_nohome:'— no oblast —',
+  rg_note:'Each oblast is a compartment: switch it off and it leaves the map — its channels are not read and nothing reported there is drawn, counted or pushed. Kyiv is always on. A channel’s oblast is also how its posts are read: the villages and city districts of that oblast, in Ukrainian or Russian.',
   ch_added:'@{0} added on trial: its posts show in the feed, flagged, and put nothing on the map until you switch it to Map.',
   ch_map_q:'Put @{0} on the map? Its posts will place marks, can raise banners and send alerts to phones.',
-  ch_modes:'<b>Map</b> — its posts place marks and can raise banners and alerts. <b>Trial</b> — its posts only show in the feed, flagged “on trial”: judge a new channel by what it posts and the share of it the app can read (“Read 7 d”) before trusting it. <b>Off</b> — not read, and its posts leave the feed. The six default channels can be switched off but not removed.'},
+  ch_modes:'<b>Map</b> — its posts place marks and can raise banners and alerts. <b>Trial</b> — its posts only show in the feed, flagged “on trial”: judge a new channel by what it posts and the share of it the app can read (“Read 7 d”) before trusting it. <b>Off</b> — not read, and its posts leave the feed. The default channels can be switched off but not removed.'},
  uk:{title:'Heimdall — панель',
   tab_live:'Наживо',tab_an:'Аналітика',tab_nights:'Ночі й тижні',tab_sources:'Джерела',tab_usage:'Використання',
   nt_prevh:'Повідомлення від системного адміністратора',nt_prev0:'Тут повідомлення показано кольором, який бачитимуть читачі: зелений — інформація, червоний — терміново.',
@@ -426,9 +444,15 @@ const T={
   ch_use:'Використання',ch_via2:'Спосіб читання',ch_map:'Мапа',ch_trial:'Перевірка',ch_off2:'Вимк.',ch_web:'веб-перегляд',ch_api2:'Telegram API',
   ch_del:'Прибрати зі списку',ch_del_q:'Прибрати @{0} зі списку? Канал більше не читатиметься, його дописи зникнуть зі стрічки.',ch_removed:'прибрано',
   ch_add_ph:'@канал або t.me/канал',ch_add_btn:'Додати — на перевірку',ch_saved:'збережено',
+  h_channels_rg:'Telegram-канали за областями',ch_home:'Область',rg_on:'На мапі',rg_locked:'завжди увімкнено',
+  rg_none:'Власного каналу немає — поки область на мапі, позначки тут ставлять загальноукраїнські канали.',
+  rg_more:'Інші області — поза мапою ({0})',rg_on_q:'Поставити {0} на мапу? Те, що канали повідомляють там, буде показано, пораховано й надіслано на телефони, чиї місця там.',
+  rg_off_q:'Прибрати {0} з мапи? Її канали більше не читаються, а нічого з того, що там повідомлено, не показується, не рахується й не надсилається.',
+  rg_done:'{0} — збережено',rg_nch:'каналів: {0}',rg_marks:'позначок за 24 г: {0}',ch_nohome:'— без області —',
+  rg_note:'Кожна область — окремий відсік: вимкніть її, і вона зникне з мапи — її канали не читаються, а нічого з того, що там повідомлено, не показується, не рахується й не надсилається. Київ увімкнено завжди. Область каналу — це ще й те, як читаються його дописи: села й райони міст цієї області, українською чи російською.',
   ch_added:'@{0} додано на перевірку: його дописи з’являються у стрічці з позначкою й нічого не ставлять на мапу, доки ви не перемкнете його на «Мапа».',
   ch_map_q:'Поставити @{0} на мапу? Його дописи ставитимуть позначки, можуть піднімати банери й надсилати сповіщення.',
-  ch_modes:'<b>Мапа</b> — дописи ставлять позначки й можуть піднімати банери та сповіщення. <b>Перевірка</b> — дописи лише у стрічці з позначкою «на перевірці»: оцініть новий канал за тим, що він пише, і часткою, яку застосунок може прочитати («Зчитано 7 д»), перш ніж довіряти. <b>Вимк.</b> — не читається, дописи зникають зі стрічки. Шість типових каналів можна вимкнути, але не прибрати.'}};
+  ch_modes:'<b>Мапа</b> — дописи ставлять позначки й можуть піднімати банери та сповіщення. <b>Перевірка</b> — дописи лише у стрічці з позначкою «на перевірці»: оцініть новий канал за тим, що він пише, і часткою, яку застосунок може прочитати («Зчитано 7 д»), перш ніж довіряти. <b>Вимк.</b> — не читається, дописи зникають зі стрічки. Типові канали можна вимкнути, але не прибрати.'}};
 
 let L='en'; try{const v=localStorage.getItem('adminlang'); if(v==='en'||v==='uk') L=v;}catch(e){}
 const tr=(k,...a)=>{let s=(T[L]&&T[L][k])!==undefined?T[L][k]:(T.en[k]!==undefined?T.en[k]:k);
@@ -535,7 +559,8 @@ function drawHealth(){
     const use=c.listed?`<select class="chsel" data-ch="${esc(c.channel)}" data-k="mode">${opt('map',c.mode,tr('ch_map'))}${opt('trial',c.mode,tr('ch_trial'))}${opt('off',c.mode,tr('ch_off2'))}</select>`:'<span style="color:var(--ink3)">—</span>';
     const rv=!c.listed?'':H.tg_api?`<select class="chsel" data-ch="${esc(c.channel)}" data-k="via">${opt('web',c.read_via,tr('ch_web'))}${opt('api',c.read_via,tr('ch_api2'))}</select>`:esc(c.read_via==='api'?tr('ch_api2'):tr('ch_web'));
     const del=c.listed&&!c.builtin?`<button class="chdel" data-ch="${esc(c.channel)}" title="${esc(tr('ch_del'))}">✕</button>`:'';
-    return `<tr class="${bad?'bad':warn?'warn':''} m-${esc(c.mode||'')}" title="${esc(c.error||'')}"><td>@${esc(c.channel)}${c.mode==='trial'?` <span class="trial">${tr('ch_trial')}</span>`:''}</td><td>${use}</td><td>${rv}</td><td class="n">${fmt(c.posts_24h)}</td><td class="n">${fmt(c.marks_24h)}</td><td class="n">${pct}</td><td>${ago(c.last_post)}</td><td><span class="st ${bad?'bad':c.ok?'ok':''}">${c.mode==='off'?tr('ch_off'):via}</span>${bad&&c.error?` <span style="color:var(--ink3)">${esc(c.error).slice(0,80)}</span>`:''}</td><td>${del}</td></tr>`; }).join('');
+    const hm=c.listed?`<select class="chsel" data-ch="${esc(c.channel)}" data-k="home">${RG_OPTS(c.home||'')}</select>`:'';
+    return {home:c.listed?(c.home||''):'', marks:c.marks_24h||0, html:`<tr class="${bad?'bad':warn?'warn':''} m-${esc(c.mode||'')}" title="${esc(c.error||'')}"><td>@${esc(c.channel)}${c.mode==='trial'?` <span class="trial">${tr('ch_trial')}</span>`:''}</td><td>${use}</td><td>${rv}</td><td>${hm}</td><td class="n">${fmt(c.posts_24h)}</td><td class="n">${fmt(c.marks_24h)}</td><td class="n">${pct}</td><td>${ago(c.last_post)}</td><td><span class="st ${bad?'bad':c.ok?'ok':''}">${c.mode==='off'?tr('ch_off'):via}</span>${bad&&c.error?` <span style="color:var(--ink3)">${esc(c.error).slice(0,80)}</span>`:''}</td><td>${del}</td></tr>`}; });
   const trn=H.translation||{};
   const paused=Object.keys(trn.paused||{});
   badges();
@@ -546,19 +571,48 @@ function drawHealth(){
 
     <h2>${tr('h_sources')}</h2>${src}
 
-    <h2>${tr('h_channels')}</h2>
-    <div class="tscroll"><table><tr><th>${tr('ch_name')}</th><th>${tr('ch_use')}</th><th>${tr('ch_via2')}</th><th style="text-align:right">${tr('ch_24')}</th><th style="text-align:right">${tr('ch_marks')}</th><th style="text-align:right">${tr('ch_read')}</th><th>${tr('ch_last')}</th><th>${tr('ch_state')}</th><th></th></tr>${ch}</table></div>
-    <div class="chadd"><input id="ch_new" placeholder="${esc(tr('ch_add_ph'))}" value="${esc(CH_NEW)}" autocomplete="off" spellcheck="false">${H.tg_api?`<select id="ch_newvia"><option value="web">${tr('ch_web')}</option><option value="api">${tr('ch_api2')}</option></select>`:''}<button class="dgb" id="ch_addb">${tr('ch_add_btn')}</button><span class="res" id="ch_res">${esc(CH_RES)}</span></div>
+    <h2>${tr('h_channels_rg')}</h2>
+    ${drawRegions(ch)}
+    <div class="chadd"><input id="ch_new" placeholder="${esc(tr('ch_add_ph'))}" value="${esc(CH_NEW)}" autocomplete="off" spellcheck="false"><select id="ch_newhome" title="${esc(tr('ch_home'))}">${RG_OPTS(CH_HOME)}</select>${H.tg_api?`<select id="ch_newvia"><option value="web">${tr('ch_web')}</option><option value="api">${tr('ch_api2')}</option></select>`:''}<button class="dgb" id="ch_addb">${tr('ch_add_btn')}</button><span class="res" id="ch_res">${esc(CH_RES)}</span></div>
+    <div class="note" style="margin:8px 0 0">${tr('rg_note')}</div>
     <div class="note" style="margin:8px 0 0">${tr('ch_modes')}</div>
     <div class="note" style="margin:8px 0 0">${tr('ch_note')}</div>
 
     <h2>${tr('h_tr')}</h2>
     <div style="font:13px var(--sans)">${(trn.available||[]).length?esc(tr('tr_av',trn.available.join(' → '))):esc(tr('tr_none'))}${paused.length?' · <span style="color:var(--orange)">'+esc(tr('tr_paused',paused.join(', ')))+'</span>':''}</div>`;
 }
+// ---- 1.43: the channels, oblast by oblast — each oblast a compartment the map can do without ----------------------
+const rgName=r=>r?(L==='uk'?r.name:r.en):'';
+function RG_OPTS(cur){ const rs=(H&&H.regions)||[];
+  return `<option value=""${cur===''?' selected':''}>${esc(tr('ch_nohome'))}</option>`+rs.filter(r=>r.id).map(r=>`<option value="${esc(r.id)}"${r.id===cur?' selected':''}>${esc(rgName(r))}</option>`).join(''); }
+function drawRegions(rows){
+  const rs=(H&&H.regions)||[];
+  const by={}; for(const r of rows){ (by[r.home]=by[r.home]||[]).push(r); }
+  const head=`<tr><th>${tr('ch_name')}</th><th>${tr('ch_use')}</th><th>${tr('ch_via2')}</th><th>${tr('ch_home')}</th><th style="text-align:right">${tr('ch_24')}</th><th style="text-align:right">${tr('ch_marks')}</th><th style="text-align:right">${tr('ch_read')}</th><th>${tr('ch_last')}</th><th>${tr('ch_state')}</th><th></th></tr>`;
+  const card=r=>{ const list=by[r.id]||[]; const marks=list.reduce((a,x)=>a+x.marks,0);
+    const sw=r.locked?`<span class="rglock">${tr('rg_locked')}</span>`:`<label class="rgsw"><input type="checkbox" class="rgtog" data-r="${esc(r.id)}"${r.on?' checked':''}>${tr('rg_on')}</label>`;
+    return `<section class="rg ${r.on?'on':'off'}"><div class="rgh"><b>${esc(rgName(r))}</b><span class="rgn">${esc(tr('rg_nch',list.length))}${list.length?' · '+esc(tr('rg_marks',fmt(marks))):''}</span><span class="sp"></span>${sw}</div>
+      ${list.length?`<div class="tscroll"><table>${head}${list.map(x=>x.html).join('')}</table></div>`:`<div class="rgnone">${tr('rg_none')}</div>`}</section>`; };
+  const shown=rs.filter(r=>r.on||r.locked||(by[r.id]||[]).length);
+  const hidden=rs.filter(r=>!shown.includes(r));
+  const order=r=>r.id==='31'?0:r.id==='ua'?1:r.id===''?9:(by[r.id]||[]).length?2:3;
+  shown.sort((a,b)=>order(a)-order(b)||rgName(a).localeCompare(rgName(b)));
+  const orphans=Object.keys(by).filter(k=>!rs.some(r=>r.id===k)).flatMap(k=>by[k]);
+  return shown.map(card).join('')
+    +(orphans.length?`<div class="tscroll"><table>${head}${orphans.map(x=>x.html).join('')}</table></div>`:'')
+    +(hidden.length?`<details class="rgmore"><summary>${esc(tr('rg_more',hidden.length))}</summary><div class="rgoff">${hidden.map(r=>`<button class="rgonb" data-r="${esc(r.id)}">＋ ${esc(rgName(r))}</button>`).join('')}</div></details>`:''); }
+async function rgSet(id,on){ const r=((H&&H.regions)||[]).find(x=>x.id===id); const nm=rgName(r)||id;
+  if(!confirm(tr(on?'rg_on_q':'rg_off_q',nm))) return false;
+  const d=await fetch('/api/admin/region'+(KEYQ?'?'+KEYQ.slice(1):''),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,on})}).then(r=>r.json()).catch(err=>({error:String(err)}));
+  CH_RES=d.error||(d.ok?tr('rg_done',nm):d.message); await loadHealth(); return true; }
+document.addEventListener('change',async e=>{ const t=e.target.closest('.rgtog'); if(!t) return; const on=t.checked; if(!(await rgSet(t.dataset.r,on))) t.checked=!on; });
+document.addEventListener('click',async e=>{ const b=e.target.closest('.rgonb'); if(b) await rgSet(b.dataset.r,true); });
+
 // ---- the channels read (1.31): add, switch map / trial / off, web preview / Telegram API, remove -----------
-let CH_NEW='', CH_RES='';
+let CH_NEW='', CH_RES='', CH_HOME='';
 async function chPost(body){ const r=await fetch('/api/admin/channel'+(KEYQ?'?'+KEYQ.slice(1):''),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}); return r.json(); }
 document.addEventListener('input',e=>{ if(e.target.id==='ch_new') CH_NEW=e.target.value; });
+document.addEventListener('change',e=>{ if(e.target.id==='ch_newhome') CH_HOME=e.target.value; });
 document.addEventListener('change',async e=>{ const sel=e.target.closest('.chsel'); if(!sel) return;
   const name=sel.dataset.ch, k=sel.dataset.k, v=sel.value;
   const row=(H&&H.channels||[]).find(c=>c.channel===name);
@@ -570,8 +624,8 @@ document.addEventListener('click',async e=>{
   if(del){ const name=del.dataset.ch; if(!confirm(tr('ch_del_q',name))) return;
     const d=await chPost({action:'delete',name}).catch(err=>({error:String(err)})); CH_RES=d.error||(d.ok?'@'+name+' — '+tr('ch_removed'):d.message); await loadHealth(); return; }
   if(e.target.id==='ch_addb'){ const name=($('ch_new').value||'').trim(); if(!name) return; e.target.disabled=true;
-    const via=$('ch_newvia')?$('ch_newvia').value:'web';
-    const d=await chPost({action:'add',name,via}).catch(err=>({error:String(err)}));
+    const via=$('ch_newvia')?$('ch_newvia').value:'web', home=$('ch_newhome')?$('ch_newhome').value:'';
+    const d=await chPost({action:'add',name,via,home}).catch(err=>({error:String(err)}));
     if(d.ok){ CH_NEW=''; CH_RES=tr('ch_added',d.name); } else CH_RES=d.error||d.message; await loadHealth(); } });
 async function loadHealth(){
   try{ const r=await fetch('/api/health'+(KEYQ?'?'+KEYQ.slice(1):'')); const d=await r.json();

@@ -4,12 +4,13 @@
 
 # Heimdall
 
-**Unofficial air-raid and drone tracker for Kyiv, Kyiv oblast and the oblasts around it.**
+**Unofficial air-raid and drone tracker for Kyiv, Kyiv oblast and the oblasts around it — and, since 1.43, Odesa,
+Kharkiv and Dnipro oblasts.**
 *Formerly Clear Sky — same app, same address, new name (1.29).*
 
 A single Python service (standard library only) reads the official «Повітряна тривога» alert data raion
-by raion, and six public Telegram channels — the Air Force and the live trackers of the Kyiv sky — parses the
-Ukrainian text, and shows what was reported in two ways: **Tactical** (`/m`), the full map with the evidence
+by raion, and eleven public Telegram channels — the Air Force, the live trackers of the Kyiv sky, and one tracker
+each for Chernihiv, Odesa, Cherkasy, Kharkiv and Dnipro — parses the Ukrainian (and Russian) text, and shows what was reported in two ways: **Tactical** (`/m`), the full map with the evidence
 behind every mark, and **Light** (`/light`), one place, its raion's official status and what is within 30 km.
 
 > ### ⚠ This is not an official warning system
@@ -65,6 +66,7 @@ and opens the browser. Linux/macOS: `scripts/start.sh`.
 | **Altitude when it is stated** | A post saying `знижується` marks the target ↓ DESCENDING in crimson — it is diving. Climbing, low, high and values in metres are read the same way. Never inferred: no public source publishes altitude. |
 | **Push notifications** | Web Push (VAPID / RFC 8291, hand-rolled on `cryptography`) wakes the phone with the app closed — for a target reported within your radius, a MiG-31K take-off or a ballistic threat. No siren-start or all-clear pushes: the siren already says that. Sent to every phone at once over kept-open connections: a thousand phones in seconds, not minutes. |
 | **Sources from the dashboard** | Add a Telegram channel, switch one off, or read it through the Telegram API — no deploy. A new channel starts on trial: shown in the feed, flagged, nothing on the map until you trust it. |
+| **Oblast by oblast** | The dashboard groups the channels by the oblast they speak for, each oblast with its own switch: off, and it leaves the map. A regional tracker's posts are read against its oblast's villages and city districts (GeoNames), in Ukrainian or Russian; a village name several villages share is placed only when something says which. |
 | **A word from the admin** | From the dashboard, one message to every reader — in Ukrainian, English and French, as information (bright green), a warning or urgent (bright red, pulsing), for a set time — shown as a banner on both pages, optionally also as a push. |
 | **Analytics** | A dashboard tab with the trends: drones and missiles by type per night, the share shot down, jet drones, hits, launch areas and directions (Air Force); hours under alert in Kyiv, when alerts start, what the channels reported over Kyiv, by hour and course. 7 days to a year; every table downloads as CSV for Excel. |
 | **Kyiv bridges** | The Kyiv HPP dam, Northern, Petrivskyi (rail), Podilsko-Voskresenskyi, Metro, Paton, Darnytskyi, Southern: a one-line red / amber bar and the crossing on the map when a target is reported at or near one, a tone and a vibration, and a push in the phone's language for those who want it. "Hit" only when a post says the bridge was hit — never from an explosion. |
@@ -133,7 +135,7 @@ technical reference, updated with every patch.
 | `bind` | `0.0.0.0` | Set to `127.0.0.1` to keep it on this machine only. |
 
 Environment variables and every other key: [docs/TECHNICAL.md §5](docs/TECHNICAL.md#5-runtime-configuration-and-secrets).
-The six default channels are in code (`AUTHORITATIVE_CHANNELS`), not in the config; the dashboard adds others
+The eleven default channels are in code (`AUTHORITATIVE_CHANNELS`), not in the config; the dashboard adds others
 (on trial until you put them on the map), switches any of them off, or reads one through the Telegram API.
 
 ## HTTP API
@@ -234,8 +236,10 @@ still opened on the old address that Heimdall has moved (with a button that take
 ## Sources
 
 The official «Повітряна тривога» data by raion (api.ukrainealarm.com, or its keyless proxy siren.pp.ua), with
-the ubilling mirror as a stand-in; and six public Telegram channels: @kyiv_airdef, @chyste_nebo,
-@kievinfo_kyiv, @war_monitor, @eRadarrua and the Air Force @kpszsu.
+the ubilling mirror as a stand-in; and eleven public Telegram channels: @kyiv_airdef, @chyste_nebo,
+@kievinfo_kyiv, @war_monitor, @eRadarrua, the Air Force @kpszsu, and the regional trackers @chernihiv_nebo,
+@monitoringodesa, @chyste_nebocherkasy, @radar_kharkov and @RadarDnepr.
+Villages and city districts of the regional trackers' oblasts: [GeoNames](https://www.geonames.org/) (CC BY 4.0).
 What each one gives and how it is parsed: [docs/TECHNICAL.md §6–7](docs/TECHNICAL.md#6-official-alert-data).
 
 Map data: raion and oblast boundaries from [geoBoundaries](https://www.geoboundaries.org/) (CC BY

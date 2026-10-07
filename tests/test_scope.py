@@ -21,9 +21,12 @@ SRC = open(os.path.join(ROOT, "app", "server.py"), encoding="utf-8").read()
 
 
 # ── the channels ───────────────────────────────────────────────────────────────────────────────────────
-def test_the_six_channels_and_only_them():
+def test_the_default_channels_and_only_them():
+    # 1.43: the six of Kyiv and the country, and one live tracker for each oblast that has one
     assert set(server.AUTHORITATIVE_CHANNELS) == {
-        "war_monitor", "eRadarrua", "kyiv_airdef", "chyste_nebo", "kievinfo_kyiv", "kpszsu"}
+        "war_monitor", "eRadarrua", "kyiv_airdef", "chyste_nebo", "kievinfo_kyiv", "kpszsu",
+        "chernihiv_nebo", "monitoringodesa", "chyste_nebocherkasy", "radar_kharkov", "RadarDnepr"}
+    assert set(server.CHANNEL_HOME_DEFAULT) == set(server.AUTHORITATIVE_CHANNELS)
 
 
 def test_a_config_listing_other_channels_does_not_bring_them_back():
@@ -67,10 +70,13 @@ def test_the_region_is_kyiv_the_neighbours_and_sumy():
 
 
 def test_a_mark_in_the_region_is_kept_and_one_outside_is_dropped():
+    server.State(server.Store(":memory:"), {})                                        # the default scope
     assert server.in_scope({"oblast_uid": "14", "lat": 50.5, "lon": 30.5})
     assert server.in_scope({"oblast_uid": "20", "lat": 50.9, "lon": 34.8})           # Sumy
-    assert not server.in_scope({"oblast_uid": "18", "lat": 46.48, "lon": 30.73})     # Odesa
-    assert not server.in_scope({"oblast_uid": "22", "lat": 49.99, "lon": 36.23})     # Kharkiv
+    # 1.43: Odesa, Kharkiv and Dnipro have a tracker of their own and are on the map by default
+    assert server.in_scope({"oblast_uid": "18", "lat": 46.48, "lon": 30.73})         # Odesa
+    assert server.in_scope({"oblast_uid": "22", "lat": 49.99, "lon": 36.23})         # Kharkiv
+    assert not server.in_scope({"oblast_uid": "27", "lat": 49.84, "lon": 24.03})     # Lviv
 
 
 def test_a_mark_with_no_oblast_is_judged_by_distance():

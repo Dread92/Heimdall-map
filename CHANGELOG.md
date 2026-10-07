@@ -2,6 +2,37 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.43.0 — 2026-10-07
+
+### Added
+- **Five regional trackers, one per oblast**: Chernihiv (@chernihiv_nebo), Odesa (@monitoringodesa), Cherkasy
+  (@chyste_nebocherkasy), Kharkiv (@radar_kharkov) and Dnipro (@RadarDnepr), on the map. Odesa, Kharkiv and Dnipro
+  oblasts join the map: a target reported there is drawn, counted, and pushed to the phones whose places are there.
+- **Their villages.** Every village and city district of those five oblasts (GeoNames), read only in a post from that
+  oblast's own tracker or one that names the oblast — "Іванівка" alone, from Kyiv, is nothing. A name several
+  villages share is the one next to the channel's previous report, or the clear choice (the only raion centre, the only
+  city district), or nothing at all — never a guess.
+- **Posts in Russian.** The Kharkiv and Odesa trackers write in Russian; their posts are read like Ukrainian ones
+  ("Шахед отлетел от Харькова снова на Мерефу", "БпЛА на Лесное - Пятихатки"). The text you see is unchanged.
+- **The dashboard, oblast by oblast.** The channels are grouped by the oblast they speak for, each oblast with its own
+  switch: off, and it leaves the map — its channels are no longer read and nothing reported there is shown. Kyiv is
+  always on. Pick an oblast when you add a channel; move one with its Oblast menu. The other oblasts sit under
+  "Other oblasts", one tap to put them on the map.
+- Routes written with a dash ("Любеч-Славутич", "Лесное - Пятихатки") and lines with several reports
+  ("2 реакти від Куликівки на Лихачів 1 реакт на Добрянку") are read as such; "реакт", FPV, "Молния" are drones.
+
+### Changed
+- A regional tracker's ballistic or MiG-31K report raises the warning only for readers in that oblast (the one
+  picked, or a watched place's) — the country-wide channels still warn everyone.
+- The Light page finds the raion of a place in Odesa, Kharkiv or Dnipro oblast, fetching their outlines only then.
+- The Near list keeps to 350 km from your place, and a ballistic mark is "the whole region" only within 150 km — a
+  target over Odesa is on the map, not in a Kyiv reader's list.
+- One verified corpus case changed reading and is back to pending: "в районі Котельва - Коломак" is now at Kolomak,
+  the Kharkiv end of the area, under the post's Харківщина heading (Kolomak was not in the gazetteer before).
+
+### Fixed
+- Alerts over Samarivskyi raion (Dnipropetrovsk oblast, renamed from Novomoskovskyi) are painted on its outline.
+
 ## 1.42.2 — 2026-10-07
 
 ### Fixed

@@ -23,7 +23,8 @@ import urllib.request
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "app"))
 
-SCOPE = ["31", "14", "10", "25", "20", "19", "24", "4"]   # Kyiv, Kyiv oblast and the oblasts around it
+SCOPE = ["31", "14", "10", "25", "20", "19", "24", "4",   # Kyiv, Kyiv oblast and the oblasts around it
+         "18", "22", "9"]                                  # 1.43: Odesa, Kharkiv, Dnipro — each with a tracker of its own
 
 TR = {"а": "a", "б": "b", "в": "v", "г": "h", "ґ": "g", "д": "d", "е": "e", "є": "ie", "ж": "zh", "з": "z", "и": "y",
       "і": "i", "ї": "i", "й": "i", "к": "k", "л": "l", "м": "m", "н": "n", "о": "o", "п": "p", "р": "r", "с": "s",
@@ -39,6 +40,10 @@ def translit(s):
         else:
             out.append(TR.get(c, c))
     return "".join(out)
+
+
+# raions renamed since the map's outlines were drawn: the official name → the outline's key
+RENAMED = {"samarivskyi": "novomoskovskyi"}
 
 
 def key_of(name):
@@ -89,6 +94,7 @@ def build_regions(regions, kmap):
         for d in st.get("regionChildIds") or []:
             if d.get("regionType") == "District":
                 k = key_of(d["regionName"])
+                k = RENAMED.get(k, k)
                 shape = None
                 for f in by_obl.get(uid, []):
                     if f["key"] == k or (f.get("stem") and re.search(f["stem"], d["regionName"].lower())):
@@ -170,16 +176,21 @@ def build_light_map(kmap, uar, html):
     for rid, d in uar["districts"].items():
         if d["key"]:
             shape_ids.setdefault((d["obl"], d["key"]), rid)
-    raions = []
+    raions, far = [], []
     for f in kmap["features"]:
         if f["obl"] not in SCOPE:
             continue
         k = f["raion"] if f["obl"] == "14" and f.get("raion") else f["key"]
         rid = shape_ids.get((f["obl"], k))
         uk = uar["districts"][rid]["name"] if rid else None
-        raions.append({"k": k, "id": rid, "obl": f["obl"], "en": f["name"], "uk": uk, "p": flat(parse_path(f["path"]), 0.3)})
+        # 1.43: the oblasts farther out go to a second file the Light page fetches only for a place there — the page
+        # and its map data must stay small enough for a phone on 2G
+        (raions if f["obl"] in SCOPE[:8] else far).append(
+            {"k": k, "id": rid, "obl": f["obl"], "en": f["name"], "uk": uk, "p": flat(parse_path(f["path"]), 0.3)})
+    build_light_map.far = {"_about": "built by scripts/build_geo.py — the raions of the oblasts farther out (1.43), "
+                                     "fetched by the Light page only for a place in one of them", "raions": far}
     # oblast outlines: the scope and every oblast a 60 km circle around a place in it can reach into
-    near = set(SCOPE) | {"15", "22", "5", "3", "18"}
+    near = set(SCOPE[:8]) | {"15", "22", "5", "3", "18"}
     oblasts = [{"uid": o["uid"], "p": flat(parse_path(o["path"]), 1.0)} for o in kmap["oblasts"] if o["uid"] in near]
     towns = [t for t in js_const(html, "TOWNS") if len(t) < 4 or t[3] in (1, 2)]
     seen, tw = set(), []
@@ -194,22 +205,31 @@ def build_light_map(kmap, uar, html):
 
 
 def main():
-    regions = load_regions(sys.argv[1] if len(sys.argv) > 1 else None)
+    """`--light` rebuilds only static/light-map.json, from the data/ua_regions.json already in the repository."""
+    light_only = "--light" in sys.argv
+    args = [a for a in sys.argv[1:] if a != "--light"]
     with open(os.path.join(ROOT, "static", "kyiv-map.json"), encoding="utf-8") as f:
         kmap = json.load(f)
     with open(os.path.join(ROOT, "static", "kyiv.html"), encoding="utf-8") as f:
         html = f.read()
-    uar, unmatched = build_regions(regions, kmap)
+    if light_only:
+        with open(os.path.join(ROOT, "data", "ua_regions.json"), encoding="utf-8") as f:
+            uar, unmatched = json.load(f), []
+    else:
+        uar, unmatched = build_regions(load_regions(args[0] if args else None), kmap)
     if unmatched:
         print("unmatched:", unmatched)
     lm = build_light_map(kmap, uar, html)
     missing = [r["en"] for r in lm["raions"] if not r["id"] and r["obl"] != "31"]
     if missing:
         print("raion shapes without an official id:", missing)
-    with open(os.path.join(ROOT, "data", "ua_regions.json"), "w", encoding="utf-8") as f:
-        json.dump(uar, f, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
+    if not light_only:
+        with open(os.path.join(ROOT, "data", "ua_regions.json"), "w", encoding="utf-8") as f:
+            json.dump(uar, f, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
     with open(os.path.join(ROOT, "static", "light-map.json"), "w", encoding="utf-8") as f:
         json.dump(lm, f, ensure_ascii=False, separators=(",", ":"))
+    with open(os.path.join(ROOT, "static", "light-map-x.json"), "w", encoding="utf-8") as f:
+        json.dump(build_light_map.far, f, ensure_ascii=False, separators=(",", ":"))
     print(f"ua_regions.json: {len(uar['states'])} oblasts, {len(uar['districts'])} raions, {len(uar['communities'])} hromadas")
     print(f"light-map.json: {len(lm['raions'])} raions, {len(lm['oblasts'])} oblasts, {len(lm['towns'])} towns")
 

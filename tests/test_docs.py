@@ -52,6 +52,6 @@ def test_every_table_is_documented():
     assert not missing, f"tables missing from docs/TECHNICAL.md §13: {missing}"
 
 
-def test_the_six_channels_are_the_documented_ones():
+def test_the_default_channels_are_the_documented_ones():
     for ch in server.AUTHORITATIVE_CHANNELS:
         assert f"`{ch}`" in DOC, ch

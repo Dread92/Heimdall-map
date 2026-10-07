@@ -1005,7 +1005,7 @@ body.lite #mycard,body.lite .panel{background:#000;border-color:#666}body.lite .
   <button class="mi" id="supbtn" type="button" data-t="m_support">Support the project</button>
   <a class="mi" id="tgbtn" data-t="m_tg" target="_blank" rel="noopener" hidden>Community on Telegram</a>
   <button class="mi" id="aboutbtn" type="button" data-t="m_about">About · disclaimer</button>
-  <div class="mi bt" id="buildtag">v1.42</div>
+  <div class="mi bt" id="buildtag">v1.43</div>
 </div>
 <div class="panel" id="lay" hidden role="dialog" aria-labelledby="layh"><div class="pgrab"></div>
   <div class="ph"><b id="layh" data-t="m_layers">Map layers</b><button type="button" class="px" data-close="lay" data-t-aria="btn_close" aria-label="Close">✕</button></div>
@@ -1684,7 +1684,7 @@ function lostGoneIn(m){                       // minutes left before the mark is
 let SLOT_PICKING=null;   // which slot the place picker is currently filling
 let PLACES_ALL=[];
 const homeName=()=>!HOME?'':HOME.dropped?t('sl_pin_dropped'):(LANG==='uk'&&HOME.uk?HOME.uk:townName(HOME.name));
-async function loadPlacesList(){try{const pl=(await (await fetch('/api/places?oblast=14,31,10,25,20,19,24,4')).json()).places;PLACES_ALL=pl.filter(p=>!/громада|берег|столиця|водосховище|море|АЕС|ГЕС|траса|шосе|проспект/i.test(p.name)).map(p=>({name:translit(p.name),uk:p.name,lon:p.lon,lat:p.lat,obl:p.oblast_uid,kind:OBL_N[p.oblast_uid]?oblFull(p.oblast_uid):t('kd_region')}));
+async function loadPlacesList(){try{const pl=(await (await fetch('/api/places?oblast=scope')).json()).places;PLACES_ALL=pl.filter(p=>!/громада|берег|столиця|водосховище|море|АЕС|ГЕС|траса|шосе|проспект/i.test(p.name)).map(p=>({name:translit(p.name),uk:p.name,lon:p.lon,lat:p.lat,obl:p.oblast_uid,kind:OBL_N[p.oblast_uid]?oblFull(p.oblast_uid):t('kd_region')}));
   for(const [r,n] of Object.entries(RAION)) if(r!=='kyiv-city'){const c=RAION_LBL[r];PLACES_ALL.push({name:RAION_N[r][0]+' raion',uk:RAION_N[r][1]+' район',lon:C[0]+c[0]/KX,lat:C[1]-c[1]/KY,obl:'14',kind:t('kd_raion')});}
   PLACES_ALL.sort((a,b)=>a.name.localeCompare(b.name));}catch(e){}}
 function renderHomeList(q){const s=(q||'').toLowerCase();const rows=PLACES_ALL.filter(p=>!s||p.name.toLowerCase().includes(s)||p.uk.toLowerCase().includes(s)).slice(0,60);
@@ -2479,7 +2479,10 @@ function threatStrip(){
   // 1.42.1: a channel taking a missile report back ("ймовірно лаг системи", tagged 'retract' by the server) ends the
   // warnings the channels raised before it — never an official one: only the official data ends an alert
   const retracted=ts=>recent.some(p=>p.ts>ts&&(p.tags||[]).includes('retract'));
-  for(const p of recent){ const tg=p.tags||[]; if(tg.includes('clear')||tg.includes('forecast')||tg.includes('retract')||FORECAST.test(p.text||'')||retracted(p.ts)) continue;
+  // 1.43: a regional channel's MiG or ballistic report is for the readers of its oblast — the country-wide channels
+  // relay what concerns everyone
+  const mine=myOblasts();
+  for(const p of recent){ const tg=p.tags||[]; if(p.home&&!mine.has(p.home)) continue; if(tg.includes('clear')||tg.includes('forecast')||tg.includes('retract')||FORECAST.test(p.text||'')||retracted(p.ts)) continue;
     if(tg.includes('mig31k_departure')){ if(!cancelledAfter(p.ts,'mig31k_departure')) thr.push({ty:'mig31k_departure',ts:p.ts,src:CH[p.channel]||p.channel,where:''}); }
     else if(tg.includes('ballistic_missiles')&&(/(?:^|[^а-яіїє])пуск|запуск[а-яіїє]*\s+(?:баліст|іскандер|кинджал|кінжал)|швидкісн[а-яіїє]*\s+ціл|балістик[а-яіїє]*\s+(?:на|по)\s+ки[їєе]в|загроза\s+(?:застосування\s+)?баліст[а-яіїє]*\s+(?:для|по|на)?\s*ки[їєе]в|ballistic.*kyiv|launch/i.test(p.text+' '+(p.text_en||''))||(tg.includes('kyiv')&&tg.includes('official')))){ if(!cancelledAfter(p.ts,'ballistic_missiles')) thr.push({ty:'ballistic_missiles',ts:p.ts,src:CH[p.channel]||p.channel,where:''}); } }
   const el=$('tstrip');
@@ -2549,13 +2552,15 @@ const thrIco=(ty,col)=>{ const g=GLYPH_BY_TYPE[ty]; if(!g) return '';
 function silSvg(m,col){ const k=glyphKey(m)==='arrow'?((m.type==='drones'&&m.jet)?'jetdrone':(GLYPH_BY_TYPE[m.type]||'missile')):glyphKey(m);
   const cls='sil'+((m.type==='drones'&&m.jet)?' jet':'')+(m.type==='ballistic_missiles'?' bal':'')+(m.type==='supersonic_missiles'?' sup':'');
   return `<svg viewBox="-14 -14 28 28" aria-hidden="true"><g class="${cls}" style="--c:${col||KIND_COL(m)}">${G[k]||''}</g></svg>`; }
+const NEAR_MAX=350;     // km — the Near list: the reader's region, not the country
 function nearRows(){
   const ref=HOME?proj(HOME.lon,HOME.lat):[0,0], now=Date.now(), out=[];
   const merged=new Set(MK.filter(m=>m.csum).flatMap(m=>m.cids||[]));     // folded into a neighbour's count on the map
   for(const m of MK){ if(m.status||m.endedBy||merged.has(m.id)||agoMin(m.ts)>ttl) continue;
     const [x,y]=posOf(m,now), d=Math.hypot(x-ref[0],y-ref[1]), hi=HOME?homeInfo(m,x,y):{inbound:false,named:false};
+    if(d>NEAR_MAX) continue;      // 1.43: the map covers Odesa and Kharkiv now — a target 400 km away is not "near" anyone here
     const n=m.csum||m.count||1, chs=new Set([m.channel,...corroboration(m).map(o=>o.channel)]).size;
-    out.push({m,d,hi,n,chs,imm:IMMEDIATE.has(m.type),vague:m.place==='область'}); }
+    out.push({m,d,hi,n,chs,imm:IMMEDIATE.has(m.type)&&d<=REGION_R,vague:m.place==='область'}); }
   out.sort((a,b)=>(b.imm-a.imm)||(a.vague-b.vague)||((b.hi.inbound&&!b.m.stale)-(a.hi.inbound&&!a.m.stale))||(a.d-b.d));
   return out; }
 const fromWhere=()=>HOME?t('mc_f_'+ACTIVE):t('mc_f_kyiv');
@@ -2750,7 +2755,7 @@ function alertMap(active,k){
   document.querySelectorAll('#raionsg .rn').forEach(p=>{const r=p.dataset.r; if(r==='kyiv-city'){cls.set(p,`rn city ${kCity||''}`);return;} const l=maxL(kFill,krst[r]); cls.set(p,`rn ${l}`);});
   // surrounding oblasts: per-raion colours when raion alerts are reported (єТривога / oblast channels / keyed API),
   // otherwise the oblast-wide on/off from the mirror is painted on the oblast outline only
-  const REG=['10','25','20','19','24','4']; const rkey=t=>translit(String(t||'').trim().split(/\s+/)[0]).toLowerCase().replace(/[^a-z]/g,'');
+  const REG=scopeRegs(); const rkey=t=>translit(String(t||'').trim().split(/\s+/)[0]).toLowerCase().replace(/[^a-z]/g,'');
   for(const o0 of (MAP?MAP.oblasts:[])){ const uid=o0.uid; if(uid==='14'||uid==='31') continue; const isReg=REG.includes(uid); const occ=o0.occupied;
     const ra=active.filter(a=>a.oblast_uid===uid&&(a.location_type==='raion'||a.location_type==='hromada'||a.location_type==='city')).map(a=>({a,k:rkey(a.location_title),L:lvl(a.alert_level)}));
     const rl={}, paths=document.querySelectorAll(`#neighbors .nb[data-o="${uid}"]`), lv=new Map();
@@ -2762,6 +2767,10 @@ function alertMap(active,k){
     per[uid]={rl,oL}; }
   return {cls,per};
 }
+// 1.43: the oblasts the map covers come from the server (the dashboard switches them); Kyiv and its oblast aside
+function scopeRegs(){ const sc=(S&&S.scope)||['14','31','10','25','20','19','24','4','18','22','9']; return sc.filter(u=>u!=='14'&&u!=='31'); }
+// the reader's oblasts: the one picked, and the ones the watched places are in — a regional channel's warning is for them
+function myOblasts(){ const o=new Set([MYOBL.uid]); for(const p of Object.values(SLOTS)) if(p){ const u=unitAt(p.lon,p.lat); if(u&&u.obl) o.add(u.obl==='31'?'14':u.obl); } return o; }
 function applyAlertMap(am){ for(const [el,c] of am.cls) if(el.getAttribute('class')!==c) el.setAttribute('class',c); }
 function render(){
   if(!S) return; const ob=S.oblasts; threatStrip(); drawBridges();
@@ -2801,7 +2810,7 @@ function render(){
   // the map's colours: the raions, the city, the oblasts around (1.42: one function, shared with the replay, which
   // paints the alerts of a past moment with it — the live colours are not painted while a replay is on)
   const AM=alertMap(S.active,k); if(!(window.RP&&RP.on)) applyAlertMap(AM);
-  const REG=['10','25','20','19','24','4']; const regTags=[];
+  const REG=scopeRegs(); const regTags=[];
   for(const o0 of (MAP?MAP.oblasts:[])){ const uid=o0.uid; if(uid==='14'||uid==='31') continue; const o=ob[uid]; const isReg=REG.includes(uid);
     const {rl,oL}=AM.per[uid]||{rl:{},oL:''};
     if(!isReg||!o) continue;
@@ -2911,7 +2920,7 @@ function renderStats(){ if(!STATS) return; const el=$('stats'); if(!el) return; 
 // =====================================================================================
 // ---------------------------------------------------------------------------------------------------
 // The contacts (CONTACT) and the footer (footerHTML, shareApp) are in static/i18n.js since 1.39, shared with Light.
-const APP_VERSION='1.42';
+const APP_VERSION='1.43';
 const DONATE=CONTACT.ngo;
 const ls=(k,v)=>{try{return v===undefined?localStorage.getItem(k):(localStorage.setItem(k,v),v);}catch(e){return null;}};
 
