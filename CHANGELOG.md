@@ -2,6 +2,18 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.44.1 — 2026-10-07
+
+### Fixed
+- **A destination is no longer drawn as a position.** "Курсом в бік Велика Рибиця/Мала Рибиця/Осоївка" (Sumy) put the
+  target ON Мала Рибиця; every name of a list after "в бік / курс" is now a place it may be heading for.
+- **"Впали" after guided bombs is an impact**, even when the bombs were named a few posts earlier ("Пуски КАБів в
+  нашому напрямку") — never a shoot-down. Guided bombs leave the map on the short clock, not the regional one.
+- "Реактивний Шахед вилетів з області", "новий підлітає до нас", "Дорозвідка на Вінниччині" no longer put a target in
+  the middle of Vinnytsia oblast.
+- Odesa: "В. Михайловка" is Велика Михайлівка, "Буялык" is Великий Буялик (not Петрівка), "в сторону Раздельной" is
+  Роздільна.
+
 ## 1.44.0 — 2026-10-07
 
 ### Added

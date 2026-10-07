@@ -2136,6 +2136,9 @@ class State:
         # used to restart that position's clock, so on 5 October a target destroyed at Vydubychi at 20:25 stood
         # there, "1 min ago", until 20:37, carried by lines about another target 100 km south.
         last_by_channel = {}
+        # 1.44.1: the weapon each channel last named (from its posts' tags) — "Пуски КАБів в нашому напрямку" names no
+        # place, and the reports after it ("Пролітають …", "Впали") name no weapon
+        weapon_by_channel = {}
         for p in posts:
             ms = cache.get(p["post_id"])
             if ms is None:
@@ -2185,7 +2188,10 @@ class State:
                 if m.get("needs_context"):
                     if ctx and pts and (pts - ctx[0]).total_seconds() <= 8 * 60:
                         m.update(lon=ctx[1]["lon"], lat=ctx[1]["lat"], place=ctx[1]["place"], oblast_uid=ctx[1].get("oblast_uid"), pos_ts=ctx[2])
-                        if ctx[1].get("type") == "guided_aerial_bombs" and m.get("status") == "down":
+                        wpn = weapon_by_channel.get(p["channel"])
+                        kab = ctx[1].get("type") == "guided_aerial_bombs" or (
+                            wpn and wpn[1] == "guided_aerial_bombs" and (pts - wpn[0]).total_seconds() <= 15 * 60)
+                        if kab and m.get("status") == "down":
                             # 1.44: "Впали" after a guided-bomb report (@kabusumy) — the bombs hit the ground; nothing was
                             # shot down
                             m.update(status="impact", type="guided_aerial_bombs")
@@ -2221,6 +2227,11 @@ class State:
                     last_by_channel[p["channel"]] = ctx if (m.get("pos_ts") and ctx) else (pts, m, p["ts"])
                 fixed.append(m)
             ms = fixed
+            if pts:
+                said = geo.prepare(p.get("text") or "", p["channel"]).lower()
+                wpn = next((n for n, rx in geo.TYPE_RX if rx.search(said)), None)
+                if wpn:
+                    weapon_by_channel[p["channel"]] = (pts, wpn)
             # the channel said the target fell, was destroyed, is lost, or that the sky is clear: its position ends here
             if any(m.get("status") in ("down", "lost", "clear") for m in ms) or "clear" in (p.get("tags") or []):
                 last_by_channel.pop(p["channel"], None)
@@ -3381,7 +3392,8 @@ class State:
             # 1.43.1: a regional tracker reports a target every five to twenty minutes, not every minute like the Kyiv
             # channels: its last report is the latest anyone said, and it keeps longer — as "location not updated"
             # after REGIONAL_STALE_MIN, gone after REGIONAL_GONE_MIN (and still at once when the oblast's alert ends)
-            reg = bool(geo and geo.CHANNEL_HOME.get(m.get("channel")))
+            # (1.44.1: never a guided bomb — it glides for minutes, whoever reports it)
+            reg = bool(geo and geo.CHANNEL_HOME.get(m.get("channel"))) and m.get("type") != "guided_aerial_bombs"
             st_min = max(stale, REGIONAL_STALE_MIN) if reg else stale
             if reg:
                 m["slow"] = True                  # the page fades it on the same longer clock

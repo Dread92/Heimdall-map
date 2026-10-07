@@ -93,3 +93,45 @@ def test_mykolaivs_raions_reach_the_light_page_only_for_a_place_there():
         far = json.load(f)
     assert {r["uk"] for r in far["raions"] if r["obl"] == "17"} == {
         "Баштанський район", "Вознесенський район", "Миколаївський район", "Первомайський район"}
+
+
+# -- 1.44.1: what the first evening of the new trackers showed ------------------------------------------------------
+
+def test_a_list_of_places_it_is_heading_for_is_no_position():
+    # "Мала Рибиця" in the list after "в бік" was drawn as where the bombs were
+    assert _marks("kabusumy", "Перелетіли Суджу далі курсом в бік Велика Рибиця/Мала Рибиця/Осоївка") == [
+        ("unknown", "→ Велика Рибиця", "20", None)]
+    assert _marks("kabusumy", "Тримають курс в бік Мала Рибиця/Осоївка") == [("unknown", "→ Мала Рибиця", "20", None)]
+    # a place it passed is still where it was
+    ms = geo.parse_for_channel("kabusumy", "Перелетіли Велику Рибицю далі курсом в бік Малой Рибиці")
+    assert [(m["place"], m["target"]) for m in ms] == [("Велика Рибиця", "Мала Рибиця")]
+
+
+def test_guided_bombs_named_earlier_make_a_later_fall_an_impact():
+    st = _state()
+    now = datetime.now(timezone.utc)
+    posts = [(6, "‼️Пуски КАБів в нашому напрямку‼️"), (3, "Пролітають повз Малу Рибицю далі курсом в бік Осоївки"),
+             (2, "Осоївка до вас увага!"), (1, "Впали")]
+    st.store.add_feed([{"post_id": f"kabusumy/{50 + i}", "channel": "kabusumy",
+                        "ts": (now - timedelta(minutes=ago)).isoformat(timespec="seconds"), "text": text,
+                        "tags": server.tag_feed_text(text, "kabusumy"), "text_en": text, "en_fallback": True}
+                       for i, (ago, text) in enumerate(posts)])
+    out = [m for m in st.markers() if m.get("status")]
+    assert [(m["status"], m["type"], m["place"]) for m in out] == [("impact", "guided_aerial_bombs", "Осоївка")]
+    # and a guided bomb keeps the short clock, whoever reports it
+    assert not [m for m in st.markers() if m.get("type") == "guided_aerial_bombs" and m.get("slow")]
+
+
+def test_leaving_the_oblast_or_coming_from_outside_is_no_position():
+    for text in ("📡 Дорозвідка на Вінниччині\n\nРеактивний Шахед вилетів з області.\n\nАле новий підлітає до області.",
+                 "📡 Дорозвідка на Вінниччині\n\nРеактивний Шахед вилетів з області.\n\nАле 2 нових вже підлітають до нас."):
+        assert geo.parse_for_channel("vinnytsiappo", text) == [], text
+
+
+def test_the_odesa_trackers_names():
+    assert _marks("xydessa_live", "В. Михайловка") == [("unknown", "Велика Михайлівка", "18", None)]
+    assert _marks("monitoringodesa", "В сторону Буялык") == [("unknown", "→ Великий Буялик", "18", None)]
+    assert _marks("xydessa_live", "Великий Буялык") == [("unknown", "Великий Буялик", "18", None)]
+    # a Russian name declined like an adjective: Раздельная → Раздельной, Раздельную
+    assert ("unknown", "→ Роздільна", "18", None) in _marks("monitoringodesa", "Знаменка 1\nВ сторону Раздельной 1")
+    assert _marks("monitoringodesa", "На Раздельную") == [("unknown", "→ Роздільна", "18", None)]

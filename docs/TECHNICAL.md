@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.44** · last updated 2026-10-07 (1.44.0)
+**Documented version: 1.44** · last updated 2026-10-07 (1.44.1)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -527,6 +527,17 @@ apostrophe — `_ru_variants`). Kharkiv city's districts are named by hand in th
   "високо / низько / далі" are never villages (`REGIONAL_STOP`); "Не фіксується" at the start of a sentence is a
   lost target (not "загроз не фіксується"). A channel's signature line — "X | Підписатись", "💪 Телеграм канал …" —
   is cut before the post is tagged or parsed (`translate._SIGN_LINE`), never its first line.
+- 1.44.1: **a list after "в бік / курс"** ("в бік Велика Рибиця/Мала Рибиця/Осоївка", "на Димерку, Бровари") is a list of
+  places it may be heading for: every name joined by `/`, `,`, "або / чи / і" to a destination is a destination
+  (`_LIST_SEP_RX` in `_parse_live`) — read as a bare name, the second one became where the target was. A segment that
+  names no place and says the target left ("вилетів з області") or is coming from outside ("підлітає до нас / до
+  області") is no position (`_EXIT_RX`), nor is "Дорозвідка". "В. Михайловка" / "М. …" are Велика / Мала
+  (`_REG_ABBR_RX`); a Russian name declined like an adjective is matched in its cases ("Раздельная" → "Раздельной",
+  "Раздельную"). "Буялык" is Великий Буялик (`CURATED_BY_NAME`).
+- 1.44.1: **the weapon a channel named last** (`weapon_by_channel` in `_marks_from_posts`, 15 min): "Пуски КАБів в
+  нашому напрямку" names no place and the reports after it name no weapon; a "Впали" placed at the channel's
+  previous report is then an impact of guided bombs, never a shoot-down. Guided bombs keep the standard clock
+  (5 / 15 min), not the regional one.
 - 1.43.1: **our own aircraft** (`geo.drop_friendly`): a sentence about "наш / свій БпЛА, дрон, борт, літак …"
   ("Акустика нашего БпЛА над Харьковом") is dropped before parsing and tagging; a post with "то наш / це наші / это
   наши" as a sentence of its own is about nothing hostile and is not kept. "Без фиксации", "Больше не фиксируется"

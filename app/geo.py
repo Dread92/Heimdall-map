@@ -450,6 +450,9 @@ _REG_IDX = {}      # oblast uid → {stem: [(key, alias), …]}
 _REG_META = {}     # key → (kind: X city section / A admin centre / P place, population, raion)
 AMBIG = {}         # an ambiguity token ("≈Іванівка|18") → {"name", "uid", "keys" (best first), "default" (bool)}
 _REG_TOK = re.compile(r"[а-яіїєґыэъ'][а-яіїєґыэъ'\-]*")
+# 1.44.1: "В. Михайловка" (@xydessa_live) — Великая / Велика, "М." Мала: read as the two-word name
+_REG_ABBR_RX = re.compile(r"(?<![а-яіїєґыэъ'])([вм])\.\s*([а-яіїєґыэъ'][а-яіїєґыэъ'\-]+)")
+_LIST_SEP_RX = re.compile(r"\s*[/,]\s*|\s+(?:або|чи|или|і|и|та)\s+")
 _REG_KM = 60.0     # a name shared by several villages is the one within this of another place the post names
 
 
@@ -571,7 +574,10 @@ def _reg_lookup(idx, words):
             for key, alias in idx.get(st, ()):
                 if adj and alias.endswith(("ське", "цьке", "зьке", "ское", "цкое")):
                     continue
-                if (len(st) >= 4 or st == alias) and _plausible(w, alias, st) and key not in keys:
+                # 1.44.1: a Russian name declined like an adjective — "Раздельная": "в сторону Раздельной", "на Раздельную"
+                ru_adj = alias.endswith(("ая", "яя")) and w[:len(alias) - 2] == alias[:-2] and \
+                    w[len(alias) - 2:] in ("ая", "ой", "ую", "ей", "юю", "яя", "ою")
+                if (len(st) >= 4 or st == alias) and (ru_adj or _plausible(w, alias, st)) and key not in keys:
                     keys.append(key)
         return keys
     w1, w2 = words
@@ -609,6 +615,10 @@ def _find_regional(text, uid):
             keys = _reg_lookup(idx, [w, toks[i + 1][2]])
             if keys:
                 out.append((s0, toks[i + 1][1], keys))
+    for m in _REG_ABBR_RX.finditer(text):
+        keys = _reg_lookup(idx, ["велика" if m.group(1) == "в" else "мала", m.group(2)])
+        if keys:
+            out.append((m.start(), m.end(), keys))
     return out
 
 
@@ -1455,6 +1465,10 @@ _MULTI_RX = re.compile(r"(?<=[а-яіїєґ'!.])\s+(?=\d{1,3}\s*(?:х\s*|x\s*)?(
                        r"(?<=[а-яіїєґ'])\s*,\s*(?=\d{1,3}\s+[а-яіїєґ])")
 
 
+_EXIT_RX = re.compile(r"(?:вилеті\w*|вилета\w*|покину\w*|покида\w*|залиши\w*|вийш\w*)\s+(?:з\s+|із\s+|за\s+)?(?:област|регіон|меж)|"
+                      r"(?:підліта\w*|підлета\w*|летить|летять|заліта\w*|прямує|прямують)\s+(?:до|в|у)\s+(?:нас|област|регіон)")
+
+
 def parse_post(text, home=None):
     """Return a list of marker dicts for one post (may be empty). `home` (1.43): the oblast of the regional channel
     that posted it — whose villages a sentence naming no oblast is read against."""
@@ -1528,6 +1542,11 @@ def parse_post(text, home=None):
             ctx_uid = home
         seg = _route_arrows(seg, ctx_uid)
         places = _find_places(seg, ctx_uid)
+        # 1.44.1: "Реактивний Шахед вилетів з області", "Але новий підлітає до області" (@vinnytsiappo): it left, or it is
+        # coming from outside — neither is a position, and the oblast's centre is a place nobody named. "Дорозвідка на
+        # Вінниччині" is the channel checking the sky after a target, not a target.
+        if not places and ((not seg_obl and _EXIT_RX.search(seg)) or re.search(r"дорозвідк|доразведк", seg)):
+            continue
         # split at course keyword
         class _M:  # pseudo-match at a position
             def __init__(self, p): self._p = p
@@ -1851,6 +1870,11 @@ def _parse_live(text, uid):
     # Where it is, and where it is going, by the words before each place — not "the last place when the post says
     # 'на'", which put "Від Глевахи два на Васильків" on Vasylkiv while it was still at Hlevakha.
     roles = [(p_, _place_role(t, p_)) for p_ in places]
+    # 1.44.1: "курсом в бік Велика Рибиця/Мала Рибиця/Осоївка" (@kabusumy) — every name of a list after "в бік" is a place
+    # it may be heading to. Read as a bare name, "Мала Рибиця" became where the target IS: a position nobody stated.
+    for i in range(1, len(roles)):
+        if roles[i][1] is None and roles[i - 1][1] == "dest" and _LIST_SEP_RX.fullmatch(t[roles[i - 1][0][1]:roles[i][0][0]]):
+            roles[i] = (roles[i][0], "dest")
     at = next((p_ for p_, r in roles if r == "from"), None) or next((p_ for p_, r in roles if r is None), None)
     dest = next((p_ for p_, r in roles if r == "dest" and (not at or p_[2] != at[2])), None)
     dest_only = at is None

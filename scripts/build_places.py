@@ -89,6 +89,9 @@ CURATED_BY_NAME = {
     ("22", "Osnovyanskyi"): ("Основ'янський район", ["основянский район"]),
     ("22", "Slobidskyi"): ("Слобідський район", ["слободской район"]),
     ("9", "Prydniprovsk"): ("Придніпровськ", ["приднепровск"]),
+    # 1.44.1: "Великий Буялык", "Первый курс Буялык" (the Odesa trackers) — GeoNames gives the bare name only to Петрівка,
+    # 6 km away; the hromada centre is the village they name
+    ("18", "Velykyi Buialyk"): ("Великий Буялик", ["великий буялык", "буялык", "буялик"]),
     ("9", "Ihren"): ("Ігрень", ["игрень"]),
     ("9", "Chapli"): ("Чаплі", ["чапли"]),
 }
