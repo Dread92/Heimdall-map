@@ -25,7 +25,8 @@ sys.path.insert(0, os.path.join(ROOT, "app"))
 
 SCOPE = ["31", "14", "10", "25", "20", "19", "24", "4",   # Kyiv, Kyiv oblast and the oblasts around it
          "18", "22", "9",                                  # 1.43: Odesa, Kharkiv, Dnipro — each with a tracker of its own
-         "17"]                                             # 1.44: Mykolaiv
+         "17",                                             # 1.44: Mykolaiv
+         "23", "15", "3", "21", "5", "27", "8"]            # 1.45: Kherson, Kirovohrad, Khmelnytskyi, Ternopil, Rivne, Lviv, Volyn
 
 TR = {"а": "a", "б": "b", "в": "v", "г": "h", "ґ": "g", "д": "d", "е": "e", "є": "ie", "ж": "zh", "з": "z", "и": "y",
       "і": "i", "ї": "i", "й": "i", "к": "k", "л": "l", "м": "m", "н": "n", "о": "o", "п": "p", "р": "r", "с": "s",

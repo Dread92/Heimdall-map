@@ -42,7 +42,7 @@ def test_each_new_channel_speaks_for_its_oblast_and_the_three_new_oblasts_are_on
         assert geo.CHANNEL_HOME[ch] == uid                       # and its posts are read as that oblast's
     for uid in ("18", "22", "9", "25", "24", "14", "31"):
         assert uid in server.SCOPE_UIDS
-    assert "27" not in server.SCOPE_UIDS                        # Lviv: no tracker, not on the map by default
+    assert "11" not in server.SCOPE_UIDS                        # Zakarpattia: no tracker, not on the map by default
     ids = [r["id"] for r in st.regions()]
     assert ids[:2] == ["31", "ua"] and "22" in ids and "14" not in ids     # Kyiv oblast is part of Kyiv's compartment
 
@@ -62,11 +62,11 @@ def test_an_oblast_switched_off_leaves_the_map_and_its_channel_is_not_read():
 
 def test_an_oblast_never_on_can_be_switched_on_and_kyiv_never_off():
     st = _state()
-    lviv = {"oblast_uid": "27", "lat": 49.84, "lon": 24.03}
+    lviv = {"oblast_uid": "11", "lat": 48.62, "lon": 22.30}           # 1.45: Lviv is on the map; Zakarpattia is not
     assert not server.in_scope(lviv)
-    assert st.region_set("27", True)[0] and server.in_scope(lviv)
+    assert st.region_set("11", True)[0] and server.in_scope(lviv)
     assert st.region_set("31", False) == (False, "Kyiv is always on")
-    assert st.region_set("27", False)[0] and not server.in_scope(lviv)
+    assert st.region_set("11", False)[0] and not server.in_scope(lviv)
 
 
 def test_a_channel_added_from_the_dashboard_belongs_to_the_oblast_chosen_and_can_be_moved():
@@ -148,6 +148,10 @@ def test_a_post_in_russian_is_read_like_one_in_ukrainian():
 
 def test_a_name_several_villages_share_is_the_one_near_the_channels_last_report_or_nothing():
     m = _marks("monitoringodesa", "Ивановка")[0]
+    # 1.45: only the villages called exactly that are candidates (no look-alikes) — and the Berezivka one, the hromada
+    # centre, is by far the largest: the clear default
+    assert not m["ambiguous"] and len(m["candidates"]) > 2 and m["place"] == "Іванівка (Березівський р-н)"
+    m = _marks("monitoringodesa", "Александровка")[0]
     assert m["ambiguous"] and len(m["candidates"]) > 2
     st = _state()
     t0 = datetime.now(timezone.utc) - timedelta(minutes=10)
@@ -156,24 +160,27 @@ def test_a_name_several_villages_share_is_the_one_near_the_channels_last_report_
     out = st._marks_from_posts(posts, [], {})
     iv = [x for x in out if x["place"].startswith("Іванівка")]
     assert len(iv) == 1 and iv[0]["place"] == "Іванівка (Березівський р-н)" and "candidates" not in iv[0]
-    # with nothing before it, nobody can say which Іванівка — it is not drawn
+    # with nothing before it, nobody can say which Олександрівка — it is not drawn
+    posts[1]["text"] = "Александровка"
     alone = st._marks_from_posts(posts[1:], [], {})
-    assert not [x for x in alone if x["place"].startswith("Іванівка")]
+    assert not [x for x in alone if x["place"].startswith("Олександрівка")]
 
 
 def test_the_regional_gazetteer_is_built_from_geonames_and_kept_off_the_map_labels():
     doc = json.loads(_read("data/regional_places.json"))
-    assert set(doc["oblasts"]) == {"25", "24", "18", "22", "9", "20", "17", "19", "4", "10"} and "GeoNames" in doc["_about"]
+    assert set(doc["oblasts"]) == {"25", "24", "18", "22", "9", "20", "17", "19", "4", "10",
+                                   "23", "15", "3", "21", "5", "27", "8"} and "GeoNames" in doc["_about"]
     assert "Лихачів" in geo.PLACES and "Лихачів" not in list(geo.PLACES)       # looked up, never iterated
     assert "geonames.org" in DOC.lower() and "build_places.py" in DOC
 
 
 def test_the_light_page_fetches_the_far_raions_only_for_a_place_there():
     far = json.loads(_read("static/light-map-x.json"))
-    assert {r["obl"] for r in far["raions"]} == {"18", "22", "9", "17"}          # 1.44: Mykolaiv
+    far_obl = {"18", "22", "9", "17", "23", "15", "3", "21", "5", "27", "8"}   # 1.44: Mykolaiv; 1.45: seven more
+    assert {r["obl"] for r in far["raions"]} == far_obl
     base = json.loads(_read("static/light-map.json"))
-    assert not {r["obl"] for r in base["raions"]} & {"18", "22", "9", "17"}
-    assert "['18','22','9','17'].includes(o)" in LIGHT
+    assert not {r["obl"] for r in base["raions"]} & far_obl
+    assert "'18 22 9 17 23 15 3 21 5 27 8'.split(' ').includes(o)" in LIGHT
     assert "fetch('/static/light-map-x.json')" in LIGHT and "await loadLMX(OBL)" in LIGHT
 
 

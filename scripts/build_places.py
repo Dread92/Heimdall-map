@@ -5,7 +5,8 @@
 The two files are GeoNames' Ukraine dumps (https://download.geonames.org/export/dump/UA.zip and
 .../alternatenames/UA.zip, CC BY 4.0 — attribution in docs/TECHNICAL.md). Without arguments both are downloaded.
 
-1.43 (1.44: and Sumy, Mykolaiv, Poltava, Vinnytsia, Zhytomyr). The gazetteer in app/geo.py holds the towns the Air Force and the Kyiv trackers name — a few hundred. A
+1.43 (1.44: and Sumy, Mykolaiv, Poltava, Vinnytsia, Zhytomyr; 1.45: Kherson, Kirovohrad, Khmelnytskyi, Ternopil, Rivne,
+Lviv, Volyn). The gazetteer in app/geo.py holds the towns the Air Force and the Kyiv trackers name — a few hundred. A
 regional tracker names villages: "2 реакти від Куликівки на Лихачів", "Стрюково", "Троицкое", "БпЛА на Лесное -
 Пятихатки". This file holds every populated place of those oblasts with its Ukrainian name, its Russian name (the
 Odesa and Kharkiv channels write in Russian) and the raion it is in. geo.py matches these names ONLY in a post from
@@ -28,7 +29,9 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # GeoNames admin1 code → the app's oblast uid. Only the oblasts that have a regional channel (1.43; 1.44: Sumy, Mykolaiv,
 # Poltava, Vinnytsia, Zhytomyr).
 ADMIN1 = {"02": "25", "01": "24", "17": "18", "07": "22", "04": "9",
-          "21": "20", "16": "17", "18": "19", "23": "4", "27": "10"}
+          "21": "20", "16": "17", "18": "19", "23": "4", "27": "10",
+          # 1.45: Kherson, Kirovohrad, Khmelnytskyi, Ternopil, Rivne, Lviv, Volyn
+          "08": "23", "10": "15", "09": "3", "22": "21", "19": "5", "15": "27", "24": "8"}
 
 # GeoNames admin2 (the raions of the 2020 reform) → the short Ukrainian label shown after a name several villages share
 RAION = {
@@ -55,6 +58,19 @@ RAION = {
     ("23", "0508"): "Могилів-Подільський р-н", ("23", "0510"): "Тульчинський р-н", ("23", "0512"): "Хмільницький р-н",
     ("27", "1802"): "Бердичівський р-н", ("27", "1804"): "Житомирський р-н", ("27", "1806"): "Коростенський р-н",
     ("27", "1808"): "Звягельський р-н",
+    ("08", "6502"): "Бериславський р-н", ("08", "6504"): "Генічеський р-н", ("08", "6506"): "Каховський р-н",
+    ("08", "6508"): "Скадовський р-н", ("08", "6510"): "Херсонський р-н",
+    ("10", "3502"): "Голованівський р-н", ("10", "3504"): "Кропивницький р-н", ("10", "3506"): "Новоукраїнський р-н",
+    ("10", "3508"): "Олександрійський р-н",
+    ("09", "6802"): "Кам'янець-Подільський р-н", ("09", "6804"): "Хмельницький р-н", ("09", "6806"): "Шепетівський р-н",
+    ("22", "6102"): "Кременецький р-н", ("22", "6104"): "Тернопільський р-н", ("22", "6106"): "Чортківський р-н",
+    ("19", "5602"): "Вараський р-н", ("19", "5604"): "Дубенський р-н", ("19", "5606"): "Рівненський р-н",
+    ("19", "5608"): "Сарненський р-н",
+    ("15", "4602"): "Дрогобицький р-н", ("15", "4604"): "Золочівський р-н", ("15", "4606"): "Львівський р-н",
+    ("15", "4608"): "Самбірський р-н", ("15", "4610"): "Стрийський р-н", ("15", "4612"): "Шептицький р-н",
+    ("15", "4614"): "Яворівський р-н",
+    ("24", "0702"): "Володимирський р-н", ("24", "0704"): "Камінь-Каширський р-н", ("24", "0706"): "Ковельський р-н",
+    ("24", "0708"): "Луцький р-н",
 }
 
 # Kharkiv city's districts and microdistricts, which @radar_kharkov names post after post. GeoNames has them as city
@@ -102,6 +118,12 @@ CURATED_BY_ID = {"13680600": ("Холодногірський район", ["х�
 # historical (PPLH) and destroyed (PPLW) places are not places anyone is reporting a drone over.
 KEEP = {"PPL", "PPLX", "PPLA", "PPLA2", "PPLA3", "PPLA4", "PPLL", "PPLS", "PPLF", "PPLR"}
 
+# 1.45: a Soviet name GeoNames still lists first for a renamed village ("Куйбишеве" for Зимівник, Kherson) is not the
+# name the channels write: when the village has another Ukrainian name, that one is shown
+SOVIET = re.compile(r"куйбиш|комінтерн|ленін|кіров|жовтн|червоноарм|комсомол|радянськ|дзержин|орджонікідз|ворошилов|фрунзе|"
+                    r"свердлов|калінін|артем|щорс|чапаєв|пролетар|більшовик|жданов|постишев|котовськ|чкалов|димитров|ілліч|"
+                    r"октябр|піонер|петровськ|кірово|котовськ|леніно|красноарм|радгосп|колгосп|інтернаціонал|урицьк|жовтнев",
+                    re.I)
 CYR = re.compile(r"^[А-Яа-яІіЇїЄєҐґЁёЫыЭэЪъ'’ʼ\- ]+$")
 RU_ONLY = re.compile(r"[ЁёЫыЭэЪъ]")
 UK_ONLY = re.compile(r"[ІіЇїЄєҐґ]")
@@ -152,6 +174,7 @@ def main():
         uid = ADMIN1[p["a1"]]
         cur = CURATED_BY_ID.get(gid) or CURATED_BY_NAME.get((uid, p["en"]))
         uk = [n for n, pref in sorted(p["uk"], key=lambda x: not x[1]) if not RU_ONLY.search(n)]
+        uk.sort(key=lambda n: bool(SOVIET.search(n)))          # stable: the preferred non-Soviet name first
         if cur:
             name, extra = cur
         elif uk:

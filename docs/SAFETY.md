@@ -406,6 +406,12 @@ every other line of that shape during a raid. Those lines now place in the named
 count: **Південне is a town**, not "the south", and a name that merely begins like a direction never moves a
 marker.
 
+1.45: a part of an oblast is still not a point. Such a report is now drawn on the region like any report that names
+the oblast and no town — its outline, the weapon and the count — and its card says *north of the oblast*. And when
+the same sentence names the town it is heading for ("на півночі Чернігівщини ➡️ курсом на Славутич"), it is drawn as
+an approach to that town: the one place the post did name. A raion named as where it is ("залітає у Гайсинський
+район … курсом на Теплик") is the same: an approach to Теплик, with no course drawn from the raion's centre.
+
 ## Where it is, and where it is going, are different facts
 
 "3х мгКР Бандероль у напрямку Ніжин. **Далі Київщина**" says the missiles are heading for Nizhyn and will carry
@@ -482,6 +488,14 @@ village, at high precision, in the wrong place.
 These no longer produce a marker at all. The **region itself** is outlined and tinted, and a label inside it
 says what was reported and that it was somewhere in the oblast. A label is not a position, and it cannot be
 mistaken for one.
+
+1.45: **the same for a target still in the air.** "Чернігівщина: 3 реакти" drew three jet drones in the middle of
+Chernihiv oblast, a hundred kilometres from anything the post said, and somebody living near that point took it for
+a position. A target reported for a whole oblast is drawn on the region — its outline, the weapon's silhouette and
+the count — never as a pin; the Near list gives it no distance and it never raises the level; a push never says
+"within 15 km of you" about it. And **a town it is heading for is never the oblast centre**: "3 реакти на Славутич з
+півночі" under a Chernihiv heading is an approach to Slavutych, from the north — what the post said, and nothing
+more.
 
 ## An explosion is a moment, not a state
 

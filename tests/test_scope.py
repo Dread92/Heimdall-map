@@ -26,7 +26,9 @@ def test_the_default_channels_and_only_them():
     assert set(server.AUTHORITATIVE_CHANNELS) == {
         "war_monitor", "eRadarrua", "kyiv_airdef", "chyste_nebo", "kievinfo_kyiv", "kpszsu",
         "chernihiv_nebo", "monitoringodesa", "chyste_nebocherkasy", "radar_kharkov", "RadarDnepr",
-        "kabusumy", "air_alert_mk", "PoltavaRadar", "vinnytsiappo", "zt_radar"}
+        "kabusumy", "air_alert_mk", "PoltavaRadar", "vinnytsiappo", "zt_radar",
+        # 1.45: Kherson, Kirovohrad, Khmelnytskyi, Ternopil, Rivne, Lviv, Volyn
+        "kherson_monitoring", "controlkrop", "radarhmel", "radarofternopil", "rivne_radar", "ppoualviv", "lutsk_radar"}
     assert set(server.CHANNEL_HOME_DEFAULT) == set(server.AUTHORITATIVE_CHANNELS)
 
 
@@ -77,7 +79,7 @@ def test_a_mark_in_the_region_is_kept_and_one_outside_is_dropped():
     # 1.43: Odesa, Kharkiv and Dnipro have a tracker of their own and are on the map by default
     assert server.in_scope({"oblast_uid": "18", "lat": 46.48, "lon": 30.73})         # Odesa
     assert server.in_scope({"oblast_uid": "22", "lat": 49.99, "lon": 36.23})         # Kharkiv
-    assert not server.in_scope({"oblast_uid": "27", "lat": 49.84, "lon": 24.03})     # Lviv
+    assert not server.in_scope({"oblast_uid": "11", "lat": 48.62, "lon": 22.30})     # Zakarpattia (1.45: Lviv is on the map)
 
 
 def test_a_mark_with_no_oblast_is_judged_by_distance():

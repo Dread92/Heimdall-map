@@ -190,7 +190,10 @@ AUTHORITATIVE_CHANNELS = ["kyiv_airdef", "chyste_nebo", "kievinfo_kyiv", "war_mo
                           # 1.43: one live tracker per oblast — Chernihiv, Odesa, Cherkasy, Kharkiv, Dnipro
                           "chernihiv_nebo", "monitoringodesa", "chyste_nebocherkasy", "radar_kharkov", "RadarDnepr",
                           # 1.44: Sumy, Mykolaiv, Poltava, Vinnytsia, Zhytomyr
-                          "kabusumy", "air_alert_mk", "PoltavaRadar", "vinnytsiappo", "zt_radar"]
+                          "kabusumy", "air_alert_mk", "PoltavaRadar", "vinnytsiappo", "zt_radar",
+                          # 1.45: Kherson, Kirovohrad, Khmelnytskyi, Ternopil, Rivne, Lviv, Volyn
+                          "kherson_monitoring", "controlkrop", "radarhmel", "radarofternopil", "rivne_radar", "ppoualviv",
+                          "lutsk_radar"]
 
 # 1.43: the dashboard groups the channels by the oblast they speak for, and switches an oblast on or off as a whole.
 # "31" is Kyiv — the city and its oblast, always on; "ua" the channels that cover the whole country. A channel's
@@ -199,7 +202,9 @@ CHANNEL_HOME_DEFAULT = {"kyiv_airdef": "31", "chyste_nebo": "31", "kievinfo_kyiv
                         "war_monitor": "ua", "eRadarrua": "ua", "kpszsu": "ua",
                         "chernihiv_nebo": "25", "monitoringodesa": "18", "chyste_nebocherkasy": "24",
                         "radar_kharkov": "22", "RadarDnepr": "9",
-                        "kabusumy": "20", "air_alert_mk": "17", "PoltavaRadar": "19", "vinnytsiappo": "4", "zt_radar": "10"}
+                        "kabusumy": "20", "air_alert_mk": "17", "PoltavaRadar": "19", "vinnytsiappo": "4", "zt_radar": "10",
+                        "kherson_monitoring": "23", "controlkrop": "15", "radarhmel": "3", "radarofternopil": "21",
+                        "rivne_radar": "5", "ppoualviv": "27", "lutsk_radar": "8"}
 # The preview of the "Чисте небо" network's channels is switched off: with the Telegram API configured, read that way.
 # 1.44: so is @kabusumy's (Sumy).
 CHANNEL_VIA_DEFAULT = {"chyste_nebocherkasy": "api", "kabusumy": "api"}
@@ -242,8 +247,9 @@ KYIV_RE = re.compile(r"київ|столиц|бровар|бориспіл|бу�
 REGION_UIDS = {"14", "31", "10", "25", "20", "19", "24", "4"}
 # 1.43: the oblasts the map covers. Kyiv and the six around it, as before, and the three with a tracker of their own —
 # Odesa 18, Kharkiv 22, Dnipro 9. The dashboard switches any oblast on or off (State.region_set); this set is what
-# in_scope reads, updated in place. 1.44: Mykolaiv 17, with its tracker.
-DEFAULT_SCOPE = REGION_UIDS | {"18", "22", "9", "17"}
+# in_scope reads, updated in place. 1.44: Mykolaiv 17, with its tracker. 1.45: Kherson 23, Kirovohrad 15, Khmelnytskyi 3,
+# Ternopil 21, Rivne 5, Lviv 27, Volyn 8 — each with its tracker.
+DEFAULT_SCOPE = REGION_UIDS | {"18", "22", "9", "17", "23", "15", "3", "21", "5", "27", "8"}
 SCOPE_UIDS = set(DEFAULT_SCOPE)
 # channels that speak for one surrounding oblast (their posts are "region", not "kyiv", unless Kyiv is named)
 REGION_CHANNELS = {"cherkasy_alerts", "cherkasy_monitor", "poltavskaODA", "zhytomyrskaODA", "chernihiv_alert", "Zhytomyr_alert", "sumy_alert", "sumy_alerts"}
@@ -286,7 +292,7 @@ def is_retraction(text):
     return bool(RETRACT_RX.search(t) or (RETRACT_WEAK_RX.search(t) and RETRACT_CTX_RX.search(t)))
 
 
-def tag_feed_text(text, channel=None):
+def tag_feed_text(text, channel=None, near=None):
     # 1.32: the Air Force's summary of a night or a day. It was being read as news (dropped, so the statistics lost
     # every summary from 25 Sep); it is also not a live threat — "балістичними ракетами" in a morning summary must
     # never light the ballistic banner. It is kept, with this one tag.
@@ -316,7 +322,7 @@ def tag_feed_text(text, channel=None):
         tags.append("region")
     if geo:
         try:
-            ms = geo.parse_for_channel(channel, text) if channel else geo.parse_post(text)
+            ms = geo.parse_for_channel(channel, text, near) if channel else geo.parse_post(text)
         except Exception:
             ms = []
         for m in ms:
@@ -366,7 +372,7 @@ def parse_iso(s):
 
 BUILD_FILES = ("static/kyiv.html", "static/light.html", "static/light-map.json", "static/glyphs.js", "static/i18n.js", "static/live.js",
                "static/nuke.js", "static/sw.js", "app/server.py", "app/geo.py", "app/push.py",
-               "static/light-map-x.json", "data/regional_places.json")
+               "static/light-map-x.json", "data/regional_places.json", "static/map-ua.json")
 
 
 def build_id():
@@ -390,7 +396,7 @@ def build_id():
 
 # The version the front end shows in its footer, kept here too so /api/version can answer "what is actually
 # running" without anybody reading it off a screenshot. tests/test_version.py pins the two to each other.
-APP_VERSION = "1.44"
+APP_VERSION = "1.45"
 APP_NAME = "Heimdall"
 BUILD = None    # filled at startup
 
@@ -557,6 +563,8 @@ MISSILE_TTL_MIN = 12
 # the second; an unspecified threat ("Придніпровськ – уважно") goes after the first. The oblast's all-clear ends them.
 REGIONAL_STALE_MIN = 10
 REGIONAL_GONE_MIN = 25
+# 1.45: how long the oblast a regional channel named stays the context its next bare names are read in (geo `near`)
+NEAR_CTX_MIN = 30
 
 AF_SUMMARY_CHANNELS = {"kpszsu", "war_monitor", "monitor_ukr"}   # the Air Force summary and the channels that re-post it verbatim
 _AF_NUM = r"(\d{1,3})(?:-?[а-яіїєґ']{1,3})?"
@@ -2139,15 +2147,23 @@ class State:
         # 1.44.1: the weapon each channel last named (from its posts' tags) — "Пуски КАБів в нашому напрямку" names no
         # place, and the reports after it ("Пролітають …", "Впали") name no weapon
         weapon_by_channel = {}
+        near_by_channel = {}     # 1.45: the oblasts each channel named (or reported in) lately — geo's `near`
         for p in posts:
+            pts = parse_iso(p["ts"])
             ms = cache.get(p["post_id"])
             if ms is None:
+                near = [u for t_, u in reversed(near_by_channel.get(p["channel"], ()))
+                        if pts and t_ and 0 <= (pts - t_).total_seconds() <= NEAR_CTX_MIN * 60]
                 try:
-                    ms = geo.parse_for_channel(p["channel"], p["text"])
+                    ms = geo.parse_for_channel(p["channel"], p["text"], near or None)
                 except Exception:
                     ms = []
                 cache[p["post_id"]] = ms
-            pts = parse_iso(p["ts"])
+            if pts:
+                nb = near_by_channel.setdefault(p["channel"], [])
+                nb.extend((pts, u) for u in geo.oblasts_named(p["text"], p["channel"]))
+                nb.extend((pts, m["oblast_uid"]) for m in ms if m.get("oblast_uid") and m.get("lon") is not None)
+                del nb[:-12]
             ctx = last_by_channel.get(p["channel"])
             # the official all-clear for Kyiv city ends every position a channel holds inside the city: whatever is
             # said after it is about another target, or about nothing
@@ -3879,6 +3895,7 @@ class Telegram(threading.Thread):
         self.official = OfficialAlerts(state)
         self.seen_channels = set()
         self.api_channels = set()   # channels TelegramAPI is reading right now — this poller leaves them alone
+        self._near_ctx = {}         # 1.45: channel → [(time, oblast uid)] the oblasts its last posts named
 
     def run(self):
         interval = max(30, int(self.cfg.get("poll_telegram_seconds", 45)))
@@ -3931,7 +3948,7 @@ class Telegram(threading.Thread):
         """Everything a channel post goes through, whichever way it was read (web preview or Telegram API):
         raw_posts is a list of (post_id "channel/123", ISO time, text)."""
         posts = []
-        for post_id, dt, text in raw_posts:
+        for post_id, dt, text in sorted(raw_posts, key=lambda r: r[1] or ""):
             text = re.sub(r"[ \t]+", " ", (text or "").strip())
             if not text:
                 continue
@@ -3943,7 +3960,14 @@ class Telegram(threading.Thread):
                     self.state.store.af_save(post_id, ch, dt, rep)
             self.state.store.air_save(post_id, ch, dt, parse_air_report(text), text)
             # 1.44: tagged as the reader sees it — without the channel's signature ("💪 Телеграм канал ППО Вінниця")
-            tags = tag_feed_text(_clean_post(text), ch)
+            # 1.45: and in the light of the oblasts the channel named in its last 30 minutes (geo.parse_for_channel)
+            ctx = self._near_ctx.setdefault(ch, [])
+            pt = parse_iso(dt)
+            near = [u for t_, u in reversed(ctx) if pt and t_ and 0 <= (pt - t_).total_seconds() <= NEAR_CTX_MIN * 60]
+            tags = tag_feed_text(_clean_post(text), ch, near or None)
+            if geo:
+                ctx.extend((pt, u) for u in geo.oblasts_named(text, ch))
+                del ctx[:-12]
             if not is_relevant(text, tags, ch):
                 self.state.store.mark_seen(post_id)
                 continue          # news, fundraising, culture… — not an air-threat post, not stored
@@ -4877,7 +4901,9 @@ def proximity_watch(state, interval=20):
                     if geo and geo.is_immediate(m["type"]):
                         if d <= geo.REGION_ALERT_KM:
                             urgent.append((d, m))
-                    elif d <= radius + HOME_CELL_KM / 2:
+                    # 1.45: a post that named the oblast and no town has no position — its point is the oblast
+                    # centre, nothing more. "Within 15 km of you" from that would be a distance nobody reported.
+                    elif m.get("place") != "область" and d <= radius + HOME_CELL_KM / 2:
                         near.append((d, m))
                 if not (near or urgent):
                     continue
@@ -4892,6 +4918,8 @@ def proximity_watch(state, interval=20):
                     PROX_LAST[ep] = now
                     kind = THREAT_EN.get(m["type"], "Ballistic threat")
                     place = m.get("place") or "?"
+                    if place == "область":
+                        place = f"{OBLAST_EN.get(m.get('oblast_uid'), 'the')} oblast (no town named)"
                     # No distance and no direction: at this speed neither is something the reader can act on,
                     # and the stored home is a grid cell that could not support a distance anyway.
                     pusher.queue_direct(
@@ -5428,6 +5456,12 @@ class Handler(BaseHTTPRequestHandler):
                 oq = q.get("oblast", ["14,31"])[0]
                 # 1.43: "scope" — the oblasts the map covers now, as the dashboard set them
                 obl = None if oq == "all" else set(SCOPE_UIDS) if oq == "scope" else set(oq.split(","))
+                if q.get("villages", [None])[0] == "scope":
+                    # 1.45: the regional villages of the oblasts the map covers, for the "villages and small towns"
+                    # layer — fetched only when that layer is on; the core towns above are already drawn
+                    sc = set(SCOPE_UIDS)
+                    return self._send_cached(st.cached("villages:" + ",".join(sorted(sc)), 3600, lambda: {"places": [
+                        {"name": n, "lon": lo, "lat": la, "oblast_uid": uid} for n, lo, la, uid in (geo.villages(sc) if geo else [])]}))
                 pl = [{"name": n.split(" (")[0], "lon": v[0], "lat": v[1], "oblast_uid": v[2]} for n, v in (geo.PLACES.items() if geo else []) if obl is None or v[2] in obl]
                 return self._json({"places": pl})
             if u.path == "/api/markers":

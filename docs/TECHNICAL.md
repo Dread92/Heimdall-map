@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.44** · last updated 2026-10-07 (1.44.1)
+**Documented version: 1.45** · last updated 2026-10-07 (1.45)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -123,7 +123,8 @@ clear-sky/
 │   ├── glyphs.js           the weapon silhouettes (G, GLYPH_BY_TYPE), shared by both pages
 │   ├── kyiv-map.json       27 oblasts + all raions, in km around Kyiv (geoBoundaries)
 │   ├── light-map.json      raions of the 8 oblasts + nearby oblast outlines, rivers, roads, towns (built)
-│   ├── light-map-x.json    raions of Odesa, Kharkiv, Dnipro, Mykolaiv oblasts — fetched only for a place there (built, 1.43)
+│   ├── light-map-x.json    raions of the 11 oblasts farther out — fetched only for a place there (built, 1.43)
+│   ├── map-ua.json         rivers, main roads, airports and power plants of the whole country (built, 1.45)
 │   ├── kyiv-districts.json the 10 city districts of Kyiv (OSM)
 │   ├── ukraine-map.json    oblast outlines in an affine lon/lat projection (Light page fallback lookup)
 │   ├── admin.html          private dashboard: usage, source health, channels, lead time (/admin, ADMIN_KEY)
@@ -140,6 +141,7 @@ clear-sky/
 ├── scripts/
 │   ├── build_geo.py        rebuilds data/ua_regions.json and static/light-map.json (`--light`: the Light maps only)
 │   ├── build_places.py     rebuilds data/regional_places.json from GeoNames (1.43)
+│   ├── build_mapdata.py    rebuilds static/map-ua.json from Natural Earth (1.45)
 │   ├── corpus.py           add / review / pull corpus cases
 │   ├── release.bat         ships a patch: checks all is committed, fly deploy, git push, shows the live version
 │   ├── telegram-login.bat  one-time Telegram sign-in for the API reader (runs telegram_login.py)
@@ -408,6 +410,13 @@ event of a Trial post carries `tags: ["trial"]` only. Both readers take the list
 | `PoltavaRadar` | live tracker of Poltava oblast (1.44) | `_parse_live(·, "19")`; "Не фіксується." = lost; "з Дніпропетровщини на X" reads X in Poltava oblast first |
 | `vinnytsiappo` | live tracker of Vinnytsia oblast (1.44) | `_parse_live(·, "4")`; its signature line ("💪 Телеграм канал ППО Вінниця") is cut before parsing (`translate.strip_promo`) |
 | `zt_radar` | live tracker of Zhytomyr oblast, small and occasional (1.44) | `_parse_live(·, "10")`; "То свої" = ours, not kept |
+| `kherson_monitoring` | live tracker of Kherson oblast: drones, FPV, "Ланцет", "Молнія", by village and raion (1.45) | `_parse_live(·, "23")`; artillery ("артобстріл … з ТОТ") is not in the sky and is not kept (`ARTY_RX`); injury reports are news |
+| `controlkrop` | live tracker of Kirovohrad oblast (1.45) | `_parse_live(·, "15")`; "Область:" heads a list of reports; "вилітають на Черкащину" is where they go |
+| `radarhmel` | live tracker of Khmelnytskyi oblast (1.45) | `_parse_live(·, "3")`; "Шепетівський район" is its centre town (raions, §7.3b); "зникає … появляється" is not a lost target |
+| `radarofternopil` | live tracker of Ternopil oblast (1.45) | `_parse_live(·, "21")` |
+| `rivne_radar` | live tracker of Rivne oblast; follows its targets into the next oblast (1.45) | `_parse_live(·, "5")`, with `near` (§7.3b); its raion alert notices ("Тривога — Вараський район") are not marks |
+| `ppoualviv` | live tracker of Lviv oblast (1.45) | `_parse_live(·, "27")` |
+| `lutsk_radar` | live tracker of Volyn oblast (1.45) | `_parse_live(·, "8")` |
 
 **The oblasts as compartments (1.43).** Every channel belongs to the compartment of the oblast it speaks for (its
 `home`): an oblast uid, `31` (Kyiv city and Kyiv oblast) or `ua` (the country-wide channels) —
@@ -416,8 +425,9 @@ shows the channels oblast by oblast and switches a whole oblast on or off (`Stat
 stores only what differs from the default). An oblast switched off leaves the map — `SCOPE_UIDS`, read by
 `in_scope()` — and its channels are not read (`channel_mode()` answers `off` for them); `31` cannot be switched off.
 By default the map covers Kyiv, the six oblasts around it, and the four farther out with a tracker of their own:
-Odesa, Kharkiv, Dnipro and (1.44) Mykolaiv (`DEFAULT_SCOPE`). 1.44: every oblast on the map except Kyiv's has its
-own tracker — Chernihiv, Cherkasy, Odesa, Kharkiv, Dnipro (1.43), Sumy, Mykolaiv, Poltava, Vinnytsia, Zhytomyr. The pages follow: `state.scope` decides which oblasts are painted raion by raion
+Odesa, Kharkiv, Dnipro, (1.44) Mykolaiv and (1.45) Kherson, Kirovohrad, Khmelnytskyi, Ternopil, Rivne, Lviv, Volyn
+(`DEFAULT_SCOPE`). 1.44: every oblast on the map except Kyiv's has its own tracker — Chernihiv, Cherkasy, Odesa,
+Kharkiv, Dnipro (1.43), Sumy, Mykolaiv, Poltava, Vinnytsia, Zhytomyr, and (1.45) the seven above. The pages follow: `state.scope` decides which oblasts are painted raion by raion
 (`scopeRegs()`), the place lists ask `/api/places?oblast=scope`, and the Near list keeps to `NEAR_MAX` = 350 km of the
 reader's place (a ballistic mark is "the whole region" only within `REGION_R` = 150 km). A channel's home is also how its posts are read (`geo.CHANNEL_HOME`, §7.3b), and
 the posts of a regional channel carry `home` in the feed: the Tactical page raises a regional channel's ballistic or
@@ -490,7 +500,8 @@ block for every value:
 A regional tracker names villages and city districts post after post ("2 реакти від Куликівки на Лихачів",
 "Стрюково", "БпЛА на Лесное - Пятихатки"). **`data/regional_places.json`** holds every populated place of the
 oblasts that have a channel of their own (Chernihiv, Cherkasy, Odesa, Kharkiv, Dnipro — about 6,700; 1.44: and Sumy,
-Mykolaiv, Poltava, Vinnytsia, Zhytomyr — about 13,800 in all), built by
+Mykolaiv, Poltava, Vinnytsia, Zhytomyr — about 13,800; 1.45: and Kherson, Kirovohrad, Khmelnytskyi, Ternopil, Rivne,
+Lviv, Volyn — about 19,000 in all), built by
 **`scripts/build_places.py`** from the GeoNames dumps (<https://www.geonames.org>, CC BY 4.0): Ukrainian name,
 coordinates, kind (city section / raion or hromada centre / place), population, raion, and every Ukrainian and
 Russian name GeoNames has, plus the Russian-looking spellings of the Ukrainian name (і as и / е / о, `'я` as е, no
@@ -542,6 +553,32 @@ apostrophe — `_ru_variants`). Kharkiv city's districts are named by hand in th
   ("Акустика нашего БпЛА над Харьковом") is dropped before parsing and tagging; a post with "то наш / це наші / это
   наши" as a sentence of its own is about nothing hostile and is not kept. "Без фиксации", "Больше не фиксируется"
   (`більше не фіксується`) are a lost target (`STATUS_RX`).
+- 1.45: **a town it is heading for is never the oblast centre.** "Чернігівщина: … / 3 реакти на Славутич з півночі"
+  put three jet drones in the middle of Chernihiv oblast: a sentence that names where it is going and nowhere it is
+  is drawn as an approach to that town (`parse_post`: `in_obl or (target and cm and not from_obl)`), whatever oblast
+  heads the post. Only an oblast it comes **from** ("БпЛА з Чернігівщини курсом на Київ") is still the place — and
+  such a place is a region on the map, not a point (§7.4). "вектор / вектором" is a course word ("2х вектор Велика
+  Димерка/Бровари"). The lines of a multi-line post stay lines (`_drop_clear_sentences` keeps the separators), and a
+  line that names no place, no oblast and no weapon ("‼️Увага!") is not a report of its own.
+- 1.45: **raions.** "Шепетівський район", "у Самбірському районі", "в напрямку Самбірського району" are read as the
+  raion (`_RAION_RX` → `RAION_KEYS`): one pseudo-place per raion of a tracked oblast ("Самбірський р-н"), at the
+  raion's centre town (the core gazetteer's first, never a power plant; `_load_raions`), with **low** confidence: a
+  raion is an area. With a town it is heading for ("залітає у Гайсинський район … курсом на Теплик") it is an approach
+  to that town, and no course is drawn from the raion's centre (`_raion_settle`). The pages write it "Sambirskyi
+  raion" (`pn`). A raion alert notice ("Тривога — Вараський район", "Відбій — …") is a notice, not a mark
+  (`ALERT_MSG_RX`).
+- 1.45: **the oblast a tracker just named** (`near`): a tracker follows its target into the next oblast — "Це він на
+  Хмельниччині", then "Далі на Плужне" (@rivne_radar). The oblasts a channel named in its last 30 minutes
+  (`NEAR_CTX_MIN`; `near_by_channel` in `_marks_from_posts`, `Telegram._near_ctx` when tagging) are passed to
+  `geo.parse_for_channel(channel, text, near)`; a post that places nothing in the channel's own oblast is read in
+  them. **And the far filter**: a regional tracker's place more than 300 km from its oblast, in an oblast neither the
+  post nor `near` names, is a misreading and dropped ("Велика Бобровиця", a village by Rivne, was the Бобровиця of
+  Chernihiv oblast).
+- 1.45: **names.** An exact alias wins over a stem ("Іванівка" is the one Іванівка by default where one is the hromada
+  centre); a word declined like an adjective matches its town ("Кропивницького"); GeoNames' Soviet-era names are
+  never the displayed one (`build_places.py`, `SOVIET`); "маякну" and other verb forms are not villages
+  (`_VERB_TAILS`); "велика / мала / стара / верхня …" alone are never a village (`REGIONAL_STOP`). Artillery and
+  mortar fire is not in the sky (`ARTY_RX`), and a report of the injured ("47-річний … поранення") is news.
 
 **Posts in Russian.** The Kharkiv and Odesa trackers write in Russian. `geo.prepare(text, channel)` turns a post
 from `RU_CHANNELS`, or one that `looks_russian()` (ы, э, ё, ъ, or a Russian-only word), into the Ukrainian words the
@@ -561,7 +598,7 @@ reading (`tag_feed_text`); the stored and shown text is never changed.
    down / lost / clear line ends it; and the official all-clear for Kyiv city ends every position held inside the
    city (`State.kyiv_city_all_clears`: an end of the city's air-raid alert that left no other source's alert running);
 2. drops what is outside the scope: `in_scope()` = oblast uid in `SCOPE_UIDS` (1.43: the oblasts switched on —
-   Kyiv, the six around it, Odesa, Kharkiv, Dnipro, 1.44 Mykolaiv by default) or, with no oblast, within `SCOPE_KM = 330` km of
+   Kyiv, the six around it, Odesa, Kharkiv, Dnipro, 1.44 Mykolaiv, 1.45 seven more by default) or, with no oblast, within `SCOPE_KM = 330` km of
    Kyiv. `REGION_UIDS` (Kyiv and the six around it) still decides the feed's "region" tag;
 3. `_chain_and_prune()` links consecutive reports of the same target (same family, time and distance windows,
    roughly ahead of the earlier heading) into a track with `history` — each entry keeps its own report's stated
@@ -581,6 +618,15 @@ reading (`tag_feed_text`); the stored and shown text is never changed.
    post every five to twenty minutes; it carries `slow: true`, and the map fades it on the same clock (grey at 10,
    fainter at 15, "contact lost" at 20). The oblast's all-clear still ends it at once;
 4. outcomes (down, impact, lost) close the track they belong to.
+
+**1.45: a target reported for a whole oblast is a region, not a point.** A mark with `place == "область"` ("БпЛА на
+Харківщині", "з Чернігівщини курсом на Київ") still carries the oblast centre as its coordinates, for the server's
+windows; nothing draws it there. The Tactical map puts it on the region with the outcomes of 1.38 (`OBLEVT`,
+`paintOblEvents`): a dashed outline (orange for targets in the air) and a chip with the weapon's silhouette and the
+count, the posts one tap away (`oblEventSheet`). The Near list keeps it without a distance, as "Chernihiv oblast ·
+somewhere in the oblast" (`oblWhere`, `nearRows` `vague`); it never raises the level. A push never says "within N km
+of you" for it (`proximity_watch`) — only a ballistic warning, which covers the region anyway, is still sent, naming
+the oblast; the Light page's radar does not draw it.
 
 Fires, ground damage and the channels' own "чисто" are not drawn (`HIDDEN_STATUS` on the pages).
 
@@ -833,7 +879,26 @@ reported", never "safe".
 ### 10.1 Tactical (`/m`)
 
 One self-contained `kyiv.html`: an SVG map in a km projection around Kyiv (`proj`/`unproj`, `KX`, `KY`),
-level-of-detail classes by zoom, OSM tiles under the vector layers below 150 km width.
+level-of-detail classes by zoom, OSM tiles under the vector layers below 150 km width — and (1.45) **on a computer at
+every zoom** down to the whole country (`DESKTOP`: a fine pointer that hovers, no phone or tablet browser, a screen at
+least 700 px on its short side; `TILE_MAXW` 1600 km, tiles from zoom 5). Zoomed out past 150 km the drawn rivers and
+roads stay over the tiles (`tfar`); a phone keeps the 150 km rule.
+
+**The layers outside Kyiv oblast (1.45).** The rivers, roads and "airports / plants" layers were drawn by hand for
+Kyiv oblast only, and "villages and small towns" had the core gazetteer's hundred-odd Kyiv-oblast places and a couple
+of dozen elsewhere — on an Odesa or Lviv view they did nothing. Now:
+
+- `static/map-ua.json` (`scripts/build_mapdata.py`, from Natural Earth 1:10m, public domain): the main rivers cut to
+  Ukraine's oblasts (the Dnipro with its reservoirs, the Dniester, Southern Bug, Siverskyi Donets, Desna, Prypiat,
+  Prut, Western Bug, Seim, Danube; names in the three languages), the first-rank roads outside Kyiv oblast, and by
+  hand from GeoNames the civil airports of the oblast capitals and the large power plants (four nuclear, Burshtyn,
+  the Dniester and Dnipro HPPs) — **no military airfield**. Loaded with the map (`drawUA`); it replaces the
+  hand-drawn Dnipro, Desna and Kyiv Reservoir lines (`.river.hand`), whose labels stay;
+- the villages layer fetches `/api/places?villages=scope` the first time it is turned on (`loadVillages`): the regional
+  gazetteer's hromada centres and places of 1,000+ in the oblasts the map covers, about 1,800 names, drawn like the
+  core villages and laid out by `layoutTownLabels` (which now tests the screen position before the style);
+- the 15 / 30 / 50 km rings are around the reader's oblast capital (`OBL_CAP`, `drawRings`, redrawn by
+  `setMyOblast`); Kyiv for Kyiv oblast and for an occupied capital.
 
 **The screen (1.36)** — the reader's own place first, the map second, everything else one tap away:
 
@@ -1164,7 +1229,7 @@ All JSON unless stated. Public unless marked 🔒 (`ADMIN_KEY`).
 | `GET /api/impacts?hours=` | explosions and confirmed shoot-downs |
 | `GET /api/replay?from=&to=` | the replay (§10.3c), Unix seconds, ≤ 26 h within the last 7 days: `alerts` `[{k, o, lt, rk, lv, at, ti, s, e}]` (intervals, `e` null while on) and `tracks` `[{ty, jet, n, ap, h, ch, p: [[t, lon, lat, place]]}]` |
 | `GET /api/stats?days=` | statistics; the Stats tab reads only `windows` (with `af`: launched / down by type, used, impacts, debris) and `af_days` (the Air Force summaries, each with its `post`) |
-| `GET /api/places?oblast=` | gazetteer (names, coordinates, oblast): `oblast=14,31,…`, `all`, or (1.43) `scope` — the oblasts the map covers now |
+| `GET /api/places?oblast=` | gazetteer (names, coordinates, oblast): `oblast=14,31,…`, `all`, or (1.43) `scope` — the oblasts the map covers now; (1.45) `villages=scope`: the regional villages of those oblasts (hromada centres and places of 1,000+, `geo.villages`), for the map's villages layer, cached an hour |
 | `GET /api/drone_heat?days=1|7|30` | the heat layer: `points` `[lon, lat, posts, place, oblast]` — where drones and unidentified targets were reported (cached 10 min) |
 | `POST /api/push/subscribe`, `/api/push/unsubscribe`, `/api/push/test`; `GET /api/push/key` | Web Push; subscribe takes `{subscription, home, topics: ["bridges"], lang}` |
 | `POST /api/flag` | "this reading is wrong" report |
@@ -1337,6 +1402,9 @@ Black Flame logos (`logo*.png`, `bf-logo*.png`) stay as they are.
   district) is not placed. `chyste_nebocherkasy` needs the Telegram API (its preview is off). The new trackers'
   formats were read from a day of their posts: watch the first nights in the dashboard (Read 7 d) and add their
   misreads to the corpus.
+- 1.45: GeoNames has no Гулівці, Мокроволя, Завірці, Кром'яне — those posts place nothing. "Велика Березна" from
+  Rivne still reads as Березне. Natural Earth's rivers are 1:10m — about a kilometre off in places — and its roads
+  carry no names, so the roads outside Kyiv oblast are unlabelled lines.
 
 ## 18. The patch checklist
 

@@ -405,7 +405,7 @@ body.m-day #heatleg{background:rgba(255,255,255,.96)}.ob.far{stroke:#1a2029;fill
 .town.big{font-size:calc(var(--k,1)*14px);fill:#fff}
 .town[data-hid]{display:none!important}
 #tiles{filter:invert(1) hue-rotate(180deg) brightness(.72) contrast(.95) saturate(.3)}#tiles image{opacity:.95}svg.no-tiles #tiles{display:none}
-svg.tiled .road,svg.tiled .roadlbl,svg.tiled .river,svg.tiled .rvlbl,svg.tiled .bridge{display:none}svg.tiled .nb:not(.R):not(.Y):not(.oR):not(.oY),svg.tiled .ob.far:not(.R):not(.Y){fill:none}svg.tiled .nb.R{fill:rgba(229,72,77,.3)}svg.tiled .nb.Y{fill:rgba(245,185,64,.22)}svg.tiled .nb.oR{fill:rgba(229,72,77,.18)}svg.tiled .nb.oY{fill:rgba(245,185,64,.13)}
+svg.tiled:not(.tfar) .road,svg.tiled:not(.tfar) .roadlbl,svg.tiled:not(.tfar) .river,svg.tiled:not(.tfar) .rvlbl,svg.tiled:not(.tfar) .bridge{display:none}svg.tiled .nb:not(.R):not(.Y):not(.oR):not(.oY),svg.tiled .ob.far:not(.R):not(.Y){fill:none}svg.tiled .nb.R{fill:rgba(229,72,77,.3)}svg.tiled .nb.Y{fill:rgba(245,185,64,.22)}svg.tiled .nb.oR{fill:rgba(229,72,77,.18)}svg.tiled .nb.oY{fill:rgba(245,185,64,.13)}
 svg.tiled .rn{fill:rgba(20,25,32,.25)}svg.tiled .rn.city{fill:rgba(24,31,42,.15)}svg.tiled .rn.R{fill:rgba(229,72,77,.32)}svg.tiled .rn.Y{fill:rgba(245,185,64,.26)}svg.tiled .rn.city.R{fill:rgba(229,72,77,.36)}svg.tiled .rn.city.Y{fill:rgba(245,185,64,.3)}
 /* the tile credit OpenStreetMap asks for: small, in the bottom corner — at the top right it sat on the place chips */
 .attrib{position:absolute;left:6px;bottom:3px;z-index:1;font:8px/1.3 var(--mono);color:#8a94a6;pointer-events:none;background:rgba(10,12,16,.55);padding:0 4px;border-radius:2px}.attrib[hidden]{display:none}
@@ -446,6 +446,7 @@ svg.city .town.district{fill:#aeb8c8;font-weight:500}
 /* A count beside the region, in the same voice as the region's own name — never a banner across the map. */
 #oblevt .obtxt{fill:#ff9ea2;font:800 calc(var(--k,1)*13px) system-ui;letter-spacing:.5px;paint-order:stroke;stroke:#0b0e14;stroke-width:calc(var(--k,1)*3px);cursor:pointer}
 #oblevt .hit{fill:transparent;cursor:pointer}
+#oblevt .obring.live{fill:#ff8a3d;fill-opacity:.04;stroke:#ff8a3d}
 @keyframes obpulse{0%,100%{stroke-opacity:.8;fill-opacity:.05}50%{stroke-opacity:.28;fill-opacity:.015}}
 body.lite #oblevt .obring{fill:none;stroke:#fff;animation:none}body.lite #oblevt .obtxt{fill:#fff;stroke:#000}
 .mk .jetfx{display:none}.mk.jet .jetfx{display:block}.mk .flame{fill:#ffb347;opacity:.9;animation:flick .18s steps(2) infinite}.mk .flame2{fill:#fff4d6;animation:flick .12s steps(2) infinite alternate}
@@ -1005,11 +1006,11 @@ body.lite #mycard,body.lite .panel{background:#000;border-color:#666}body.lite .
   <button class="mi" id="supbtn" type="button" data-t="m_support">Support the project</button>
   <a class="mi" id="tgbtn" data-t="m_tg" target="_blank" rel="noopener" hidden>Community on Telegram</a>
   <button class="mi" id="aboutbtn" type="button" data-t="m_about">About · disclaimer</button>
-  <div class="mi bt" id="buildtag">v1.44</div>
+  <div class="mi bt" id="buildtag">v1.45</div>
 </div>
 <div class="panel" id="lay" hidden role="dialog" aria-labelledby="layh"><div class="pgrab"></div>
   <div class="ph"><b id="layh" data-t="m_layers">Map layers</b><button type="button" class="px" data-close="lay" data-t-aria="btn_close" aria-label="Close">✕</button></div>
-  <div class="layermenu" id="layerbox"><label><input type="checkbox" data-l="tiles"> <span data-t="l_tiles">Streets &amp; buildings (OSM, zoomed in)</span></label><label><input type="checkbox" data-l="heat"> <span data-t="l_heat">Heat map: where drones were reported (not live)</span></label><label><input type="checkbox" data-l="himp"> <span data-t="l_himp">History: explosions ✸</span></label><label><input type="checkbox" data-l="hdown"> <span data-t="l_hdown">History: confirmed shot down ✕</span></label><label><input type="checkbox" data-l="trails"> <span data-t="l_trails">Tracks</span></label><label><input type="checkbox" data-l="cones"> <span data-t="l_cones">Course rays</span></label><label><input type="checkbox" data-l="rivers"> <span data-t="l_rivers">Rivers</span></label><label><input type="checkbox" data-l="roads"> <span data-t="l_roads">Roads</span></label><label><input type="checkbox" data-l="infra"> <span data-t="l_infra">Airports / plants</span></label><label><input type="checkbox" data-l="rings"> <span data-t="l_rings">Rings</span></label><label><input type="checkbox" data-l="minor"> <span data-t="l_minor">Villages &amp; small towns (off by default — clutters the phone)</span></label></div>
+  <div class="layermenu" id="layerbox"><label><input type="checkbox" data-l="tiles"> <span data-t="l_tiles">Streets &amp; buildings (OSM, zoomed in; always on a computer)</span></label><label><input type="checkbox" data-l="heat"> <span data-t="l_heat">Heat map: where drones were reported (not live)</span></label><label><input type="checkbox" data-l="himp"> <span data-t="l_himp">History: explosions ✸</span></label><label><input type="checkbox" data-l="hdown"> <span data-t="l_hdown">History: confirmed shot down ✕</span></label><label><input type="checkbox" data-l="trails"> <span data-t="l_trails">Tracks</span></label><label><input type="checkbox" data-l="cones"> <span data-t="l_cones">Course rays</span></label><label><input type="checkbox" data-l="rivers"> <span data-t="l_rivers">Rivers</span></label><label><input type="checkbox" data-l="roads"> <span data-t="l_roads">Roads</span></label><label><input type="checkbox" data-l="infra"> <span data-t="l_infra">Airports / plants</span></label><label><input type="checkbox" data-l="rings"> <span data-t="l_rings">Rings</span></label><label><input type="checkbox" data-l="minor"> <span data-t="l_minor">Villages &amp; small towns (off by default — clutters the phone)</span></label></div>
   <button class="mi" id="rpmenu" type="button" data-t="rp_open">Replay — the last 7 days</button>
   <button class="mi tg" id="zcity2" type="button"><span class="lb" data-t="m_city">Kyiv city map (10 districts) — toggle</span></button>
   <button class="mi tg" id="est" type="button"><span class="lb" data-t="m_est">Estimate motion along heading (EST)</span></button>
@@ -1311,6 +1312,7 @@ const TOWNS=[['Kyiv',30.52,50.45,1],['Brovary',30.79,50.51],['Boryspil',30.95,50
   ['Drohobych',23.51,49.35,3],['Stryi',23.86,49.26,3],['Chervonohrad',24.23,50.39,3],['Kovel',24.71,51.22,3],['Sarny',26.60,51.34,3],['Kamianets-Podilskyi',26.59,48.68,3],['Shepetivka',27.06,50.18,3],
   ['Konotop',33.20,51.24,3],['Shostka',33.48,51.87,3],['Nizhyn',31.89,51.05,3],['Simferopol',34.10,44.95,3],['Sevastopol',33.52,44.60,3],['Kerch',36.47,45.36,3],['Yevpatoriia',33.37,45.20,3],['Feodosiia',35.38,45.03,3],['Dzhankoi',34.39,45.71,3]];
 async function loadMap(){
+  const uaP=fetch('/static/map-ua.json').then(r=>r.json()).catch(()=>null);   // 1.45: the layers outside Kyiv oblast
   MAP=await (await fetch('/static/kyiv-map.json')).json(); KX=MAP.kx;KY=MAP.ky;C=MAP.center;
   $('oblastsg').innerHTML=`<defs><pattern id="occ" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#141a22"/><rect width="2" height="6" fill="#2a2f3a"/></pattern></defs>`
     +(MAP.oblasts||[]).map(o=>`<path class="ob ${o.region?'region':'far'}${o.occupied?' occ':''}" data-o="${o.uid}" d="${o.path}"/>`).join('');
@@ -1322,7 +1324,9 @@ async function loadMap(){
 ;
   $('raionsg').innerHTML=MAP.features.filter(f=>f.raion).map(f=>`<path class="rn ${f.raion==='kyiv-city'?'city':''}" data-r="${f.raion}" d="${f.path}"/>`).join('')
     +Object.entries(RAION_LBL).map(([r,[x,y]])=>`<text class="rnlbl" x="${x}" y="${y}" text-anchor="middle">${RAION[r]}</text>`).join('');
-  // rivers (coarse): Dnipro incl. Kyiv & Kaniv reservoirs, Desna, Irpin, Teteriv, Ros, Trubizh
+  // rivers (coarse): Dnipro incl. Kyiv & Kaniv reservoirs, Desna, Irpin, Teteriv, Ros, Trubizh. 1.45: the first three are
+  // replaced by static/map-ua.json's once it has loaded (drawUA), with the rest of the country's rivers; the light
+  // page's map still takes them from here (scripts/build_geo.py).
   const RIV=[['wide',[[30.55,51.60],[30.35,51.42],[30.20,51.28],[30.35,51.10],[30.42,50.95],[30.48,50.78],[30.52,50.62]],'Kyiv Reservoir',[30.15,50.9]],
     ['mid',[[30.52,50.62],[30.52,50.50],[30.57,50.44],[30.58,50.36],[30.66,50.28],[30.75,50.18],[30.85,50.09],[30.97,50.02],[31.08,49.93],[31.25,49.85],[31.42,49.77],[31.60,49.66],[31.80,49.55],[32.02,49.45]],'Dnipro',[30.78,50.02]],
     ['thin',[[31.29,51.50],[31.10,51.28],[30.95,51.12],[30.85,50.95],[30.75,50.78],[30.62,50.62],[30.55,50.53]],'Desna',[30.9,51.0]],
@@ -1330,7 +1334,8 @@ async function loadMap(){
     ['thin',[[29.05,50.42],[29.30,50.55],[29.60,50.62],[29.90,50.72],[30.15,50.85],[30.32,50.95]],'Teteriv',[29.5,50.6]],
     ['thin',[[29.55,49.60],[29.90,49.75],[30.11,49.80],[30.45,49.70],[30.80,49.60],[31.10,49.55],[31.35,49.62],[31.45,49.75]],'Ros',[30.6,49.66]],
     ['thin',[[31.05,50.70],[31.10,50.50],[31.25,50.30],[31.45,50.10],[31.60,49.95]],'Trubizh',[31.3,50.28]]];
-  $('rings').innerHTML=RIV.map(([w,pts,name,lp])=>`<polyline class="river ${w}" points="${pts.map(p=>proj(p[0],p[1]).map(v=>v.toFixed(1)).join(',')).join(' ')}"/>`+(name?`<text class="rvlbl" x="${proj(lp[0],lp[1])[0].toFixed(1)}" y="${proj(lp[0],lp[1])[1].toFixed(1)}">${riverName(name)}</text>`:'')).join('')+[15,30,50].map(r=>`<circle class="ring" cx="0" cy="0" r="${r}"/><text class="ringlbl" x="${r*0.72}" y="${-r*0.72}">${r} km</text>`).join('');
+  $('rings').innerHTML=RIV.map(([w,pts,name,lp],i)=>(pts.length?`<polyline class="river ${w}${i<3?' hand':''}" points="${pts.map(p=>proj(p[0],p[1]).map(v=>v.toFixed(1)).join(',')).join(' ')}"/>`:'')+(name?`<text class="rvlbl" x="${proj(lp[0],lp[1])[0].toFixed(1)}" y="${proj(lp[0],lp[1])[1].toFixed(1)}">${riverName(name)}</text>`:'')).join('')+'<g id="ringc"></g>';
+  drawRings();
   const majorNames=new Set(TOWNS.map(t=>t[0].toLowerCase()));
   let minor=[]; try{ const pl=(await (await fetch('/api/places?oblast=all')).json()).places; minor=pl.filter(p=>!majorNames.has(translit(p.name).toLowerCase())&&!/громада|масив|берег|столиця|водосховище|море|АЕС|ГЕС/i.test(p.name)); }catch(e){}
   // infrastructure: main highways, Kyiv ring road, Dnipro bridges, airports/airfields, power plants
@@ -1353,8 +1358,41 @@ async function loadMap(){
     +`<polyline class="road ring2" points="${rp(RING)}"/>`
     +POIS.map(([ic,n,lo,la])=>{const [x,y]=proj(lo,la);return `<g class="poi ${ic}" transform="translate(${x.toFixed(2)} ${y.toFixed(2)})"><g class="pg">${POI_G[ic]}</g></g><text class="poilbl minor" x="${(x+2).toFixed(1)}" y="${(y+1.2).toFixed(1)}">${poiName(n)}</text>`;}).join('');
   $('towns').innerHTML=TOWNS.map(([n,lo,la,big])=>{const [x,y]=proj(lo,la);const rg=big===2,ua=big===3;return `<circle class="towndot${rg?' rg':''}${ua?' uac':''}" data-n="${n}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${big===1?1.6:.9}" style="r:calc(var(--k,1)*${big===1?4:2.5}px)"/><text class="town ${big===1?'big':''}${rg?' rg':''}${ua?' uac':''}" data-n="${n}" x="${(x+2).toFixed(1)}" y="${(y+1.5).toFixed(1)}">${townName(n)}</text>`;}).join('')
-    +minor.map(p=>{const [x,y]=proj(p.lon,p.lat);const d=p.oblast_uid==='31'?' district':'';return `<circle class="towndot minor${d}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r=".7" style="r:calc(var(--k,1)*2px)"/><text class="town minor${d}" x="${(x+1.5).toFixed(1)}" y="${(y+1.2).toFixed(1)}">${esc(pn(p.name))}</text>`;}).join('');
+    +minor.map(minorLbl).join('')+'<g id="villg"></g>';
+  if(LAYERS.minor) loadVillages();
+  const ua=await uaP; if(ua) drawUA(ua);
 }
+// 1.45: rivers, main roads, airports and power plants for the whole country (scripts/build_mapdata.py). Kyiv
+// oblast's own highways and landmarks above stay the hand-drawn, labelled ones.
+function drawUA(ua){
+  const nm=o=>LANG==='uk'?o.uk:LANG==='fr'?o.fr:o.en;
+  const pl=a=>{let r='';for(let i=0;i<a.length;i+=2)r+=a[i]+','+a[i+1]+' ';return r;};
+  if((ua.rivers||[]).length) $('rings').querySelectorAll('.river.hand').forEach(e=>e.remove());
+  $('rings').insertAdjacentHTML('afterbegin',(ua.rivers||[]).map(r=>r.l.map(l=>`<polyline class="river ${r.c}" points="${pl(l)}"/>`).join('')
+    +r.lb.map(([x,y])=>`<text class="rvlbl" x="${x}" y="${y}">${esc(nm(r))}</text>`).join('')).join(''));
+  $('infra').insertAdjacentHTML('afterbegin',(ua.roads||[]).map(l=>`<polyline class="road" points="${pl(l)}"/>`).join('')
+    +(ua.pois||[]).map(p=>`<g class="poi ${p.k}" transform="translate(${p.x} ${p.y})"><g class="pg">${POI_G[p.k]||''}</g></g><text class="poilbl minor" x="${(p.x+2).toFixed(1)}" y="${(p.y+1.2).toFixed(1)}">${esc(nm(p))}</text>`).join(''));
+}
+// 1.45: the 15/30/50 km rings are around the reader's oblast capital — around Kyiv they told somebody in Odesa
+// nothing. Occupied capitals are not used: the rings go back to Kyiv.
+const OBL_CAP={'4':[28.47,49.23],'8':[25.33,50.75],'9':[35.05,48.46],'10':[28.66,50.25],'11':[22.29,48.62],'12':[35.14,47.84],
+  '13':[24.71,48.92],'15':[32.26,48.51],'17':[32.00,46.97],'18':[30.73,46.48],'19':[34.55,49.59],'5':[26.25,50.62],'20':[34.80,50.91],
+  '21':[25.59,49.55],'22':[36.23,49.99],'23':[32.62,46.64],'3':[26.99,49.42],'24':[32.06,49.44],'26':[25.94,48.29],'25':[31.29,51.50],
+  '27':[24.03,49.84],'28':[37.56,48.72]};
+function drawRings(){ const g=$('ringc'); if(!g||!MAP) return; const c=OBL_CAP[(typeof MYOBL!=='undefined'&&MYOBL)?MYOBL.uid:'14'];
+  const [x,y]=c?proj(c[0],c[1]):[0,0];
+  g.innerHTML=[15,30,50].map(r=>`<circle class="ring" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r}"/><text class="ringlbl" x="${(x+r*0.72).toFixed(1)}" y="${(y-r*0.72).toFixed(1)}">${r} km</text>`).join(''); }
+const minorLbl=p=>{const [x,y]=proj(p.lon,p.lat);const d=p.oblast_uid==='31'?' district':'';return `<circle class="towndot minor${d}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r=".7" style="r:calc(var(--k,1)*2px)"/><text class="town minor${d}" x="${(x+1.5).toFixed(1)}" y="${(y+1.2).toFixed(1)}">${esc(pn(p.name))}</text>`;};
+// 1.45: "villages and small towns" outside Kyiv oblast. The core gazetteer above has a hundred-odd places for Kyiv
+// oblast and a couple of dozen for any other, so the layer did nothing anywhere else. The regional gazetteer's
+// hromada centres and places of 1,000+ people (~1,800 across the oblasts the map covers) are fetched the first
+// time the layer is on — most readers never turn it on, and nobody pays for it until they do.
+let VILL=null;
+async function loadVillages(){ if(VILL||!MAP) return; VILL=[];
+  let pl; try{ pl=(await (await fetch('/api/places?villages=scope')).json()).places; }catch(e){ VILL=null; return; }
+  const major=new Set(TOWNS.map(t=>t[0].toLowerCase()));
+  VILL=pl.filter(p=>!major.has(translit(p.name).toLowerCase()));
+  const g=$('villg'); if(g){ g.innerHTML=VILL.map(minorLbl).join(''); layoutTownLabels(); } }
 // 1.39: airports, power plants, the nuclear plant and the watched place are drawn, not typed as emoji — the same on
 // every phone. Centred on 0,0, ~22 units across; .pg scales them to screen pixels (var(--k)).
 const POI_G={air:'<path d="M0-11 L1.5-7.5 L1.5-3 L10 2.5 L10 4.5 L1.5 1.8 L1.5 7 L4.2 9.6 L4.2 11 L0 9.8 L-4.2 11 L-4.2 9.6 L-1.5 7 L-1.5 1.8 L-10 4.5 L-10 2.5 L-1.5-3 L-1.5-7.5 Z"/>',
@@ -1376,7 +1414,7 @@ const LAYERS={tiles:true,himp:true,hdown:true,trails:false,cones:true,rivers:fal
 try{Object.assign(LAYERS,JSON.parse(localStorage.getItem('layers')||'{}')); if(!localStorage.getItem('layers_v2')){LAYERS.minor=false;localStorage.setItem('layers_v2','1');localStorage.setItem('layers',JSON.stringify(LAYERS));}}catch(e){}
 LAYERS.heat=false;   // 1.33: the heat map is never remembered — every opening starts on the live picture
 function applyLayers(){for(const [l,on] of Object.entries(LAYERS)){svg.classList.toggle('no-'+l,!on);const cb=document.querySelector(`#layerbox input[data-l="${l}"]`);if(cb)cb.checked=on;}if(typeof updateTiles==='function')updateTiles();if(typeof drawHeat==='function')drawHeat();}
-document.querySelectorAll('#layerbox input').forEach(cb=>cb.onchange=()=>{LAYERS[cb.dataset.l]=cb.checked;try{localStorage.setItem('layers',JSON.stringify(Object.assign({},LAYERS,{heat:false})))}catch(e){};
+document.querySelectorAll('#layerbox input').forEach(cb=>cb.onchange=()=>{LAYERS[cb.dataset.l]=cb.checked;if(cb.dataset.l==='minor'&&cb.checked)loadVillages();try{localStorage.setItem('layers',JSON.stringify(Object.assign({},LAYERS,{heat:false})))}catch(e){};
   applyLayers();});
 applyLayers();
 $('zkyiv').onclick=()=>{if(CITY)toggleCity(false); if(HOME){ const [hx,hy]=proj(HOME.lon,HOME.lat); setView(hx,hy,60); return; } const o=(MAP.oblasts||[]).find(x=>x.uid===MYOBL.uid); if(o&&MYOBL.uid!=='14') setView(o.cx,o.cy,260); else setView(0,0,110);};
@@ -1757,7 +1795,10 @@ const statusIco=st=>STATUS_ICO[st]||'\u2022';
 // The post named the oblast it is heading for — "Далі Київщина". Saying "neighbouring oblast" hid the one
 // thing the channel was precise about, so the name is used whenever the server sent its id.
 const tgtName=m=>m.target==='\u043e\u0431\u043b\u0430\u0441\u0442\u044c'?(m.target_uid?oblFullGen(m.target_uid):t('tp_nextobl')):pn(m.target);
-const oblWhere=m=>{const q=((m.evidence||{}).position||{}).quad; return q?t('oq_'+q)||t('oblcentre'):t('oblcentre');};
+// 1.45: and with no part named it is "Chernihiv oblast · somewhere in the oblast" — "oblast centre (approx.)" read as
+// a position, which is the one thing it is not
+const oblWhere=m=>{const q=((m.evidence||{}).position||{}).quad, o=m.oblast_uid&&typeof oblFull==='function'?oblFull(m.oblast_uid):'';
+  return q?(t('oq_'+q)||t('oblcentre'))+(o?' · '+o:''):o?o+' · '+t('obl_somewhere'):t('oblcentre');};
 // The weapon silhouettes — G, GLYPH_BY_TYPE and why each looks the way it does — live in /static/glyphs.js,
 // shared with the Light page so the two can never draw the same weapon two different ways.
 
@@ -1772,7 +1813,7 @@ function paintOblEvents(){
   // tick() runs several times a second. Rebuilding this layer every frame replaced the nodes between a
   // press and its release, so a tap on the count never became a click and the panel never opened — and it
   // was redrawing oblast outlines for nothing. Only redraw when what it says has actually changed.
-  const sig=uids.map(u=>u+':'+OBLEVT[u].map(m=>m.status+(m.count||1)).sort().join('')).sort().join('|')+'|'+LANG;
+  const sig=uids.map(u=>u+':'+OBLEVT[u].map(m=>oblKey(m)+(m.count||1)).sort().join('')).sort().join('|')+'|'+LANG;
   if(g._sig===sig) return;
   g._sig=sig;
   g.innerHTML=uids.map(uid=>{
@@ -1782,26 +1823,40 @@ function paintOblEvents(){
     // stretched across the map is not an annotation, it is an interruption; what it means in words is one
     // tap away, and the fact that it is drawn on the region rather than at a point is what says "no place
     // was given". The title attribute carries the full wording for anyone hovering.
-    const by={}; for(const m of evs) by[m.status]=(by[m.status]||0)+(m.count||1);
+    // 1.45: a target reported for the oblast and no town ("БпЛА на Харківщині") is here too, as the weapon's
+    // sign and a count, never a silhouette at the oblast centre — see the filter in tick().
+    const by={}, ex={}; for(const m of evs){ const k=oblKey(m); by[k]=(by[k]||0)+(m.count||1); ex[k]=m; }
     const kinds=Object.keys(by);
-    const lbl=kinds.map(k=>`${statusIco(k)}${by[k]>1?by[k]:''}`).join(' ');
-    const full=kinds.map(k=>`${STATUS_W[k]||statusName(k)}${by[k]>1?' ×'+by[k]:''}`).join(', ')+' · '+t('obl_somewhere');
+    // laid out in screen pixels (CSS transforms in var(--k)), so it keeps its size at every zoom: an outcome is its
+    // sign, a target the weapon's own silhouette (no emoji on the map — 1.39), each followed by its count
+    const px=v=>`calc(var(--k,1)*${v.toFixed(1)}px)`;
+    let x=0; const items=kinds.map(k=>{ const m=ex[k], n=by[k], c=n>1?String(n):'', s0=x;
+      if(m.status){ x+=9+c.length*8+7; return [s0,`<text class="obtxt" dominant-baseline="central">${esc(statusIco(m.status)+c)}</text>`]; }
+      const gk=(m.type==='drones'&&m.jet)?'jetdrone':(GLYPH_BY_TYPE[m.type]||'missile'); x+=14+c.length*8+7;
+      return [s0,`<g class="sil${m.type==='drones'&&m.jet?' jet':''}" style="--c:${KIND_COL(m)};transform:translate(${px(6)},0px) scale(calc(var(--k,1)*.55))">${G[gk]||''}</g>`
+        +(c?`<text class="obtxt" dominant-baseline="central" style="transform:translateX(${px(13)})">${c}</text>`:'')]; });
+    const W=Math.max(10,x-7);
+    const parts=items.map(([s0,h])=>`<g style="transform:translate(${px(s0-W/2)},0px)">${h}</g>`);
+    const full=kinds.map(k=>`${oblWord(ex[k])}${by[k]>1?' ×'+by[k]:''}`).join(', ')+' · '+t('obl_somewhere');
+    const onlyLive=evs.every(m=>!m.status);
     // near the top of the region: its centre is a busy place, and a label sitting exactly on it starts to
     // look like a pin again, which is the whole thing being fixed
     let y=o.cy; try{const pe=document.querySelector(`#oblastsg .ob[data-o="${uid}"]`); if(pe){const bb=pe.getBBox(); y=bb.y+bb.height*0.17;}}catch(e){}
-    const w=Math.max(9,lbl.length*3.4);
-    return `<path class="obring" d="${o.path}"/>`
-      +`<g class="oblevtchip" data-o="${uid}"><title>${esc(full)}</title>`
-      +`<text class="obtxt" x="${o.cx.toFixed(1)}" y="${(y+1.6).toFixed(1)}" text-anchor="middle">${esc(lbl)}</text>`
-      +`<rect class="hit" x="${(o.cx-w/2).toFixed(1)}" y="${(y-4.5).toFixed(1)}" width="${w.toFixed(1)}" height="9"/></g>`;
+    return `<path class="obring${onlyLive?' live':''}" d="${o.path}"/>`
+      +`<g class="oblevtchip" data-o="${uid}" transform="translate(${o.cx.toFixed(1)} ${y.toFixed(1)})"><title>${esc(full)}</title>`
+      +parts.join('')+`<rect class="hit" x="-.5" y="-.5" width="1" height="1" style="transform:scale(calc(var(--k,1)*${(W+10).toFixed(0)}),calc(var(--k,1)*20))"/></g>`;
   }).join('');
   g.querySelectorAll('.oblevtchip').forEach(el=>el.addEventListener('click',()=>oblEventSheet(el.dataset.o)));
 }
+// A whole-oblast entry's kind: its outcome, or — for a target still in the air — its weapon.
+const oblKey=m=>m.status||('t:'+(m.type==='drones'&&m.jet?'jet':m.type));
+const oblIco=m=>m.status?statusIco(m.status):'';
+const oblWord=m=>m.status?(STATUS_W[m.status]||statusName(m.status)):kindOf(m);
 function oblEventSheet(uid){
   const evs=(OBLEVT[uid]||[]).slice().sort((a,b)=>a.ts<b.ts?1:-1); if(!evs.length) return;
-  $('sheetbody').innerHTML=`<div class="type">${statusIco(evs[0].status)} ${esc(statusName(evs[0].status))} — ${esc(oblFull(uid))}</div>`
+  $('sheetbody').innerHTML=`<div class="type">${evs[0].status?oblIco(evs[0]):silSvg(evs[0]).replace('<svg ','<svg style="width:22px;height:22px;vertical-align:-6px" ')} ${esc(evs[0].status?statusName(evs[0].status):kindOf(evs[0]))} — ${esc(oblFull(uid))}</div>`
     +`<div class="kv1 muted" style="margin-bottom:8px">${esc(t('obl_noplace'))}</div>`
-    +evs.map(m=>`<div class="card plain"><div class="title">${esc(statusName(m.status))}${m.count>1?' ×'+m.count:''} · ${fmtT(m.ts)}</div>`
+    +evs.map(m=>`<div class="card plain"><div class="title">${esc(m.status?statusName(m.status):kindOf(m))}${m.count>1?' ×'+m.count:''} · ${fmtT(m.ts)}${!m.status&&(m.evidence||{}).position&&m.evidence.position.quad?' · '+esc(oblWhere(m)):''}</div>`
       +`<div class="q" style="margin-top:4px">${esc(ptxt(m).slice(0,220))}</div>`
       +`<div class="kv1 muted">${esc(CH[m.channel]||m.channel)}</div></div>`).join('');
   $('tip').hidden=true; $('sheet').classList.add('show');
@@ -1900,8 +1955,13 @@ function tick(){
   // all-clear is a state of the whole region, which the region's own colour already shows, and a track that
   // stopped being reported has no location by definition. Neither is drawn; both still do their work of
   // closing live tracks, which happens on the marker list, not here.
+  // 1.45: and the same for a target still in the air. "Чернігівщина: 3 реакти" drew three jet drones in the
+  // middle of Chernihiv oblast, a hundred kilometres from anything the post said; a reader near that point took
+  // it for a position. It is the region that is marked now, with the weapon and the count, and the posts one tap
+  // away. The Near list keeps it without a distance (nearRows: vague); a push never says "near you" for it.
   {const g={}; live=live.filter(m=>{
-    if(!m.status||m.place!=='область') return true;
+    if(m.place!=='область') return true;
+    if(!m.status){ if(m.oblast_uid&&!m.endedBy)(g[m.oblast_uid]=g[m.oblast_uid]||[]).push(m); return false; }
     if(OBL_EVENT.has(m.status)&&m.oblast_uid){(g[m.oblast_uid]=g[m.oblast_uid]||[]).push(m);}
     return false;                                    // never a pin on the oblast centre, whatever it is
   }); OBLEVT=g;}
@@ -2259,7 +2319,7 @@ function closeSheet(){$('sheet').classList.remove('show','top','mark'); if(docum
 let SEL_OBL=null;
 // ---- my oblast: the status band follows the oblast the user chose (default Kyiv) ----
 let MYOBL={uid:'14',name:'Kyiv'}; try{const v=JSON.parse(localStorage.getItem('myobl')||'null'); if(v&&v.uid) MYOBL=v;}catch(e){}
-function setMyOblast(uid){ MYOBL={uid,name:oblName(uid)}; try{localStorage.setItem('myobl',JSON.stringify(MYOBL));}catch(e){} render(); const o=(MAP&&MAP.oblasts||[]).find(x=>x.uid===uid); if(o&&uid!=='14')setView(o.cx,o.cy,260); else if(uid==='14') setView(0,0,110); const sel=$('discobl'); if(sel&&sel.value!==uid) sel.value=uid; }
+function setMyOblast(uid){ MYOBL={uid,name:oblName(uid)}; try{localStorage.setItem('myobl',JSON.stringify(MYOBL));}catch(e){} drawRings(); render(); const o=(MAP&&MAP.oblasts||[]).find(x=>x.uid===uid); if(o&&uid!=='14')setView(o.cx,o.cy,260); else if(uid==='14') setView(0,0,110); const sel=$('discobl'); if(sel&&sel.value!==uid) sel.value=uid; }
 function pickOblast(){ const list=(MAP.oblasts||[]).filter(o=>o.uid!=='31'&&o.uid!=='30').sort((a,b)=>oblName(a.uid).localeCompare(oblName(b.uid),LOCALE()));
   $('sheetbody').innerHTML=`<div class="type">${t('po_title')}</div><div class="kv1 muted">${t('po_desc')}</div><div class="hlist" style="margin-top:8px">${list.map(o=>`<div class="hitem ${o.uid===MYOBL.uid?'on':''}" data-u="${o.uid}">${esc(oblName(o.uid))}${o.uid===MYOBL.uid?' ✓':''}</div>`).join('')}</div>`;
   $('sheetbody').querySelectorAll('.hitem').forEach(el=>el.onclick=()=>{setMyOblast(el.dataset.u);closeSheet();});
@@ -2288,11 +2348,16 @@ function cossack(){
 // Each 256-px Mercator tile is placed by its own lon/lat corners in the km projection, so it lines up exactly
 // with the raions and markers (the residual inside one tile is metres).
 const TILE_URL=(z,x,y)=>`https://tile.openstreetmap.org/${z}/${x}/${y}.png`;   // OSM standard tiles, darkened with a CSS filter
+// 1.45: on a computer — a fine pointer that hovers, no phone or tablet browser, a large screen — the tiles are under
+// the map at every zoom, down to the whole country, not only once zoomed in to 150 km. A phone keeps the old rule:
+// the tiles are data and battery it may not have to spare during a raid.
+var DESKTOP=(()=>{try{return matchMedia('(pointer:fine) and (hover:hover)').matches&&!/Android|iPhone|iPad|iPod|Mobile|Silk|Kindle/i.test(navigator.userAgent)&&Math.min(screen.width,screen.height)>=700;}catch(e){return false;}})();
+var TILE_MAXW=DESKTOP?1600:150, TILE_MINZ=DESKTOP?5:8;   // var: applyLayers() runs before this line
 function updateTiles(){
-  const g=$('tiles'); const on=LAYERS.tiles&&VB.w<=150&&MAP&&!CITY&&!(typeof LITE!=='undefined'&&LITE); svg.classList.toggle('tiled',!!on); $('attrib').hidden=!on;
+  const g=$('tiles'); const on=LAYERS.tiles&&VB.w<=TILE_MAXW&&MAP&&!CITY&&!(typeof LITE!=='undefined'&&LITE); svg.classList.toggle('tiled',!!on); svg.classList.toggle('tfar',!!on&&VB.w>150); $('attrib').hidden=!on;
   if(!on){g.innerHTML='';return;}
   const r=svg.getBoundingClientRect(); const kmpx=VB.w/Math.max(1,r.width);            // km per screen px
-  let z=Math.round(Math.log2(99.7/kmpx*(0.637/Math.cos(C[1]*Math.PI/180))))+(devicePixelRatio>1.5?1:0); z=Math.max(8,Math.min(18,z));
+  let z=Math.round(Math.log2(99.7/kmpx*(0.637/Math.cos(C[1]*Math.PI/180))))+(devicePixelRatio>1.5?1:0); z=Math.max(TILE_MINZ,Math.min(18,z));
   const n=2**z; const lon2x=lon=>(lon+180)/360*n; const lat2y=lat=>{const f=lat*Math.PI/180;return (1-Math.log(Math.tan(f)+1/Math.cos(f))/Math.PI)/2*n;};
   const y2lat=y=>Math.atan(Math.sinh(Math.PI*(1-2*y/n)))*180/Math.PI; const x2lon=x=>x/n*360-180;
   const [lonA,latA]=unproj(VB.x,VB.y),[lonB,latB]=unproj(VB.x+VB.w,VB.y+VB.h);
@@ -2309,8 +2374,10 @@ function updateTiles(){
 function layoutTownLabels(){
   const r=svg.getBoundingClientRect(); if(!r.width) return; const k=VB.w/r.width; const els=[...svg.querySelectorAll('text.town')];
   els.forEach(e=>e.removeAttribute('data-hid'));
-  const items=[]; for(const e of els){ if(getComputedStyle(e).display==='none') continue; const pr=e.classList.contains('big')?0:e.classList.contains('rg')?2:e.classList.contains('district')?4:e.classList.contains('minor')?3:1;
-    const fs=pr===0?14:pr===3||pr===4?10:11; const x=(+e.getAttribute('x')-VB.x)/k,y=(+e.getAttribute('y')-VB.y)/k; if(x<-200||y<-50||x>r.width+50||y>r.height+50) continue;
+  // 1.45: off-screen first, then the (slow) style test — with the regional villages there are ~2,000 names
+  const items=[]; for(const e of els){ const x=(+e.getAttribute('x')-VB.x)/k,y=(+e.getAttribute('y')-VB.y)/k; if(x<-200||y<-50||x>r.width+50||y>r.height+50) continue;
+    if(getComputedStyle(e).display==='none') continue; const pr=e.classList.contains('big')?0:e.classList.contains('rg')?2:e.classList.contains('district')?4:e.classList.contains('minor')?3:1;
+    const fs=pr===0?14:pr===3||pr===4?10:11;
     items.push({e,pr,x,y:y-fs,w:e.textContent.length*fs*0.58+4,h:fs+2}); }
   // a threat label wins over a town name: the town under it is hidden, never written over
   items.sort((a,b)=>a.pr-b.pr); const placed=[...LBLBOX.boxes];
@@ -2920,7 +2987,7 @@ function renderStats(){ if(!STATS) return; const el=$('stats'); if(!el) return; 
 // =====================================================================================
 // ---------------------------------------------------------------------------------------------------
 // The contacts (CONTACT) and the footer (footerHTML, shareApp) are in static/i18n.js since 1.39, shared with Light.
-const APP_VERSION='1.44';
+const APP_VERSION='1.45';
 const DONATE=CONTACT.ngo;
 const ls=(k,v)=>{try{return v===undefined?localStorage.getItem(k):(localStorage.setItem(k,v),v);}catch(e){return null;}};
 

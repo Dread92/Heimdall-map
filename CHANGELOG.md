@@ -2,6 +2,32 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.45.0 — 2026-10-07
+
+### Added
+- **Seven more regional trackers, on the map**: Kherson (@kherson_monitoring), Kirovohrad (@controlkrop), Khmelnytskyi
+  (@radarhmel), Ternopil (@radarofternopil), Rivne (@rivne_radar), Lviv (@ppoualviv) and Volyn (@lutsk_radar), with
+  their oblasts' villages (about 19,000 places now) and the Light page's raions for a place there.
+- **Raions**: "Шепетівський район", "у Самбірському районі" are read, at the raion's centre town.
+- **A tracker following its target into the next oblast** ("Це він на Хмельниччині" … "Далі на Плужне") is read in
+  the oblast it just named, for 30 minutes.
+- **The map's layers work outside Kyiv oblast**: "villages and small towns" for every oblast on the map (about 1,800
+  names, loaded only when the layer is on); rivers, main roads, civil airports and power plants for the whole country;
+  the 15 / 30 / 50 km rings around the capital of the reader's oblast.
+- **On a computer, the street tiles are under the map at every zoom**, not only zoomed in. Phones are unchanged.
+
+### Fixed
+- **No more drones in the middle of an oblast.** "Чернігівщина: … 3 реакти на Славутич з півночі" put three jet drones
+  at the centre of Chernihiv oblast. A post that names the town a target is heading for is drawn as an approach to
+  that town; a target reported for a whole oblast ("БпЛА на Харківщині") is drawn on the region — an outline and the
+  weapon with its count — never as a pin at the oblast centre, never with a distance in the Near list, never as
+  "within 15 km of you" in a push.
+- "вектор" is a course ("2х вектор Велика Димерка/Бровари"). A multi-line post's lines stay separate reports; "‼️Увага!"
+  alone is not one. Raion alert notices ("Тривога — Вараський район"), artillery fire and injury reports are not marks.
+- A regional tracker's place 300 km and more from its oblast, in an oblast the post does not name, is dropped as a
+  misreading ("Велика Бобровиця" by Rivne was the Бобровиця of Chernihiv oblast). Soviet-era names are no longer shown,
+  an exact name wins over a near one, "Кропивницького" is Кропивницький, "маякну" is not a village.
+
 ## 1.44.1 — 2026-10-07
 
 ### Fixed
