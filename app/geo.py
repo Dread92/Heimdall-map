@@ -747,8 +747,10 @@ def villages(uids, min_pop=1000):
         lon, lat, uid = REGIONAL[key]
         if uid not in uids or kind not in ("A", "P") or not (kind == "A" or (pop or 0) >= min_pop):
             continue
-        out.append((re.sub(r" \d+$", "", key.split(" (")[0]), lon, lat, uid))
-    return out
+        out.append((re.sub(r" \d+$", "", key.split(" (")[0]), lon, lat, uid, kind == "A", pop or 0))
+    # hromada centres first, then the largest: the map's label layout keeps the first of two names that collide
+    out.sort(key=lambda r: (not r[4], -r[5]))
+    return [r[:4] for r in out]
 
 
 def display_place(name):
@@ -2159,7 +2161,63 @@ def parse_for_channel(channel, text, near=None):
         hc = _OBL_CENTRE.get(home)
         ms = [m for m in ms if m.get("lon") is None or m.get("oblast_uid") in named or not hc
               or _km((m["lon"], m["lat"]), hc) <= 300]
-    return [_raion_settle(_settle(m)) for m in ms]
+    return [_rel_settle(_raion_settle(_settle(m))) for m in ms]
+
+
+# 1.45.1: "БпЛА на півночі від Миколаєва, курс на захід" (the Air Force) is north OF the city, at a distance the post
+# does not give. It was drawn ON Mykolaiv, "town in gazetteer, high confidence, ±5 km".
+_REL_RX = re.compile(r"(?:(\d{1,3})\s*км\s+)?(?:\b(?:на|в|у)\s+((?:півн|півд)[а-яіїє]*(?:[\s-]+(?:сх|зах)[а-яіїє]*)?|(?:сх|зах)[а-яіїє]*)\s+від"
+                     r"|\b((?:північно|південно)-?(?:східн|західн)іше|північніше|південніше|східніше|західніше)(?:\s+від)?)\s+([а-яіїєґ'\-]+)")
+
+
+_OBL_CAPITAL = {"4": "Вінниця", "8": "Луцьк", "9": "Дніпро", "10": "Житомир", "11": "Ужгород", "12": "Запоріжжя",
+                "13": "Івано-Франківськ", "15": "Кропивницький", "16": "Луганськ", "17": "Миколаїв", "18": "Одеса",
+                "19": "Полтава", "5": "Рівне", "20": "Суми", "21": "Тернопіль", "22": "Харків", "23": "Херсон",
+                "3": "Хмельницький", "24": "Черкаси", "26": "Чернівці", "25": "Чернігів", "27": "Львів", "28": "Донецьк",
+                "29": "Сімферополь", "31": "Київ"}
+
+
+def _stem4(w):
+    """The first four letters of a name, its vowels that alternate in declension made one: Київ / Києва, Харків / Харкова."""
+    return re.sub(r"[іїєеи]", "*", w.lower().replace("'", "").replace("’", ""))[:4]
+
+
+def _rel_settle(m):
+    """A place the post gives as the reference of a side — "на півночі від X", "північніше X", "за 20 км на північ від X"
+    — is not where the target is. With a distance, the mark goes that far that way. Without one: from an oblast's
+    capital (or Kyiv), the oblast is marked — "north of Mykolaiv" can be anywhere in its northern half — and from any
+    other town, the mark stays at the town with low confidence; either way the card says "north of X"."""
+    p = m.get("place") or ""
+    if m.get("status") or m.get("approach") or not p or p.startswith("→ ") or p == "область" or p not in PLACES:
+        return m
+    ev = dict(m.get("evidence") or {})
+    seg = ev.get("segment") or ""
+    base = _stem4(p.split(" (")[0])
+    for r in _REL_RX.finditer(seg):
+        if _stem4(r.group(4)) != base:
+            continue
+        deg = _dir(r.group(2) or r.group(3) or "")
+        if deg is None:
+            continue
+        lon, lat, uid = PLACES[p]
+        pos = dict(ev.get("position") or {})
+        pos.update(rel=deg, ref=p, matched=r.group(0).strip())
+        if r.group(1):
+            km = int(r.group(1))
+            m["lat"] = lat + km * math.cos(math.radians(deg)) / 111.0
+            m["lon"] = lon + km * math.sin(math.radians(deg)) / (111.0 * math.cos(math.radians(lat)))
+            pos.update(confidence="medium", method=f"{km} km from {p} toward {deg}°, as the post said")
+        elif _OBL_CAPITAL.get(uid) == p:
+            m["place"] = "область"
+            m["oblast_uid"] = "14" if uid == "31" else uid
+            pos.update(place="oblast", confidence="low",
+                       method=f"a side of {p}, the oblast's capital, and no distance: the oblast is marked, not a point")
+        else:
+            pos.update(confidence="low", method=f"a side of {p} and no distance: drawn at {p}, which it is not at")
+        ev["position"] = pos
+        m["evidence"] = ev
+        break
+    return m
 
 
 def _raion_settle(m):

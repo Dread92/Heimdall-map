@@ -149,9 +149,55 @@ def test_the_rings_are_around_the_readers_oblast_capital():
     assert "drawRings();" in PAGE[i:PAGE.index("\n", i)]
 
 
-def test_on_a_computer_the_tiles_are_there_at_every_zoom():
-    assert "matchMedia('(pointer:fine) and (hover:hover)')" in PAGE
-    assert "var TILE_MAXW=DESKTOP?1600:150, TILE_MINZ=DESKTOP?5:8;" in PAGE
-    assert "LAYERS.tiles&&VB.w<=TILE_MAXW" in PAGE and "z=Math.max(TILE_MINZ," in PAGE
-    # zoomed out, the drawn rivers and roads stay over the tiles
-    assert "svg.tiled:not(.tfar) .road" in PAGE and "svg.classList.toggle('tfar',!!on&&VB.w>150)" in PAGE
+def test_the_tiles_only_once_zoomed_in_on_every_device():
+    # 1.45.1: 1.45 put them under the whole country on a computer, and zoomed out the map was unreadable
+    assert "DESKTOP" not in PAGE and "TILE_MAXW" not in PAGE and "tfar" not in PAGE
+    assert "const on=LAYERS.tiles&&VB.w<=150&&MAP" in PAGE and "z=Math.max(8,Math.min(18,z));" in PAGE
+    assert "svg.tiled .road,svg.tiled .roadlbl,svg.tiled .river" in PAGE
+    assert "always on a computer" not in PAGE and "always on a computer" not in _read("static/i18n.js")
+    # and only inside Ukraine: Moldova, Romania, Belarus and Russia are not drawn under the map
+    assert '<g id="tiles" clip-path="url(#uaclip)"></g>' in PAGE
+    assert "<clipPath id=\"uaclip\">${(MAP.oblasts||[]).map(o=>`<path d=\"${o.path}\"/>`).join('')}</clipPath>" in PAGE
+
+
+# -- 1.45.1 ---------------------------------------------------------------------------------------------------------
+
+def test_a_side_of_a_town_is_not_the_town():
+    _state()
+    # the Air Force, 7 Oct 2026: drawn ON Mykolaiv, "±5 km, high confidence"
+    m = geo.parse_for_channel("kpszsu", "🛵 БпЛА на півночі від Миколаєва, курс на захід.")[0]
+    assert (m["place"], m["oblast_uid"], m["heading"]) == ("область", "17", 270)      # the oblast is marked, not a point
+    assert m["evidence"]["position"]["rel"] == 0 and m["evidence"]["position"]["ref"] == "Миколаїв"
+    for text, uid in (("БпЛА північніше Харкова курсом на південь", "22"), ("Шахед на сході від Києва", "14")):
+        ms = geo.parse_for_channel("kpszsu", text)
+        assert [(x["place"], x["oblast_uid"]) for x in ms] == [("область", uid)], text
+    # a smaller town: still there, but with low confidence and "north-west of Brovary" on the card
+    m = geo.parse_for_channel("kpszsu", "БпЛА на північному заході від Броварів")[0]
+    assert m["place"] == "Бровари" and m["evidence"]["position"]["confidence"] == "low" and m["evidence"]["position"]["rel"] == 315
+    # a distance given is used
+    m = geo.parse_for_channel("kpszsu", "БпЛА за 20 км на північ від Кременчука")[0]
+    assert m["place"] == "Кременчук" and abs(m["lat"] - (geo.PLACES["Кременчук"][1] + 20 / 111)) < 0.01
+    # "біля / від … на північ" are unchanged
+    assert geo.parse_for_channel("kpszsu", "Шахед біля Миколаєва")[0]["place"] == "Миколаїв"
+    assert "if(ps.rel!=null&&ps.ref) return t('rq_of'," in PAGE
+    i18n = _read("static/i18n.js")
+    assert i18n.count("rq_of:") == 3 and "rq_of:'{0} від н.п. {1}'" in i18n
+    import translate
+    assert translate.translate_offline("🛵 БпЛА на півночі від Миколаєва, курс на захід.") == "🛵 UAV north of Mykolaiv, heading west."
+
+
+def test_the_estimate_along_the_heading_is_suspended():
+    assert "let ESTIMATE=false;\n" in PAGE and "ESTIMATE=localStorage.getItem('est')" not in PAGE
+    assert '<button class="mi tg" id="est" type="button" style="display:none!important">' in PAGE   # .mi.tg is flex!important
+
+
+def test_the_villages_layer_shows_names_at_an_oblasts_width():
+    # 1.45.1: they appeared only below 90 km of map (40 on a phone) — on an oblast's view the layer did nothing
+    # with the layer on, the small towns and villages stay up to 300 km of map (an oblast's view is 260)
+    assert "svg.veryfar.no-minor .town:not(.big)" in PAGE and "svg.classList.toggle('vilfar',VB.w>300);" in PAGE
+    assert "svg.vilfar .town:not(.big):not(.rg):not(.uac),svg.vilfar .towndot:not(.rg):not(.uac){display:none}" in PAGE
+    assert "svg.far .town.minor,svg.far .towndot.minor{display:none}" in PAGE          # a phone: up to 90 km
+    assert ".towndot[data-hid]{display:none!important}" in PAGE                         # no nameless dots
+    v = geo.villages({"27"})
+    a = {k.split(" (")[0] for k, (kind, _, _) in geo._REG_META.items() if kind == "A" and geo.REGIONAL[k][2] == "27"}
+    assert v[0][0] in a                                                                  # hromada centres first

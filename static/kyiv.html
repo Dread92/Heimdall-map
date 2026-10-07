@@ -405,7 +405,7 @@ body.m-day #heatleg{background:rgba(255,255,255,.96)}.ob.far{stroke:#1a2029;fill
 .town.big{font-size:calc(var(--k,1)*14px);fill:#fff}
 .town[data-hid]{display:none!important}
 #tiles{filter:invert(1) hue-rotate(180deg) brightness(.72) contrast(.95) saturate(.3)}#tiles image{opacity:.95}svg.no-tiles #tiles{display:none}
-svg.tiled:not(.tfar) .road,svg.tiled:not(.tfar) .roadlbl,svg.tiled:not(.tfar) .river,svg.tiled:not(.tfar) .rvlbl,svg.tiled:not(.tfar) .bridge{display:none}svg.tiled .nb:not(.R):not(.Y):not(.oR):not(.oY),svg.tiled .ob.far:not(.R):not(.Y){fill:none}svg.tiled .nb.R{fill:rgba(229,72,77,.3)}svg.tiled .nb.Y{fill:rgba(245,185,64,.22)}svg.tiled .nb.oR{fill:rgba(229,72,77,.18)}svg.tiled .nb.oY{fill:rgba(245,185,64,.13)}
+svg.tiled .road,svg.tiled .roadlbl,svg.tiled .river,svg.tiled .rvlbl,svg.tiled .bridge{display:none}svg.tiled .nb:not(.R):not(.Y):not(.oR):not(.oY),svg.tiled .ob.far:not(.R):not(.Y){fill:none}svg.tiled .nb.R{fill:rgba(229,72,77,.3)}svg.tiled .nb.Y{fill:rgba(245,185,64,.22)}svg.tiled .nb.oR{fill:rgba(229,72,77,.18)}svg.tiled .nb.oY{fill:rgba(245,185,64,.13)}
 svg.tiled .rn{fill:rgba(20,25,32,.25)}svg.tiled .rn.city{fill:rgba(24,31,42,.15)}svg.tiled .rn.R{fill:rgba(229,72,77,.32)}svg.tiled .rn.Y{fill:rgba(245,185,64,.26)}svg.tiled .rn.city.R{fill:rgba(229,72,77,.36)}svg.tiled .rn.city.Y{fill:rgba(245,185,64,.3)}
 /* the tile credit OpenStreetMap asks for: small, in the bottom corner — at the top right it sat on the place chips */
 .attrib{position:absolute;left:6px;bottom:3px;z-index:1;font:8px/1.3 var(--mono);color:#8a94a6;pointer-events:none;background:rgba(10,12,16,.55);padding:0 4px;border-radius:2px}.attrib[hidden]{display:none}
@@ -413,15 +413,15 @@ svg.tiled .rn{fill:rgba(20,25,32,.25)}svg.tiled .rn.city{fill:rgba(24,31,42,.15)
 .town.minor{fill:#8f9bb0;font-weight:500;font-size:calc(var(--k,1)*10px)}
 .towndot{fill:#c9d1de;stroke:#080b10;stroke-width:1px;vector-effect:non-scaling-stroke}
 .towndot.minor{fill:#6f7b90}
-svg.far .minor{display:none}
+svg.far .minor:not(.town):not(.towndot){display:none}svg.vilfar .town:not(.big):not(.rg):not(.uac),svg.vilfar .towndot:not(.rg):not(.uac){display:none}.towndot[data-hid]{display:none!important}
 svg:not(.close) .district{display:none}
-@media (max-width:999px){svg:not(.close) .minor{display:none}svg:not(.vclose) .district{display:none}}
+@media (max-width:999px){svg:not(.close) .minor:not(.town):not(.towndot){display:none}svg.far .town.minor,svg.far .towndot.minor{display:none}svg:not(.vclose) .district{display:none}}
 /* raid declutter: outcome markers keep only their glyph until you zoom in; closed tracks keep no label at all */
 svg:not(.close) .mk.st .lbl2{display:none}svg.far .mk.st .lbl{display:none}
 .mk.ended .lbl,.mk.ended .lbl2{display:none}
 .mk.nolbl .lbl,.mk.nolbl .lbl2,.mk.nolbl2 .lbl2{display:none!important}
 @media (max-width:999px){svg:not(.close) .mk.st .lbl{display:none}}
-svg.veryfar .town:not(.big):not(.rg):not(.uac){display:none}svg.veryfar .rnlbl{display:none}svg.veryfar .towndot:not(.rg):not(.uac){display:none}
+svg.veryfar.no-minor .town:not(.big):not(.rg):not(.uac){display:none}svg.veryfar .rnlbl{display:none}svg.veryfar.no-minor .towndot:not(.rg):not(.uac){display:none}
 .road{fill:none;stroke:#3b4757;stroke-width:1.2px;vector-effect:non-scaling-stroke;stroke-linejoin:round;stroke-linecap:round}
 .road.ring2{stroke:#4a5870;stroke-width:1.6px}
 .roadlbl{fill:#5f6b80;font:600 calc(var(--k,1)*9px) system-ui;paint-order:stroke;stroke:#080b10;stroke-width:calc(var(--k,1)*2.5px);pointer-events:none}
@@ -1010,10 +1010,10 @@ body.lite #mycard,body.lite .panel{background:#000;border-color:#666}body.lite .
 </div>
 <div class="panel" id="lay" hidden role="dialog" aria-labelledby="layh"><div class="pgrab"></div>
   <div class="ph"><b id="layh" data-t="m_layers">Map layers</b><button type="button" class="px" data-close="lay" data-t-aria="btn_close" aria-label="Close">✕</button></div>
-  <div class="layermenu" id="layerbox"><label><input type="checkbox" data-l="tiles"> <span data-t="l_tiles">Streets &amp; buildings (OSM, zoomed in; always on a computer)</span></label><label><input type="checkbox" data-l="heat"> <span data-t="l_heat">Heat map: where drones were reported (not live)</span></label><label><input type="checkbox" data-l="himp"> <span data-t="l_himp">History: explosions ✸</span></label><label><input type="checkbox" data-l="hdown"> <span data-t="l_hdown">History: confirmed shot down ✕</span></label><label><input type="checkbox" data-l="trails"> <span data-t="l_trails">Tracks</span></label><label><input type="checkbox" data-l="cones"> <span data-t="l_cones">Course rays</span></label><label><input type="checkbox" data-l="rivers"> <span data-t="l_rivers">Rivers</span></label><label><input type="checkbox" data-l="roads"> <span data-t="l_roads">Roads</span></label><label><input type="checkbox" data-l="infra"> <span data-t="l_infra">Airports / plants</span></label><label><input type="checkbox" data-l="rings"> <span data-t="l_rings">Rings</span></label><label><input type="checkbox" data-l="minor"> <span data-t="l_minor">Villages &amp; small towns (off by default — clutters the phone)</span></label></div>
+  <div class="layermenu" id="layerbox"><label><input type="checkbox" data-l="tiles"> <span data-t="l_tiles">Streets &amp; buildings (OSM, zoomed in)</span></label><label><input type="checkbox" data-l="heat"> <span data-t="l_heat">Heat map: where drones were reported (not live)</span></label><label><input type="checkbox" data-l="himp"> <span data-t="l_himp">History: explosions ✸</span></label><label><input type="checkbox" data-l="hdown"> <span data-t="l_hdown">History: confirmed shot down ✕</span></label><label><input type="checkbox" data-l="trails"> <span data-t="l_trails">Tracks</span></label><label><input type="checkbox" data-l="cones"> <span data-t="l_cones">Course rays</span></label><label><input type="checkbox" data-l="rivers"> <span data-t="l_rivers">Rivers</span></label><label><input type="checkbox" data-l="roads"> <span data-t="l_roads">Roads</span></label><label><input type="checkbox" data-l="infra"> <span data-t="l_infra">Airports / plants</span></label><label><input type="checkbox" data-l="rings"> <span data-t="l_rings">Rings</span></label><label><input type="checkbox" data-l="minor"> <span data-t="l_minor">Villages &amp; small towns (off by default — clutters the phone)</span></label></div>
   <button class="mi" id="rpmenu" type="button" data-t="rp_open">Replay — the last 7 days</button>
   <button class="mi tg" id="zcity2" type="button"><span class="lb" data-t="m_city">Kyiv city map (10 districts) — toggle</span></button>
-  <button class="mi tg" id="est" type="button"><span class="lb" data-t="m_est">Estimate motion along heading (EST)</span></button>
+  <button class="mi tg" id="est" type="button" style="display:none!important"><span class="lb" data-t="m_est">Estimate motion along heading (EST)</span></button>
   <div class="mrow z"><span class="ml" data-t="m_zoom">Zoom out</span><button class="mi2" id="zobl" type="button" data-t="m_z_obl">Oblast</button><button class="mi2" id="zreg" type="button" data-t="m_z_reg">Region</button><button class="mi2" id="zua" type="button" data-t="m_z_ua">Ukraine</button></div>
   <details class="lgd"><summary data-t="lg_show">Colour legend</summary><div class="foot" data-t-html="legend"></div></details>
 </div>
@@ -1021,7 +1021,7 @@ body.lite #mycard,body.lite .panel{background:#000;border-color:#666}body.lite .
 <div id="stage">
 <div class="mapwrap" id="mapwrap">
   <svg id="map" viewBox="-75 -100 150 200" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
-    <g id="tiles"></g>
+    <g id="tiles" clip-path="url(#uaclip)"></g>
     <g id="oblastsg"></g>
     <g id="neighbors"></g>
     <g id="obllbl"></g>
@@ -1180,7 +1180,9 @@ function useSlot(id){ if(!SLOT_IDS.includes(id)) return; ACTIVE=id; HOME=SLOTS[i
   if(typeof render==='function') render(); if(typeof paintSlots==='function') paintSlots();
   if(typeof discHomeLabel==='function') discHomeLabel(); }
 let SHOW_UA=false;   // the "show original Ukrainian" switch is gone; Ukrainian readers see the original anyway
-let ESTIMATE=false; try{ESTIMATE=localStorage.getItem('est')==='1';}catch(e){}
+// 1.45.1: suspended. Moving a mark along its heading between reports drew positions no post gave; the switch is
+// hidden and the estimate is off for everybody until it is reconsidered (the code below is kept).
+let ESTIMATE=false;
 let MAP=null,S=null,MK=[],ttl=45,hist=[],soundOn=true,vibOn=false,seen=new Set(),firstFeed=true,seenMk=new Set();
 // Sound is a volume now (1.28), not on/off: on an iPhone the tones came out at whatever the phone's media volume
 // was, often full, with no way to turn them down here. 0 on the slider is off; the level is kept apart from it,
@@ -1314,7 +1316,9 @@ const TOWNS=[['Kyiv',30.52,50.45,1],['Brovary',30.79,50.51],['Boryspil',30.95,50
 async function loadMap(){
   const uaP=fetch('/static/map-ua.json').then(r=>r.json()).catch(()=>null);   // 1.45: the layers outside Kyiv oblast
   MAP=await (await fetch('/static/kyiv-map.json')).json(); KX=MAP.kx;KY=MAP.ky;C=MAP.center;
-  $('oblastsg').innerHTML=`<defs><pattern id="occ" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#141a22"/><rect width="2" height="6" fill="#2a2f3a"/></pattern></defs>`
+  // 1.45.1: the street tiles are drawn inside Ukraine only (#uaclip, the oblasts' outlines): Moldova, Romania, Belarus,
+  // Russia and their labels are not this map's business, and on a wide view they buried it
+  $('oblastsg').innerHTML=`<defs><pattern id="occ" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#141a22"/><rect width="2" height="6" fill="#2a2f3a"/></pattern><clipPath id="uaclip">${(MAP.oblasts||[]).map(o=>`<path d="${o.path}"/>`).join('')}</clipPath></defs>`
     +(MAP.oblasts||[]).map(o=>`<path class="ob ${o.region?'region':'far'}${o.occupied?' occ':''}" data-o="${o.uid}" d="${o.path}"/>`).join('');
   // The Cossack sits above the raion outlines of Crimea, not under them: drawn under, the outlines ran
   // across him and, zoomed out, he looked broken.
@@ -1405,7 +1409,7 @@ function translit(s){let out='';for(let i=0;i<s.length;i++){const c=s[i],l=c.toL
 const svg=$('map'); const VB={x:-75,y:-100,w:150,h:200};
 const ASPECT=()=>{const r=svg.getBoundingClientRect();return r.width?r.height/r.width:1.33;};
 let KPX=1;
-function applyVB(){svg.setAttribute('viewBox',`${VB.x} ${VB.y} ${VB.w} ${VB.h}`);if(typeof drawHome==='function'&&HOME){setTimeout(drawHome,0);if(typeof drawZones==='function')setTimeout(drawZones,0);}const r=svg.getBoundingClientRect();KPX=r.width?VB.w/r.width:1;if(typeof placeBrgLabels==='function')placeBrgLabels();svg.style.setProperty('--k',KPX);if(window.RP&&RP.on&&RP.frame)RP.frame();svg.classList.toggle('far',VB.w>90);svg.classList.toggle('close',VB.w<40);svg.classList.toggle('vclose',VB.w<22);svg.classList.toggle('veryfar',VB.w>230);svg.classList.toggle('ua',VB.w>900);if(typeof applySelOblast==='function'&&(VB.w<=300)!==applyVB._zin){applyVB._zin=VB.w<=300;applySelOblast();}{const kz=document.querySelector('.kozak'); if(kz){kz.querySelector('.kz').setAttribute('transform',`scale(${(2.2*KPX).toFixed(3)})`); const ts=kz.querySelectorAll('text'); ts[0].setAttribute('y',(14*KPX).toFixed(2)); ts[1].setAttribute('y',(25*KPX).toFixed(2));}}clearTimeout(applyVB._t);applyVB._t=setTimeout(()=>{applyVB._t=null;if(typeof LAYERS!=='undefined'&&LAYERS.heat&&typeof drawHeat==='function')drawHeat();if(typeof IMP_H!=='undefined'&&IMP_H)drawImpacts();if(typeof updateTiles==='function'){updateTiles();layoutTownLabels();}},120);}
+function applyVB(){svg.setAttribute('viewBox',`${VB.x} ${VB.y} ${VB.w} ${VB.h}`);if(typeof drawHome==='function'&&HOME){setTimeout(drawHome,0);if(typeof drawZones==='function')setTimeout(drawZones,0);}const r=svg.getBoundingClientRect();KPX=r.width?VB.w/r.width:1;if(typeof placeBrgLabels==='function')placeBrgLabels();svg.style.setProperty('--k',KPX);if(window.RP&&RP.on&&RP.frame)RP.frame();svg.classList.toggle('far',VB.w>90);svg.classList.toggle('close',VB.w<40);svg.classList.toggle('vclose',VB.w<22);svg.classList.toggle('veryfar',VB.w>230);svg.classList.toggle('vilfar',VB.w>300);svg.classList.toggle('ua',VB.w>900);if(typeof applySelOblast==='function'&&(VB.w<=300)!==applyVB._zin){applyVB._zin=VB.w<=300;applySelOblast();}{const kz=document.querySelector('.kozak'); if(kz){kz.querySelector('.kz').setAttribute('transform',`scale(${(2.2*KPX).toFixed(3)})`); const ts=kz.querySelectorAll('text'); ts[0].setAttribute('y',(14*KPX).toFixed(2)); ts[1].setAttribute('y',(25*KPX).toFixed(2));}}clearTimeout(applyVB._t);applyVB._t=setTimeout(()=>{applyVB._t=null;if(typeof LAYERS!=='undefined'&&LAYERS.heat&&typeof drawHeat==='function')drawHeat();if(typeof IMP_H!=='undefined'&&IMP_H)drawImpacts();if(typeof updateTiles==='function'){updateTiles();layoutTownLabels();}},120);}
 function setView(cx,cy,w){VB.w=Math.max(8,Math.min(1500,w));VB.h=VB.w*ASPECT();VB.x=cx-VB.w/2;VB.y=cy-VB.h/2;applyVB();}
 function zoomAt(f,cx,cy){const nw=Math.max(8,Math.min(1500,VB.w/f)),nh=nw*ASPECT();VB.x=cx-(cx-VB.x)*(nw/VB.w);VB.y=cy-(cy-VB.y)*(nh/VB.h);VB.w=nw;VB.h=nh;applyVB();}
 function toSvg(px,py){const r=svg.getBoundingClientRect();return [VB.x+(px-r.left)/r.width*VB.w, VB.y+(py-r.top)/r.height*VB.h];}
@@ -1797,7 +1801,10 @@ const statusIco=st=>STATUS_ICO[st]||'\u2022';
 const tgtName=m=>m.target==='\u043e\u0431\u043b\u0430\u0441\u0442\u044c'?(m.target_uid?oblFullGen(m.target_uid):t('tp_nextobl')):pn(m.target);
 // 1.45: and with no part named it is "Chernihiv oblast · somewhere in the oblast" — "oblast centre (approx.)" read as
 // a position, which is the one thing it is not
-const oblWhere=m=>{const q=((m.evidence||{}).position||{}).quad, o=m.oblast_uid&&typeof oblFull==='function'?oblFull(m.oblast_uid):'';
+// 1.45.1: "на півночі від Миколаєва" — a side of the oblast's capital, no distance — reads "north of Mykolaiv"
+const relOf=m=>{const ps=(m.evidence||{}).position||{}; return ps.rel!=null&&!!ps.ref;};
+const oblWhere=m=>{const ps=(m.evidence||{}).position||{}, q=ps.quad, o=m.oblast_uid&&typeof oblFull==='function'?oblFull(m.oblast_uid):'';
+  if(ps.rel!=null&&ps.ref) return t('rq_of',t('rq').split(',')[Math.round(ps.rel/45)%8],pn(ps.ref))+(o?' · '+o:'');
   return q?(t('oq_'+q)||t('oblcentre'))+(o?' · '+o:''):o?o+' · '+t('obl_somewhere'):t('oblcentre');};
 // The weapon silhouettes — G, GLYPH_BY_TYPE and why each looks the way it does — live in /static/glyphs.js,
 // shared with the Light page so the two can never draw the same weapon two different ways.
@@ -1856,7 +1863,7 @@ function oblEventSheet(uid){
   const evs=(OBLEVT[uid]||[]).slice().sort((a,b)=>a.ts<b.ts?1:-1); if(!evs.length) return;
   $('sheetbody').innerHTML=`<div class="type">${evs[0].status?oblIco(evs[0]):silSvg(evs[0]).replace('<svg ','<svg style="width:22px;height:22px;vertical-align:-6px" ')} ${esc(evs[0].status?statusName(evs[0].status):kindOf(evs[0]))} — ${esc(oblFull(uid))}</div>`
     +`<div class="kv1 muted" style="margin-bottom:8px">${esc(t('obl_noplace'))}</div>`
-    +evs.map(m=>`<div class="card plain"><div class="title">${esc(m.status?statusName(m.status):kindOf(m))}${m.count>1?' ×'+m.count:''} · ${fmtT(m.ts)}${!m.status&&(m.evidence||{}).position&&m.evidence.position.quad?' · '+esc(oblWhere(m)):''}</div>`
+    +evs.map(m=>`<div class="card plain"><div class="title">${esc(m.status?statusName(m.status):kindOf(m))}${m.count>1?' ×'+m.count:''} · ${fmtT(m.ts)}${!m.status&&(m.evidence||{}).position&&(m.evidence.position.quad||m.evidence.position.rel!=null)?' · '+esc(oblWhere(m)):''}</div>`
       +`<div class="q" style="margin-top:4px">${esc(ptxt(m).slice(0,220))}</div>`
       +`<div class="kv1 muted">${esc(CH[m.channel]||m.channel)}</div></div>`).join('');
   $('tip').hidden=true; $('sheet').classList.add('show');
@@ -2263,7 +2270,7 @@ function moveTip(e){const w=$('mapwrap').getBoundingClientRect(); const tip=$('t
   tip.style.top=Math.max(4,Math.min(y,Math.max(4,w.height-th-4)))+'px';}
 function openSheet(id){
   const m=MK.find(x=>x.id===id); if(!m) return; $('tip').hidden=true; const [x,y,x0,y0]=posOf(m,Date.now()); const info=inboundInfo(m,x,y);
-  const th=THREAT[m.type]||THREAT.unknown; const appr=!!m.approach&&!m.status&&!m.endedBy; const placeEn=m.place==='область'?oblWhere(m):pn(m.place);
+  const th=THREAT[m.type]||THREAT.unknown; const appr=!!m.approach&&!m.status&&!m.endedBy; const placeEn=(m.place==='область'||relOf(m))?oblWhere(m):pn(m.place);
   const kind=m.status?`${statusIco(m.status)} ${statusName(m.status)}`:`${m.type==='drones'&&m.jet?t('k_jet'):m.type==='drones'?t('k_shahed'):m.type==='unknown'?'⚠ '+t('th_unknown2'):th[1]}`;
   const ev=m.evidence||{}; const cor=corroboration(m); const closer=m.endedBy; const closed=m.closes?MK.find(o=>o.id===m.closes):null;
   const overall=ev.position?.confidence==='high'&&(m.status||ev.heading?.confidence==='high'||ev.heading?.confidence==='medium')?'high':ev.position?.confidence==='high'?'medium':'low';
@@ -2348,16 +2355,13 @@ function cossack(){
 // Each 256-px Mercator tile is placed by its own lon/lat corners in the km projection, so it lines up exactly
 // with the raions and markers (the residual inside one tile is metres).
 const TILE_URL=(z,x,y)=>`https://tile.openstreetmap.org/${z}/${x}/${y}.png`;   // OSM standard tiles, darkened with a CSS filter
-// 1.45: on a computer — a fine pointer that hovers, no phone or tablet browser, a large screen — the tiles are under
-// the map at every zoom, down to the whole country, not only once zoomed in to 150 km. A phone keeps the old rule:
-// the tiles are data and battery it may not have to spare during a raid.
-var DESKTOP=(()=>{try{return matchMedia('(pointer:fine) and (hover:hover)').matches&&!/Android|iPhone|iPad|iPod|Mobile|Silk|Kindle/i.test(navigator.userAgent)&&Math.min(screen.width,screen.height)>=700;}catch(e){return false;}})();
-var TILE_MAXW=DESKTOP?1600:150, TILE_MINZ=DESKTOP?5:8;   // var: applyLayers() runs before this line
+// 1.45.1: 1.45 laid the tiles under the whole country on a computer; zoomed out, the map was unreadable. Back to
+// the one rule for every device: tiles only once zoomed in to 150 km.
 function updateTiles(){
-  const g=$('tiles'); const on=LAYERS.tiles&&VB.w<=TILE_MAXW&&MAP&&!CITY&&!(typeof LITE!=='undefined'&&LITE); svg.classList.toggle('tiled',!!on); svg.classList.toggle('tfar',!!on&&VB.w>150); $('attrib').hidden=!on;
+  const g=$('tiles'); const on=LAYERS.tiles&&VB.w<=150&&MAP&&!CITY&&!(typeof LITE!=='undefined'&&LITE); svg.classList.toggle('tiled',!!on); $('attrib').hidden=!on;
   if(!on){g.innerHTML='';return;}
   const r=svg.getBoundingClientRect(); const kmpx=VB.w/Math.max(1,r.width);            // km per screen px
-  let z=Math.round(Math.log2(99.7/kmpx*(0.637/Math.cos(C[1]*Math.PI/180))))+(devicePixelRatio>1.5?1:0); z=Math.max(TILE_MINZ,Math.min(18,z));
+  let z=Math.round(Math.log2(99.7/kmpx*(0.637/Math.cos(C[1]*Math.PI/180))))+(devicePixelRatio>1.5?1:0); z=Math.max(8,Math.min(18,z));
   const n=2**z; const lon2x=lon=>(lon+180)/360*n; const lat2y=lat=>{const f=lat*Math.PI/180;return (1-Math.log(Math.tan(f)+1/Math.cos(f))/Math.PI)/2*n;};
   const y2lat=y=>Math.atan(Math.sinh(Math.PI*(1-2*y/n)))*180/Math.PI; const x2lon=x=>x/n*360-180;
   const [lonA,latA]=unproj(VB.x,VB.y),[lonB,latB]=unproj(VB.x+VB.w,VB.y+VB.h);
@@ -2373,7 +2377,7 @@ function updateTiles(){
 // ---- place-label collision pass: bigger places win, an overlapping smaller label is hidden until you zoom in ----
 function layoutTownLabels(){
   const r=svg.getBoundingClientRect(); if(!r.width) return; const k=VB.w/r.width; const els=[...svg.querySelectorAll('text.town')];
-  els.forEach(e=>e.removeAttribute('data-hid'));
+  els.forEach(e=>e.removeAttribute('data-hid')); svg.querySelectorAll('.towndot[data-hid]').forEach(e=>e.removeAttribute('data-hid'));
   // 1.45: off-screen first, then the (slow) style test — with the regional villages there are ~2,000 names
   const items=[]; for(const e of els){ const x=(+e.getAttribute('x')-VB.x)/k,y=(+e.getAttribute('y')-VB.y)/k; if(x<-200||y<-50||x>r.width+50||y>r.height+50) continue;
     if(getComputedStyle(e).display==='none') continue; const pr=e.classList.contains('big')?0:e.classList.contains('rg')?2:e.classList.contains('district')?4:e.classList.contains('minor')?3:1;
@@ -2381,7 +2385,9 @@ function layoutTownLabels(){
     items.push({e,pr,x,y:y-fs,w:e.textContent.length*fs*0.58+4,h:fs+2}); }
   // a threat label wins over a town name: the town under it is hidden, never written over
   items.sort((a,b)=>a.pr-b.pr); const placed=[...LBLBOX.boxes];
-  for(const it of items){ if(placed.some(q=>it.x<q.x+q.w&&q.x<it.x+it.w&&it.y<q.y+q.h&&q.y<it.y+it.h)){it.e.setAttribute('data-hid','1');continue;} placed.push(it); }
+  // 1.45.1: a village whose name has no room loses its dot too — a field of nameless dots says nothing
+  for(const it of items){ if(placed.some(q=>it.x<q.x+q.w&&q.x<it.x+it.w&&it.y<q.y+q.h&&q.y<it.y+it.h)){it.e.setAttribute('data-hid','1');
+      if(it.pr>=3){const d=it.e.previousElementSibling; if(d&&d.classList.contains('towndot')) d.setAttribute('data-hid','1');} continue;} placed.push(it); }
 }
 // ---- impact history layer (off / 24 h / 48 h / 72 h) — past "impact / explosion" reports only ----
 // The map carries the last 24 h and nothing more: beyond that the history layer buries the live picture,
@@ -2638,7 +2644,7 @@ function rowSub(r){ const m=r.m, bits=[];
   bits.push(m.stale?t('lt_lost'):t('tp_ago',Math.max(0,Math.round(agoMin(m.pos_ts||m.ts)))));   // 1.38: the age of the position
   if(r.chs>1) bits.push(tn('mc_ch',r.chs));
   return bits.join(' · '); }
-const rowPlace=m=>m.approach?'→ '+pn(m.target||m.place):m.place==='область'?oblWhere(m):pn(m.place);
+const rowPlace=m=>m.approach?'→ '+pn(m.target||m.place):(m.place==='область'||relOf(m))?oblWhere(m):pn(m.place);
 function nearHTML(rows){
   let h=`<div class="nrh"><b>${esc(HOME?t('nr_from',homeName()):t('nr_kyiv'))}</b><button type="button" data-act="place">${esc(HOME?t('lt_change'):t('sl_home'))}</button></div>`;
   if(!rows.length) return h+`<div class="nrnote">${esc(t('nr_none'))}</div>`;

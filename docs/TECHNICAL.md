@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.45** · last updated 2026-10-07 (1.45)
+**Documented version: 1.45** · last updated 2026-10-07 (1.45.1)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -560,6 +560,12 @@ apostrophe — `_ru_variants`). Kharkiv city's districts are named by hand in th
   such a place is a region on the map, not a point (§7.4). "вектор / вектором" is a course word ("2х вектор Велика
   Димерка/Бровари"). The lines of a multi-line post stay lines (`_drop_clear_sentences` keeps the separators), and a
   line that names no place, no oblast and no weapon ("‼️Увага!") is not a report of its own.
+- 1.45.1: **a side of a town is not the town** (`_rel_settle`): "на півночі від Миколаєва", "північніше Харкова",
+  "на північному заході від Броварів" name a reference and a side. With a distance ("за 20 км на північ від …") the mark
+  is moved that far that way (medium confidence). Without one, a side of an oblast's capital (`_OBL_CAPITAL`) is the
+  oblast — `place == "область"`, drawn on the region (§7.4) — and a side of any other town stays at the town with low
+  confidence. Either way `evidence.position` carries `rel` (degrees) and `ref`, and the pages write "north of
+  Mykolaiv" (`oblWhere`, `rq` / `rq_of`). The offline translation reads "на півночі від X" as "north of X".
 - 1.45: **raions.** "Шепетівський район", "у Самбірському районі", "в напрямку Самбірського району" are read as the
   raion (`_RAION_RX` → `RAION_KEYS`): one pseudo-place per raion of a tracked oblast ("Самбірський р-н"), at the
   raion's centre town (the core gazetteer's first, never a power plant; `_load_raions`), with **low** confidence: a
@@ -879,10 +885,9 @@ reported", never "safe".
 ### 10.1 Tactical (`/m`)
 
 One self-contained `kyiv.html`: an SVG map in a km projection around Kyiv (`proj`/`unproj`, `KX`, `KY`),
-level-of-detail classes by zoom, OSM tiles under the vector layers below 150 km width — and (1.45) **on a computer at
-every zoom** down to the whole country (`DESKTOP`: a fine pointer that hovers, no phone or tablet browser, a screen at
-least 700 px on its short side; `TILE_MAXW` 1600 km, tiles from zoom 5). Zoomed out past 150 km the drawn rivers and
-roads stay over the tiles (`tfar`); a phone keeps the 150 km rule.
+level-of-detail classes by zoom, OSM tiles under the vector layers below 150 km width, on every device, and inside
+Ukraine only (`#tiles` is clipped to the oblasts' outlines, `#uaclip`). (1.45 laid them under the whole country on a
+computer, neighbours included; zoomed out, the map was unreadable, and 1.45.1 took it back.)
 
 **The layers outside Kyiv oblast (1.45).** The rivers, roads and "airports / plants" layers were drawn by hand for
 Kyiv oblast only, and "villages and small towns" had the core gazetteer's hundred-odd Kyiv-oblast places and a couple
@@ -896,7 +901,10 @@ of dozen elsewhere — on an Odesa or Lviv view they did nothing. Now:
   hand-drawn Dnipro, Desna and Kyiv Reservoir lines (`.river.hand`), whose labels stay;
 - the villages layer fetches `/api/places?villages=scope` the first time it is turned on (`loadVillages`): the regional
   gazetteer's hromada centres and places of 1,000+ in the oblasts the map covers, about 1,800 names, drawn like the
-  core villages and laid out by `layoutTownLabels` (which now tests the screen position before the style);
+  core villages and laid out by `layoutTownLabels` (which now tests the screen position before the style).
+  1.45.1: with the layer on, names show up to 300 km of map on a computer (`vilfar`; the small towns too — the
+  `veryfar` rule applies only with the layer off) and up to 90 km on a phone; `geo.villages` lists hromada centres
+  first, then by population, so the collision pass keeps those; a village whose name has no room loses its dot;
 - the 15 / 30 / 50 km rings are around the reader's oblast capital (`OBL_CAP`, `drawRings`, redrawn by
   `setMyOblast`); Kyiv for Kyiv oblast and for an occupied capital.
 
@@ -944,7 +952,7 @@ of dozen elsewhere — on an Odesa or Lviv view they did nothing. Now:
   computer; outside tap or Escape closes): **the bell** — push, warn near my position, Kyiv bridges, sound, volume and
   test, vibration, as switches with a line saying what each does; **More** — places (priority place, my oblast),
   view (language, normal / day / night, blackout, Light), about (What to do, Share the app, how it works, support,
-  Telegram, about, build tag); **Layers** — the map layers, Kyiv's 10 districts, EST, zoom out to oblast / region / Ukraine,
+  Telegram, about, build tag); **Layers** — the map layers, Kyiv's 10 districts, EST (suspended since 1.45.1: hidden, always off), zoom out to oblast / region / Ukraine,
   and the legend behind a button.
 - **Computer** (≥ 1000 px): the card is a 360 px column on the left with the Near list under it, the map in the
   middle, the drawer on the right opening on the Feed. The column is a flex column of fixed height that scrolls:

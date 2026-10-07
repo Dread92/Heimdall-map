@@ -25,7 +25,8 @@ A target is drawn **where a post said it was**. Nothing else.
   the thing being avoided.
 - Dead reckoning along a heading exists only behind the explicit **EST** switch, off by default,
   labelled as an estimate. A drone that turned after the report would otherwise be drawn somewhere
-  it is not.
+  it is not. 1.45.1: the switch is suspended — hidden, and the estimate off for everybody — until it is
+  reconsidered.
 - **No ETA is ever displayed.** "Arrives in 4 minutes" is a number the data cannot support, and
   someone would wait for it.
 - The course ray is capped and drawn with an uncertainty cone, never as a line to a destination.
@@ -411,6 +412,14 @@ the oblast and no town — its outline, the weapon and the count — and its car
 the same sentence names the town it is heading for ("на півночі Чернігівщини ➡️ курсом на Славутич"), it is drawn as
 an approach to that town: the one place the post did name. A raion named as where it is ("залітає у Гайсинський
 район … курсом на Теплик") is the same: an approach to Теплик, with no course drawn from the raion's centre.
+
+## A side of a town is not the town (1.45.1)
+
+"БпЛА на півночі від Миколаєва" — north of Mykolaiv — was drawn on Mykolaiv itself, "±5 km, high confidence". The
+post named the city as a reference and gave no distance. Now: with a distance ("за 20 км на північ від …") the mark
+goes that far that way; from an oblast's capital without one, the oblast is marked, as for any report with no town,
+and the card says *north of Mykolaiv*; from any other town, the mark stays at the town with **low** confidence and
+the card says *north-west of Brovary*.
 
 ## Where it is, and where it is going, are different facts
 

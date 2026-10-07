@@ -67,6 +67,10 @@ def _prep_for(prefix, token, name):
     if not m:
         return None, 0
     p = m.group(1).lower()
+    # 1.45.1: "на півночі від Миколаєва" is "north of Mykolaiv" — the side words and "від" together
+    sm = re.search(r"на\s+(півночі|півдні|сході|заході)\s+від\s+$", prefix, re.I)
+    if sm:
+        return {"півночі": "north of", "півдні": "south of", "сході": "east of", "заході": "west of"}[sm.group(1).lower()], len(sm.group(0))
     if p != "на":
         return PREP[p], len(m.group(0))
     tok = token.lower()

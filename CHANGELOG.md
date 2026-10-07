@@ -2,6 +2,23 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.45.1 — 2026-10-07
+
+### Changed
+- **The street tiles are back to "zoomed in only" on a computer too, and drawn inside Ukraine only.** 1.45 laid them
+  under the whole country on a desktop, Romania, Moldova and Belarus included, and zoomed out the map was unreadable.
+  Every device now shows them below 150 km width, as before 1.45, clipped to Ukraine's border.
+- **"Estimate motion along heading" (EST) is suspended**: the switch is hidden and the estimate is off for everybody.
+
+### Fixed
+- **"БпЛА на півночі від Миколаєва" is no longer drawn on Mykolaiv.** A side of a town is not the town: with a
+  distance the mark goes that far that way; from an oblast's capital without one, the oblast is marked and the card
+  says "north of Mykolaiv"; from another town, the mark stays there with low confidence. The translation reads
+  "north of Mykolaiv" (it said "in the north of from Mykolaiv").
+- **The "villages and small towns" layer shows its names at an oblast's width**: up to 300 km of map on a computer
+  (90 km on a phone), hromada centres and the largest first, a village with no room for its name without its dot.
+  They appeared only below 90 km (40 on a phone), so on an oblast's view the layer seemed to do nothing.
+
 ## 1.45.0 — 2026-10-07
 
 ### Added
