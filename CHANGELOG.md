@@ -2,6 +2,19 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.46.0 — 2026-10-07
+
+### Changed — the server's work (nothing the reader sees)
+- **One TLS context for every outgoing request.** Each request (the ~20 channel previews, the alert sources) built a
+  new one and loaded ~150 root certificates into it: 87 % of the process's CPU in a profile at the attack-night
+  cadence. Measured: 10 % of a core → 1.6 %. Very likely what spent the shared CPU's credit on attack nights before
+  1.41.1 — a cheaper machine may be enough again once a night has been watched (docs/TECHNICAL.md §5.5).
+- **The live line no longer resends the sources' details to every page at every beat** (~80 % of what it carried):
+  the pages get whether each source works; the detail stays on the dashboard.
+- The oblasts a post names are read once, not at every rebuild of the marks; the place lists are built once an hour
+  and sent gzipped; the Tactical page downloads the small places only when the villages layer is on; SQLite syncs at
+  checkpoints instead of at every write.
+
 ## 1.45.1 — 2026-10-07
 
 ### Changed

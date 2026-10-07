@@ -125,7 +125,7 @@ def test_the_villages_layer_covers_every_oblast_on_the_map():
     assert not names & {(k.split(" (")[0], val[2]) for k, val in dict.items(geo.PLACES) if val[2] in ("27", "18", "5")}
     assert '"villages", [None])[0] == "scope"' in SRV and "geo.villages(sc)" in SRV
     # fetched the first time the layer is on, never before
-    assert "fetch('/api/places?villages=scope')" in PAGE and "if(LAYERS.minor) loadVillages();" in PAGE
+    assert "'/api/places?villages=scope'" in PAGE and "if(LAYERS.minor) loadVillages();" in PAGE
     assert "if(cb.dataset.l==='minor'&&cb.checked)loadVillages();" in PAGE
 
 

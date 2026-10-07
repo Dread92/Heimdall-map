@@ -72,7 +72,7 @@ def test_deepl_is_asked_for_french_from_ukrainian(monkeypatch):
         def __exit__(self, *a):
             return False
 
-    def fake(req, timeout=0):
+    def fake(req, timeout=0, context=None):
         seen["url"], seen["auth"], seen["body"] = req.full_url, req.headers.get("Authorization"), json.loads(req.data)
         return R(json.dumps({"translations": [{"text": "Brovary : dégagé"}]}).encode())
     monkeypatch.setattr(T._ur, "urlopen", fake)

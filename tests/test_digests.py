@@ -65,7 +65,7 @@ def test_a_summary_is_parsed_from_the_answer(monkeypatch):
     ans = {"model": "m", "content": [{"type": "text", "text": '```json\n{"en": "Quiet night.", "uk": "Тиха ніч."}\n```'}]}
     seen = {}
 
-    def fake(req, timeout=0):
+    def fake(req, timeout=0, context=None):
         seen["body"] = json.loads(req.data.decode())
         seen["headers"] = dict(req.headers)
         return R(json.dumps(ans).encode())

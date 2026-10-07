@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.45** · last updated 2026-10-07 (1.45.1)
+**Documented version: 1.46** · last updated 2026-10-07 (1.46)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -215,7 +215,9 @@ once. What it sends:
     order; `pre` + `n` = new entries at the head (a new post, a new mark); `ids` = a new order; `all` = the
     whole list when there is nothing to diff against;
   - `st` (the alerts state): `act` = the active alerts as a list (by `location_uid|alert_type`), `sub` /
-    `unset` = keys of `oblasts` and `sources` that changed, `set` = other values whole.
+    `unset` = keys of `oblasts` and `sources` that changed, `set` = other values whole. (1.46: `sources` is
+    `{name: {ok}}` — the time of each reading changed at every poll and was resent to every page at every beat;
+    the detail is the dashboard's, `/api/health`.)
   Every part carries `b` (the version it starts from) and `h` (the version it leads to). The full answers
   (`/api/markers`, `/api/state`, `/api/feed`) carry the same `h`. A page applies a change only when it holds
   exactly `b` (`static/live.js`, `LiveSync.part`), otherwise it fetches that part in full — nothing is
@@ -291,6 +293,25 @@ Environment variables win over `config.json`. On Fly they are set as **secrets**
 
 Secrets live only in `config.json` (git-ignored) or in Fly secrets. They are never committed, never printed
 by the scripts, and `.dockerignore` keeps `config.json` out of the image.
+
+### 5.5 What the process spends its CPU on (1.46)
+
+Measured on 7 Oct 2026 with py-spy on a copy of the service, the channels read at the ballistic cadence (every 5 s),
+the feed of that evening loaded: **87 % of the CPU went into building TLS contexts.** `urllib.request.urlopen()`
+without a `context` makes a new one per request and loads the system's ~150 root certificates into it — 15–25 ms of
+CPU each time, for each of the ~20 channel previews and the alert sources, every round. One shared context
+(`server._SSL_CTX`, `translate._CTX`, passed to every `urlopen`) took the process from 10 % of a core to 1.6 %; with
+500 pages on the live line and a full page load every second, 4.1 % and 113 MB of memory. This is very likely what
+spent a shared vCPU's burst balance on attack nights (§15, "throttling") before 1.41.1 moved to a dedicated CPU.
+
+Also in 1.46: the pages' state carries whether each source works and nothing more (§5.4); the oblasts a post
+names are read once per post (`State._named_cache`, they were ~40 % of each rebuild of the marks); `/api/places` is
+built once an hour per set of oblasts and sent gzipped (`State.cached`), and the Tactical page asks for
+`oblast=all` only when the villages layer is turned on (`loadVillages`); SQLite runs `synchronous=NORMAL` (with
+WAL: a sync at each checkpoint, not at each commit).
+
+Not changed, already economical: the live line (one thread, one serialisation per combination of parts, deltas),
+the 304s on static files, Web Push's pooled connections.
 
 ## 6. Official alert data
 
@@ -1228,7 +1249,7 @@ All JSON unless stated. Public unless marked 🔒 (`ADMIN_KEY`).
 | `GET /manifest.json`, `/light.webmanifest`, `/sw.js`, `/favicon.ico`, `/static/*` | PWA files, assets (gzip + ETag) |
 | `GET /healthz` | liveness: `{"ok": true}`, or **503** when the database cannot be had within 3 s |
 | `GET /api/version` | `{v, now, missile, msl, build, app}` — the cheap ping pages poll |
-| `GET /api/state` | active alerts, per-oblast status, sources' health, єРадар counts, the admin's message, the nuclear event, the Kyiv bridges (`bridges`, §9b), the oblasts on the map (`scope`, 1.43), config summary |
+| `GET /api/state` | active alerts, per-oblast status, whether each source works (1.46: `{ok}` only — the detail is `/api/health`), єРадар counts, the admin's message, the nuclear event, the Kyiv bridges (`bridges`, §9b), the oblasts on the map (`scope`, 1.43), config summary |
 | `GET /api/markers` | live marks with evidence, history, staleness |
 | `GET /api/feed?limit=&lang=` | recent posts (`text`, `text_en`, `text_fr`, `en_mt`, tags, and `home` for a regional channel's post — 1.43); `lang` asks for translation |
 | `GET /api/stream?sync=&ev=&p=&lang=` | the live line (§5.4): `hello`, `sync` (changes of `mk`, `st`, `fd` as asked in `sync`) and, unless `ev=0`, the events `start`, `end`, `threat`, `update`, `feed`, `eradar`, `tr`, `notice`, `nuke`; `p=light` counts it as a Light page |
@@ -1237,7 +1258,7 @@ All JSON unless stated. Public unless marked 🔒 (`ADMIN_KEY`).
 | `GET /api/impacts?hours=` | explosions and confirmed shoot-downs |
 | `GET /api/replay?from=&to=` | the replay (§10.3c), Unix seconds, ≤ 26 h within the last 7 days: `alerts` `[{k, o, lt, rk, lv, at, ti, s, e}]` (intervals, `e` null while on) and `tracks` `[{ty, jet, n, ap, h, ch, p: [[t, lon, lat, place]]}]` |
 | `GET /api/stats?days=` | statistics; the Stats tab reads only `windows` (with `af`: launched / down by type, used, impacts, debris) and `af_days` (the Air Force summaries, each with its `post`) |
-| `GET /api/places?oblast=` | gazetteer (names, coordinates, oblast): `oblast=14,31,…`, `all`, or (1.43) `scope` — the oblasts the map covers now; (1.45) `villages=scope`: the regional villages of those oblasts (hromada centres and places of 1,000+, `geo.villages`), for the map's villages layer, cached an hour |
+| `GET /api/places?oblast=` | gazetteer (names, coordinates, oblast; 1.46: built once an hour, gzipped): `oblast=14,31,…`, `all`, or (1.43) `scope` — the oblasts the map covers now; (1.45) `villages=scope`: the regional villages of those oblasts (hromada centres and places of 1,000+, `geo.villages`), for the map's villages layer, cached an hour |
 | `GET /api/drone_heat?days=1|7|30` | the heat layer: `points` `[lon, lat, posts, place, oblast]` — where drones and unidentified targets were reported (cached 10 min) |
 | `POST /api/push/subscribe`, `/api/push/unsubscribe`, `/api/push/test`; `GET /api/push/key` | Web Push; subscribe takes `{subscription, home, topics: ["bridges"], lang}` |
 | `POST /api/flag` | "this reading is wrong" report |
@@ -1347,7 +1368,9 @@ Four causes look the same from a phone, and the dashboard (Live → **Server**, 
 - **throttling** — "taken by the host (steal)" above ~10 %, late wake-ups, slow requests: the shared vCPU has
   spent its burst balance and runs at its 6.25 % baseline (Fly's CPU quota). Remedy: a bigger machine, or
   less work per minute. Since 1.41.1 production runs on a dedicated CPU (`performance-1x`, 2 GB), which has no
-  burst balance to spend: steal should stay near 0. The size is `[[vm]]` in `fly.toml` — `fly deploy` resets the
+  burst balance to spend: steal should stay near 0. 1.46 removed the work that most likely caused it (§5.5): once
+  an attack night has been watched on the dedicated CPU with 1.46, a shared machine (`shared-cpu-4x`, 1 GB: a 25 %
+  baseline) may be enough again — at about a quarter of the cost. The size is `[[vm]]` in `fly.toml` — `fly deploy` resets the
   machine to it, so a `fly scale vm` without editing the file lasts only until the next release.
 - **a slow piece of work** — slow requests on one path with normal steal; the watchdog's stack dump in the logs
   names it.

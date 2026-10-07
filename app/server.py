@@ -26,6 +26,7 @@ import re
 import selectors
 import socket
 import sqlite3
+import ssl
 import sys
 import threading
 import time
@@ -396,7 +397,7 @@ def build_id():
 
 # The version the front end shows in its footer, kept here too so /api/version can answer "what is actually
 # running" without anybody reading it off a screenshot. tests/test_version.py pins the two to each other.
-APP_VERSION = "1.45"
+APP_VERSION = "1.46"
 APP_NAME = "Heimdall"
 BUILD = None    # filled at startup
 
@@ -994,7 +995,7 @@ def ai_summary(cfg, facts, kind):
     req = urllib.request.Request("https://api.anthropic.com/v1/messages", data=body, method="POST",
                                  headers={"x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json"})
     try:
-        with urllib.request.urlopen(req, timeout=120) as r:
+        with urllib.request.urlopen(req, timeout=120, context=_SSL_CTX) as r:
             out = json.loads(r.read().decode("utf-8"))
     except urllib.error.HTTPError as e:
         return None, None, model, f"HTTP {e.code}: {e.read()[:200].decode('utf-8', 'replace')}"
@@ -1025,9 +1026,15 @@ def _gzipped(path, body):
     return _GZ[k]
 
 
+# One TLS context for every outgoing request. urlopen() without one builds a new context each call and loads the
+# system's ~150 root certificates into it again: 15–25 ms of CPU per request, ~90 % of the process's CPU while the
+# channels are read every 5–10 s on an attack night (1.46 audit, py-spy: 10 % of a core → 1.6 %).
+_SSL_CTX = ssl.create_default_context()
+
+
 def http_get(url, headers=None, timeout=20):
     req = urllib.request.Request(url, headers={"User-Agent": "ua-alerts-local/1.0", **(headers or {})})
-    with urllib.request.urlopen(req, timeout=timeout) as r:
+    with urllib.request.urlopen(req, timeout=timeout, context=_SSL_CTX) as r:
         return r.status, dict(r.headers), r.read()
 
 
@@ -1073,6 +1080,9 @@ class Store:
         self.lock = threading.Lock()
         self.conn = sqlite3.connect(path, check_same_thread=False)
         self.conn.execute("PRAGMA journal_mode=WAL")
+        # 1.46: with WAL, NORMAL syncs at checkpoints instead of at every commit — safe against a crash of the process,
+        # and a power cut can lose at most the last commits, never corrupt the file
+        self.conn.execute("PRAGMA synchronous=NORMAL")
         c = self.conn
         c.execute("""CREATE TABLE IF NOT EXISTS alerts(
             key TEXT PRIMARY KEY, source TEXT, location_uid TEXT, location_title TEXT, location_title_en TEXT,
@@ -2104,6 +2114,7 @@ class State:
             log(f"[{source}] {len(events)} event(s):", ", ".join(f"{e['kind']}:{e['alert']['location_title']}" for e in events[:8]))
 
     _marker_cache = {}
+    _named_cache = {}        # 1.46: post id → the oblasts its text names (geo.oblasts_named)
     _ev_cache = {}
     _impact_cache = {}
     _impact_res = {}
@@ -2130,6 +2141,7 @@ class State:
         if len(self._marker_cache) > 2000:
             self._marker_cache.clear()
             self._ev_cache.clear()
+            self._named_cache.clear()
         return out
 
     def _marks_from_posts(self, posts, kyiv_ends, cache, evidence=True):
@@ -2161,7 +2173,11 @@ class State:
                 cache[p["post_id"]] = ms
             if pts:
                 nb = near_by_channel.setdefault(p["channel"], [])
-                nb.extend((pts, u) for u in geo.oblasts_named(p["text"], p["channel"]))
+                # 1.46: read once per post — recomputed on every pass it was ~40 % of the time spent building the marks
+                named = self._named_cache.get(p["post_id"])
+                if named is None:
+                    named = self._named_cache[p["post_id"]] = geo.oblasts_named(p["text"], p["channel"])
+                nb.extend((pts, u) for u in named)
                 nb.extend((pts, m["oblast_uid"]) for m in ms if m.get("oblast_uid") and m.get("lon") is not None)
                 del nb[:-12]
             ctx = last_by_channel.get(p["channel"])
@@ -3476,6 +3492,10 @@ class State:
         except Exception as e:                       # never at the cost of the alerts themselves
             log("bridges:", e)
             bridges = {b["id"]: {} for b in BRIDGES}
+        # 1.46: the pages show a source as working or not, and nothing more. Its time of last reading changed on every
+        # poll, so every reader was sent the whole table again at each beat of the live line — ~80 % of what the line
+        # carried. The details (last read, counts, errors) are the dashboard's: /api/health.
+        sources = {k: {"ok": bool(v.get("ok"))} for k, v in sources.items()}
         return {"now": now_iso(), "active": active, "oblasts": by_oblast, "sources": sources, "eradar": self.eradar,
                 "notice": self.notice_now(), "nuke": self.nuke, "bridges": bridges, "scope": sorted(SCOPE_UIDS, key=int),
                 "favourites": self.cfg.get("favourites") or [], "config": {"demo": bool(self.cfg.get("demo")), "canonical": canonical_host(self.cfg),
@@ -5462,8 +5482,11 @@ class Handler(BaseHTTPRequestHandler):
                     sc = set(SCOPE_UIDS)
                     return self._send_cached(st.cached("villages:" + ",".join(sorted(sc)), 3600, lambda: {"places": [
                         {"name": n, "lon": lo, "lat": la, "oblast_uid": uid} for n, lo, la, uid in (geo.villages(sc) if geo else [])]}))
-                pl = [{"name": n.split(" (")[0], "lon": v[0], "lat": v[1], "oblast_uid": v[2]} for n, v in (geo.PLACES.items() if geo else []) if obl is None or v[2] in obl]
-                return self._json({"places": pl})
+                # 1.46: built once an hour per set of oblasts and sent gzipped — it was rebuilt for every request
+                key = "places:" + ("all" if obl is None else ",".join(sorted(obl)))
+                return self._send_cached(st.cached(key, 3600, lambda: {"places": [
+                    {"name": n.split(" (")[0], "lon": v[0], "lat": v[1], "oblast_uid": v[2]}
+                    for n, v in (geo.PLACES.items() if geo else []) if obl is None or v[2] in obl]}))
             if u.path == "/api/markers":
                 st.markers_now()
                 return self._send_cached(st._resp["markers"])

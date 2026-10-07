@@ -220,6 +220,7 @@ def _norm(s):
 # ---------------------------------------------------------------------------
 import json as _json
 import os as _os
+import ssl as _ssl
 import urllib.error as _ue
 import urllib.parse as _up
 import urllib.request as _ur
@@ -288,6 +289,10 @@ _DOWN = {}          # backend → until when it is not tried again
 _TARGET = {"en": ("EN-GB", "en"), "fr": ("FR", "fr")}
 
 
+# 1.46: one TLS context for every call — urlopen() without one loads the system's root certificates again each time
+_CTX = _ssl.create_default_context()
+
+
 def configure(deepl=None, google_cloud=None):
     if deepl:
         KEYS["deepl"] = deepl
@@ -297,7 +302,7 @@ def configure(deepl=None, google_cloud=None):
 
 def _google(text, target="en"):
     url = f"https://translate.googleapis.com/translate_a/single?client=gtx&sl=uk&tl={target}&dt=t&q=" + _up.quote(text)
-    with _ur.urlopen(_ur.Request(url, headers={"User-Agent": _UA}), timeout=6) as r:
+    with _ur.urlopen(_ur.Request(url, headers={"User-Agent": _UA}), timeout=6, context=_CTX) as r:
         d = _json.loads(r.read().decode("utf-8"))
     return "".join(seg[0] for seg in d[0] if seg and seg[0])
 
@@ -308,7 +313,7 @@ def _deepl(text, target="en"):
     body = _json.dumps({"text": [text], "source_lang": "UK", "target_lang": _TARGET[target][0], "preserve_formatting": True}).encode()
     req = _ur.Request(f"https://{host}/v2/translate", data=body, method="POST",
                       headers={"Authorization": "DeepL-Auth-Key " + key, "Content-Type": "application/json", "User-Agent": "clear-sky"})
-    with _ur.urlopen(req, timeout=10) as r:
+    with _ur.urlopen(req, timeout=10, context=_CTX) as r:
         return _json.loads(r.read().decode("utf-8"))["translations"][0]["text"]
 
 
@@ -316,7 +321,7 @@ def _google_cloud(text, target="en"):
     body = _json.dumps({"q": text, "source": "uk", "target": _TARGET[target][1], "format": "text"}).encode()
     req = _ur.Request("https://translation.googleapis.com/language/translate/v2?key=" + _up.quote(KEYS["google_cloud"]), data=body,
                       method="POST", headers={"Content-Type": "application/json", "User-Agent": "clear-sky"})
-    with _ur.urlopen(req, timeout=10) as r:
+    with _ur.urlopen(req, timeout=10, context=_CTX) as r:
         return _json.loads(r.read().decode("utf-8"))["data"]["translations"][0]["translatedText"]
 
 

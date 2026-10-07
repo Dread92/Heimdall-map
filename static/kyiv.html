@@ -1006,7 +1006,7 @@ body.lite #mycard,body.lite .panel{background:#000;border-color:#666}body.lite .
   <button class="mi" id="supbtn" type="button" data-t="m_support">Support the project</button>
   <a class="mi" id="tgbtn" data-t="m_tg" target="_blank" rel="noopener" hidden>Community on Telegram</a>
   <button class="mi" id="aboutbtn" type="button" data-t="m_about">About · disclaimer</button>
-  <div class="mi bt" id="buildtag">v1.45</div>
+  <div class="mi bt" id="buildtag">v1.46</div>
 </div>
 <div class="panel" id="lay" hidden role="dialog" aria-labelledby="layh"><div class="pgrab"></div>
   <div class="ph"><b id="layh" data-t="m_layers">Map layers</b><button type="button" class="px" data-close="lay" data-t-aria="btn_close" aria-label="Close">✕</button></div>
@@ -1340,8 +1340,6 @@ async function loadMap(){
     ['thin',[[31.05,50.70],[31.10,50.50],[31.25,50.30],[31.45,50.10],[31.60,49.95]],'Trubizh',[31.3,50.28]]];
   $('rings').innerHTML=RIV.map(([w,pts,name,lp],i)=>(pts.length?`<polyline class="river ${w}${i<3?' hand':''}" points="${pts.map(p=>proj(p[0],p[1]).map(v=>v.toFixed(1)).join(',')).join(' ')}"/>`:'')+(name?`<text class="rvlbl" x="${proj(lp[0],lp[1])[0].toFixed(1)}" y="${proj(lp[0],lp[1])[1].toFixed(1)}">${riverName(name)}</text>`:'')).join('')+'<g id="ringc"></g>';
   drawRings();
-  const majorNames=new Set(TOWNS.map(t=>t[0].toLowerCase()));
-  let minor=[]; try{ const pl=(await (await fetch('/api/places?oblast=all')).json()).places; minor=pl.filter(p=>!majorNames.has(translit(p.name).toLowerCase())&&!/громада|масив|берег|столиця|водосховище|море|АЕС|ГЕС/i.test(p.name)); }catch(e){}
   // infrastructure: main highways, Kyiv ring road, Dnipro bridges, airports/airfields, power plants
   const ROADS=[['M-01 Chernihiv',[[30.58,50.49],[30.79,50.51],[30.93,50.60],[30.97,50.71],[31.12,50.91],[31.20,51.20],[31.29,51.50]]],
     ['M-03 Poltava',[[30.62,50.43],[30.80,50.38],[30.95,50.35],[31.15,50.32],[31.31,50.31],[31.55,50.29],[31.77,50.28],[32.10,50.24],[32.51,50.24]]],
@@ -1362,7 +1360,7 @@ async function loadMap(){
     +`<polyline class="road ring2" points="${rp(RING)}"/>`
     +POIS.map(([ic,n,lo,la])=>{const [x,y]=proj(lo,la);return `<g class="poi ${ic}" transform="translate(${x.toFixed(2)} ${y.toFixed(2)})"><g class="pg">${POI_G[ic]}</g></g><text class="poilbl minor" x="${(x+2).toFixed(1)}" y="${(y+1.2).toFixed(1)}">${poiName(n)}</text>`;}).join('');
   $('towns').innerHTML=TOWNS.map(([n,lo,la,big])=>{const [x,y]=proj(lo,la);const rg=big===2,ua=big===3;return `<circle class="towndot${rg?' rg':''}${ua?' uac':''}" data-n="${n}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${big===1?1.6:.9}" style="r:calc(var(--k,1)*${big===1?4:2.5}px)"/><text class="town ${big===1?'big':''}${rg?' rg':''}${ua?' uac':''}" data-n="${n}" x="${(x+2).toFixed(1)}" y="${(y+1.5).toFixed(1)}">${townName(n)}</text>`;}).join('')
-    +minor.map(minorLbl).join('')+'<g id="villg"></g>';
+    +'<g id="minorg"></g><g id="villg"></g>';
   if(LAYERS.minor) loadVillages();
   const ua=await uaP; if(ua) drawUA(ua);
 }
@@ -1391,12 +1389,17 @@ const minorLbl=p=>{const [x,y]=proj(p.lon,p.lat);const d=p.oblast_uid==='31'?' d
 // oblast and a couple of dozen for any other, so the layer did nothing anywhere else. The regional gazetteer's
 // hromada centres and places of 1,000+ people (~1,800 across the oblasts the map covers) are fetched the first
 // time the layer is on — most readers never turn it on, and nobody pays for it until they do.
+// 1.46: the core gazetteer's small places and Kyiv's districts too (/api/places?oblast=all, 12 KB) — they were
+// downloaded by every visitor at every opening, for a layer that is off unless somebody turns it on.
 let VILL=null;
 async function loadVillages(){ if(VILL||!MAP) return; VILL=[];
-  let pl; try{ pl=(await (await fetch('/api/places?villages=scope')).json()).places; }catch(e){ VILL=null; return; }
-  const major=new Set(TOWNS.map(t=>t[0].toLowerCase()));
-  VILL=pl.filter(p=>!major.has(translit(p.name).toLowerCase()));
-  const g=$('villg'); if(g){ g.innerHTML=VILL.map(minorLbl).join(''); layoutTownLabels(); } }
+  let core, pl; try{ [core,pl]=await Promise.all(['/api/places?oblast=all','/api/places?villages=scope'].map(async u=>(await (await fetch(u)).json()).places)); }catch(e){ VILL=null; return; }
+  const major=new Set(TOWNS.map(t=>t[0].toLowerCase())), notMajor=p=>!major.has(translit(p.name).toLowerCase());
+  const minor=core.filter(p=>notMajor(p)&&!/громада|масив|берег|столиця|водосховище|море|АЕС|ГЕС/i.test(p.name));
+  VILL=pl.filter(notMajor);
+  const m=$('minorg'); if(m) m.innerHTML=minor.map(minorLbl).join('');
+  const g=$('villg'); if(g) g.innerHTML=VILL.map(minorLbl).join('');
+  layoutTownLabels(); }
 // 1.39: airports, power plants, the nuclear plant and the watched place are drawn, not typed as emoji — the same on
 // every phone. Centred on 0,0, ~22 units across; .pg scales them to screen pixels (var(--k)).
 const POI_G={air:'<path d="M0-11 L1.5-7.5 L1.5-3 L10 2.5 L10 4.5 L1.5 1.8 L1.5 7 L4.2 9.6 L4.2 11 L0 9.8 L-4.2 11 L-4.2 9.6 L-1.5 7 L-1.5 1.8 L-10 4.5 L-10 2.5 L-1.5-3 L-1.5-7.5 Z"/>',
@@ -2993,7 +2996,7 @@ function renderStats(){ if(!STATS) return; const el=$('stats'); if(!el) return; 
 // =====================================================================================
 // ---------------------------------------------------------------------------------------------------
 // The contacts (CONTACT) and the footer (footerHTML, shareApp) are in static/i18n.js since 1.39, shared with Light.
-const APP_VERSION='1.45';
+const APP_VERSION='1.46';
 const DONATE=CONTACT.ngo;
 const ls=(k,v)=>{try{return v===undefined?localStorage.getItem(k):(localStorage.setItem(k,v),v);}catch(e){return null;}};
 
