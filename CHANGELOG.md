@@ -2,6 +2,24 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.43.1 — 2026-10-07
+
+### Fixed
+- **The regional trackers' reports were hardly ever drawn.** Odesa, Kharkiv and Chernihiv were read and parsed, then
+  lost when the reports were joined into tracks: the Kyiv channels' bare place names — one a minute — were taken as
+  the same target as any regional report within 475 km and half an hour ("Перший район Ніжина" became the history of
+  a target at Vasylkiv; Odesa's villages, Kyiv's), and a report naming only the oblast ("БпЛА на Харківщині") swallowed
+  "Реактивный Шахед на Змиев". Another channel now continues a track only within 15 minutes and at a drone's speed,
+  and a report with no town never takes over one with a place.
+- **A regional tracker's report stays on the map longer** — 10 minutes before it greys ("location not updated"),
+  25 before it goes; the Kyiv channels report every minute, the regional ones every five to twenty. The oblast's
+  all-clear still removes it at once.
+- **Our own drone is no target**: "Акустика нашего БпЛА над Харьковом" was drawn as a Shahed over Kharkiv; "…то наш!!!"
+  posts are no longer kept. "Без фиксации" and "Больше не фиксируется" end the Kharkiv tracker's target.
+- Misreadings: "По этому отбой будет" as the village Будеї, "З брянської новий буде" as Нова Буда, "Жовтий рівень" as
+  Жовте, "Київська область" as the village Київське; "На Таращу" from Cherkasy is the town of Тараща in Kyiv oblast,
+  not a hamlet of that name; the Kharkiv tracker's "Даниловка" is Велика Данилівка.
+
 ## 1.43.0 — 2026-10-07
 
 ### Added

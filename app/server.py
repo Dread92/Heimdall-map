@@ -291,6 +291,10 @@ def tag_feed_text(text, channel=None):
     # 1.43: a post in Russian is tagged by its Ukrainian reading — the same words the parser reads (geo.prepare)
     if geo:
         text = geo.prepare(text, channel)
+        # 1.43.1: what a post says about our own drones and aircraft is no threat — "Акустика нашего БпЛА над Харьковом"
+        text = geo.drop_friendly(text)
+        if not text:
+            return []
     # a retraction carries no threat of its own — "балістика була хибною відміткою" is not a ballistic warning
     if is_retraction(text):
         return ["retract"] + (["kyiv"] if KYIV_RE.search(text) else [])
@@ -543,6 +547,12 @@ def _clean_post(text):
 # How long a missile report stays on the map at all. Past this the last position tells you nothing useful even
 # as an uncertainty circle: a cruise missile has covered 150 km, a ballistic one has already arrived.
 MISSILE_TTL_MIN = 12
+
+# 1.43.1: how long a regional tracker's report of a drone stays — the Kyiv channels report a target every minute, the
+# Chernihiv, Odesa or Kharkiv ones every five to twenty. Shown as "location not updated" after the first, gone after
+# the second; an unspecified threat ("Придніпровськ – уважно") goes after the first. The oblast's all-clear ends them.
+REGIONAL_STALE_MIN = 10
+REGIONAL_GONE_MIN = 25
 
 AF_SUMMARY_CHANNELS = {"kpszsu", "war_monitor", "monitor_ukr"}   # the Air Force summary and the channels that re-post it verbatim
 _AF_NUM = r"(\d{1,3})(?:-?[а-яіїєґ']{1,3})?"
@@ -3268,6 +3278,9 @@ class State:
             if m["type"] == "banderol_missiles":
                 return "banderol"
             return "drone" if m["type"] == "drones" else ("missile" if "missile" in m["type"] else m["type"])
+
+        def vague(m):
+            return (m.get("place") or "") == "область"      # "БпЛА на Харківщині": the oblast, no town named
         for i, m in enumerate(tracks):
             t1 = parse_iso(m["ts"])
             best = None
@@ -3275,9 +3288,20 @@ class State:
                 if pm["superseded_by"] or fam(pm) != fam(m):
                     continue
                 dt = (t1 - parse_iso(pm["ts"])).total_seconds() / 60
-                if dt <= 0 or dt > 30:
+                same = pm["channel"] == m["channel"]
+                # 1.43.1: another channel's report continues a track only within 15 minutes. With the regional trackers
+                # on the map, the Kyiv channels — a report a minute — were taking over every Odesa, Chernihiv and
+                # Kharkiv report within half an hour and hundreds of kilometres: "Перший район Ніжина" became the
+                # history of a target at Vasylkiv, and nothing of Odesa was ever drawn.
+                if dt <= 0 or dt > (30 if same else 15):
                     continue
-                vmax = 7.0 if fam(m) == "drone" else 15.0
+                # A report naming no town never takes over one that named a place (it would move the target to the
+                # middle of the oblast), and a destination is never handed to one: "на Зміїв" stays a mark of its own.
+                if (vague(m) and not vague(pm)) or (m.get("approach") and vague(pm)):
+                    continue
+                # an unspecified threat is a target of unknown speed: from its own channel it may be anything, but
+                # two channels' bare place names are only one target at the speed of a drone
+                vmax = 7.0 if fam(m) == "drone" or (fam(m) == "unknown" and not same) else 15.0
                 d = km(pm, m)
                 # an approach mark stands at the town the target is heading to, not where it is: it may be further
                 if d > (80 if m.get("approach") else vmax * dt + 25):
@@ -3309,7 +3333,7 @@ class State:
                 # each earlier report keeps the height ITS post stated (if any): two stated heights in a row are a
                 # descent the posts reported, not one this app worked out — 2200 m, then 1600 m, then 800 m
                 # an approach mark's point is a destination, not a place it was: it is no step of the track
-                m["history"] = pm["history"] + ([] if pm.get("approach") else [{"id": pm["id"], "lon": pm["lon"], "lat": pm["lat"], "ts": pm["ts"], "channel": pm["channel"],
+                m["history"] = pm["history"] + ([] if pm.get("approach") or vague(pm) else [{"id": pm["id"], "lon": pm["lon"], "lat": pm["lat"], "ts": pm["ts"], "channel": pm["channel"],
                                                  "place": pm.get("place"), "alt_m": (pm.get("alt") or {}).get("m"),
                                                  "alt_state": (pm.get("alt") or {}).get("state")}])
         return ms
@@ -3346,14 +3370,21 @@ class State:
                 m["fast"] = True
                 keep.append(m)
                 continue
-            if age > stale:
+            # 1.43.1: a regional tracker reports a target every five to twenty minutes, not every minute like the Kyiv
+            # channels: its last report is the latest anyone said, and it keeps longer — as "location not updated"
+            # after REGIONAL_STALE_MIN, gone after REGIONAL_GONE_MIN (and still at once when the oblast's alert ends)
+            reg = bool(geo and geo.CHANNEL_HOME.get(m.get("channel")))
+            st_min = max(stale, REGIONAL_STALE_MIN) if reg else stale
+            if reg:
+                m["slow"] = True                  # the page fades it on the same longer clock
+            if age > st_min:
                 # An unspecified threat ("Васильків увага") says where, not what. It is a loud red sign while it
                 # is fresh, and then it is simply gone — no grey ghost fading for ten more minutes, because there
                 # is nothing to keep half-alive: nobody ever said what it was.
                 if m.get("type") == "unknown":
                     continue
-                if age > max(stale * 3, 15):
-                    continue                      # nothing for 15 min → gone
+                if age > (REGIONAL_GONE_MIN if reg else max(stale * 3, 15)):
+                    continue                      # nothing for 15 min (a regional tracker: 25) → gone
                 m["stale"] = round(age)           # not re-reported for > stale min: kept as "? location not updated"
             ou = m.get("oblast_uid")
             if ou and obl_status and ou not in obl_status and age > 3:

@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.43** · last updated 2026-10-07 (1.43.0)
+**Documented version: 1.43** · last updated 2026-10-07 (1.43.1)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -493,8 +493,16 @@ apostrophe — `_ru_variants`). Kharkiv city's districts are named by hand in th
   in the map's town labels, not in `/api/places`. **They are matched only in their oblast's context** — a post from
   a channel whose home is that oblast, or a sentence that names the oblast (`_find_places(text, ctx_uid)` →
   `_find_regional`). "Іванівка" alone, from Kyiv, is nothing.
-- Words that are also a village's name are never read as one (`REGIONAL_STOP`: the compass, the border, "new" …);
-  `REGIONAL_WORDS` gives a bare word its oblast's meaning ("Водосховище" from Chernihiv = the Kyiv reservoir).
+- Words that are also a village's name are never read as one (`REGIONAL_STOP`: the compass, the border, "new", 1.43.1
+  "буде / будет" and the alert levels "жовтий / червоний" …; `_REG_PAIR_STOP`: a verb is never half of a two-word name —
+  "новий буде" is not Нова Буда; an oblast's adjective "Київська / Черкаський" is never the village "Київське",
+  `_ADJ_NOT_NEUTER_RX`); `REGIONAL_WORDS` gives a bare word its oblast's meaning ("Водосховище" from Chernihiv = the
+  Kyiv reservoir).
+- 1.43.1: **a core town of the next oblast against hamlets of its name** — "На Таращу" from the Cherkasy tracker is
+  the town of Тараща (Kyiv oblast), not the hamlet in Cherkasy oblast: when every village of the channel's oblast with
+  that name is a small place (kind P, < 2,000), the name becomes an ambiguity token with the core town as its default
+  and the villages as the other candidates (so the channel's previous report or the post's other places can still
+  pick the village).
 - **A name several villages share** becomes one ambiguity token (`_ambig_token`) with its candidates: the one near
   another place the same post names (≤ 60 km) wins at once; otherwise the server takes the one nearest the channel's
   report of the last 30 minutes (≤ 60 km, `_marks_from_posts`); with neither, the clear default — the only city
@@ -506,6 +514,10 @@ apostrophe — `_ru_variants`). Kharkiv city's districts are named by hand in th
 - **One line, several reports**: a count of weapons after the words of the previous report starts a new one
   ("2 реакти … 1 реакт …"), so does ", 1 …" ("1 Райгород, 1 Буки на Бузівка, 1 на Привітне").
 - Words: "реакт / реакти" (a jet drone, `JET_RX`), FPV, "Молния", "Ланцет" (small strike drones).
+- 1.43.1: **our own aircraft** (`geo.drop_friendly`): a sentence about "наш / свій БпЛА, дрон, борт, літак …"
+  ("Акустика нашего БпЛА над Харьковом") is dropped before parsing and tagging; a post with "то наш / це наші / это
+  наши" as a sentence of its own is about nothing hostile and is not kept. "Без фиксации", "Больше не фиксируется"
+  (`більше не фіксується`) are a lost target (`STATUS_RX`).
 
 **Posts in Russian.** The Kharkiv and Odesa trackers write in Russian. `geo.prepare(text, channel)` turns a post
 from `RU_CHANNELS`, or one that `looks_russian()` (ы, э, ё, ъ, or a Russian-only word), into the Ukrainian words the
@@ -534,6 +546,16 @@ reading (`tag_feed_text`); the stored and shown text is never changed.
    the position's time (`pos_ts`, else the post's); drops everything in an oblast with **no active alert of any
    kind** once 3 min old, and, in Kyiv city with no alert running, every mark reported before the last official
    all-clear there; missiles age on their own `MISSILE_TTL_MIN`;
+   **1.43.1, the chaining windows** (`_chain`): a report continues a track of its own channel within 30 min, of
+   another channel within **15 min**; two channels' unspecified threats (bare place names) are one target only at a
+   drone's speed (7 km/min, not 15); a report naming only the oblast (`place == "область"`, drawn at the oblast
+   centre) never takes over a report that named a place, a destination ("на Зміїв") is never handed to one, and its
+   point is never a step of a track's history. Before this, the Kyiv channels' bare names — one a minute — took over
+   every Odesa, Chernihiv and Kharkiv report within 475 km and 30 min, and those oblasts' reports were never drawn.
+   **1.43.1, the regional clock**: a report from a channel with a regional home (`geo.CHANNEL_HOME`) is `stale` after
+   `REGIONAL_STALE_MIN` = 10 min and dropped after `REGIONAL_GONE_MIN` = 25 (an unknown after 10) — the trackers
+   post every five to twenty minutes; it carries `slow: true`, and the map fades it on the same clock (grey at 10,
+   fainter at 15, "contact lost" at 20). The oblast's all-clear still ends it at once;
 4. outcomes (down, impact, lost) close the track they belong to.
 
 Fires, ground damage and the channels' own "чисто" are not drawn (`HIDDEN_STATUS` on the pages).

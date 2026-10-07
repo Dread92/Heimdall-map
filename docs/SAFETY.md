@@ -44,6 +44,11 @@ Silence is not safety, and it is not danger either — it is silence, and it mus
 A grey marker is a record of the last thing known, not a target's current position, and the sheet
 says so in those words.
 
+**A regional tracker's report (1.43.1)** keeps on a longer clock — grey at 10 min, fainter at 15, "contact lost" at
+20, removed at 25 (or at once when its oblast's alert ends). The Kyiv channels report a target every minute; the
+Chernihiv, Odesa or Kharkiv trackers every five to twenty, and their last report is the last thing anyone said. It is
+grey and labelled with its age for most of that time — never shown as a live position.
+
 ## A missile is not aged like a drone
 
 The table above is written for a Shahed: about 3 km a minute, so a five-minute-old dot is still worth
@@ -112,6 +117,14 @@ share is placed only when something says which: another place the same post name
 last half hour nearby, or a clear choice (the only city district, the only raion centre, by far the largest). With
 none of those, nothing is drawn — a mark in the wrong village is worse than no mark. A destination nobody can tell
 apart gets no course drawn to it. "In the area of A - B" is an area, never a route.
+
+## Two channels' reports are one target only when they could be (1.43.1)
+
+A report continues another channel's track only within 15 minutes and at a speed a drone can fly; a report that
+names only the oblast never replaces one that named a place, and a destination is never handed to it. Joining two
+targets into one hides one of them — on 7 October the Kyiv channels' place names were taking over every Odesa and
+Chernihiv report within 475 km, and those oblasts' targets were not drawn at all. A drone or aircraft the post calls
+ours ("нашего БпЛА", "то наш") is not a target.
 
 ## A post in Russian says the same thing (1.43)
 

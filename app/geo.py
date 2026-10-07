@@ -434,7 +434,12 @@ REGIONAL_STOP = frozenset("""
 північне південне восточное западное южное северное садове зелене веселе весела вільне вільний широке світле ясне
 тихе рай хутір слобода комуна травневе жовтневе першотравневе робітниче радгоспне ракетне ракета ударне бойове
 спокійне дачне дачное лісовий лесной залізничне вокзальне аеропорт заводське промінь світанок схід сонце сонячне
-""".split())
+буде будет будуть будут жовтий жовтого жовта жовтої жовтий червоний червоного червона червоної зелений зеленого зелена
+""".split())      # 1.43.1: "відбій буде" (Будеї, Odesa) and the alert levels ("жовтий рівень": Жовте; "червоний": Червоне)
+
+# 1.43.1: an oblast's or a district's adjective is not a village called after it: "Київська область" is not Київське
+# (Dnipro oblast), "Черкаський напрямок" not Черкаське. A neuter village name never ends like the feminine/masculine.
+_ADJ_NOT_NEUTER_RX = re.compile(r"(?:ськ|цьк|зьк)(?:а|ий|ої|ій|у|им|ою|ая|ой|ую)$")
 
 # What a regional channel means by a bare word in its own oblast: "Далі Водосховище" from Chernihiv is the Kyiv
 # reservoir, which Chernihiv oblast borders — not any of the dozens of reservoirs that word could be elsewhere.
@@ -545,6 +550,11 @@ def _load_regional(path=None):
     _REG_IDX.update(idx_all)
 
 
+# 1.43.1: words that are never half of a two-word village name. "З брянської новий буде" ("a new one will come from
+# Bryansk oblast", @chernihiv_nebo) was read as the village Нова Буда — two-word names match on three-letter stems.
+_REG_PAIR_STOP = frozenset("буде будуть був була було були йде іде йдуть ідуть летить летять є".split())
+
+
 def _reg_lookup(idx, words):
     """Keys whose alias these words (one, or two in a row) are a declined form of."""
     keys = []
@@ -552,15 +562,20 @@ def _reg_lookup(idx, words):
         w = words[0]
         if w in REGIONAL_STOP:
             return []
+        adj = bool(_ADJ_NOT_NEUTER_RX.search(w))
         for k in range(0, 4):
             st = w[:len(w) - k]
             if len(st) < 3 or (len(st) < 4 and k):
                 break
             for key, alias in idx.get(st, ()):
+                if adj and alias.endswith(("ське", "цьке", "зьке", "ское", "цкое")):
+                    continue
                 if (len(st) >= 4 or st == alias) and _plausible(w, alias, st) and key not in keys:
                     keys.append(key)
         return keys
     w1, w2 = words
+    if w1 in _REG_PAIR_STOP or w2 in _REG_PAIR_STOP:
+        return []
     for k1 in range(0, 4):
         a = w1[:len(w1) - k1]
         if len(a) < 3:
@@ -596,7 +611,7 @@ def _find_regional(text, uid):
     return out
 
 
-def _ambig_token(keys, uid, said=""):
+def _ambig_token(keys, uid, said="", default=None):
     """Several villages of the oblast share the name: one token, its candidates best first, and whether one of them
     is clearly the one a post means without more to go on — the only admin centre, the only city district, or a
     population three times the next."""
@@ -608,8 +623,9 @@ def _ambig_token(keys, uid, said=""):
     admin = [k for k, m in meta if m[0] == "A"]
     city = [k for k, m in meta if m[0] == "X"]
     pops = sorted(meta, key=lambda x: -x[1][1])
-    default = None
-    if len(city) == 1:
+    if default:
+        pass                         # given: a core town against hamlets of its name (_find_places)
+    elif len(city) == 1:
         default = city[0]            # a channel of the oblast naming a district of its city ("Алексеевка", Kharkiv)
     elif len(admin) == 1:
         default = admin[0]
@@ -698,8 +714,16 @@ def _find_places(text, ctx_uid=None):
         if ctx_uid:
             own = [n for n in names if PLACES[n][2] == ctx_uid]
             core = [n for n in own if dict.__contains__(PLACES, n)]
+            # 1.43.1: a town of the core gazetteer in the next oblast, against small villages of this one that share
+            # its name: "На Таращу" from the Cherkasy tracker is the town of Тараща in Kyiv oblast, where the drones
+            # leave Cherkasy oblast — not the hamlet of the same name — unless the channel's previous report or the
+            # other places of the post are next to the village (the candidates, as for any shared name)
+            other = [n for n in names if "(" not in n and dict.__contains__(PLACES, n) and PLACES[n][2] != ctx_uid]
             if core:
                 pick = core[0]               # the town the core gazetteer lists, over a village of the same name
+            elif own and other and all(_REG_META.get(o, ("P", 0, ""))[0] == "P" and _REG_META.get(o, ("P", 0, ""))[1] < 2000
+                                       for o in own):
+                pick = _ambig_token(other[:1] + own, ctx_uid, text[k[0]:k[1]], default=other[0])
             elif len(own) > 1:
                 pick = _ambig_token(own, ctx_uid, text[k[0]:k[1]])
             elif own:
@@ -883,7 +907,8 @@ STATUS_RX = [("down", re.compile(r"збит|знищен|мінус|ліквід
              # "внаслідок влучання виникла пожежа" is an impact that started a fire, and reads as an impact.
              # Only a post that says nothing but fire — "пожежа в Дарницькому районі", "горить склад" — lands here.
              ("fire", re.compile(r"пожеж|пожар|займанн|загорянн|загорін|горить|горит\b|горіння", re.I)),  # narrowed by FIRE_EVENT_RX
-             ("lost", re.compile(r"втрачен|зник|не спостеріга|загубл", re.I)),
+             # 1.43.1: "Без фиксации", "Больше не фиксируется" (@radar_kharkov) — the tracker no longer sees it
+             ("lost", re.compile(r"втрачен|зник|не спостеріга|загубл|без\s+фіксаці|більше\s+не\s+фіксу", re.I)),
              ("clear", re.compile(r"чисто|небо чисте|чист[еиої]\w*\s+небо", re.I))]
 
 
@@ -966,6 +991,29 @@ FUNDRAISE_RX = re.compile(r"\b\d{4}\s?\d{4}\s?\d{4}\s?\d{4}\b|monobank|моно�
                           r"\bдонат|задонат|на\s+кав(?:у|усю)\b|на\s+кофе|угост\w*\s+(?:\S+\s+){0,2}?кофе|"
                           r"(?:фінансов|финансов)\w*\s+(?:підтримк|поддержк)|(?:підтримк|поддержк)\w*\s+канал|"
                           r"реквізит|реквизит|\bзбір\s+на\s+(?:евак|авто|дрон|позашлях|машин|потреб)", re.I)
+
+# 1.43.1: our own aircraft. "Акустика нашего БпЛА над Харьковом" (@radar_kharkov, 7 Oct 2026) tells the city the noise
+# overhead is a Ukrainian drone — it was drawn as a Shahed over Kharkiv. "Если вы слышите звук реактивного в городе / То
+# наш!!!" (@xydessa_live) says the same of the whole post. A sentence about our drone or aircraft is dropped; a post
+# that says "it's ours" ("то наш", "це наші") is about nothing hostile at all.
+FRIENDLY_RX = re.compile(r"(?<![а-яіїєґыэъ'])(?:наш(?:ого|его|ий|ой|і|и|их|ому|ему|а|у)?|сво(?:й|ї|и|іх|их|его|ого))\s+"
+                         r"(?:бпла|бпла\w+|дрон\w*|безпілотн\w*|беспилотн\w*|борт\w*|літак\w*|самол[её]т\w*|вертол[іьеё]т\w*|"
+                         r"гелікоптер\w*|авіаці\w*|авиаци\w*|винищувач\w*|истребител\w*)", re.I)
+# only as a sentence of its own: "Вибухи — це наші ППО працюють" is still a report
+FRIENDLY_ALL_RX = re.compile(r"(?:^|[\s.!,;—–-])(?:то|це|это)\s+(?:наш[іиа]?|свої|свои)(?=\s*(?:[.!?…)\n]|$))", re.I)
+_FR_SPLIT_RX = re.compile(r"(?<=[.!?\n])")
+
+
+def drop_friendly(text):
+    """The post without what it says about our own aircraft; "" when the whole post is about them."""
+    if not text:
+        return text
+    n = _norm(text)
+    if FRIENDLY_ALL_RX.search(n):
+        return ""
+    if not FRIENDLY_RX.search(n):
+        return text
+    return "".join(s for s in _FR_SPLIT_RX.split(text) if not FRIENDLY_RX.search(_norm(s))).strip()
 
 
 # The morning tally: "В ніч на 17.09.26 … противник застосував … 8× балістичних ракет по Києву". It is a
@@ -1314,7 +1362,8 @@ _RU_MAP = [(re.compile(_B + a + (_E if whole else ""), re.I), b) for a, b, whole
     (r"сбит", "збит", False), (r"сбил", "збил", False), (r"уничтож", "знищ", False), (r"взрыв", "вибух", False),
     (r"прил[её]т", "приліт", False), (r"попадани\w*", "влучання", True), (r"упал\w*", "впав", True),
     (r"отбой", "відбій", True), (r"угроз\w*", "загроза", True), (r"тревог", "тривог", False),
-    (r"(?:пропал|исчез)\w*", "зник", True), (r"без\s+фиксаци\w*", "без фіксацій", True),
+    (r"(?:пропал|исчез)\w*", "зник", True), (r"без\s+фиксаци\w*", "без фіксації", True),
+    (r"фиксиру\w*", "фіксується", True), (r"больше", "більше", True),
     (r"предварительно", "попередньо", True), (r"ночью", "вночі", True),
     # where it goes
     (r"в\s+сторону", "в бік", True), (r"по\s+направлению\s+к", "в напрямку", True), (r"в\s+направлении", "в напрямку", True),
@@ -2019,6 +2068,9 @@ def _parse_for_channel(channel, text):
     # channel posted it and whichever parser would read it. (The softer news signs are left to the tagger: a live
     # tracker's short post can say "поранені" and still be a live report.)
     if NEWS_STRONG_RX.search(_norm(text)) or looks_like_explainer(_norm(text)) or FUNDRAISE_RX.search(_norm(text)):
+        return []
+    text = drop_friendly(text)                      # 1.43.1: our own drone is no target
+    if not text:
         return []
     sp = _split_next(text)
     if sp:

@@ -1674,7 +1674,7 @@ function paintSlots(){ const el=$('slotrow'); if(!el) return;
 const LOST_FADE_MIN=2;
 function contactLost(m){
   if(m.status||m.endedBy) return false;
-  return !!m.stale && m.stale >= (ttl?Math.max(8,ttl*0.25):8);
+  return !!m.stale && m.stale >= (m.slow?20:ttl?Math.max(8,ttl*0.25):8);   // 1.43.1: a regional tracker's report (m.slow) keeps longer
 }
 function lostGoneIn(m){                       // minutes left before the mark is removed, or null
   if(!contactLost(m)) return null;
@@ -1984,7 +1984,7 @@ function tick(){
     {const dn=b.g.querySelector('.dn'); if(dn){ dn.setAttribute('y',(16*KPX).toFixed(2));
       dn.textContent=altM?((dsc?'↓':'')+altM+' '+t('m_unit')):(dsc?'↓':''); }}
     b.g.classList.toggle('lostc',contactLost(m));
-    b.g.classList.toggle('inbound',info.inbound&&!m.stale); b.g.classList.toggle('old',age>ttl*0.65); b.g.classList.toggle('ended',!!m.endedBy); b.g.classList.toggle('stale',!!m.stale&&!m.endedBy&&!m.status); b.g.classList.toggle('s2',!!m.stale&&m.stale>=8); b.g.classList.toggle('s3',!!m.stale&&m.stale>=11); b.g.querySelector('.qm').setAttribute('y',(-12*KPX).toFixed(2));
+    b.g.classList.toggle('inbound',info.inbound&&!m.stale); b.g.classList.toggle('old',age>ttl*0.65); b.g.classList.toggle('ended',!!m.endedBy); b.g.classList.toggle('stale',!!m.stale&&!m.endedBy&&!m.status); b.g.classList.toggle('s2',!!m.stale&&m.stale>=(m.slow?15:8)); b.g.classList.toggle('s3',!!m.stale&&m.stale>=(m.slow?20:11)); b.g.querySelector('.qm').setAttribute('y',(-12*KPX).toFixed(2));
     const v=SPEED(m); const ah=b.g.querySelector('.ahead'); const cone=b.g.querySelector('.cone');
     if(!m.status&&!m.endedBy&&v&&m.heading!=null&&!appr){ // reported heading: 12-min ray + ±20° uncertainty cone
       const L=Math.min(v*6,20);const a=m.heading*Math.PI/180;ah.setAttribute('x2',(L*Math.sin(a)).toFixed(1));ah.setAttribute('y2',(-L*Math.cos(a)).toFixed(1));ah.style.display='';
