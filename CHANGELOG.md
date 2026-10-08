@@ -2,7 +2,16 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
-## 1.46.0 — 2026-10-07
+## 1.47.0 — 2026-10-08
+
+### Added
+- **Satellite imagery of the whole of Ukraine**, served by Heimdall itself: the ESA WorldCover Sentinel-2 composite
+  of 2021 (a year of cloud-free pixels, 10 m, CC BY 4.0), as map tiles from the whole country down to about 25 m a
+  pixel. Layers → "Satellite imagery"; on by default on a computer, off on a phone; drawn inside Ukraine only,
+  under the streets, darkened by mode. No map provider sees which part of the country a reader looks at, and
+  nothing is paid per tile. Built once (`scripts/build_imagery.py`), put on the server's volume with
+  `scripts/upload-imagery.bat`; until then the layer is not offered.
+
 
 ### Changed — the server's work (nothing the reader sees)
 - **One TLS context for every outgoing request.** Each request (the ~20 channel previews, the alert sources) built a

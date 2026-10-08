@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.46** · last updated 2026-10-07 (1.46)
+**Documented version: 1.47** · last updated 2026-10-08 (1.47)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -142,6 +142,8 @@ clear-sky/
 │   ├── build_geo.py        rebuilds data/ua_regions.json and static/light-map.json (`--light`: the Light maps only)
 │   ├── build_places.py     rebuilds data/regional_places.json from GeoNames (1.43)
 │   ├── build_mapdata.py    rebuilds static/map-ua.json from Natural Earth (1.45)
+│   ├── build_imagery.py    builds the satellite layer (imagery/sat-ua.mbtiles) from ESA WorldCover / Sentinel-2 (1.47)
+│   ├── upload-imagery.bat  puts imagery/sat-ua.mbtiles on the Fly volume (1.47)
 │   ├── corpus.py           add / review / pull corpus cases
 │   ├── release.bat         ships a patch: checks all is committed, fly deploy, git push, shows the live version
 │   ├── telegram-login.bat  one-time Telegram sign-in for the API reader (runs telegram_login.py)
@@ -276,6 +278,7 @@ Environment variables win over `config.json`. On Fly they are set as **secrets**
 |---|---|
 | `PORT` | Listening port (Fly sets it). |
 | `DB_PATH` | SQLite file (Fly: on the volume). |
+| `SAT_TILES` | The satellite layer's MBTiles file (1.47). Default: `sat-ua.mbtiles` next to `DB_PATH` — on Fly, `/data/sat-ua.mbtiles` on the volume. |
 | `CONFIG_PATH` | Alternative `config.json` location. |
 | `ADMIN_KEY` | Protects `/admin` and its APIs only. The map stays public. |
 | `ACCESS_KEY` | Puts the whole app behind a key. **Never on the public app.** |
@@ -910,6 +913,29 @@ level-of-detail classes by zoom, OSM tiles under the vector layers below 150 km 
 Ukraine only (`#tiles` is clipped to the oblasts' outlines, `#uaclip`). (1.45 laid them under the whole country on a
 computer, neighbours included; zoomed out, the map was unreadable, and 1.45.1 took it back.)
 
+**The satellite layer (1.47).** Layers → "Satellite imagery (Sentinel-2, 2021)", under everything, inside Ukraine
+only (`#uaclip`), at every zoom; on by default on a computer (`IS_DESK`: a fine pointer that hovers, no phone or
+tablet browser), off on a phone. The imagery is the **ESA WorldCover Sentinel-2 composite of 2021** — the median of a
+year of cloud-free Sentinel-2 pixels, 10 m, one processing for the whole country, so the tiles join without seams;
+CC BY 4.0, credited on the map whenever it is drawn (`SAT_ATTR` in `#attrib`: "© ESA WorldCover 2021 · contains
+modified Copernicus Sentinel data (2021)"). `scripts/build_imagery.py` reads it once from the public bucket
+(`s3://esa-worldcover-s2`, no account) at its 20 m overview and makes the WebP tiles of zoom 5–12 that touch
+Ukraine (about 21,000, ~130 MB); closer than zoom 12 the page enlarges the zoom-12 tiles. **The open sea is
+transparent**: the oblasts' outlines take in coastal waters (Odesa oblast reaches Zmiinyi) and the composite has sea
+pixels near the coast and none farther out, so the Black Sea ended in a staircase of tiles. Water (near-infrared
+below `NIR_WATER`) connected to the open Black Sea or the Sea of Azov — found once on a ~150 m mosaic of the region
+after an opening of ~1 km, so that no river joins it (`sea_mask`) — is left out, and the map's own background is the
+sea; the Dnipro, its reservoirs, the Dniester, the lakes stay in the picture. The **server serves them
+itself** (`GET /tiles/sat/{z}/{x}/{y}.webp`, `SatTiles`, `SAT_TILES` on the volume): no map provider learns which
+part of the country a reader looks at, and nothing is paid per tile. The tiles never change under one address — the
+page asks with the layer's version (`?v=SAT_V`) and the answer is cached a year (`immutable`). The page offers the
+layer only when the server has the file (`state.config.sat`); a new file put in place is read within ten seconds,
+no restart. With the layer drawn the map is "tiled" like under the OSM streets (outlines over the picture, our own
+roads and rivers hidden); the OSM streets, when on and zoomed in, are drawn over it. Darkened by mode (`#sat`
+filter: standard, day, night). Why this source and not a commercial one: a paid product cannot use the
+non-commercial tiers, and the commercial imagery services (Esri, Mapbox, Google) bill per tile and forbid keeping
+their tiles — a one-off build of open data costs nothing per reader.
+
 **The layers outside Kyiv oblast (1.45).** The rivers, roads and "airports / plants" layers were drawn by hand for
 Kyiv oblast only, and "villages and small towns" had the core gazetteer's hundred-odd Kyiv-oblast places and a couple
 of dozen elsewhere — on an Odesa or Lviv view they did nothing. Now:
@@ -1258,6 +1284,7 @@ All JSON unless stated. Public unless marked 🔒 (`ADMIN_KEY`).
 | `GET /api/impacts?hours=` | explosions and confirmed shoot-downs |
 | `GET /api/replay?from=&to=` | the replay (§10.3c), Unix seconds, ≤ 26 h within the last 7 days: `alerts` `[{k, o, lt, rk, lv, at, ti, s, e}]` (intervals, `e` null while on) and `tracks` `[{ty, jet, n, ap, h, ch, p: [[t, lon, lat, place]]}]` |
 | `GET /api/stats?days=` | statistics; the Stats tab reads only `windows` (with `af`: launched / down by type, used, impacts, debris) and `af_days` (the Air Force summaries, each with its `post`) |
+| `GET /tiles/sat/{z}/{x}/{y}.webp` | the satellite layer's tiles (1.47, §10.1): WebP from `SAT_TILES`, cached a year (`immutable`); 404 where there is none |
 | `GET /api/places?oblast=` | gazetteer (names, coordinates, oblast; 1.46: built once an hour, gzipped): `oblast=14,31,…`, `all`, or (1.43) `scope` — the oblasts the map covers now; (1.45) `villages=scope`: the regional villages of those oblasts (hromada centres and places of 1,000+, `geo.villages`), for the map's villages layer, cached an hour |
 | `GET /api/drone_heat?days=1|7|30` | the heat layer: `points` `[lon, lat, posts, place, oblast]` — where drones and unidentified targets were reported (cached 10 min) |
 | `POST /api/push/subscribe`, `/api/push/unsubscribe`, `/api/push/test`; `GET /api/push/key` | Web Push; subscribe takes `{subscription, home, topics: ["bridges"], lang}` |
@@ -1298,6 +1325,11 @@ SQLite in WAL mode (`DB_PATH`; on Fly, the volume). Tables:
 | `usage`, `usage_seen` | anonymous usage counters |
 
 Columns are added in place by `Store.__init__` (`ALTER TABLE … ADD COLUMN`), so an old database upgrades itself.
+
+Next to the database, on the volume (1.47): **`sat-ua.mbtiles`**, the satellite layer (`SAT_TILES`, §10.1) — an
+MBTiles file (SQLite, `tiles` / `metadata`), read-only for the server, built once by `scripts/build_imagery.py`
+and uploaded by `scripts/upload-imagery.bat`. Never in git or the image (`imagery/` is in `.gitignore` and
+`.dockerignore`).
 
 ## 14. Testing and quality
 

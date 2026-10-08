@@ -27,6 +27,13 @@ fly deploy -a clear-sky --ha=false
 
 Change `app = "…"` in `fly.toml` to your app name.
 
+### The satellite layer (once)
+
+The satellite imagery is a file on the volume, not part of the image. Build it with `python scripts/build_imagery.py
+imagery/sat-ua.mbtiles` (needs `pip install rasterio numpy pillow scipy matplotlib`, ~45 minutes, reads ~13 GB from the public ESA
+bucket), then double-click **`scripts/upload-imagery.bat`**: it shows the volume's free space and uploads the file
+(`fly ssh sftp put`). Without the file the map simply does not offer the layer.
+
 ### Secrets
 
 | Secret | Needed | What it does |

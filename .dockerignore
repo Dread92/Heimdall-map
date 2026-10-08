@@ -19,3 +19,6 @@ scripts/
 *.bat
 *.md
 !README.md
+
+# the satellite layer lives on the volume, not in the image
+imagery/

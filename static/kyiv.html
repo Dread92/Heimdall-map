@@ -405,6 +405,7 @@ body.m-day #heatleg{background:rgba(255,255,255,.96)}.ob.far{stroke:#1a2029;fill
 .town.big{font-size:calc(var(--k,1)*14px);fill:#fff}
 .town[data-hid]{display:none!important}
 #tiles{filter:invert(1) hue-rotate(180deg) brightness(.72) contrast(.95) saturate(.3)}#tiles image{opacity:.95}svg.no-tiles #tiles{display:none}
+#sat{filter:brightness(.62) saturate(.82) contrast(1.04)}svg.no-sat #sat{display:none}
 svg.tiled .road,svg.tiled .roadlbl,svg.tiled .river,svg.tiled .rvlbl,svg.tiled .bridge{display:none}svg.tiled .nb:not(.R):not(.Y):not(.oR):not(.oY),svg.tiled .ob.far:not(.R):not(.Y){fill:none}svg.tiled .nb.R{fill:rgba(229,72,77,.3)}svg.tiled .nb.Y{fill:rgba(245,185,64,.22)}svg.tiled .nb.oR{fill:rgba(229,72,77,.18)}svg.tiled .nb.oY{fill:rgba(245,185,64,.13)}
 svg.tiled .rn{fill:rgba(20,25,32,.25)}svg.tiled .rn.city{fill:rgba(24,31,42,.15)}svg.tiled .rn.R{fill:rgba(229,72,77,.32)}svg.tiled .rn.Y{fill:rgba(245,185,64,.26)}svg.tiled .rn.city.R{fill:rgba(229,72,77,.36)}svg.tiled .rn.city.Y{fill:rgba(245,185,64,.3)}
 /* the tile credit OpenStreetMap asks for: small, in the bottom corner — at the top right it sat on the place chips */
@@ -641,7 +642,7 @@ body.m-day .rpl{fill:#111;stroke:#fff}
 body.m-night #rpbar{background:#070a0f;color:#8fa3b8;border-color:#1c242f}body.m-night .rpctl .rpp{background:#7a3f17;border-color:#7a3f17;color:#e9d6c8}
 body.lite #rpbar{background:#000;border-color:#fff;color:#fff}body.lite .rpctl .rpp{background:#fff;color:#000}
 body.m-day .mapwrap{background:#e9ebef}
-body.m-day #tiles{filter:brightness(1.04) contrast(1.10) saturate(.62)}
+body.m-day #tiles{filter:brightness(1.04) contrast(1.10) saturate(.62)}body.m-day #sat{filter:brightness(1.02) saturate(.9)}
 body.m-day #tiles image{opacity:1}
 body.m-day .nb{fill:#e3e6ea;stroke:#a8afb9}
 body.m-day .rn{fill:#dce0e6;stroke:#9aa1ac}
@@ -679,7 +680,7 @@ body.m-day .tstrip.offr,body.m-day .tstrip.bal,body.m-day .tstrip.mig{background
 
 body.m-night{--bg:#04060a;--ink:#8fa3b8;--ink2:#61748a;--ink3:#566a80;--line:#18202b;--panel:#070a0f;--panel2:#0b1017;
   --red:#8c2a26;--red2:#a83b34;--yellow:#7a6a20;--green:#2a6b4d;--orange:#8a5626;--purple:#5c4a8a;--blue:#2f5480}
-body.m-night #tiles{filter:brightness(.42) saturate(.35) contrast(.9)}
+body.m-night #tiles{filter:brightness(.42) saturate(.35) contrast(.9)}body.m-night #sat{filter:brightness(.3) saturate(.4)}
 body.m-night .mk .glyph{filter:none!important;animation:none!important;fill:#9fb4c9!important;stroke:#04060a;stroke-width:.8px}
 body.m-night .mk .halo,body.m-night .mk .halo2,body.m-night .mk .spawn,body.m-night .mk .jetfx{display:none}
 body.m-night .mk .cone{fill-opacity:.05}
@@ -1006,11 +1007,11 @@ body.lite #mycard,body.lite .panel{background:#000;border-color:#666}body.lite .
   <button class="mi" id="supbtn" type="button" data-t="m_support">Support the project</button>
   <a class="mi" id="tgbtn" data-t="m_tg" target="_blank" rel="noopener" hidden>Community on Telegram</a>
   <button class="mi" id="aboutbtn" type="button" data-t="m_about">About · disclaimer</button>
-  <div class="mi bt" id="buildtag">v1.46</div>
+  <div class="mi bt" id="buildtag">v1.47</div>
 </div>
 <div class="panel" id="lay" hidden role="dialog" aria-labelledby="layh"><div class="pgrab"></div>
   <div class="ph"><b id="layh" data-t="m_layers">Map layers</b><button type="button" class="px" data-close="lay" data-t-aria="btn_close" aria-label="Close">✕</button></div>
-  <div class="layermenu" id="layerbox"><label><input type="checkbox" data-l="tiles"> <span data-t="l_tiles">Streets &amp; buildings (OSM, zoomed in)</span></label><label><input type="checkbox" data-l="heat"> <span data-t="l_heat">Heat map: where drones were reported (not live)</span></label><label><input type="checkbox" data-l="himp"> <span data-t="l_himp">History: explosions ✸</span></label><label><input type="checkbox" data-l="hdown"> <span data-t="l_hdown">History: confirmed shot down ✕</span></label><label><input type="checkbox" data-l="trails"> <span data-t="l_trails">Tracks</span></label><label><input type="checkbox" data-l="cones"> <span data-t="l_cones">Course rays</span></label><label><input type="checkbox" data-l="rivers"> <span data-t="l_rivers">Rivers</span></label><label><input type="checkbox" data-l="roads"> <span data-t="l_roads">Roads</span></label><label><input type="checkbox" data-l="infra"> <span data-t="l_infra">Airports / plants</span></label><label><input type="checkbox" data-l="rings"> <span data-t="l_rings">Rings</span></label><label><input type="checkbox" data-l="minor"> <span data-t="l_minor">Villages &amp; small towns (off by default — clutters the phone)</span></label></div>
+  <div class="layermenu" id="layerbox"><label hidden><input type="checkbox" data-l="sat"> <span data-t="l_sat">Satellite imagery (Sentinel-2, 2021)</span></label><label><input type="checkbox" data-l="tiles"> <span data-t="l_tiles">Streets &amp; buildings (OSM, zoomed in)</span></label><label><input type="checkbox" data-l="heat"> <span data-t="l_heat">Heat map: where drones were reported (not live)</span></label><label><input type="checkbox" data-l="himp"> <span data-t="l_himp">History: explosions ✸</span></label><label><input type="checkbox" data-l="hdown"> <span data-t="l_hdown">History: confirmed shot down ✕</span></label><label><input type="checkbox" data-l="trails"> <span data-t="l_trails">Tracks</span></label><label><input type="checkbox" data-l="cones"> <span data-t="l_cones">Course rays</span></label><label><input type="checkbox" data-l="rivers"> <span data-t="l_rivers">Rivers</span></label><label><input type="checkbox" data-l="roads"> <span data-t="l_roads">Roads</span></label><label><input type="checkbox" data-l="infra"> <span data-t="l_infra">Airports / plants</span></label><label><input type="checkbox" data-l="rings"> <span data-t="l_rings">Rings</span></label><label><input type="checkbox" data-l="minor"> <span data-t="l_minor">Villages &amp; small towns (off by default — clutters the phone)</span></label></div>
   <button class="mi" id="rpmenu" type="button" data-t="rp_open">Replay — the last 7 days</button>
   <button class="mi tg" id="zcity2" type="button"><span class="lb" data-t="m_city">Kyiv city map (10 districts) — toggle</span></button>
   <button class="mi tg" id="est" type="button" style="display:none!important"><span class="lb" data-t="m_est">Estimate motion along heading (EST)</span></button>
@@ -1021,6 +1022,7 @@ body.lite #mycard,body.lite .panel{background:#000;border-color:#666}body.lite .
 <div id="stage">
 <div class="mapwrap" id="mapwrap">
   <svg id="map" viewBox="-75 -100 150 200" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+    <g id="sat" clip-path="url(#uaclip)"></g>
     <g id="tiles" clip-path="url(#uaclip)"></g>
     <g id="oblastsg"></g>
     <g id="neighbors"></g>
@@ -1417,7 +1419,9 @@ function setView(cx,cy,w){VB.w=Math.max(8,Math.min(1500,w));VB.h=VB.w*ASPECT();V
 function zoomAt(f,cx,cy){const nw=Math.max(8,Math.min(1500,VB.w/f)),nh=nw*ASPECT();VB.x=cx-(cx-VB.x)*(nw/VB.w);VB.y=cy-(cy-VB.y)*(nh/VB.h);VB.w=nw;VB.h=nh;applyVB();}
 function toSvg(px,py){const r=svg.getBoundingClientRect();return [VB.x+(px-r.left)/r.width*VB.w, VB.y+(py-r.top)/r.height*VB.h];}
 $('zin').onclick=()=>zoomAt(1.5,VB.x+VB.w/2,VB.y+VB.h/2); $('zout').onclick=()=>zoomAt(1/1.5,VB.x+VB.w/2,VB.y+VB.h/2);
-const LAYERS={tiles:true,himp:true,hdown:true,trails:false,cones:true,rivers:false,roads:true,infra:true,rings:true,minor:false,heat:false};
+// 1.47: a computer — a fine pointer that hovers, no phone or tablet browser — gets the satellite layer by default
+const IS_DESK=(()=>{try{return matchMedia('(pointer:fine) and (hover:hover)').matches&&!/Android|iPhone|iPad|iPod|Mobile|Silk|Kindle/i.test(navigator.userAgent);}catch(e){return false;}})();
+const LAYERS={sat:IS_DESK,tiles:true,himp:true,hdown:true,trails:false,cones:true,rivers:false,roads:true,infra:true,rings:true,minor:false,heat:false};
 try{Object.assign(LAYERS,JSON.parse(localStorage.getItem('layers')||'{}')); if(!localStorage.getItem('layers_v2')){LAYERS.minor=false;localStorage.setItem('layers_v2','1');localStorage.setItem('layers',JSON.stringify(LAYERS));}}catch(e){}
 LAYERS.heat=false;   // 1.33: the heat map is never remembered — every opening starts on the live picture
 function applyLayers(){for(const [l,on] of Object.entries(LAYERS)){svg.classList.toggle('no-'+l,!on);const cb=document.querySelector(`#layerbox input[data-l="${l}"]`);if(cb)cb.checked=on;}if(typeof updateTiles==='function')updateTiles();if(typeof drawHeat==='function')drawHeat();}
@@ -2360,22 +2364,49 @@ function cossack(){
 const TILE_URL=(z,x,y)=>`https://tile.openstreetmap.org/${z}/${x}/${y}.png`;   // OSM standard tiles, darkened with a CSS filter
 // 1.45.1: 1.45 laid the tiles under the whole country on a computer; zoomed out, the map was unreadable. Back to
 // the one rule for every device: tiles only once zoomed in to 150 km.
-function updateTiles(){
-  const g=$('tiles'); const on=LAYERS.tiles&&VB.w<=150&&MAP&&!CITY&&!(typeof LITE!=='undefined'&&LITE); svg.classList.toggle('tiled',!!on); $('attrib').hidden=!on;
-  if(!on){g.innerHTML='';return;}
-  const r=svg.getBoundingClientRect(); const kmpx=VB.w/Math.max(1,r.width);            // km per screen px
-  let z=Math.round(Math.log2(99.7/kmpx*(0.637/Math.cos(C[1]*Math.PI/180))))+(devicePixelRatio>1.5?1:0); z=Math.max(8,Math.min(18,z));
+// 1.47: both tile layers — the OSM streets (zoomed in) and the satellite imagery — go through updateTiles(); the map
+// is "tiled" (outlines over the picture, our own roads and rivers hidden) while either is drawn.
+function updateTiles(){ updateOsm(); updateSat();
+  svg.classList.toggle('tiled',svg.classList.contains('osmd')||svg.classList.contains('satd')); attribSync(); }
+function attribSync(){ const a=$('attrib'); if(!a) return; const p=[];
+  if(svg.classList.contains('osmd')) p.push('\u00a9 OpenStreetMap contributors');
+  if(svg.classList.contains('satd')) p.push(SAT_ATTR);
+  a.hidden=!p.length; if(p.length) a.textContent=p.join(' \u00b7 '); }
+// The tiles of zoom z over the view, each placed by its own corners in the km projection; at most `max` of them.
+function placeTiles(g,z,url,max){
   const n=2**z; const lon2x=lon=>(lon+180)/360*n; const lat2y=lat=>{const f=lat*Math.PI/180;return (1-Math.log(Math.tan(f)+1/Math.cos(f))/Math.PI)/2*n;};
   const y2lat=y=>Math.atan(Math.sinh(Math.PI*(1-2*y/n)))*180/Math.PI; const x2lon=x=>x/n*360-180;
   const [lonA,latA]=unproj(VB.x,VB.y),[lonB,latB]=unproj(VB.x+VB.w,VB.y+VB.h);
-  const x0=Math.floor(lon2x(lonA)),x1=Math.floor(lon2x(lonB)),y0=Math.floor(lat2y(latA)),y1=Math.floor(lat2y(latB));
-  if((x1-x0+1)*(y1-y0+1)>120){g.innerHTML='';return;}
+  const x0=Math.max(0,Math.floor(lon2x(lonA))),x1=Math.min(n-1,Math.floor(lon2x(lonB))),y0=Math.max(0,Math.floor(lat2y(latA))),y1=Math.min(n-1,Math.floor(lat2y(latB)));
+  if((x1-x0+1)*(y1-y0+1)>max){g.innerHTML='';return;}
   const want=new Set(); const have={}; g.querySelectorAll('image').forEach(im=>have[im.dataset.k]=im);
   for(let x=x0;x<=x1;x++)for(let y=y0;y<=y1;y++){ const k=`${z}/${x}/${y}`; want.add(k); if(have[k]) continue;
     const [px,py]=proj(x2lon(x),y2lat(y)),[qx,qy]=proj(x2lon(x+1),y2lat(y+1));
-    const im=document.createElementNS('http://www.w3.org/2000/svg','image'); im.dataset.k=k; im.setAttribute('href',TILE_URL(z,x,y));
+    const im=document.createElementNS('http://www.w3.org/2000/svg','image'); im.dataset.k=k; im.setAttribute('href',url(z,x,y));
     im.setAttribute('x',px.toFixed(3));im.setAttribute('y',py.toFixed(3));im.setAttribute('width',(qx-px).toFixed(3));im.setAttribute('height',(qy-py).toFixed(3));im.setAttribute('preserveAspectRatio','none'); g.appendChild(im);}
   for(const [k,im] of Object.entries(have)) if(!want.has(k)) im.remove();
+}
+const tileZoom=()=>{ const r=svg.getBoundingClientRect(); const kmpx=VB.w/Math.max(1,r.width);            // km per screen px
+  return Math.round(Math.log2(99.7/kmpx*(0.637/Math.cos(C[1]*Math.PI/180))))+(devicePixelRatio>1.5?1:0); };
+function updateOsm(){
+  const g=$('tiles'); const on=LAYERS.tiles&&VB.w<=150&&MAP&&!CITY&&!(typeof LITE!=='undefined'&&LITE); svg.classList.toggle('osmd',!!on);
+  if(!on){g.innerHTML='';return;}
+  placeTiles(g,Math.max(8,Math.min(18,tileZoom())),TILE_URL,120);
+}
+// ---- 1.47: satellite imagery, served by this server (scripts/build_imagery.py) ----
+// The ESA WorldCover Sentinel-2 composite of 2021 — a year of cloud-free pixels, 10 m, one processing for the whole
+// country — as zoom 5–12 tiles; closer than 12 the zoom-12 tiles are enlarged. Ours, so no map provider learns
+// which part of Ukraine a reader looks at, and nothing is paid per tile. Drawn inside Ukraine only (#uaclip), at
+// every zoom, under the OSM streets when those are on. On by default on a computer, off on a phone (it is a few
+// dozen KB a view, but on 2G every KB counts); the server says whether it has the tiles (state.config.sat).
+// var, not const/let: applyLayers() draws the tiles before this part of the script has run
+var SAT_V=1, SAT_ATTR='\u00a9 ESA WorldCover 2021 \u00b7 contains modified Copernicus Sentinel data (2021)', SAT_OK=false;
+function satAvail(ok){ ok=!!ok; if(ok===SAT_OK) return; SAT_OK=ok;
+  const cb=document.querySelector('#layerbox input[data-l="sat"]'); if(cb) cb.closest('label').hidden=!ok; updateTiles(); }
+function updateSat(){
+  const g=$('sat'); if(!g) return; const on=SAT_OK&&LAYERS.sat&&MAP&&!CITY&&!(typeof LITE!=='undefined'&&LITE); svg.classList.toggle('satd',!!on);
+  if(!on){g.innerHTML='';return;}
+  placeTiles(g,Math.max(5,Math.min(12,tileZoom())),(z,x,y)=>`/tiles/sat/${z}/${x}/${y}.webp?v=${SAT_V}`,160);
 }
 // ---- place-label collision pass: bigger places win, an overlapping smaller label is hidden until you zoom in ----
 function layoutTownLabels(){
@@ -2849,7 +2880,7 @@ function scopeRegs(){ const sc=(S&&S.scope)||['14','31','10','25','20','19','24'
 function myOblasts(){ const o=new Set([MYOBL.uid]); for(const p of Object.values(SLOTS)) if(p){ const u=unitAt(p.lon,p.lat); if(u&&u.obl) o.add(u.obl==='31'?'14':u.obl); } return o; }
 function applyAlertMap(am){ for(const [el,c] of am.cls) if(el.getAttribute('class')!==c) el.setAttribute('class',c); }
 function render(){
-  if(!S) return; const ob=S.oblasts; threatStrip(); drawBridges();
+  if(!S) return; satAvail(S.config&&S.config.sat); const ob=S.oblasts; threatStrip(); drawBridges();
   {const all=Object.entries(S.sources),ok=all.filter(([k,v])=>v.ok).length; $('srcs').innerHTML=`<i class="${ok===all.length?'ok':ok?'warn':'bad'}"></i><span class="sn">${ok}/${all.length}</span>`; $('srcs').title=all.map(([k,v])=>`${v.ok?'●':'○'} ${k}`).join('\n');}
   const MYU=MYOBL.uid, MYN=MYOBL.name, isK=MYU==='14';
   const k=ob['31'], ko=ob[MYU]||{status:'N',threats:[]};
@@ -2996,7 +3027,7 @@ function renderStats(){ if(!STATS) return; const el=$('stats'); if(!el) return; 
 // =====================================================================================
 // ---------------------------------------------------------------------------------------------------
 // The contacts (CONTACT) and the footer (footerHTML, shareApp) are in static/i18n.js since 1.39, shared with Light.
-const APP_VERSION='1.46';
+const APP_VERSION='1.47';
 const DONATE=CONTACT.ngo;
 const ls=(k,v)=>{try{return v===undefined?localStorage.getItem(k):(localStorage.setItem(k,v),v);}catch(e){return null;}};
 

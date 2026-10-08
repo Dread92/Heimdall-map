@@ -40,3 +40,6 @@ docs/brandkit/
 
 # ---- 1.41: scripts\diagnose.bat writes here ----
 diag/
+
+# ---- the satellite layer (1.47): built by scripts/build_imagery.py, uploaded by scripts/upload-imagery.bat ----
+imagery/

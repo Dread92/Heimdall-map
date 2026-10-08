@@ -66,6 +66,9 @@ BASE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(BASE) if os.path.basename(BASE) == "app" else BASE
 CONFIG_PATH = os.environ.get("CONFIG_PATH") or os.path.join(ROOT, "config.json")
 DB_PATH = os.environ.get("DB_PATH") or os.path.join(ROOT, "alerts.sqlite")
+# 1.47: the satellite layer's tiles — an MBTiles file next to the database (on the volume), built once by
+# scripts/build_imagery.py and put there by scripts/upload-imagery.bat. Without it the layer is simply not offered.
+SAT_PATH = os.environ.get("SAT_TILES") or os.path.join(os.path.dirname(os.path.abspath(DB_PATH)), "sat-ua.mbtiles")
 STATIC = os.path.join(ROOT, "static")
 
 DEFAULT_CONFIG = {
@@ -397,7 +400,7 @@ def build_id():
 
 # The version the front end shows in its footer, kept here too so /api/version can answer "what is actually
 # running" without anybody reading it off a screenshot. tests/test_version.py pins the two to each other.
-APP_VERSION = "1.46"
+APP_VERSION = "1.47"
 APP_NAME = "Heimdall"
 BUILD = None    # filled at startup
 
@@ -3499,12 +3502,74 @@ class State:
         return {"now": now_iso(), "active": active, "oblasts": by_oblast, "sources": sources, "eradar": self.eradar,
                 "notice": self.notice_now(), "nuke": self.nuke, "bridges": bridges, "scope": sorted(SCOPE_UIDS, key=int),
                 "favourites": self.cfg.get("favourites") or [], "config": {"demo": bool(self.cfg.get("demo")), "canonical": canonical_host(self.cfg),
-                "has_token": bool(self.cfg.get("alerts_in_ua_token")), "channels": self.cfg.get("telegram_channels")}}
+                "has_token": bool(self.cfg.get("alerts_in_ua_token")), "channels": self.cfg.get("telegram_channels"),
+                "sat": SAT.available()}}
 
 
 # ---------------------------------------------------------------------------
 # Desktop notifications (optional plyer)
 # ---------------------------------------------------------------------------
+class SatTiles:
+    """The satellite layer (1.47): Ukraine at zoom 5–12 from the ESA WorldCover Sentinel-2 composite of 2021, WebP
+    tiles in an MBTiles file, read-only. Served by this server and nobody else: no map provider learns which part
+    of the country a reader looks at. A new file put in place (scripts/upload-imagery.bat) is picked up on the next
+    request — no restart."""
+    ATTRIBUTION = "ESA WorldCover 2021 · contains modified Copernicus Sentinel data (2021)"
+
+    def __init__(self, path):
+        self.path = path
+        self.lock = threading.Lock()
+        self.conn = None
+        self.sig = None
+        self.checked = 0.0
+
+    def _db(self):
+        now = time.monotonic()
+        if now - self.checked < 10 and (self.conn or self.sig == "missing"):
+            return self.conn
+        self.checked = now
+        try:
+            st = os.stat(self.path)
+        except OSError:
+            if self.conn:
+                self.conn.close()
+            self.conn, self.sig = None, "missing"
+            return None
+        sig = (st.st_ino, st.st_mtime, st.st_size)
+        if sig != self.sig:
+            if self.conn:
+                self.conn.close()
+            try:
+                self.conn = sqlite3.connect(f"file:{self.path}?mode=ro", uri=True, check_same_thread=False)
+                self.conn.execute("SELECT 1 FROM tiles LIMIT 1").fetchone()
+            except sqlite3.Error as e:
+                log("satellite tiles unreadable:", e)
+                self.conn = None
+            self.sig = sig
+        return self.conn
+
+    def available(self):
+        with self.lock:
+            return self._db() is not None
+
+    def tile(self, z, x, y):
+        if not (0 <= z <= 20 and 0 <= x < (1 << z) and 0 <= y < (1 << z)):
+            return None
+        with self.lock:
+            c = self._db()
+            if not c:
+                return None
+            try:
+                row = c.execute("SELECT tile_data FROM tiles WHERE zoom_level=? AND tile_column=? AND tile_row=?",
+                                (z, x, (1 << z) - 1 - y)).fetchone()
+            except sqlite3.Error:
+                return None
+        return row[0] if row else None
+
+
+SAT = SatTiles(SAT_PATH)
+
+
 class Notifier:
     def __init__(self, cfg):
         self.enabled = bool(cfg.get("desktop_notifications", True))
@@ -5611,6 +5676,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json({"enabled": bool(pu and pu.enabled), "key": pu.pub if pu and pu.enabled else None, "subs": len(st.store.push_all()) if pu and pu.enabled else 0})
             if u.path.startswith("/static/"):
                 return self._file(u.path[len("/static/"):], None)
+            if u.path.startswith("/tiles/sat/"):
+                return self._sat_tile(u.path)
             if u.path == "/favicon.ico":
                 return self._file("heimdall-64.png", "image/png")
             self._json({"error": "not found"}, 404)
@@ -5802,6 +5869,26 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
+
+    _SAT_RX = re.compile(r"/tiles/sat/(\d{1,2})/(\d{1,7})/(\d{1,7})\.webp")
+
+    def _sat_tile(self, path):
+        """1.47: one tile of the satellite layer. The tiles never change under the same address (the page asks for
+        them with the layer's version), so the browser keeps them a year and never asks again."""
+        m = self._SAT_RX.fullmatch(path)
+        data = SAT.tile(*map(int, m.groups())) if m else None
+        if data is None:
+            self.send_response(404)
+            self.send_header("Cache-Control", "public, max-age=86400")
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+            return
+        self.send_response(200)
+        self.send_header("Content-Type", "image/webp")
+        self.send_header("Cache-Control", "public, max-age=31536000, immutable")
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
 
     def _stream(self):
         self.send_response(200)

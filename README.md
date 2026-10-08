@@ -244,6 +244,8 @@ the ubilling mirror as a stand-in; and twenty-three public Telegram channels: @k
 and @lutsk_radar.
 Villages and city districts of the regional trackers' oblasts: [GeoNames](https://www.geonames.org/) (CC BY 4.0).
 Rivers and roads outside Kyiv oblast: [Natural Earth](https://www.naturalearthdata.com/) (public domain).
+Satellite imagery: [ESA WorldCover](https://esa-worldcover.org) 2021 Sentinel-2 composite (CC BY 4.0), contains
+modified Copernicus Sentinel data (2021).
 What each one gives and how it is parsed: [docs/TECHNICAL.md §6–7](docs/TECHNICAL.md#6-official-alert-data).
 
 Map data: raion and oblast boundaries from [geoBoundaries](https://www.geoboundaries.org/) (CC BY
