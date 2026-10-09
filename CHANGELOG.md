@@ -2,6 +2,25 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.54.8 — 2026-10-10
+
+### Changed
+- **No more "unknown" for what is most likely a drone** — the owner: "'unknown' is badly worded, in the AI summary as
+  well as in the app: it's most likely a drone (a jet Shahed); the only exception is when we know ballistic or cruise
+  missiles are also coming". A target whose weapon the post did not state is now "probably a drone" on the map, the
+  card, the Near list, the counts and the Light page — and "drone or missile" while a missile, a MiG-31K, strategic
+  aviation or a cruise-missile warning is reported. The bulletins' record and the night's report use the same words,
+  and the AI is told never to write "unknown" nor to turn "probably" into a certainty.
+- **The AI is given everything Heimdall knows about the window** — "those data are precious: pattern recognition".
+  Besides the counts and places: the raions under alert, the missiles and carriers reported, the courses, every stated
+  height (by band and oblast, descending), the speeds, where the posts said targets came from (kept for the record, not
+  said in the bulletin), the outcomes' times, the followed tracks in full, and for 24 hours the night's weather. Each
+  mark now keeps what it stated too (height, vertical state, speed, origin, destination, tag).
+- **More room to write** — "more leeway on the token cutoff": 4,000 / 8,000 tokens a bulletin (was 1,200 / 2,400), a
+  2-minute wait for the answer, 90 / 220 words a language (was 60 / 140).
+- **The bulletins are kept** — every one for 90 days with the record it was written from, then for good one an hour and
+  one a day (the night); it was 30 days.
+
 ## 1.54.7 — 2026-10-10
 
 ### Fixed

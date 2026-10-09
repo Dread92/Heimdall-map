@@ -1198,6 +1198,8 @@ class Store:
             id INTEGER PRIMARY KEY AUTOINCREMENT, kind TEXT, at TEXT, since TEXT, until TEXT, quiet INTEGER, sig TEXT,
             uk TEXT, en TEXT, fr TEXT, model TEXT, tok_in INTEGER, tok_out INTEGER, cost REAL, error TEXT, input TEXT)""")
         c.execute("CREATE INDEX IF NOT EXISTS ix_aib ON ai_bulletins(kind, at)")
+        if "kept" not in [r[1] for r in c.execute("PRAGMA table_info(ai_bulletins)").fetchall()]:
+            c.execute("ALTER TABLE ai_bulletins ADD COLUMN kept INTEGER")    # 1.54.8: kept for good (bulletin_prune)
         # 1.51: the target tags — each tag (night + number) with what it shows, and the reports that belong to it
         c.execute("""CREATE TABLE IF NOT EXISTS targets(
             night TEXT, n INTEGER, prefix TEXT, origin TEXT, osrc TEXT, oquote TEXT, opost TEXT, first_ts TEXT, last_ts TEXT,
@@ -1212,6 +1214,14 @@ class Store:
         c.execute("CREATE INDEX IF NOT EXISTS ix_feed_ts ON feed(ts)")
         c.execute("CREATE INDEX IF NOT EXISTS ix_mlog_ts ON marker_log(ts)")
         c.execute("CREATE INDEX IF NOT EXISTS ix_mlog_obl ON marker_log(oblast_uid, ts)")
+        # 1.54.8, the owner: "those data are precious — the goal will be pattern recognition too; we need to be aware of the
+        # maximum amount of things possible". What each mark stated, beside where it was: the height and its vertical
+        # state, a stated speed, where the post said it came from and where it was heading, the rules' likelihood for an
+        # unstated weapon, and its target tag — the columns a later study reads without opening the evidence
+        have = {r[1] for r in c.execute("PRAGMA table_info(marker_log)").fetchall()}
+        for col, typ in self.MLOG_EXTRA:
+            if col not in have:
+                c.execute(f"ALTER TABLE marker_log ADD COLUMN {col} {typ}")
         c.execute("CREATE INDEX IF NOT EXISTS ix_out_ts ON outcomes(ts)")
         c.commit()
 
@@ -1482,6 +1492,9 @@ class Store:
         return n
 
     # -- the record of what the app said ------------------------------------------------------------
+    MLOG_EXTRA = (("alt_m", "INTEGER"), ("alt_state", "TEXT"), ("speed_kmh", "INTEGER"), ("origin", "TEXT"), ("target", "TEXT"),
+                  ("likely", "TEXT"), ("tag", "TEXT"), ("approach", "INTEGER"))
+
     def log_markers(self, markers):
         """Write each marker once, the way it was computed. INSERT OR IGNORE on the marker id: markers() is
         called many times a minute and recomputes the same ids, so only the first sighting is kept."""
@@ -1495,11 +1508,16 @@ class Store:
                          m.get("lon"), m.get("lat"), m.get("heading"), m.get("count"),
                          1 if m.get("jet") else 0,
                          ((ev.get("position") or {}).get("confidence")),
-                         json.dumps(ev, ensure_ascii=False)[:4000]))
+                         json.dumps(ev, ensure_ascii=False)[:4000],
+                         (m.get("alt") or {}).get("m"), (m.get("alt") or {}).get("state"), (m.get("speed") or {}).get("kmh"),
+                         (m.get("origin") or {}).get("o"), m.get("target"), m.get("likely"),
+                         (f"{m['tag'].get('night')}#{m['tag'].get('n')}" if isinstance(m.get("tag"), dict) else None),
+                         1 if m.get("approach") else 0))
         with self.lock:
             cur = self.conn.executemany(
                 "INSERT OR IGNORE INTO marker_log(id,ts,post_id,channel,type,status,place,oblast_uid,"
-                "lon,lat,heading,count,jet,pos_conf,evidence) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", rows)
+                "lon,lat,heading,count,jet,pos_conf,evidence,alt_m,alt_state,speed_kmh,origin,target,likely,tag,approach) "
+                "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", rows)
             n = cur.rowcount
             out = [r for r in rows if r[5] in ("impact", "down", "fire", "damage")]
             if out:
@@ -1679,15 +1697,52 @@ class Store:
     BUL_COLS = ("id", "kind", "at", "since", "until", "quiet", "sig", "uk", "en", "fr", "model", "tok_in", "tok_out", "cost",
                 "error", "input")
 
+    BUL_FULL_DAYS = 90
+
     def bulletin_save(self, r):
-        """1.54: one bulletin (or one failed attempt: `error`). Kept 30 days."""
+        """1.54: one bulletin (or one failed attempt: `error`). 1.54.8, the owner: "those data are precious — pattern
+        recognition": every one kept BUL_FULL_DAYS with the record it was written from, then for good one an hour (the
+        last hour's first of each clock hour) and one a day (the 24 hours' nearest noon, Kyiv time — the night). Quiet
+        windows and failed attempts go after BUL_FULL_DAYS (bulletin_prune, once a day). It was 30 days, all of them."""
         cols = self.BUL_COLS[1:]
         with self.lock:
             self.conn.execute(f"INSERT INTO ai_bulletins({','.join(cols)}) VALUES({','.join('?' * len(cols))})",
                               tuple(r.get(k) for k in cols))
-            cut = (datetime.now(timezone.utc) - timedelta(days=30)).isoformat()
-            self.conn.execute("DELETE FROM ai_bulletins WHERE at<?", (cut,))
             self.conn.commit()
+        today = datetime.now(kyiv_tz()).date().isoformat()
+        if self.kv_get("bul_pruned") != today:
+            self.bulletin_prune()
+            self.kv_set("bul_pruned", today)
+
+    def bulletin_prune(self, now=None):
+        """Past BUL_FULL_DAYS (whole Kyiv days): one bulletin an hour and one a day are marked `kept`, the rest deleted.
+        Returns (kept, deleted)."""
+        tz = kyiv_tz()
+        loc_now = (now or datetime.now(timezone.utc)).astimezone(tz)
+        cut = (loc_now - timedelta(days=self.BUL_FULL_DAYS)).replace(hour=0, minute=0, second=0, microsecond=0)
+        with self.lock:
+            rows = self.conn.execute("SELECT id, kind, at, quiet, error FROM ai_bulletins WHERE at<? AND COALESCE(kept,0)=0",
+                                     (cut.astimezone(timezone.utc).isoformat(),)).fetchall()
+            best, drop = {}, []
+            for bid, kind, at, quiet, error in rows:
+                t = parse_iso(at)
+                if quiet or error or not t:
+                    drop.append(bid)
+                    continue
+                t = t.astimezone(tz)
+                key, score = ((kind, t.strftime("%Y-%m-%d %H")), t.minute) if kind == "1h" else \
+                    ((kind, t.date().isoformat()), abs(t.hour * 60 + t.minute - 720))
+                if key in best and best[key][0] <= score:
+                    drop.append(bid)
+                    continue
+                if key in best:
+                    drop.append(best[key][1])
+                best[key] = (score, bid)
+            keep = [v[1] for v in best.values()]
+            self.conn.executemany("UPDATE ai_bulletins SET kept=1 WHERE id=?", [(i,) for i in keep])
+            self.conn.executemany("DELETE FROM ai_bulletins WHERE id=?", [(i,) for i in drop])
+            self.conn.commit()
+        return len(keep), len(drop)
 
     def bulletin_last(self, kind, ok=True):
         """The latest bulletin of a kind ("1h", "24h") — written, unless `ok` is False — or None."""
@@ -1697,13 +1752,13 @@ class Store:
         return dict(zip(self.BUL_COLS, r)) if r else None
 
     def bulletins(self, limit=30):
-        """The latest bulletins and attempts, newest first, with the record each was written from (cut to 6,000)."""
+        """The latest bulletins and attempts, newest first, with the record each was written from (cut to 30,000)."""
         with self.lock:
             rows = self.conn.execute(f"SELECT {','.join(self.BUL_COLS)} FROM ai_bulletins ORDER BY at DESC, id DESC LIMIT ?",
                                      (limit,)).fetchall()
         out = [dict(zip(self.BUL_COLS, r)) for r in rows]
         for d in out:
-            d["input"] = (d.get("input") or "")[:6000]
+            d["input"] = (d.get("input") or "")[:30000]
         return out
 
     def bulletin_counts(self, month):
@@ -2169,6 +2224,30 @@ class TargetTags:
 VMAX_KMH = {False: 350, True: 650}         # jet?
 POS_TOL_KM = 8.0                           # two named places, each a few km from where the target really was
 REACH_CAP_KM = {False: 80, True: 120}      # 1.54.4: never past this between two reports, however long between them
+
+
+# 1.54.8, the owner: "'unknown' is badly worded — in that case it is most likely a drone (a jet Shahed). The only exception
+# is when we know ballistic or cruise missiles are also coming: then we cannot know whether it is a drone or a missile".
+# A report whose weapon was not stated is named by what else was reported: missiles (or their carriers airborne) — a
+# drone or a missile; none — a probable drone. Never "a drone" as a fact: the post did not say.
+MISSILE_TYPES = frozenset(("ballistic_missiles", "cruise_missiles", "supersonic_missiles", "unspecified_missiles"))
+MISSILE_SIGNS = MISSILE_TYPES | {"mig31k_departure", "strategic_aircraft_activity"}
+UNSTATED_DRONE = "probable drone (type not stated)"
+UNSTATED_MIXED = "drone or missile (type not stated)"
+AIR_LABEL = {"mig31k": "MiG-31K", "strategic": "strategic bombers", "tu22": "Tu-22M3", "kalibr": "Kalibr carriers"}
+
+
+def unstated_kind(missiles):
+    return UNSTATED_MIXED if missiles else UNSTATED_DRONE
+
+
+def kind_name(typ, jet=False, missiles=False, raw=False):
+    """A report's kind in words, for the records the AI reads (the bulletins, the night's report)."""
+    if typ == "drones":
+        return "jet drone" if jet else "drone"
+    if not typ or typ == "unknown":
+        return unstated_kind(missiles)
+    return typ if raw else typ.replace("_", " ")
 
 
 def reach_km(dt_min, jet=False, cap=True):
@@ -3661,7 +3740,8 @@ class State:
         heights = [h for t in targets for h in t["heights_m"]]
         bands = {f"{lo}-{hi if hi < 99999 else ''}".rstrip("-") + " m": sum(1 for h in heights if lo <= h < hi) for lo, hi in self.NIGHT_ALT_BANDS}
         # 3. the reports, by hour and oblast; region-wide ones; outcomes
-        fam = lambda typ, jet: ("jet drone" if jet else "drone") if typ == "drones" else (typ or "unknown")   # noqa: E731
+        missiles = any(typ in MISSILE_SIGNS and not status for ts, typ, status, *_ in ml)        # 1.54.8: no "unknown"
+        fam = lambda typ, jet: kind_name(typ, jet, missiles, raw=True)   # noqa: E731
         hours, by_obl, wide = collections.defaultdict(collections.Counter), collections.defaultdict(collections.Counter), collections.defaultdict(collections.Counter)
         for ts, typ, status, place, uid, jet, cnt, chn in ml:
             if status:
@@ -3775,32 +3855,49 @@ class State:
         return "\n".join(L)
 
     # -- 1.54: the record of a window, for the AI's bulletins ----------------------------------------------------------
+    # 1.54.8, the owner: "those data are precious — the goal will be to do pattern recognition too; we need to be aware of
+    # the maximum amount of things possible". The record says more than the bulletin will: the courses and heights the
+    # marks carried, the speeds and origins the posts stated, the carriers, the raions under alert, the weather of the night
+    # — and it is kept with the bulletin (Store.bulletin_prune). Still counts, places and times: no post's text, no channel,
+    # no reader.
+    COMPASS = ("N", "NE", "E", "SE", "S", "SW", "W", "NW")
+
     def activity_summary(self, since, until=None):
-        """What Heimdall recorded between two UTC times over the oblasts the map covers: the official alerts, the targets
-        the channels reported (the marks the rules drew — reports, not a count of drones) by oblast, kind and time, the
-        places most reported, the paths of the targets it followed, the heights, the outcomes, the window before for
-        comparison, what is on the map now, and the Air Force's figures. Counts, places and times only — never a post's
-        text, never a reader, a watched place or a device."""
+        """What Heimdall recorded between two UTC times over the oblasts the map covers: the official alerts (with their
+        raions), the targets the channels reported (the marks the rules drew — reports, not a count of drones) by oblast,
+        kind and time, the places most reported, the courses, heights, speeds and origins the marks carried, the paths of
+        the targets it followed, the outcomes, the missiles and carriers reported, the window before for comparison, what
+        is on the map now, the Air Force's figures and, for a long window, the night's weather. A report whose weapon was
+        not stated is a probable drone when no missile was reported in the window, a drone or a missile when one was
+        (`kind_name`, 1.54.8). Counts, places and times only — never a post's text, never a channel, a reader, a watched
+        place or a device."""
         tz = kyiv_tz()
         now = datetime.now(timezone.utc)
         until = min(until or now, now)
         span = until - since
+        long_w = span > timedelta(hours=2)
         S, U, P = since.isoformat(), until.isoformat(), (since - span).isoformat()
         scope = self.scope_uids()
         names = {u: (uk, en) for u, uk, en in OBLASTS}
         nm = lambda u: f"{names[u][0]} ({names[u][1]})" if u in names else (u or "?")      # noqa: E731
         loc = lambda t: parse_iso(t).astimezone(tz).strftime("%H:%M") if parse_iso(t) else "?"   # noqa: E731
-        fam = lambda typ, jet: ("jet drone" if jet else "drone") if typ == "drones" else (typ or "unknown").replace("_", " ")   # noqa: E731
         inside = lambda u: u is None or str(u) in scope      # noqa: E731
         st = self.store
         with st.lock:
             al = st.conn.execute("SELECT oblast_uid, location_type, location_title, started_at, finished_at FROM alerts "
                                  "WHERE alert_type='air_raid' AND started_at<? AND (finished_at IS NULL OR finished_at>?)", (U, S)).fetchall()
-            ml = st.conn.execute("SELECT ts, type, status, place, oblast_uid, jet, count FROM marker_log WHERE ts>=? AND ts<?",
-                                 (P, U)).fetchall()
+            ml = st.conn.execute("SELECT ts, type, status, place, oblast_uid, jet, count, heading, alt_m, alt_state, speed_kmh, origin, "
+                                 "approach, likely FROM marker_log WHERE ts>=? AND ts<?", (P, U)).fetchall()
             oc = st.conn.execute("SELECT ts, status, type, place, oblast_uid, count FROM outcomes WHERE ts>=? AND ts<?", (S, U)).fetchall()
-            pts = st.conn.execute("SELECT p.night, p.n, p.ts, p.place, p.alt_m, t.type FROM target_points p LEFT JOIN targets t "
+            pts = st.conn.execute("SELECT p.night, p.n, p.ts, p.place, p.alt_m, t.type, t.origin FROM target_points p LEFT JOIN targets t "
                                   "ON t.night=p.night AND t.n=p.n WHERE p.ts>=? AND p.ts<? ORDER BY p.ts", (S, U)).fetchall()
+            air = st.conn.execute("SELECT kind, phase, ts FROM air_reports WHERE ts>=? AND ts<? ORDER BY ts", (S, U)).fetchall()
+        # 0. missiles in the window — on the map's oblasts, or their carriers anywhere: an unstated weapon is then a drone
+        #    or a missile; without them, a probable drone
+        msl = collections.Counter(typ for ts, typ, status, place, uid, *_ in ml if ts >= S and not status and typ in MISSILE_SIGNS and inside(uid))
+        carriers = [{"kind": AIR_LABEL.get(k, k), "phase": ph, "at": loc(ts)} for k, ph, ts in air]
+        missiles = bool(msl) or any(c["phase"] in ("up", "launch") for c in carriers)
+        fam = lambda typ, jet: kind_name(typ, jet, missiles)      # noqa: E731
         # 1. the official alerts, oblast by oblast (Kyiv city on its own): minutes under alert in the window, on now or not
         spans = {}
         for uid, lt, title, sa, fa in al:
@@ -3813,7 +3910,7 @@ class State:
                 r["now"] = True
             if lt == "oblast" or uid == "31":
                 r["oblast_wide"] = True
-            else:
+            elif title:
                 r["raions"].add(title)
             r["start"] = min(r["start"] or a, a)
             if b and (not r["end"] or b > r["end"]):
@@ -3822,27 +3919,51 @@ class State:
         for uid, r in spans.items():
             sp = [x for x in r["spans"] if x[1] > x[0]]
             alerts.append({"uid": uid, "oblast": nm(uid), "minutes": _union_minutes(sp), "on_now": r["now"],
-                           "whole_oblast": r["oblast_wide"], "raions": len(r["raions"]), "started": loc(r["start"].isoformat()),
+                           "whole_oblast": r["oblast_wide"], "raions": len(r["raions"]), "raion_names": sorted(r["raions"])[:15],
+                           "started": loc(r["start"].isoformat()),
                            "ended": None if r["now"] or not r["end"] else loc(r["end"].isoformat())})
         alerts.sort(key=lambda x: (x["uid"] != "31", x["uid"] != "14", -x["minutes"]))
-        # 2. the reports: by oblast and kind, by slice of time, the places, the region-wide ones; the window before
+        # 2. the reports: by oblast and kind, by slice of time, the places, the region-wide ones; what the marks carried;
+        #    the window before
         step = 10 if span <= timedelta(hours=2) else 60
-        slices, by_obl, kinds, wide = collections.Counter(), collections.defaultdict(collections.Counter), collections.Counter(), collections.Counter()
-        places, last_at, before = collections.Counter(), {}, 0
-        for ts, typ, status, place, uid, jet, cnt in ml:
+        C = collections.Counter
+        slices, by_obl, kinds, wide = C(), collections.defaultdict(C), C(), C()
+        places, last_at, before, before_k = C(), {}, 0, C()
+        courses, alt_all, alt_obl, desc, speeds, origins = collections.defaultdict(C), [], collections.defaultdict(list), 0, [], C()
+        unstated, unstated_signs, approach, first_t, last_t = 0, 0, 0, None, None
+        for ts, typ, status, place, uid, jet, cnt, hdg, alt_m, alt_st, spd, orig, appr, likely in ml:
             if status or not inside(uid):
                 continue
             k = parse_iso(ts)
             if not k:
                 continue
+            f = fam(typ, jet)
             if ts < S:
                 before += 1
+                before_k[f] += 1
                 continue
+            first_t = min(first_t or ts, ts)
+            last_t = max(last_t or ts, ts)
             lk = k.astimezone(tz)
             slices[lk.replace(minute=lk.minute - lk.minute % step, second=0, microsecond=0)] += 1
-            f = fam(typ, jet)
             by_obl[uid or "?"][f] += 1
             kinds[f] += 1
+            if typ in (None, "", "unknown"):
+                unstated += 1
+                unstated_signs += 1 if likely == "drones" else 0
+            if hdg is not None:
+                courses[uid or "?"][self.COMPASS[int(((float(hdg) % 360) + 22.5) // 45) % 8]] += 1
+            if alt_m:
+                alt_all.append(int(alt_m))
+                alt_obl[uid or "?"].append(int(alt_m))
+            if alt_st == "descending":
+                desc += 1
+            if spd:
+                speeds.append(int(spd))
+            if orig:
+                origins[orig] += 1
+            if appr:
+                approach += 1
             if place == "область":
                 wide[uid or "?"] += cnt or 1
             elif place:
@@ -3852,8 +3973,8 @@ class State:
         total = sum(kinds.values())
         # 3. the targets it followed: the places their reports put them at, in order (two places or more)
         tracks = collections.OrderedDict()
-        for night, n, ts, place, alt, typ in pts:
-            tracks.setdefault((night, n), {"type": typ, "pts": []})["pts"].append((ts, place, alt))
+        for night, n, ts, place, alt, typ, orig in pts:
+            tracks.setdefault((night, n), {"type": typ, "origin": orig, "pts": []})["pts"].append((ts, place, alt))
         followed = []
         one = lambda x: "…" if x is None else f"{x[1]} {loc(x[0])}" + (f" ({x[2]} m)" if x[2] else "")      # noqa: E731
         for (night, n), t in tracks.items():
@@ -3861,47 +3982,79 @@ class State:
             path = [p[0]] + [x for a_, x in zip(p, p[1:]) if x[1] != a_[1]] if p else []
             if len(path) < 2:
                 continue
-            followed.append({"kind": fam(t["type"], False), "reports": len(p),
-                             "path": [one(x) for x in (path if len(path) <= 4 else path[:2] + [None] + path[-2:])]})
+            a, b = parse_iso(p[0][0]), parse_iso(p[-1][0])
+            followed.append({"tag": tag_id(n), "kind": fam(t["type"], False), "reports": len(p),
+                             "minutes": round((b - a).total_seconds() / 60) if a and b else None, "origin": t["origin"],
+                             "heights": [x[2] for x in p if x[2]][:12],
+                             "path": [one(x) for x in (path if len(path) <= 12 else path[:6] + [None] + path[-5:])]})
         followed.sort(key=lambda x: -x["reports"])
         heights = sorted(x[2] for t in tracks.values() for x in t["pts"] if x[2])
         # 4. the outcomes the channels reported
-        outs, oplaces = collections.defaultdict(collections.Counter), collections.Counter()
+        outs, oplaces, otimes = collections.defaultdict(C), C(), {}
         for ts, status, typ, place, uid, cnt in oc:
             if not inside(uid) or status not in ("down", "impact"):
                 continue
             outs[uid or "?"][status] += cnt or 1
+            ot = otimes.setdefault(status, [ts, ts])
+            ot[0], ot[1] = min(ot[0], ts), max(ot[1], ts)
             if place and place != "область":
                 oplaces[f"{place} ({'shot down' if status == 'down' else 'explosion'})"] += 1
         # 5. what is on the map now (only when the window ends now)
-        on_map = collections.defaultdict(collections.Counter)
+        on_map = collections.defaultdict(C)
         if (now - until).total_seconds() < 120:
             for m in self.markers_now():
                 if m.get("status") or m.get("stale") or m.get("endedBy") or not inside(m.get("oblast_uid")):
                     continue
                 on_map[m.get("oblast_uid") or "?"][fam(m.get("type"), m.get("jet"))] += m.get("count") or 1
-        # 6. the Air Force's figures (all of Ukraine), posted in the window
-        af = []
+        # 6. the Air Force's figures (all of Ukraine), posted in the window; 7. the night's weather (a long window)
+        af, weather = [], None
         if span >= timedelta(hours=6):
             for r in st.af_reports((since.astimezone(tz).date() - timedelta(days=1)).isoformat()):
                 pt = parse_iso(r.get("ts"))
                 if pt and since <= pt <= until:
                     af.append({"posted": loc(r.get("ts")), "period": r.get("period"), "launched": r.get("launched") or {},
                                "down": r.get("down") or {}})
+            wd = until.astimezone(tz).date().isoformat()
+            w = (st.weather(wd) or {}).get(wd) or {}
+            launch = [w[k] for k in WEATHER_LAUNCH if k in w]
+            if w.get("kyiv") or launch:
+                def avg(fld):
+                    v = [x[fld] for x in launch if x.get(fld) is not None]
+                    return round(sum(v) / len(v), 1) if v else None
+                weather = {"night_of": wd, "kyiv": w.get("kyiv"),
+                           "launch_areas": {"wind": avg("wind"), "gust": max((x["gust"] for x in launch if x.get("gust") is not None), default=None),
+                                            "cloud": avg("cloud"), "precip": avg("precip"), "points": len(launch)} if launch else None}
         order = sorted(by_obl, key=lambda u: (u != "31", u != "14", -sum(by_obl[u].values())))
         day = (lambda t: t.astimezone(tz).strftime("%d.%m %H:%M")) if span > timedelta(hours=12) else (lambda t: t.astimezone(tz).strftime("%H:%M"))
+        med = lambda v: sorted(v)[len(v) // 2] if v else None     # noqa: E731
+        peak = max(slices.items(), key=lambda kv: kv[1]) if slices else None
         return {"from": day(since), "until": day(until), "span_min": round(span.total_seconds() / 60), "timezone": "Kyiv",
                 "alerts": alerts,
-                "reports": {"total": total, "before": before, "kinds": dict(kinds), "slice_min": step, "by_slice": {k.strftime("%H:%M"): v for k, v in sorted(slices.items())},
+                "reports": {"total": total, "before": before, "before_kinds": dict(before_k), "kinds": dict(kinds), "slice_min": step,
+                            "by_slice": {k.strftime("%H:%M"): v for k, v in sorted(slices.items())},
+                            "first": loc(first_t) if first_t else None, "last": loc(last_t) if last_t else None,
+                            "peak": {"at": peak[0].strftime("%H:%M"), "reports": peak[1]} if peak else None,
                             "by_oblast": [{"oblast": nm(u), **by_obl[u]} for u in order],
                             "region_wide": [{"oblast": nm(u), "targets": n} for u, n in wide.most_common()],
-                            "places": [{"place": k, "reports": n, "last": loc(last_at[k])} for k, n in places.most_common(12)]},
-                "followed": followed[:8], "followed_total": len(followed),
+                            "places": [{"place": k, "reports": n, "last": loc(last_at[k])} for k, n in places.most_common(40 if long_w else 25)],
+                            "unstated": {"reports": unstated, "with_drone_signs": unstated_signs, "read_as": unstated_kind(missiles)},
+                            "approach_marks": approach},
+                "missiles": {"in_window": missiles, "marks": {kind_name(k, raw=False): v for k, v in msl.items()}, "carriers": carriers[:30]},
+                "courses": [{"oblast": nm(u), **courses[u]} for u in order if courses.get(u)],
+                "heights_all": {"reports": len(alt_all), "min": min(alt_all) if alt_all else None, "median": med(alt_all),
+                                "max": max(alt_all) if alt_all else None, "descending": desc,
+                                "bands": {f"{lo}-{hi if hi < 99999 else ''}".rstrip("-") + " m": sum(1 for h in alt_all if lo <= h < hi)
+                                          for lo, hi in self.NIGHT_ALT_BANDS} if alt_all else {},
+                                "by_oblast": [{"oblast": nm(u), "reports": len(v), "median": med(v)} for u, v in alt_obl.items()]},
+                "speeds": {"reports": len(speeds), "min": min(speeds) if speeds else None, "max": max(speeds) if speeds else None},
+                "origins_stated": dict(origins.most_common()),
+                "followed": followed[:30 if long_w else 20], "followed_total": len(followed),
                 "heights": {"reports": len(heights), "min": heights[0] if heights else None,
                             "median": heights[len(heights) // 2] if heights else None, "max": heights[-1] if heights else None},
-                "outcomes": [{"oblast": nm(u), **outs[u]} for u in outs], "outcome_places": dict(oplaces.most_common(10)),
+                "outcomes": [{"oblast": nm(u), **outs[u]} for u in outs], "outcome_places": dict(oplaces.most_common(25)),
+                "outcome_times": {("shot down" if k == "down" else "explosions"): {"first": loc(v[0]), "last": loc(v[1])} for k, v in otimes.items()},
                 "on_map_now": [{"oblast": nm(u), **on_map[u]} for u in sorted(on_map, key=lambda u: (u != "31", u != "14"))],
-                "air_force": af}
+                "air_force": af, "weather": weather}
 
     @staticmethod
     def activity_active(d):
@@ -3910,7 +4063,7 @@ class State:
 
     @staticmethod
     def activity_text(d):
-        """The same window as plain text — what the AI writes the bulletin from."""
+        """The same window as plain text — what the AI writes the bulletin from, and what is kept with it."""
         fmt = lambda c: ", ".join(f"{k} {v}" for k, v in c.items() if k != "oblast")      # noqa: E731
         r = d["reports"]
         L = [f"RECORD {d['from']}–{d['until']} Kyiv time ({d['span_min']} min). Reports of public channels as Heimdall's rules "
@@ -3918,28 +4071,68 @@ class State:
         L.append("OFFICIAL AIR-RAID ALERTS (minutes in the window · on now? · started · ended · raions):")
         L += [f"- {a['oblast']}: {a['minutes']} min · {'ON NOW' if a['on_now'] else 'not now'} · started {a['started']}"
               f"{' · ended ' + a['ended'] if a['ended'] else ''} · {'whole oblast' if a['whole_oblast'] else str(a['raions']) + ' raion(s)'}"
+              + (f" ({', '.join(a['raion_names'])})" if a.get("raion_names") and not a["whole_oblast"] else "")
               for a in d["alerts"]] or ["- none"]
-        L += ["", f"TARGETS REPORTED: {r['total']} reports ({fmt(r['kinds']) or 'none'}); the window before: {r['before']} reports"]
+        L += ["", f"TARGETS REPORTED: {r['total']} reports ({fmt(r['kinds']) or 'none'}); the window before: {r['before']} reports"
+              + (f" ({fmt(r['before_kinds'])})" if r.get("before_kinds") else "")]
         if r["total"]:
+            L.append(f"First {r['first']}, last {r['last']}" + (f"; busiest {r['slice_min']} min from {r['peak']['at']} ({r['peak']['reports']} reports)" if r.get("peak") else ""))
             L.append(f"By {r['slice_min']} min: " + "; ".join(f"{k} {v}" for k, v in r["by_slice"].items()))
             L.append("By oblast: " + "; ".join(f"{o['oblast']}: {fmt(o)}" for o in r["by_oblast"]))
             if r["region_wide"]:
                 L.append("Reported for a whole oblast, no town: " + "; ".join(f"{o['oblast']} {o['targets']}" for o in r["region_wide"]))
             L.append("Places most reported: " + ("; ".join(f"{p['place']} ×{p['reports']} (last {p['last']})" for p in r["places"]) or "—"))
+            u = r.get("unstated") or {}
+            if u.get("reports"):
+                L.append(f"Weapon not stated: {u['reports']} reports ({u['with_drone_signs']} with a drone tracker's signs: a height, a "
+                         f"count, its drone mark) — read as \"{u['read_as']}\": "
+                         + ("missiles or their carriers were reported in this window, so it may be either"
+                            if "missile" in u["read_as"] else "no missile was reported in this window, so most likely Shahed-type drones (jet or not)"))
+            if r.get("approach_marks"):
+                L.append(f"Reported only by where they were heading: {r['approach_marks']} reports")
+        m = d.get("missiles") or {}
+        if m.get("marks") or m.get("carriers"):
+            L += ["", "MISSILES AND CARRIERS REPORTED: " + (fmt(m["marks"]) or "no missile mark") + "; carriers: "
+                  + ("; ".join(f"{c['kind']} {c['phase']} {c['at']}" for c in m["carriers"]) or "none")]
+        if d.get("courses"):
+            L += ["", "COURSES THE MARKS CARRIED (stated by a post, or from one report to the next; compass, reports):"]
+            L += [f"- {c['oblast']}: {fmt(c)}" for c in d["courses"]]
         if d["followed"]:
             L += ["", f"TARGETS FOLLOWED over two places or more: {d['followed_total']}" + (", the longest:" if d["followed_total"] > len(d["followed"]) else ":")]
-            L += [f"- {f['kind']}, {f['reports']} reports: " + " → ".join(f["path"]) for f in d["followed"]]
-        h = d["heights"]
-        if h["reports"]:
-            L += ["", f"HEIGHTS REPORTED: {h['reports']} reports, from {h['min']} m to {h['max']} m (median {h['median']} m)"]
+            L += [f"- {f['tag']} {f['kind']}, {f['reports']} reports" + (f" over {f['minutes']} min" if f.get("minutes") else "") + ": "
+                  + " → ".join(f["path"]) for f in d["followed"]]
+        h, ha = d["heights"], d.get("heights_all") or {}
+        if ha.get("reports") or h["reports"]:
+            L += ["", f"HEIGHTS REPORTED: {max(ha.get('reports') or 0, h['reports'])} reports, from {ha.get('min') or h['min']} m to "
+                  f"{ha.get('max') or h['max']} m (median {ha.get('median') or h['median']} m)"
+                  + (f"; descending in {ha['descending']}" if ha.get("descending") else "")]
+            if ha.get("bands"):
+                L.append("By band: " + "; ".join(f"{k} {v}" for k, v in ha["bands"].items() if v))
+            if ha.get("by_oblast"):
+                L.append("By oblast (median): " + "; ".join(f"{o['oblast']} {o['median']} m ×{o['reports']}" for o in ha["by_oblast"]))
+        sp = d.get("speeds") or {}
+        if sp.get("reports"):
+            L.append(f"SPEEDS STATED: {sp['reports']} reports, {sp['min']}–{sp['max']} km/h")
+        if d.get("origins_stated"):
+            L += ["", "WHERE THE POSTS SAID THEY CAME FROM (often wrong — for the record, not for the bulletin): "
+                  + ", ".join(f"{k} {v}" for k, v in d["origins_stated"].items())]
         L += ["", "OUTCOMES REPORTED: " + ("; ".join(f"{o['oblast']}: " + ", ".join(f"{'shot down' if k == 'down' else 'explosions'} {v}"
                                                                     for k, v in o.items() if k != "oblast") for o in d["outcomes"]) or "none")]
+        if d.get("outcome_times"):
+            L.append("When: " + "; ".join(f"{k} {v['first']}–{v['last']}" for k, v in d["outcome_times"].items()))
         if d["outcome_places"]:
             L.append("Places: " + "; ".join(f"{k} ×{v}" for k, v in d["outcome_places"].items()))
         L += ["", "ON THE MAP WHEN THIS WAS RECORDED: " + ("; ".join(f"{o['oblast']}: {fmt(o)}" for o in d["on_map_now"]) or "nothing")]
         if d["air_force"]:
             L += ["", "AIR FORCE (all of Ukraine):"] + [f"- {a['period'] or ''} (posted {a['posted']}): launched {a['launched']} · "
                                                          f"shot down or suppressed {a['down']}" for a in d["air_force"]]
+        w = d.get("weather")
+        if w:
+            ky, la = w.get("kyiv") or {}, w.get("launch_areas") or {}
+            L += ["", f"WEATHER OF THE NIGHT ({w['night_of']}, 18:00–06:00): Kyiv — wind {ky.get('wind')} km/h, gusts {ky.get('gust')}, "
+                  f"cloud {ky.get('cloud')} %, rain {ky.get('precip')} mm, low {ky.get('tmin')} °C"
+                  + (f"; the launch areas ({la['points']} points) — wind {la.get('wind')} km/h, gusts {la.get('gust')}, cloud {la.get('cloud')} %, "
+                     f"rain {la.get('precip')} mm" if la else "")]
         return "\n".join(L)
 
     # -- statistics of past attacks (cached 5 min) ---------------------------

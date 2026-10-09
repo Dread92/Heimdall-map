@@ -119,6 +119,14 @@ last half hour nearby, or a clear choice (the only city district, the only raion
 none of those, nothing is drawn — a mark in the wrong village is worse than no mark. A destination nobody can tell
 apart gets no course drawn to it. "In the area of A - B" is an area, never a route.
 
+## A weapon nobody named is "probably a drone" — never "unknown", never "a drone" (1.54.8)
+
+A post that says where and not what ("Кулажинці", "лук'янівка") was shown as an unspecified threat. On a night of drones
+that word told people less than they knew: the owner, "it's most likely a drone (a jet Shahed); the only exception is
+when we know missiles are also coming". So the app and the AI's bulletins say **probably a drone** while no missile and
+no carrier is reported, and **drone or missile** while one is — the ⚠ stays, the card still says the type was not
+stated, and the bulletins never turn "probably" into a count of drones.
+
 ## Two channels' reports are one target only when they could be (1.43.1)
 
 A report continues another channel's track only within 15 minutes and at a speed a drone can fly (1.54.7: the owner's

@@ -1847,6 +1847,13 @@ function homeNamed(m){
 // you" it has arrived, and filtering by that distance deletes the only warning there was. These are exempt
 // from every radius and concern the whole region. Mirrors geo.IMMEDIATE_TYPES / REGION_ALERT_KM.
 const IMMEDIATE=new Set(['ballistic_missiles','mig31k_departure','supersonic_missiles']);
+// 1.54.8, the owner: "'unknown' is badly worded — it is most likely a drone (a jet Shahed); the only exception is when we
+// know ballistic or cruise missiles are also coming". A target whose weapon the post did not state is named by what else
+// is in the air: a missile on the map, or a MiG-31K / ballistic / strategic-aviation / cruise warning in the strip —
+// "drone or missile"; none — "probably a drone". Never "a drone" as a fact: the post did not say.
+const MSL_TYPES=new Set(['ballistic_missiles','cruise_missiles','supersonic_missiles','unspecified_missiles']);
+function mslCtx(){ return (typeof TS_TOP!=='undefined'&&!!TS_TOP)||MK.some(m=>!m.status&&!m.endedBy&&MSL_TYPES.has(m.type)); }
+const unkKind=()=>t(mslCtx()?'k_unk_mix':'k_unk_dr');
 const REGION_R=150;   // km — proj() is scaled in km, so distances here are already kilometres
 function homeInfo(m,x,y){
   if(!HOME) return {near:false,inbound:false,named:false,dist:null,immediate:false};
@@ -2283,6 +2290,7 @@ function tick(){
   const ids=new Set(live.map(m=>m.id));
   for(const [id,b] of built){ if(!ids.has(id)){b.g.remove();b.trail.remove();b.hist.remove();built.delete(id);} }
   const lblPos=[]; let totShahed=0,totJet=0,totMsl=0,totUnk=0,totStale=0,inboundCount=0, nearest=null, tracked=0, downed=0, homeThreats=0, homeNamedN=0, homeNearest=null;
+  const msl0=mslCtx();   // 1.54.8: what an unstated weapon is called on this paint
   for(const m of live){
     let b=built.get(m.id); if(!b){b=buildMarker(m);built.set(m.id,b);$('markers').appendChild(b.g);$('trails').appendChild(b.hist);$('trails').appendChild(b.trail);}
     // The tail: where this track was reported over the last few minutes, fading with age.
@@ -2382,7 +2390,7 @@ function tick(){
     b.g.querySelector('.halo').setAttribute('r',kx((/missile/.test(m.type)?17:13)*KPX));
     {const h2=b.g.querySelector('.halo2'); if(h2) h2.setAttribute('r',kx(17*KPX));} b.g.querySelector('.hit').setAttribute('r',kx(18*KPX));
     b.g.querySelector('.lbl').setAttribute('x',kx(14*KPX)); b.g.querySelector('.lbl').setAttribute('y',kx(-6*KPX)); b.g.querySelector('.lbl2').setAttribute('x',kx(14*KPX)); b.g.querySelector('.lbl2').setAttribute('y',kx(6*KPX));
-    const kind=(m.type==='drones'?(m.jet?t('k_jet'):t('k_shahed')):m.type==='unknown'?(m.likely==='drones'?'⚠ '+t('unk_likely'):t('k_unknown')):THREAT[m.type]?.[1]||m.type);
+    const kind=(m.type==='drones'?(m.jet?t('k_jet'):t('k_shahed')):m.type==='unknown'?'⚠ '+(msl0?t('unk_mix'):t('unk_likely')):THREAT[m.type]?.[1]||m.type);
     const name=m.status?(({down:t('mk_down'),impact:t('mk_impact'),lost:t('mk_lost'),clear:t('mk_clear'),damage:t('mk_damage'),fire:t('mk_fire')})[m.status]||statusName(m.status)+((m.cluster||1)>1?` ×${m.cluster}`:m.count>1?` ×${m.count}`:'')):kind+((m.csum||m.count||1)>1?` ×${m.csum||m.count}`:'');
     // 1.51: the target's tag at the head of its label — S-07: Heimdall's number for tonight, the letter where a post
     // said it came from (never worked out); set only when it changes
@@ -2449,7 +2457,7 @@ function tick(){
   // edge indicators: gone (1.53.3, the owner — "a good idea before, not now that the map has more on it"): a target off
   // the screen is in the Near list, the card and its counts; nothing is written along the map's border any more
   if($('edges').innerHTML) $('edges').innerHTML='';
-  const parts=[]; if(tracked){ const tot=[totShahed?`<b>${totShahed}</b> ${t('lb_shahed')}`:'',totJet?`<b>${totJet}</b> ${t('lb_jet')}`:'',totMsl?`<b>${totMsl}</b> ${t('lb_msl')}`:'',totUnk?`<b>${totUnk}</b> ⚠`:'',totStale?`<b>${totStale}</b> ?`:''].filter(Boolean).join(' · '); parts.push(tot||`<b>${tracked}</b> ${t('lb_targets')}`); } if(inboundCount) parts.push(`<b class="lvr">${inboundCount} ${t('lb_tokyiv')}</b>`); if(HOME&&homeNamedN) parts.push(`<b class="lvp">${homeNamedN} → ${esc(homeName())}</b>`);
+  const parts=[]; if(tracked){ const tot=[totShahed?`<b>${totShahed}</b> ${t('lb_shahed')}`:'',totJet?`<b>${totJet}</b> ${t('lb_jet')}`:'',totMsl?`<b>${totMsl}</b> ${t('lb_msl')}`:'',totUnk?`<b>${totUnk}</b> ⚠ ${esc(t(mslCtx()?'lb_unk_mix':'lb_unk_dr'))}`:'',totStale?`<b>${totStale}</b> ?`:''].filter(Boolean).join(' · '); parts.push(tot||`<b>${tracked}</b> ${t('lb_targets')}`); } if(inboundCount) parts.push(`<b class="lvr">${inboundCount} ${t('lb_tokyiv')}</b>`); if(HOME&&homeNamedN) parts.push(`<b class="lvp">${homeNamedN} → ${esc(homeName())}</b>`);
   else if(HOME&&homeThreats) parts.push(`<b class="lvr">${homeThreats} ${t('lb_nearhome',esc(homeName()))}</b>`); if(ESTIMATE) parts.push('EST'); 
   // The counters live in the Statistics tab now, not across the bottom of the map. A running tally is
   // something you read once and then reason about; the map is for the thing you are watching move. LIVE
@@ -2582,7 +2590,7 @@ function tagLine(m){ const tg=m.tag; if(!tg||m.status||m.endedBy) return '';
 function openSheet(id){
   const m=MK.find(x=>x.id===id); if(!m) return; SELP=id; const sp=$('selpath'); if(sp) sp._sig=''; setTimeout(drawSelPath,0); setTimeout(()=>loadTrail(m),0); $('tip').hidden=true; const [x,y,x0,y0]=posOf(m,Date.now()); const info=inboundInfo(m,x,y);
   const th=THREAT[m.type]||THREAT.unknown; const appr=!!m.approach&&!m.status&&!m.endedBy; const placeEn=(m.place==='область'||relOf(m))?oblWhere(m):pn(m.place);
-  const kind=m.status?`${statusIco(m.status)} ${statusName(m.status)}`:`${m.type==='drones'&&m.jet?t('k_jet'):m.type==='drones'?t('k_shahed'):m.type==='unknown'?'⚠ '+t('th_unknown2'):th[1]}`;
+  const kind=m.status?`${statusIco(m.status)} ${statusName(m.status)}`:`${m.type==='drones'&&m.jet?t('k_jet'):m.type==='drones'?t('k_shahed'):m.type==='unknown'?'⚠ '+t(mslCtx()?'th_unk_mix':'th_unk_dr'):th[1]}`;
   const ev=m.evidence||{}; const cor=corroboration(m); const closer=m.endedBy; const closed=m.closes?MK.find(o=>o.id===m.closes):null;
   const overall=ev.position?.confidence==='high'&&(m.status||ev.heading?.confidence==='high'||ev.heading?.confidence==='medium')?'high':ev.position?.confidence==='high'?'medium':'low';
   const src=`${esc(CH[m.channel]||'@'+m.channel)} · ${fmtT(m.ts)} (${t('tp_ago',Math.round(agoMin(m.ts)))})`;
@@ -2611,7 +2619,8 @@ function openSheet(id){
       // "if it holds its course" is not a hedge bolted on — it is the whole content of the number.
       const el=eb?` <b>${esc(t('eta_band',eb.lo,eb.hi))}</b> <span style="color:var(--muted)">${esc(t('eta_if'))}</span>`:'';
       return `<div class="kv1">${zl}${el}</div>`; })()}
-    ${m.type==='unknown'&&!m.status?`<div class="kv1 yellow sec">${esc(t('unk_note'))}${m.likely==='drones'?' '+esc(m.alt&&m.alt.m?t('alt_likely'):t('unk_likely_l')):''}</div>`:''}
+    ${m.type==='unknown'&&!m.status?(mslCtx()?`<div class="kv1 yellow sec">${esc(t('unk_note_mix'))}${m.likely==='drones'?' '+esc(m.alt&&m.alt.m?t('alt_likely'):t('unk_likely_l')):''}</div>`
+      :`<div class="kv1 yellow sec">${esc(t('unk_note_dr'))}${m.alt&&m.alt.m?' '+esc(t('alt_likely')):''}</div>`):''}
     ${mk?`<div class="kv1 muted sec" style="font-size:12px">${esc(m.type==='ballistic_missiles'?t('msl_bal'):m.type==='banderol_missiles'?t('msl_band'):t('msl_cru'))}</div>`:''}
     ${m._gone?`<div class="kv1 yellow"><b>${esc(t('msl_gone'))}</b> — ${esc(t('msl_seen',placeEn,fmtT(m.ts)))}</div>`:''}
     ${(m._reach>0)?`<div class="kv1 yellow"><b>${esc(t('msl_reach',Math.round(m._reach)))}</b> — ${esc(t('msl_seen',placeEn,fmtT(m.ts)))}<div style="color:var(--muted);font-size:11.5px;margin-top:3px">${esc(t('msl_note',mk.v))}</div></div>`:''}
@@ -3016,7 +3025,7 @@ let TS_TOP=null;   // the preventive warning on top of the strip right now ({ty,
 // "heading for Obolon" is shown only when the post said so (homeInfo().inbound). A target reported for a whole
 // oblast has no point to measure from, and a weapon that outruns any radius gets no distance at all.
 const KIND_COL=m=>m.type==='drones'?(m.jet?'#ffb15c':'#ff8a3d'):/missile/.test(m.type)?'#ff5b52':(m.type==='guided_aerial_bombs'||/aircraft|mig31k/.test(m.type))?'#b07cff':'#a9a79f';
-const kindOf=m=>m.type==='drones'?(m.jet?t('k_jet'):t('k_shahed')):m.type==='unknown'?t('k_unknown'):(THREAT[m.type]?.[1]||m.type);
+const kindOf=m=>m.type==='drones'?(m.jet?t('k_jet'):t('k_shahed')):m.type==='unknown'?unkKind():(THREAT[m.type]?.[1]||m.type);
 // 1.39: a silhouette as a small inline icon — the Stats tab, the Alerts tab, the map's places of interest
 const gIco=(k,col,cls)=>`<svg class="gico" viewBox="-14 -14 28 28" aria-hidden="true"><g class="sil${cls?' '+cls:''}" style="--c:${col}">${G[k]||''}</g></svg>`;
 // an official threat type as its silhouette (a type with none — air defence, "Kyiv", "clear" — gets no icon)

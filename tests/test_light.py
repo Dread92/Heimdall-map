@@ -56,8 +56,10 @@ def test_it_stays_light():
     # radar's legend sits behind a button.
     with open(os.path.join(ROOT, "static", "live.js"), "rb") as fh:
         page += len(gzip.compress(fh.read(), 6))
-    assert page < 24_500, f"the light page is no longer light ({page} B gzipped)"
-    assert page + extra < 65_500, f"page + map data = {page + extra} B gzipped"
+    # 1.54.8 raised it by 0.2 KB: a target whose weapon was not stated is "probably a drone", or "drone or missile" while
+    # a missile is reported — never "type not stated" alone.
+    assert page < 24_700, f"the light page is no longer light ({page} B gzipped)"
+    assert page + extra < 65_700, f"page + map data = {page + extra} B gzipped"
     # 1.29: the live line is allowed — the light variant only (alerts and marks, no feed, no raw events). An open
     # line costs the server nothing any more (one thread holds them all) and the phone ~100 bytes every 15 s,
     # against ~8 KB every 15 s for asking.

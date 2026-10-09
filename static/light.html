@@ -332,7 +332,9 @@ const COL={drones:'--ora',jet:'--amb',cruise_missiles:'--msl',unspecified_missil
 const colOf=m=>getComputedStyle(document.documentElement).getPropertyValue(m.type==='drones'&&m.jet?COL.jet:(COL[m.type]||'--ink2')).trim();
 const label=m=>m.type==='drones'?(m.jet?t('k_jet'):t('k_shahed')):({ballistic_missiles:t('th_bal'),cruise_missiles:t('th_cruise'),unspecified_missiles:t('th_msl'),
   banderol_missiles:t('th_band'),supersonic_missiles:t('th_super'),guided_aerial_bombs:t('th_kab'),tactic_aircraft_activity:t('th_tac'),
-  strategic_aircraft_activity:t('th_strat'),mig31k_departure:t('th_mig')}[m.type]||t('th_unknown2'));
+  strategic_aircraft_activity:t('th_strat'),mig31k_departure:t('th_mig')}[m.type]||(m.type==='unknown'?t(lMsl()?'th_unk_mix':'th_unk_dr'):t('th_unknown2')));
+// 1.54.8: unstated — "probably a drone", "drone or missile" while one is reported
+const lMsl=()=>MKS.some(m=>!m.status&&/^(ball|cruise|supers|unspec|mig31|strat)/.test(m.type));
 // The weapon's own silhouette — the same drawing as on the Tactical map (static/glyphs.js).
 const silKey=m=>(m.type==='drones'&&m.jet)?'jetdrone':(GLYPH_BY_TYPE[m.type]||'missile');
 const silCls=m=>'sil'+((m.type==='drones'&&m.jet)?' jet':'')+(m.type==='ballistic_missiles'?' bal':'')+(m.type==='supersonic_missiles'?' sup':'');

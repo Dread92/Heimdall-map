@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.54** · last updated 2026-10-10 (1.54.7)
+**Documented version: 1.54** · last updated 2026-10-10 (1.54.8)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -694,6 +694,15 @@ village once "Кулажинці" is in. **A height alone** ("500", "400 м", "�
 the target the channel reported last, within 15 minutes, at that report's place and time and of its kind
 (`height_only`: carried by `_marks_from_posts` like an outcome line) — never a place of its own.
 
+**A weapon not stated, in the app (1.54.8).** The owner: "'unknown' is badly worded — it is most likely a drone (a jet
+Shahed); the only exception is when we know ballistic or cruise missiles are also coming". A mark of type `unknown` is
+named by what else is in the air (`mslCtx()`: a missile on the map — `MSL_TYPES` — or a MiG-31K / ballistic /
+strategic-aviation / cruise warning in the strip, `TS_TOP`): **"probably a drone"** on the map's label, the card's title
+("Probably a drone — type not stated", `th_unk_dr`), its note (`unk_note_dr`: no missile reported right now, so most
+likely a strike drone, a Shahed or a jet one), the Near list (`k_unk_dr`) and the counts (`lb_unk_dr`); **"drone or
+missile"** (`unk_mix`, `th_unk_mix`, `unk_note_mix`, `k_unk_mix`, `lb_unk_mix`) while missiles are reported. The ⚠ sign
+stays: the post did not say what it is. The Light page names it the same way (`lMsl`).
+
 ### 7.4 Scope, chaining, staleness
 
 `State.markers()`:
@@ -1128,18 +1137,40 @@ a weather bulletin". The `bulletins` thread (`Bulletins`) writes two, on the clo
   outcomes (`outcomes`: shot down, explosions), what is on the map at the end of the window, and for 24 hours the Air
   Force's figures. `State.activity_text` makes it the plain text the AI is given. Counts, place names and times only —
   never a post's text, a channel's name in the answer, a reader, a watched place or a device.
+  **1.54.8, everything it knows** (the owner: "those data are precious — the goal will be pattern recognition too; we
+  need to be aware of the maximum amount of things possible"): also the raions under alert (`raion_names`, up to 15),
+  the first, last and busiest slice, the kinds of the window before, the **missiles and carriers** reported (missile
+  marks on the map's oblasts, `air_reports` anywhere: MiG-31K, strategic bombers, Tu-22M3, Kalibr carriers — up, launch),
+  the **courses** the marks carried by oblast (8-point compass), **every stated height** (`heights_all`: min / median /
+  max, descending, by band and by oblast — `heights` stays the followed tracks'), the **speeds** stated, **where the
+  posts said the targets came from** ("for the record, not for the bulletin"), the reports drawn only at their
+  destination, the outcomes' times, the followed tracks with their tag, minutes, heights and up to 12 places (20 for the
+  hour, 30 for the day), 25 / 40 places, 25 outcome places, and for 24 hours **the night's weather** (Kyiv and the launch
+  areas, `weather`). **A weapon not stated** (`kind_name`, `unstated_kind`) is `"probable drone (type not stated)"`
+  when no missile and no carrier was reported in the window, `"drone or missile (type not stated)"` when one was — with
+  how many of them carried a drone tracker's signs (a height, a count, its drone mark). The night's report uses the same
+  words (`kind_name(…, raw=True)`). The marks it is built from keep what they stated (`marker_log` 1.54.8 columns,
+  `Store.MLOG_EXTRA`: `alt_m`, `alt_state`, `speed_kmh`, `origin`, `target`, `likely`, `tag`, `approach`).
 - **Only while there is activity** (`State.activity_active`: a report, an outcome, an alert, a target on the map). A
   window with nothing in it gets the server's own line (`Bulletins.QUIET`, `quiet` = 1), once, with no call. The same
   record (`sig`, a hash of the text) is never written twice. The 24 hours are written again only after an hour with
   activity, or every 6 hours.
-- **One call, three languages** (`AIReader.ask_bulletin`): `BULLETIN_SYSTEM` (`BULLETIN_VERSION` 1) and a strict schema
-  `{uk, en, fr}`; `bulletin_clean` takes out markdown, links, channel names and card numbers and cuts a text past
-  `BULLETIN_CHARS` (700 / 1,600 characters) at its last full sentence; a language missing is an error. The prompt's rules:
+- **One call, three languages** (`AIReader.ask_bulletin`): `BULLETIN_SYSTEM` (`BULLETIN_VERSION` 2 since 1.54.8) and a
+  strict schema `{uk, en, fr}`; `bulletin_clean` takes out markdown, links, channel names and card numbers and cuts a text
+  past `BULLETIN_CHARS` (1.54.8: 1,100 / 2,600 characters; it was 700 / 1,600) at its last full sentence; a language
+  missing is an error. 1.54.8, "more leeway on the token cutoff": `MAX_OUT_BULLETIN` 4,000 / 8,000 tokens (it was
+  1,200 / 2,400 — three languages and a model that thinks first ran out), `BULLETIN_TIMEOUT` 120 s (a post's reading
+  keeps 40). The prompt's rules:
   only what the record shows, "reported" (channel reports, not radar, not a count of drones), Kyiv first, alerts only
   from the official ones, never "safe", never shelter advice, never a forecast (a trend in the record may be said), never
-  where targets came from or are heading (a followed target's places in order may be told), Kyiv time, 60 / 140 words a
-  language. Within the month's budget like every call; its refusals (off, paused, budget, rate) store nothing.
-- **Kept** in `ai_bulletins` (30 days) with the record it was written from, the cost and any error.
+  where targets came from or are heading (a followed target's places in order may be told), Kyiv time, 90 / 220 words a
+  language (1.54.8; it was 60 / 140), and never "unknown" — "probably drones", or "drones or missiles" while missiles are
+  reported, never a certainty. Within the month's budget like every call; its refusals (off, paused, budget, rate) store nothing.
+- **Kept** in `ai_bulletins` with the record it was written from, the cost and any error — 1.54.8: every one for
+  `BUL_FULL_DAYS` (90), then **for good** one an hour (the last hour's first of each clock hour) and one a day (the
+  24 hours' nearest noon, Kyiv time: the night), marked `kept`; quiet windows and failed attempts go at 90 days
+  (`Store.bulletin_prune`, once a day, whole Kyiv days). It was 30 days, all of them. About 25 rows a busy day (~150 kB),
+  far less on a quiet one; the dashboard shows a record up to 30,000 characters.
 - **In the app** (`GET /api/bulletin`): only while the dashboard's switch is on (`kv` `ai_bulletin_public` = "1"), the
   latest bulletin of each kind — and only while the server still stands by it: each turn that finds the latest still
   true (nothing new, the same record) sets `kv` `bul_checked:<kind>`, and a bulletin neither written nor checked within
@@ -1838,7 +1869,7 @@ SQLite in WAL mode (`DB_PATH`; on Fly, the volume). Tables:
 | `feed` | posts: `post_id, channel, ts, text, tags, text_en, text_fr, en_mt` |
 | `kv` | small settings: the VAPID key pair, the usage counter's daily salt, the channels (`channels`), the admin's message (`notice`), the nuclear event (`nuke`), the AI's switches (`ai_reader_on`, 1.54 `ai_bulletin_public`), and similar |
 | `push_subs` | push subscriptions with a ~10 km cell, the topics asked for (`bridges`) and the language |
-| `marker_log` | every mark as computed, with its evidence |
+| `marker_log` | every mark as computed, with its evidence; 1.54.8: and what it stated — `alt_m`, `alt_state`, `speed_kmh`, `origin`, `target`, `likely`, `tag` (night#n), `approach` (`MLOG_EXTRA`). Kept 120 days |
 | `outcomes` | shoot-downs, impacts, losses |
 | `channel_stats` | per channel per day: posts, posts with a reading, flagged readings |
 | `digests` | each night / week: the figures (JSON), the summary in EN and UK, the model, any error |
@@ -1854,7 +1885,7 @@ SQLite in WAL mode (`DB_PATH`; on Fly, the volume). Tables:
 | `ai_reads` | 1.50: the AI reader's reading of each post it read (§7.7) — when, the post, whether the rules stored it, model, prompt version, ms, tokens, cost, verdict, the rules' reading and its own (JSON), facts dropped, error. Kept 90 days; the month's spend is `kv` `ai_usd:YYYY-MM`. 1.53: `chk`, the check that read it (its `ai` then holds the findings: `targets` with `f`, `findings`) |
 | `ai_checks` | 1.53: each 10-minute check (§7.10) — `id` (its UTC time), the posts' first and last time, how many, the oblasts, model, prompt version, ms, tokens, cost, `findings` (by kind), `notes` (per oblast), `uncertain`, `error` |
 | `ai_reports` | 1.53: the AI's report on each night (§7.10) — `night`, when, up to when, model, tokens, cost, `text`, `error` |
-| `ai_bulletins` | 1.54: each bulletin (§7.11) — `kind` ("1h" / "24h"), when, the window (`since`, `until`), `quiet`, `sig` (a hash of the record), `uk`, `en`, `fr`, model, tokens, cost, `error`, and `input` (the record it was written from). Kept 30 days; `kv` `ai_bulletin_public` (the app's switch) and `bul_checked:<kind>` (when the latest was last found still true) |
+| `ai_bulletins` | 1.54: each bulletin (§7.11) — `kind` ("1h" / "24h"), when, the window (`since`, `until`), `quiet`, `sig` (a hash of the record), `uk`, `en`, `fr`, model, tokens, cost, `error`, and `input` (the record it was written from). 1.54.8: all of them 90 days, then one an hour and one a day for good (`kept`, `bulletin_prune`); `kv` `ai_bulletin_public` (the app's switch) and `bul_checked:<kind>` (when the latest was last found still true) |
 | `usage`, `usage_seen` | anonymous usage counters |
 
 Columns are added in place by `Store.__init__` (`ALTER TABLE … ADD COLUMN`), so an old database upgrades itself.

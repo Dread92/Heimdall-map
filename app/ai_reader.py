@@ -860,13 +860,16 @@ Only what the record shows: take every figure from it, never invent a number, a 
 # a bit like a weather bulletin". One call writes the bulletin in the app's three languages, from the server's record of
 # the window (State.activity_summary / activity_text) — counts, places and times the rules and the official feed
 # recorded, never a post's text.
-BULLETIN_VERSION = "1"
+BULLETIN_VERSION = "2"
 BULLETIN_KINDS = ("1h", "24h")
-MAX_OUT_BULLETIN = {"1h": 1200, "24h": 2400}
-BULLETIN_CHARS = {"1h": 700, "24h": 1600}         # per language, at most: past it, cut at the last full sentence
+# 1.54.8, the owner: more leeway on the token cutoff — three languages of Cyrillic and
+# Latin in one JSON answer, and a model that thinks before it writes, ran into 1,200 / 2,400 tokens. Paid only as used.
+MAX_OUT_BULLETIN = {"1h": 4000, "24h": 8000}
+BULLETIN_CHARS = {"1h": 1100, "24h": 2600}        # per language, at most: past it, cut at the last full sentence
+BULLETIN_TIMEOUT = 120                            # seconds; a post's reading keeps 40
 BULLETIN_SYSTEM = """You write the bulletins of Heimdall, an unofficial air-threat map of Ukraine built from public Telegram channels and the official alert feed. People read them on a phone, during or after an attack, the way they read a weather bulletin: what happened, where, how much — calm, plain and short.
 
-You are given Heimdall's record of one window, the last hour or the last 24 hours (Kyiv time): the official air-raid alerts by oblast, the targets the channels reported (Heimdall's marks — reports, not a count of drones) by oblast, kind and time, the places most reported, the paths of the targets Heimdall followed, the heights reported, the outcomes reported (shot down, explosions), what was on the map when the record was made, the window before it for comparison, and for 24 hours the Air Force's figures.
+You are given Heimdall's record of one window, the last hour or the last 24 hours (Kyiv time): the official air-raid alerts by oblast (and their raions), the targets the channels reported (Heimdall's marks — reports, not a count of drones) by oblast, kind and time, the places most reported, the missiles and carriers reported, the courses the marks carried, the paths of the targets Heimdall followed, the heights and speeds reported, where the posts said the targets came from, the outcomes reported (shot down, explosions) and when, what was on the map when the record was made, the window before it for comparison, and for 24 hours the Air Force's figures and the night's weather. Read all of it; say only what a reader needs.
 
 Write the same bulletin in Ukrainian ("uk"), English ("en") and French ("fr"). Answer with one JSON object: {"uk": "...", "en": "...", "fr": "..."}.
 
@@ -875,12 +878,13 @@ Rules:
 2. Kyiv first — the city, then Kyiv oblast — then the other oblasts by how much was reported. Name at most five oblasts; the rest are "other oblasts".
 3. Alerts come only from the official alerts in the record: which oblasts had an air-raid alert and, for the city of Kyiv, when it started and whether it ended. Never say an alert ended unless the record says so.
 4. Never say a place is safe or that the danger is over, never advise on shelter, never forecast ("will", "expect", "next"). A trend in the record is a fact and may be said: "fewer reports in the last 20 minutes", "more than in the hour before".
-5. Never say where the targets came from or where they are heading — the posts' origins are often wrong. A followed target's path may be told as the places it was reported at, in order: "first reported near Ripky at 19:02, last near Vyshhorod at 20:22".
+5. Never say where the targets came from or where they are heading — the posts' origins are often wrong, and the record's "where the posts said they came from" and "courses" are kept for the record, not for the bulletin. A followed target's path may be told as the places it was reported at, in order: "first reported near Ripky at 19:02, last near Vyshhorod at 20:22".
 6. Times in Kyiv time, 24-hour (19:05). Heights in metres, as reported ("reported at 1,800 m").
-7. The last hour: at most 60 words a language, one paragraph, no list. The last 24 hours: at most 140 words a language, at most three short paragraphs — in brief, where, outcomes (and the Air Force's figures when given).
+7. The last hour: at most 90 words a language, one or two short paragraphs, no list. The last 24 hours: at most 220 words a language, at most four short paragraphs — in brief, where, heights and outcomes, and the Air Force's figures when given (the night's weather in one clause, if it matters).
 8. Plain text only: no markdown, no emoji, no headings, no channel names, no names of people, no links.
 9. Place names in Ukrainian in "uk"; in "en" and "fr" their usual Latin spelling (Київ → Kyiv, Бровари → Brovary, Чернігівська область → Chernihiv oblast / l'oblast de Tchernihiv).
-10. When the record shows little, say so in one sentence ("Over the last hour the channels reported 2 drones over Sumy oblast; none near Kyiv.")."""
+10. When the record shows little, say so in one sentence ("Over the last hour the channels reported 2 drones over Sumy oblast; none near Kyiv.").
+11. Never write "unknown", "unidentified" or "unspecified" for a target. A report whose weapon the post did not state is in the record as "probable drone (type not stated)" when no missile was reported in the window — write "probably drones" or "most likely Shahed-type drones"; and as "drone or missile (type not stated)" when missiles or their carriers were reported — write "drones or missiles". Never turn "probably" into a certainty, and never count them as drones in a total of drones."""
 BULLETIN_SCHEMA = {"type": "object", "additionalProperties": False,
                    "properties": {"uk": {"type": "string"}, "en": {"type": "string"}, "fr": {"type": "string"}},
                    "required": ["uk", "en", "fr"]}
@@ -1257,7 +1261,7 @@ class AIReader:
             "Authorization": "Bearer " + self.key(), "Content-Type": "application/json", "X-Title": "Heimdall"})
         try:
             ctx = getattr(self, "ssl_ctx", None)
-            with urllib.request.urlopen(req, timeout=40, context=ctx) as r:
+            with urllib.request.urlopen(req, timeout=BULLETIN_TIMEOUT if (bk or kind == "text") else 40, context=ctx) as r:
                 data = json.loads(r.read().decode("utf-8"))
         except urllib.error.HTTPError as e:
             why = _why(e)

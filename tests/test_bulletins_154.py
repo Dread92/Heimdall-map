@@ -229,7 +229,7 @@ def test_one_call_three_languages_in_a_strict_schema_within_the_budget():
 def test_the_prompt_holds_the_safety_rules():
     p = A.BULLETIN_SYSTEM
     for rule in ('say "reported"', "Kyiv first", "only from the official alerts", "Never say a place is safe",
-                 "never forecast", "Never say where the targets came from", "Kyiv time", "at most 60 words",
+                 "never forecast", "Never say where the targets came from", "Kyiv time", "at most 90 words",
                  "no channel names", '"uk"', '"en"', '"fr"'):
         assert rule in p, rule
 
