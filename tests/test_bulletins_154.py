@@ -311,3 +311,36 @@ def test_on_a_computer_the_card_is_a_card_beside_the_list_and_the_target_stays_i
     assert "if(window.innerWidth<1000" in fn and "s.offsetWidth" in fn and "VB.x=x0-dx*e" in fn           # sideways only
     assert ".sheet.mark:not(.more){max-height:38vh" in PAGE                   # the phone's card as it was
     assert "1.54.1, on a computer" in DOC
+
+
+# ---- 1.54.2 ----------------------------------------------------------------------------------------------------------
+def test_the_heat_map_paints_where_reports_gather_not_every_village_named_once():
+    assert "const a=Math.min(1,c*1.8)*Math.max(0,Math.min(1,(tt-0.18)/0.5));" in PAGE
+    assert "(0.16+0.78*Math.min(1,tt))" not in PAGE                    # a pale disc for every place, gone
+
+
+def test_the_heat_legend_folds_and_moves_and_stays_below_the_header():
+    assert '<button type="button" id="heatfold" data-t-aria="hm_fold"' in PAGE and '<div class="hlbody">' in PAGE
+    assert "#heatleg.fold .hlbody{display:none}" in PAGE and "localStorage.setItem('heatfold'" in PAGE
+    assert "let HEAT_FOLD=window.innerWidth<1000" in PAGE and "localStorage.setItem('heatpos'" in PAGE
+    assert "H.setPointerCapture(e.pointerId)" in PAGE and "function heatMinTop(P)" in PAGE
+    assert "@media (max-width:999px){#heatleg{top:30px;left:8px;right:auto;" in PAGE
+    for k in ("hm_fold", "hm_short"):
+        assert I18N.count(f"{k}:'") == 3, k
+
+
+def test_a_tap_on_an_oblast_badge_opens_its_card_on_a_computer():
+    assert "downCh=e.target.closest?e.target.closest('g.oblevtchip'):null;" in PAGE
+    assert "else if(ch&&tap){ $('tip').hidden=true; oblEventSheet(ch.dataset.o); }" in PAGE
+    assert "el.addEventListener('click',()=>oblEventSheet(" not in PAGE                    # no second way in
+
+
+def test_zhytomyrska_is_the_oblast_unless_the_post_says_metro():
+    import geo
+    rd = lambda ch, t: [(m["place"], m.get("oblast_uid")) for m in geo.parse_for_channel(ch, t)]   # noqa: E731
+    assert rd("chyste_nebo", "В Житомирській") == [] and ("Житомирська", "31") not in rd("chyste_nebo", "Житомирської може зайти поки Радомишль")
+    assert rd("chyste_nebo", "Шахед над Житомирською") == [("область", "10")] and rd("kpszsu", "Шахед над Житомирською") == [("область", "10")]
+    assert rd("kyiv_airdef", "Шахед біля метро Житомирська") == [("Житомирська", "31")]
+    assert rd("chyste_nebo", "Житомирською трасою на Київ")[0][0] == "Житомирська траса"
+    assert geo._gender_ok("житомирською", "Житомирське") is False and geo._gender_ok("кам'янського", "Кам'янське")
+    assert geo._gender_ok("українкою", "Українка") and not geo._gender_ok("житомирське", "Житомирська")

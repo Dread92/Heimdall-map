@@ -414,6 +414,34 @@ _ADJ_ENDS = frozenset(("ий", "ій", "ого", "ому", "им", "ім", "ої
 _CASE_END = re.compile(r"^[аеєиіїоуюяыэ]{0,2}(?:[мхйв]|ми|ві)?$")
 
 
+# 1.54.2: an adjective-like name agrees in gender. "Шахед над Житомирською" (Zhytomyr oblast, feminine) was drawn at the
+# village of Житомирське (neuter) by Ovruch; a feminine form never names a neuter or masculine place, nor the reverse.
+_FEM_TAIL = re.compile(r"(?:ськ|цьк|зьк)(?:а|ої|ій|ою|у)$")
+_NONFEM_TAIL = re.compile(r"(?:ськ|цьк|зьк)(?:е|ий|ого|ому|им|ім)$")
+_NONFEM_NAME = re.compile(r"(?:ськ|цьк|зьк)(?:е|ий)$")
+_FEM_NAME = re.compile(r"(?:ськ|цьк|зьк)а$")
+
+
+def _gender_ok(token, name):
+    n = (name or "").split(" (")[0].strip().lower()
+    if " " in n:
+        return True
+    t = (token or "").lower()
+    if _NONFEM_NAME.search(n) and _FEM_TAIL.search(t):
+        return False
+    if _FEM_NAME.search(n) and _NONFEM_TAIL.search(t):
+        return False
+    return True
+
+
+# 1.54.2: Kyiv places named like an oblast's adjective — "Житомирська" is a metro station, and how the Kyiv trackers name
+# Zhytomyr oblast ("В Житомирській", "Житомирської може зайти поки Радомишль", @chyste_nebo, 9 Oct): read as the station,
+# 117 reports in a week were drawn in western Kyiv. The station only when the post says so ("метро", "станція", "ст. м.").
+_METRO_ONLY = {"Житомирська"}
+_METRO_BEFORE = re.compile(r"(?:метро|станці\w*|ст\.\s*м\.?)\s*$", re.I)
+_METRO_AFTER = re.compile(r"\s*(?:метро|станці)", re.I)
+
+
 def _plausible(token, name, base):
     """Is this matched word a form of that place's name, or merely something that starts like it?
 
@@ -812,12 +840,19 @@ def _find_places(text, ctx_uid=None):
                 continue
             if _OBLAST_NOUN_RX.match(text, m.end()) and "трас" not in name.lower():
                 continue          # "Житомирська область" is the oblast, not the Kyiv metro station
+            if not _gender_ok(m.group(0), name):
+                continue
+            if name in _METRO_ONLY and not (_METRO_BEFORE.search(text[max(0, m.start() - 16):m.start()]) or _METRO_AFTER.match(text, m.end())):
+                continue          # 1.54.2: the oblast, unless the post says metro
             key = (m.start(), m.end())
             spans.setdefault(key, []).append(name)
     # 1.43: the villages of the oblast the post is about (its channel's, or the one it names) — only then
     if ctx_uid and (ctx_uid in _REG_IDX or ctx_uid in REGIONAL_WORDS):
         for s0, e0, ks in _find_regional(text, ctx_uid):
             if _OBLAST_NOUN_RX.match(text, e0):
+                continue
+            ks = [k for k in ks if _gender_ok(text[s0:e0].split()[-1], k)]
+            if not ks:
                 continue
             lst = spans.setdefault((s0, e0), [])
             lst.extend(k for k in ks if k not in lst)
@@ -1584,8 +1619,8 @@ _ADJ_OBL = {"житомирськ": "житомирщ", "черкаськ": "ч�
             "чернігівськ": "чернігівщ", "харківськ": "харківщ", "одеськ": "одещ", "миколаївськ": "миколаївщ",
             "херсонськ": "херсонщ", "рівненськ": "рівненщ", "тернопільськ": "тернопільщ", "львівськ": "львівщ",
             "кіровоградськ": "кіровоградщ", "дніпропетровськ": "дніпропетровщ", "вінницьк": "вінниччин", "хмельницьк": "хмельниччин"}
-_ADJ_OBL_RX = re.compile(r"(?<![а-яіїєґ'])(з|із|зі|від|до|через|на|в|у|по)\s+(" + "|".join(_ADJ_OBL) + r")(ої|ою|у|ій)(?![а-яіїєґ'])"
-                         r"(?!\s+(?:обл|област|район|р-н|громад|водосх|міськ|напрям))", re.I)
+_ADJ_OBL_RX = re.compile(r"(?<![а-яіїєґ'])(з|із|зі|від|до|через|на|в|у|по|над|під|біля|поблизу)\s+(" + "|".join(_ADJ_OBL) + r")(ої|ою|у|ій)(?![а-яіїєґ'])"
+                         r"(?!\s+(?:обл|област|район|р-н|громад|водосх|міськ|напрям|трас|шосе|вулиц|просп|площ|метро|станці))", re.I)
 _ADJ_END = {"ої": ("ини", "и"), "ою": ("ини", "и"), "у": ("ину", "у"), "ій": ("ині", "і")}
 # "з Чорного моря в напрямку Миколаївщини" put the target in the middle of the sea: the sea is where it came FROM — the
 # south — when the post goes on to say where it is heading
@@ -1606,15 +1641,10 @@ def _fix_readings(t, channel=None):
     t = _SIG_LINE_RX.sub("", t)
     t = _ALERT_SAY_RX.sub("", t)
     t = _SEA_FROM_RX.sub(lambda m: f"{m.group(1)} півдня", t)
-    kyiv = CHANNEL_HOME.get(channel) == "31" or channel in _KYIV_CH
-
     def adj(m):
-        # in Kyiv, "на Житомирську" is the metro station and the street (PLACES): a Kyiv channel's target going TO one
-        # stays there; coming FROM one ("з Житомирської") is the oblast
-        if kyiv and m.group(1).lower() not in ("з", "із", "зі", "від", "через"):
-            fem = m.group(2)[0].upper() + m.group(2)[1:].lower() + "а"
-            if fem in PLACES:
-                return m.group(0)
+        # 1.52 kept a Kyiv tracker's "на Житомирську" as the metro station; 1.54.2, the posts of 9 Oct ("В Житомирській",
+        # @chyste_nebo, of a drone in Zhytomyr oblast) — it is the oblast for every channel; the station is "метро
+        # Житомирська" (_METRO_ONLY)
         stem = _ADJ_OBL[m.group(2).lower()]
         end = _ADJ_END[m.group(3).lower()][1 if stem.endswith("ччин") else 0]
         return f"{m.group(1)} {stem}{end}"

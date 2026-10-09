@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.54** · last updated 2026-10-09 (1.54.1)
+**Documented version: 1.54** · last updated 2026-10-09 (1.54.2)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -1054,7 +1054,9 @@ and the post in three lines; the track, the night's path, the notes and the evid
 card is no longer a bar across the whole window under the map but a card over the map's lower left, beside the list
 (`#sheet` at ≥ 1,000 px: 420 px wide, as high as it needs up to the map's height, scrolling inside, its buttons in a bar
 that stays in view); a target it would hide is brought, sideways and at the same zoom, to the middle of the map beside it
-(`sheetClear`, from the card's box without its slide).
+(`sheetClear`, from the card's box without its slide). 1.54.2: a tap on an oblast's badge opens its card on a computer too
+— the map holds the pointer from the press (pointer capture), so the badge never received its click; it is read in the
+map's own pointerup, like a mark (`downCh`).
 
 **The map opens at once (1.53)**: `sw.js` keeps the satellite tiles (`/tiles/sat/`, cache `heimdall-tiles-1`,
 cache-first, ≤ 5,000, the oldest dropped) — their address carries the layer's version, so a kept tile is never stale —
@@ -1489,9 +1491,17 @@ Main parts:
   red for the most (it was violet). `heatGrid()` adds each place's count around it on a grid a quarter of the
   screen's pixels (a smooth bump of 30 px); a spot's colour is √(its sum ÷ the scale), the scale being the busiest
   place of the period or the busiest spot in view if that is more — so a quiet corner never turns red because it is
-  zoomed in on; a place with few reports is faint as well as yellow. The legend's ramp reads "1 … N+" and says "not
-  live, not alerts"; while the layer is on, the official alert colours are drawn as outlines over a faint fill
-  (`svg:not(.no-heat)`), so the two are never read as one colour. Dark map: blended with `screen`; day: `multiply`. (1.33's alert hours by oblast stay in the dashboard's Analytics.)
+  zoomed in on; a place with few reports is faint as well as yellow. 1.54.2, the owner: "the heat map is rather
+  bad" — every village named once painted its own pale disc and a busy week spotted the whole region: below
+  t = 0.18 (about 3 % of the scale) nothing is painted, and above it the colour comes in with the count, so what
+  stands out is where the reports gather. The legend's ramp reads "1 … N+" and says "not live, not alerts"; while the
+  layer is on, the official alert colours are a faint tint (`svg:not(.no-heat)`, 1.54.2: no more outline — "the
+  yellow outline of every oblast when zoomed out is bad": a night of yellow-level alerts drew a yellow mesh over every
+  raion), so the two are never read as one colour. **The legend folds and moves** (1.54.2, the owner: "the card can't
+  be moved or made smaller — a problem on a phone"): ▾ / ▸ or a tap on its title line folds it to "Heat map · 7 days"
+  (`localStorage.heatfold`; folded at first on a phone), and its title line drags it anywhere over the map
+  (`heatpos`, as a share of the map, kept below the header where the header runs over the map: `heatMinTop`). On a
+  phone it starts at the top left, below the header. Dark map: blended with `screen`; day: `multiply`. (1.33's alert hours by oblast stay in the dashboard's Analytics.)
 - tabs: **Near** (1.36, above); **Feed**; **Alerts** (the live tally of what is on the map, then the official alerts); **Stats** — the Air
   Force's official figures only, weapon by weapon since 1.32 (§7.5): for 24 h / 7 d / 30 d (`windows[…].af`) a
   row per type — launched and ↓ shot down, ✓ when used without a number — and the hit locations; a key under the

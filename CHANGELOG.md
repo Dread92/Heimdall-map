@@ -2,6 +2,28 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.54.2 — 2026-10-09
+
+### Changed
+- **The heat map** — the owner: "rather bad". Every village named once or twice in the period painted its own pale
+  disc, and a busy week spotted the whole region in yellow. Now nothing is painted below about 3 % of the scale, and the
+  colour comes in with the count: what stands out is where the reports gather.
+- **No more yellow outline on every raion** while the heat map is on ("the yellow outline of every oblast when zoomed
+  out is bad"): the official alerts are a faint tint under it; the live status stays in the card.
+- **The heat map's legend folds and moves** ("it can't be moved or made smaller — a problem on a phone"): ▾ or a tap on
+  its title folds it to "Heat map · 7 days", and its title line drags it anywhere over the map; both remembered. On a
+  phone it starts folded, at the top left below the header.
+
+### Fixed
+- **A tap on an oblast's badge did nothing on a computer**: the map held the pointer from the press, so the badge never
+  got its click. It opens the oblast's card like a tap on a mark.
+- **"В Житомирській" drew a drone at the Zhytomyrska metro station, in western Kyiv** (@chyste_nebo, 9 Oct: "В
+  Житомирській", "Житомирської може зайти поки Радомишль" — Zhytomyr oblast). The heat map showed it: "Zhytomyrska ·
+  117" in Kyiv over a week. A Kyiv tracker's "Житомирська" is the oblast like anyone else's; the station only when the
+  post says "метро", "станція" or "ст. м.". And "Шахед над Житомирською" was drawn at the village of Житомирське by
+  Ovruch: a feminine form never names a neuter or masculine place ("над", "під", "біля", "поблизу" are read like "в"
+  and "з" before an oblast's adjective).
+
 ## 1.54.1 — 2026-10-09
 
 ### Changed

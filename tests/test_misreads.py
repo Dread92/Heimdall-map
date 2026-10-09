@@ -173,7 +173,9 @@ def test_an_oblast_adjective_is_not_the_kyiv_place_of_the_same_name():
 
 
 def test_the_kyiv_place_still_resolves_when_it_is_actually_meant():
-    assert "Житомирська" in found("БпЛА на Житомирську")
+    # 1.54.2: when the post says it is the metro station — "на Житомирську" alone is Zhytomyr oblast (@chyste_nebo)
+    assert "Житомирська" in found("БпЛА біля метро Житомирська") and "Житомирська" in found("ст. м. Житомирська, шахед")
+    assert "Житомирська" not in found("БпЛА на Житомирську") and "Житомирська" not in found("в житомирській")
 
 
 def test_an_article_produces_no_status_of_any_kind():

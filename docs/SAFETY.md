@@ -292,7 +292,9 @@ Where drones were reported (1.34) is a record of the past, under every mark, wit
 legend. Since 1.40 its colour says how many reports a place had — pale yellow for a few, red for the most — because a
 heat map people can read at a glance is worth more than one they have to decode. Red and yellow are also the alert
 colours, so two rules keep them apart: the heat map is soft discs around places, never a filled raion; and while it
-is on, the official alerts are drawn as outlines over a faint fill, and its legend says so. The card above the map
+is on, the official alerts are a faint tint under it (1.54.2: no longer outlined — a night of yellow-level alerts
+drew a yellow mesh over every raion), and its legend says so. A place named once or twice paints nothing (1.54.2):
+the map shows where reports gather, not every village a post ever named. The card above the map
 still gives the place's official status in words. It counts the places posts named for drones and unidentified targets — never the
 shoot-downs or the hits, which would map where the air defence works. It is off at every opening of the app:
 nobody should open the map at 3 a.m. and see last week.

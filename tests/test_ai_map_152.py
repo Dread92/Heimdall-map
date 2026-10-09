@@ -191,7 +191,9 @@ def test_the_rules_errors_the_readings_showed():
     assert m["place"] == "область" and m["oblast_uid"] == "17" and m["origin"]["o"] == "s"
     assert rd("chyste_nebo", "З Житомирської повертається. Курс на р-н Макарів ‼") == [("область", "10")]
     assert not any(p == "Черкаси" for p, _ in rd("chyste_nebo", "Один з полтавської через черкаську на Фарбоване"))
-    assert rd("kyiv_airdef", "БпЛА на Житомирську") == [("→ Житомирська", "31")]        # Kyiv's metro and street
+    # 1.54.2: the oblast for a Kyiv tracker too ("В Житомирській", @chyste_nebo); the metro station only when it says so
+    assert rd("kyiv_airdef", "БпЛА на Житомирську") == [("область", "10")]
+    assert rd("kyiv_airdef", "БпЛА біля метро Житомирська") == [("Житомирська", "31")]
     rel = lambda ch, t: server.is_relevant(t, server.tag_feed_text(server._clean_post(t), ch), ch)  # noqa: E731
     assert not rel("kievinfo_kyiv", "⚡️💡Графік відключення світла на завтра для Київщини")
     assert not rel("xydessa_live", "кто подпишется на 🐦‍⬛️ Ищу Одесса, тот найдёт айфон")

@@ -389,13 +389,25 @@ svg#map{display:block;width:100%;height:min(64vh,560px)}
 .hmv{fill:#fff;font:700 calc(var(--k,1)*11px) var(--sans);paint-order:stroke;stroke:#0b0d11;stroke-width:calc(var(--k,1)*3px);stroke-linejoin:round;pointer-events:none}
 body.m-day .hmv{fill:#1a1340;stroke:#fff}
 #heatleg{position:absolute;right:52px;top:8px;z-index:6;width:min(230px,calc(100% - 70px));background:rgba(14,17,23,.95);border:1px solid var(--line);border-left:3px solid #ff8a3d;padding:7px 8px 7px 10px;font:12px/1.35 var(--sans);color:var(--ink)}
-#heatleg[hidden]{display:none}.hlh{display:flex;align-items:center;gap:8px}.hlh b{flex:1;font:700 10.5px var(--mono);letter-spacing:.06em;text-transform:uppercase}
-#heatx{background:transparent;border:1px solid var(--line);color:var(--ink2);width:26px;height:24px;border-radius:3px;font-size:12px}
+#heatleg[hidden]{display:none}.hlh{display:flex;align-items:center;gap:6px}.hlh b{flex:1;font:700 10.5px var(--mono);letter-spacing:.06em;text-transform:uppercase}
+#heatx,#heatfold{background:transparent;border:1px solid var(--line);color:var(--ink2);width:30px;height:28px;border-radius:3px;font-size:12px;flex:none;cursor:pointer}
+/* 1.54.2, the owner: "the card can't be moved or made smaller — a problem on a phone". It folds to its title line (the
+   period beside it) and is moved by that line — dragged anywhere over the map, kept where it was put. */
+.hlh{cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}#heatleg.drag .hlh{cursor:grabbing}
+.hlh .hlp{font:700 10.5px var(--mono);color:#c0b7f7;flex:none}#heatleg:not(.fold) .hlh .hlp{display:none}
+#heatleg.fold{width:auto;max-width:calc(100% - 70px);padding:4px 6px 4px 9px}#heatleg.fold .hlbody{display:none}
+#heatleg.fold .hlh b{flex:0 1 auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hlh .hls{display:none}#heatleg.fold .hlh .hll{display:none}#heatleg.fold .hlh .hls{display:block}
+/* on a phone the header's lower edge runs over the map's top: the legend starts below it, on the left, out of the way of
+   the map's buttons */
+@media (max-width:999px){#heatleg{top:30px;left:8px;right:auto;width:min(250px,calc(100% - 70px))}}
 /* 1.40: while the heat map is on, the official alert colours stay — outlined, over a faint fill — so the two are
-   never read as one colour */
-svg:not(.no-heat) :is(.nb,.rn,.kd):is(.R,.oR){fill-opacity:.3!important;stroke:#ff5a5f!important;stroke-width:1.8px!important}
-svg:not(.no-heat) :is(.nb,.rn,.kd):is(.Y,.oY,.P){fill-opacity:.3!important;stroke:#ffc94d!important;stroke-width:1.8px!important}
-body.m-day svg:not(.no-heat) :is(.nb,.rn,.kd):is(.R,.oR,.Y,.oY,.P){fill-opacity:.1!important}
+   never read as one colour. 1.54.2, the owner: "the yellow outline of every oblast when zoomed out is bad" — a night of
+   yellow-level alerts drew a yellow mesh over every raion, on top of the heat. Now a faint tint and no outline: the heat
+   map is the past, and the live status is the card's. */
+svg:not(.no-heat) :is(.nb,.rn,.kd):is(.R,.oR){fill-opacity:.14!important}
+svg:not(.no-heat) :is(.nb,.rn,.kd):is(.Y,.oY,.P){fill-opacity:.1!important}
+body.m-day svg:not(.no-heat) :is(.nb,.rn,.kd):is(.R,.oR,.Y,.oY,.P){fill-opacity:.07!important}
 .hlr{display:flex;align-items:center;gap:6px;margin:6px 0 2px;font:9.5px var(--mono);color:var(--ink3)}.hlr i{flex:1;height:10px;border-radius:3px}.hle{color:var(--ink3);font-size:11.5px}
 .hlw{display:flex;gap:4px;margin:4px 0 5px}.hlw button{flex:1;background:transparent;border:1px solid var(--line);color:var(--ink2);font:600 11px var(--mono);padding:4px 0;border-radius:3px}.hlw button.on{background:#2b2556;color:#fff;border-color:#8b7fe0}
 .hlt{margin:2px 0 4px}.hlt div{display:flex;gap:6px;font-size:12px;line-height:1.45}.hlt b{min-width:26px;text-align:right;font:700 11.5px var(--mono);color:#c0b7f7}
@@ -1166,8 +1178,8 @@ body.lite #mycard,body.lite .panel{background:#000;border-color:#666}body.lite .
   <div id="pinarm" hidden><span data-t="sl_pin_arm">Tap the map where the pin goes</span><button type="button" id="pinarmx" data-t="sl_pin_cancel">Cancel</button></div>
   <div class="mapctl"><button id="laybtn" type="button" data-t-title="m_layers" data-t-aria="m_layers" title="Map layers" aria-label="Map layers"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 3 8l9 5 9-5-9-5z"/><path d="m3 13 9 5 9-5"/></svg></button><button id="zin" type="button" aria-label="+">+</button><button id="zout" type="button" aria-label="−">−</button><button id="zkyiv" type="button" data-t-title="t_center" data-t-aria="t_center" title="Centre on my place">◎</button><button id="rpbtn" type="button" data-t-title="rp_open" data-t-aria="rp_open" title="Replay — the last 7 days" aria-label="Replay — the last 7 days"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1"/><path d="M3 4v4.5h4.5"/><path d="M12 7.5V12l3 2"/></svg></button><button id="fsbtn" type="button" data-t-title="m_full" data-t-aria="m_full" title="Full-screen map" aria-label="Full-screen map"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="fsin" d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/><path class="fsout" d="M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5"/></svg></button></div>
   <div class="tip" id="tip" hidden></div>
-  <div id="heatleg" hidden><div class="hlh"><b data-t="hm_title">Where drones were reported</b><button type="button" id="heatx" data-t-aria="hm_off" aria-label="Hide">✕</button></div>
-    <div class="hlw" id="heatw"></div><div class="hlt" id="heattop"></div><div class="hlr" id="heatramp"></div><div class="hln" data-t="hm_not_live">Not live.</div><div class="hln" data-t="hm_alerts">Official alerts are outlined while it is on.</div></div>
+  <div id="heatleg" hidden><div class="hlh" id="heath"><b class="hll" data-t="hm_title">Where drones were reported</b><b class="hls" data-t="hm_short">Heat map</b><span class="hlp" id="heatp"></span><button type="button" id="heatfold" data-t-aria="hm_fold" aria-label="Fold" aria-expanded="true">▾</button><button type="button" id="heatx" data-t-aria="hm_off" aria-label="Hide">✕</button></div>
+    <div class="hlbody"><div class="hlw" id="heatw"></div><div class="hlt" id="heattop"></div><div class="hlr" id="heatramp"></div><div class="hln" data-t="hm_not_live">Not live.</div><div class="hln" data-t="hm_alerts">Official alerts: a faint tint while it is on.</div></div></div>
   <div id="litetag">BLACKOUT</div>
   <div id="modetag"></div>
 </div>
@@ -1626,6 +1638,7 @@ async function drawHeatNow(){ const g=$('heatg'), leg=$('heatleg'); if(!g) retur
   const on=LAYERS.heat&&!(typeof LITE!=='undefined'&&LITE)&&MAP;
   leg.hidden=!on; if(!on){ g.innerHTML=''; return; }
   $('heatw').innerHTML=[1,7,30].map(d=>`<button type="button" class="${d===HEAT_D?'on':''}" data-d="${d}">${t('hm_'+d)}</button>`).join('');
+  $('heatp').textContent=t('hm_'+HEAT_D); heatPlace();
   const v=await loadHeat(); if(!LAYERS.heat) return;
   const day=document.body.classList.contains('m-day'), stops=day?HEAT_DAY:HEAT_DARK;
   if(!v){ g.innerHTML=''; $('heatramp').innerHTML=''; $('heattop').innerHTML=`<div class="hle">${esc(t('hm_err'))}</div>`; return; }
@@ -1639,7 +1652,11 @@ async function drawHeatNow(){ const g=$('heatg'), leg=$('heatleg'); if(!g) retur
   const cv=document.createElement('canvas'); cv.width=W; cv.height=H; const ctx=cv.getContext('2d');
   if(pts.length){ const sm=document.createElement('canvas'); sm.width=G.GW; sm.height=G.GH; const sc=sm.getContext('2d'), img=sc.createImageData(G.GW,G.GH), d=img.data;
     for(let j=0;j<G.I.length;j++){ const c=G.C[j]; if(c<=0) continue; const tt=Math.sqrt(G.I[j]/scale), rgb=heatRGB(stops,tt);
-      d[j*4]=rgb[0]; d[j*4+1]=rgb[1]; d[j*4+2]=rgb[2]; d[j*4+3]=Math.round(255*Math.min(1,c*1.8)*(0.16+0.78*Math.min(1,tt))); }
+      // 1.54.2, the owner: "the heat map is rather bad" — every village named once painted a pale yellow disc, and a busy
+      // week covered the whole region in spots. Below about 3 % of the scale (t < 0.18) nothing is painted; above it the
+      // colour comes in with the count, so what stands out is where the reports gather.
+      const a=Math.min(1,c*1.8)*Math.max(0,Math.min(1,(tt-0.18)/0.5));
+      d[j*4]=rgb[0]; d[j*4+1]=rgb[1]; d[j*4+2]=rgb[2]; d[j*4+3]=Math.round(255*0.9*Math.pow(a,0.85)); }
     sc.putImageData(img,0,0); ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high'; ctx.drawImage(sm,0,0,W,H); }
   // the most-named places in view, never on top of each other
   const keep=[]; for(const p of [...pts].sort((a,b)=>b.n-a.n)){ if(keep.length>=(r.width<600?7:12)) break; if(p.px<0||p.py<0||p.px>W||p.py>H) continue;
@@ -1650,6 +1667,31 @@ async function drawHeatNow(){ const g=$('heatg'), leg=$('heatleg'); if(!g) retur
 }
 $('heatw').onclick=e=>{ const b=e.target.closest('button[data-d]'); if(!b) return; HEAT_D=+b.dataset.d; try{sessionStorage.setItem('heatd',String(HEAT_D));}catch(err){} drawHeat(); };
 $('heatx').onclick=()=>{ LAYERS.heat=false; applyLayers(); };
+// 1.54.2: the legend folds (remembered; folded at first on a phone, where the map has little room) and moves by its title
+// line — anywhere over the map, kept on the map when the window changes, remembered on this device
+let HEAT_FOLD=window.innerWidth<1000, HEAT_POS=null;
+try{ const f=localStorage.getItem('heatfold'); if(f!==null) HEAT_FOLD=f==='1'; HEAT_POS=JSON.parse(localStorage.getItem('heatpos')||'null'); }catch(e){}
+function heatFold(){ const L=$('heatleg'), b=$('heatfold'); L.classList.toggle('fold',HEAT_FOLD); b.textContent=HEAT_FOLD?'▸':'▾';
+  b.setAttribute('aria-expanded',HEAT_FOLD?'false':'true'); heatPlace(); }
+// the highest it may go: below the header where the header runs over the map (a phone)
+function heatMinTop(P){ const h=document.querySelector('header'); if(!h||!P) return 4; return Math.max(4,Math.round(h.getBoundingClientRect().bottom-P.getBoundingClientRect().top)+4); }
+function heatPlace(){ const L=$('heatleg'), P=L.offsetParent; if(!HEAT_POS||!P||L.hidden){ if(!HEAT_POS){ L.style.left=''; L.style.top=''; L.style.right=''; } return; }
+  const x=Math.max(4,Math.min(P.clientWidth-L.offsetWidth-4,HEAT_POS.x*P.clientWidth)), y=Math.max(heatMinTop(P),Math.min(P.clientHeight-L.offsetHeight-4,HEAT_POS.y*P.clientHeight));
+  L.style.right='auto'; L.style.left=x+'px'; L.style.top=y+'px'; }
+$('heatfold').onclick=e=>{ e.stopPropagation(); HEAT_FOLD=!HEAT_FOLD; try{ localStorage.setItem('heatfold',HEAT_FOLD?'1':'0'); }catch(err){} heatFold(); };
+(()=>{ const H=$('heath'), L=$('heatleg'); let d=null;
+  H.addEventListener('pointerdown',e=>{ if(e.target.closest('button')) return; const P=L.offsetParent; if(!P) return; const r=L.getBoundingClientRect(), pr=P.getBoundingClientRect();
+    d={id:e.pointerId,dx:e.clientX-r.left,dy:e.clientY-r.top,pr,moved:false}; H.setPointerCapture(e.pointerId); e.preventDefault(); });
+  H.addEventListener('pointermove',e=>{ if(!d||e.pointerId!==d.id) return; const P=L.offsetParent;
+    const x=Math.max(4,Math.min(P.clientWidth-L.offsetWidth-4,e.clientX-d.pr.left-d.dx)), y=Math.max(heatMinTop(P),Math.min(P.clientHeight-L.offsetHeight-4,e.clientY-d.pr.top-d.dy));
+    if(!d.moved&&Math.hypot(e.clientX-d.pr.left-d.dx-(L.offsetLeft),e.clientY-d.pr.top-d.dy-(L.offsetTop))<3) return;
+    d.moved=true; L.classList.add('drag'); L.style.right='auto'; L.style.left=x+'px'; L.style.top=y+'px'; });
+  const end=e=>{ if(!d||e.pointerId!==d.id) return; const P=L.offsetParent; L.classList.remove('drag');
+    if(d.moved&&P){ HEAT_POS={x:L.offsetLeft/P.clientWidth,y:L.offsetTop/P.clientHeight}; try{ localStorage.setItem('heatpos',JSON.stringify(HEAT_POS)); }catch(err){} }
+    else if(!d.moved){ HEAT_FOLD=!HEAT_FOLD; try{ localStorage.setItem('heatfold',HEAT_FOLD?'1':'0'); }catch(err){} heatFold(); }   // a tap on the title folds it
+    d=null; };
+  H.addEventListener('pointerup',end); H.addEventListener('pointercancel',end);
+  window.addEventListener('resize',heatPlace); heatFold(); })();
 
 // ---- 1.34: the Kyiv bridges -------------------------------------------------------------------------------------
 // The server says, bridge by bridge, what was reported on or near it (S.bridges: "at" — the post named the bridge or
@@ -1718,11 +1760,11 @@ $('pinarmx').onclick=()=>armPin(false);
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&PIN_ARM) armPin(false); });
 // a long press must not open the browser's own menu, or select a label under the finger (iOS), which cancels it
 wrap.addEventListener('contextmenu',e=>e.preventDefault());
-let downMk=null,downXY=null,downOb=null;
+let downMk=null,downXY=null,downOb=null,downCh=null;
 wrap.addEventListener('pointerdown',e=>{if(!e.target.closest('svg#map')) return;
   if(e.pointerType==='pen'&&e.buttons===0&&!e.pressure) return;   /* pen hovering above the glass, not touching it */
   /* buttons / chips on top of the map keep their own clicks (pointer capture would swallow them) */
-  touches[e.pointerId]=[e.clientX,e.clientY];moved=false;downMk=e.target.closest?e.target.closest('g.mk,g.imp'):null;downOb=e.target.closest?(e.target.closest('path.ob,path.nb')||{}).dataset?.o:null;downXY=[e.clientX,e.clientY];wrap.setPointerCapture(e.pointerId);
+  touches[e.pointerId]=[e.clientX,e.clientY];moved=false;downMk=e.target.closest?e.target.closest('g.mk,g.imp'):null;downCh=e.target.closest?e.target.closest('g.oblevtchip'):null;downOb=e.target.closest?(e.target.closest('path.ob,path.nb')||{}).dataset?.o:null;downXY=[e.clientX,e.clientY];wrap.setPointerCapture(e.pointerId);
   // Press and hold on open map = drop the 📍 pin there. Not over a marker (that is a tap to open it), not
   // with a second finger down (that is a pinch), and cancelled the moment the map is dragged.
   clearTimeout(holdPin); holdPin=null; pinRing(false);
@@ -1743,11 +1785,14 @@ wrap.addEventListener('pointermove',e=>{ if(!(e.pointerId in touches)) return;
 let holdPin=null;
 const endT=e=>{clearTimeout(holdPin);holdPin=null;pinRing(false);delete touches[e.pointerId]; if(Object.keys(touches).length<2){lastDist=null;lastMid=null;}};
 // tap on a marker: pointer capture sends pointerup to the wrapper, so hit-test here (≤10 px screen movement counts as a tap)
-wrap.addEventListener('pointerup',e=>{const mk=downMk,xy=downXY,ob=downOb;downMk=null;downXY=null;downOb=null;endT(e);
+wrap.addEventListener('pointerup',e=>{const mk=downMk,xy=downXY,ob=downOb,ch=downCh;downMk=null;downXY=null;downOb=null;downCh=null;endT(e);
   const tap=xy&&Math.hypot(e.clientX-xy[0],e.clientY-xy[1])<=HOLD_SLOP_PX&&Object.keys(touches).length===0;
   if(PIN_ARM&&tap){ dropPin(e.clientX,e.clientY); return; }
   if(mk&&tap){$('tip').hidden=true;
     openSheet(mk.dataset.id);}
+  // 1.54.2, the owner: "I can't click the little badge to see the detail on desktop" — the map holds the pointer from the
+  // press (pointer capture), so the badge never got its click; it is a tap like a mark's
+  else if(ch&&tap){ $('tip').hidden=true; oblEventSheet(ch.dataset.o); }
   else if(ob&&tap&&VB.w>150) selectOblast(ob);});
 wrap.addEventListener('pointercancel',endT); wrap.addEventListener('pointerleave',endT); wrap.addEventListener('lostpointercapture',endT);
 wrap.addEventListener('wheel',e=>{e.preventDefault();const [cx,cy]=toSvg(e.clientX,e.clientY);zoomAt(e.deltaY<0?1.2:1/1.2,cx,cy,true);},{passive:false});
@@ -2047,8 +2092,7 @@ function paintOblEvents(){
       +`<rect class="hit" x="-.5" y="-.5" width="1" height="1" data-h="${H+4}" style="transform:scale(calc(var(--k,1)*${(W+20).toFixed(0)}),calc(var(--k,1)*${H+4}))"/></g></g>`];
   });
   g.innerHTML=drawn.map(d=>d[0]).join('')+drawn.map(d=>d[1]).join('');
-  g.querySelectorAll('.oblevtchip').forEach(el=>el.addEventListener('click',()=>oblEventSheet(el.dataset.o)));
-  fitOblChips();
+  fitOblChips();          // a tap on a badge: the map's pointerup (1.54.2 — a click never reached it on a computer)
   if(typeof layoutTownLabels==='function') setTimeout(layoutTownLabels,0);     // 1.53.1: no town name under a chip
 }
 // 1.54: each piece of a badge where its own width puts it — the text measured in the phone's own font — and the badge

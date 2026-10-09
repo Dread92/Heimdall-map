@@ -44,9 +44,11 @@ def test_the_colour_is_the_number_of_reports_on_a_scale_that_never_shrinks_below
     assert "<span>${Math.round(scale)}+</span>" in PAGE                  # the legend says what red means
 
 
-def test_while_the_heat_map_is_on_the_alerts_are_outlined_and_the_legend_says_so():
-    assert "svg:not(.no-heat) :is(.nb,.rn,.kd):is(.R,.oR){fill-opacity:.3!important;stroke:" in PAGE
-    assert "svg:not(.no-heat) :is(.nb,.rn,.kd):is(.Y,.oY,.P){fill-opacity:.3!important;stroke:" in PAGE
+def test_while_the_heat_map_is_on_the_alerts_are_a_faint_tint_and_the_legend_says_so():
+    # 1.54.2, the owner: "the yellow outline of every oblast when zoomed out is bad" — a tint, no outline
+    assert "svg:not(.no-heat) :is(.nb,.rn,.kd):is(.R,.oR){fill-opacity:.14!important}" in PAGE
+    assert "svg:not(.no-heat) :is(.nb,.rn,.kd):is(.Y,.oY,.P){fill-opacity:.1!important}" in PAGE
+    assert "stroke:#ffc94d!important" not in PAGE and "stroke:#ff5a5f!important" not in PAGE
     assert 'data-t="hm_alerts"' in PAGE and len(re.findall(r"\bhm_alerts:'", I18N)) == 3
     for word in ("not alerts", "не тривоги", "ni des alertes"):
         assert word in I18N, word
