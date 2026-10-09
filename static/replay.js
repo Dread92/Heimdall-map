@@ -118,7 +118,8 @@ function frame(){
       if(e.gk!==gk){ e.gk=gk; rot.innerHTML=G[gk]; }
       rot.setAttribute('transform',`rotate(${h}) scale(${kx((tr.ty==='drones'?1.05:/missile/.test(tr.ty)?0.95:1.0)*KPX)})`);
       const lb=e.g.querySelector('.rpl'); lb.setAttribute('x',kx(9*KPX)); lb.setAttribute('y',kx(-7*KPX));
-      lb.textContent=(head[3]&&head[3]!=='область'?(tr.ap?'→ ':'')+pn(head[3]):'')+((tr.n||1)>1?` ×${tr.n}`:'');
+      // 1.51: its tag (S-07), when the live map gave it one — the replay never makes one up
+      lb.textContent=(tr.tg?tr.tg+' ':'')+(head[3]&&head[3]!=='область'?(tr.ap?'→ ':'')+pn(head[3]):'')+((tr.n||1)>1?` ×${tr.n}`:'');
       // the trail: each reported position of the last half-hour, joined in the order they were reported
       const from=T-TRAIL_MIN*60; let pts=tr.p.slice(0,j+1).filter(p=>p[0]>=from);
       // a leg longer than a drone could fly between the two posts is two targets joined, not a route: the trail stops there

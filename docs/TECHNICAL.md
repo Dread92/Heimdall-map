@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.50** · last updated 2026-10-09 (1.50.2)
+**Documented version: 1.51** · last updated 2026-10-09 (1.51.0)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -699,7 +699,9 @@ reading (`tag_feed_text`); the stored and shown text is never changed.
 **1.45: a target reported for a whole oblast is a region, not a point.** A mark with `place == "область"` ("БпЛА на
 Харківщині", "з Чернігівщини курсом на Київ") still carries the oblast centre as its coordinates, for the server's
 windows; nothing draws it there. The Tactical map puts it on the region with the outcomes of 1.38 (`OBLEVT`,
-`paintOblEvents`): a dashed outline (orange for targets in the air) and a chip with the weapon's silhouette and the
+`paintOblEvents`): a dashed outline (1.51: for targets in the air, cyan — never the alerts' amber or red — over a hatching
+that says "an area", blinking, and a chip with the tag, the weapon, the count, a stated height and the words "somewhere
+in the oblast"; still under `prefers-reduced-motion`) and a chip with the weapon's silhouette and the
 count, the posts one tap away (`oblEventSheet`). The Near list keeps it without a distance, as "Chernihiv oblast ·
 somewhere in the oblast" (`oblWhere`, `nearRows` `vague`); it never raises the level. A push never says "within N km
 of you" for it (`proximity_watch`) — only a ballistic warning, which covers the region anyway, is still sent, naming
@@ -767,10 +769,12 @@ Analytics (§8c) and the nights' figures (§8b) all read this table. `parse_af_s
 a wrapper for older callers. `tests/test_af_reports.py` pins it on 11 real summaries of 21–28 Sep 2026
 (`tests/fixtures/af_summaries_2026_09.json`).
 
-### 7.7 The AI reader, in shadow mode (1.50)
+### 7.7 The AI reader (1.50; its facts in the target tags since 1.51)
 
 A second reader of the channels' posts: a language model, through OpenRouter (`app/ai_reader.py`, thread
-`ai-reader`). **Shadow mode: nothing it says reaches the map, the alerts, the feed, the banners or a push.** It reads
+`ai-reader`). **It never places, moves or removes a mark, and never reaches the alerts, the feed, the banners or a
+push.** 1.51: with the dashboard's switch on (§7.8), the facts it quoted that the rules did not read — origin,
+height, speed — fill the target tags, marked as the AI's. It reads
 the same posts as the rules, its reading and the rules' are stored side by side (`ai_reads`), and the dashboard's
 **AI reader** tab shows where they part. What it is for, first: finding what the rules misread or miss, so that the
 rules are fixed — they stay deterministic, free and instant. Whether it ever does more (a fallback for a post nothing
@@ -789,8 +793,17 @@ villages of the oblasts in play) and those oblasts, at most 30, each with an id 
 about a reader, a watched place, a device or an address; a run of 13–19 digits (a card number in a fundraising line)
 is replaced before anything is sent or stored (`mask`).
 
-**The prompt is a component**, versioned (`PROMPT_VERSION`, stored with every reading; 2 since 1.50.2, a `p` after it
-when the answer was asked for by the prompt alone):
+**The prompt is a component**, versioned (`PROMPT_VERSION`, stored with every reading; 3 since 1.51, a `p` after it
+when the answer was asked for by the prompt alone). 1.51: it is the **second reader** of a deterministic parser and is
+told so — its job is to cross-check the rules' reading against the post, the channel's previous posts and the targets
+on the map from every channel, to correct it, and above all to add the targets the rules missed ("a target missed is
+worse than a duplicate"), never inventing: every fact still quotes the post and every place is a candidate. Each post
+comes with (`user_message`): the channel and **the oblast it speaks for and the oblasts its last posts named**
+(`channel_block` — a regional tracker's bare name is read in those oblasts); the **PARSER READING** — the rules' marks
+for this very post, one line each (`parser_lines`); and **ON THE MAP NOW** — the tagged targets other posts placed in
+the candidates' oblasts or within 80 km of them, newest first, at most 10 (`State.ai_context`, never the post's own
+marks). Its answer can say which of those a target is (`same_as`, a tag it was shown — anything else is dropped) and a
+**vertical state** (`vertical`: descending, climbing, low, high, quoted).
 
 1. fixed rules from [SAFETY.md](SAFETY.md) (`SYSTEM`): never infer; every fact quotes the post; places only from the
    candidates, by id, never coordinates; "на X" is heading to X, not at X; a city named with no place in it is the
@@ -843,6 +856,46 @@ per million tokens) a post costs ~$0.0003–0.0005: the $10 cap is ~25,000 posts
 readings by verdict, the spend against the cap, the median answer time, and the readings — disagreements by default,
 all on request — each with the post, the rules' places and the model's targets with their quotes. `/api/health`
 carries the same state (`ai_reader`). Readings are kept 90 days.
+
+**The switches** (1.51, `POST /api/admin/ai` 🔒, `{reader: bool, live: bool}`, on the AI reader tab): `reader`
+(`kv` `ai_reader_on`) stops every call at once — `AIReader.enabled()` reads it; `live` (`kv` `ai_live`) is the kill
+switch for its facts in the target tags — `State.ai_live()`; the marks are recomputed at the next ask (≤ 10 s). Both
+on unless switched off.
+
+### 7.8 Target tags (1.51)
+
+Every target in the air carries `tag` in `/api/markers`: `{id: "S-07", n, p, night, o, os, oq, oc, ot, alt, spd}` —
+Heimdall's own number for the night and a letter for where a post **said** it came from. It is not an official or
+military designation (SAFETY.md).
+
+- **The number** (`TargetTags`): counted per night, from 12:00 to 12:00 Kyiv time (the replay's nights), the night
+  named by the date it starts on (`tag_night`, as the replay names its nights — tonight is in the charts at once). `_chain` carries every report of a track
+  (`reports`, oldest first; an absorbed approach report too); a track's tag is found by **any** of them, so it does not
+  change when its first report leaves the 45-minute window, and `target_reports` keeps it across a restart. A new
+  track gets the night's next number. The replay looks tags up (`TargetTags.find`, `tg` in its tracks) and never makes
+  one.
+- **The letter** (`TAG_PREFIX`): N — north, north-west, Belarus; E — north-east, east, south-east, Russia; S — south,
+  south-west, the sea, Crimea; W — west; ? — not said, or "the occupied territories". From `geo.stated_origin` on the
+  report's own words ("з півдня", "з території Білорусі", "з Брянщини", "з моря", "з Криму", "з ТОТ"; never a Ukrainian
+  oblast or town) — the first any report of the track stated (`origin_t`) — and, when the rules found none and the
+  switch is on, the AI reader's checked `origin` for that track (`State._ai_facts`, `ai_reader.match`: the AI target at
+  one of the track's places, or the only target of a post the rules also read as one). `os` says whose (`rules` /
+  `ai`), `oq` the words, `oc` the channel.
+- **The bottom line**: the height and the speed the track's **latest** report stated — the rules' (`alt`,
+  `geo.parse_speed`) or, where they read none, the AI's for that report (`alt.s` / `spd.s` = `ai`); and `vs`, its
+  vertical state (descending…), the rules' or the AI's. Height and descent are **always shown when given** (the
+  owner's priority): at every zoom, still after the mark goes stale (the arrow; not the red highlight), and on the
+  chip of a target reported for a whole oblast ("↓2200", `oblAlt`).
+- `targets` keeps each tag's letter, origin, source and words, first and last time and type (for the analytics:
+  `targets` in `/api/analytics`, per night by letter, and how many letters the AI read); `target_reports` maps each
+  report to its tag. Both kept 60 days.
+
+On the map the tag heads the label ("S-07 Реактивний ×2", yellow, hidden when zoomed out to the whole country), and
+the bottom line under the glyph adds the speed ("3500 м · 400 км/год", italic when read by the AI). The card and the
+hover say where it came from, in the post's words and from which channel, with an "AI" chip when the AI read it, and
+what the tag is. **A target drawn at the town it is heading for** (an approach mark with a stated side) stands off
+the town on that side, 30 px on the screen, pointing in along its dashed course: nobody said where it is, and the
+town stays clear.
 
 ## 8. Translation
 
@@ -1466,13 +1519,13 @@ All JSON unless stated. Public unless marked 🔒 (`ADMIN_KEY`).
 | `GET /healthz` | liveness: `{"ok": true}`, or **503** when the database cannot be had within 3 s |
 | `GET /api/version` | `{v, now, missile, msl, build, app}` — the cheap ping pages poll |
 | `GET /api/state` | active alerts, per-oblast status, whether each source works (1.46: `{ok}` only — the detail is `/api/health`), єРадар counts, the admin's message, the nuclear event, the Kyiv bridges (`bridges`, §9b), the oblasts on the map (`scope`, 1.43), config summary |
-| `GET /api/markers` | live marks with evidence, history, staleness |
+| `GET /api/markers` | live marks with evidence, history, staleness; 1.51: each target in the air with its `tag` (§7.8) |
 | `GET /api/feed?limit=&lang=` | recent posts (`text`, `text_en`, `text_fr`, `en_mt`, tags, and `home` for a regional channel's post — 1.43); `lang` asks for translation |
 | `GET /api/stream?sync=&ev=&p=&lang=` | the live line (§5.4): `hello`, `sync` (changes of `mk`, `st`, `fd` as asked in `sync`) and, unless `ev=0`, the events `start`, `end`, `threat`, `update`, `feed`, `eradar`, `tr`, `notice`, `nuke`; `p=light` counts it as a Light page |
 | `GET /api/history?hours=&oblast=` | past alerts (1–168 h; cached, one query per change for every page) |
 | `GET /api/events_log?limit=` | alert events |
 | `GET /api/impacts?hours=` | explosions and confirmed shoot-downs |
-| `GET /api/replay?from=&to=` | the replay (§10.3c), Unix seconds, ≤ 26 h within the last 7 days: `alerts` `[{k, o, lt, rk, lv, at, ti, s, e}]` (intervals, `e` null while on) and `tracks` `[{ty, jet, n, ap, h, ch, p: [[t, lon, lat, place]]}]` |
+| `GET /api/replay?from=&to=` | the replay (§10.3c), Unix seconds, ≤ 26 h within the last 7 days: `alerts` `[{k, o, lt, rk, lv, at, ti, s, e}]` (intervals, `e` null while on) and `tracks` `[{ty, jet, n, ap, h, ch, p: [[t, lon, lat, place]], tg}]` (1.51: `tg`, the tag the live map gave, or null) |
 | `GET /api/stats?days=` | statistics; the Stats tab reads only `windows` (with `af`: launched / down by type, used, impacts, debris) and `af_days` (the Air Force summaries, each with its `post`) |
 | `GET /tiles/sat/{z}/{x}/{y}.webp` | the satellite layer's tiles (1.47, §10.1): WebP from `SAT_TILES`, cached a year (`immutable`); 404 where there is none |
 | `GET /tiles/esri/{z}/{x}/{y}.jpg` | the satellite layer's closest zooms (1.48, §10.1): Esri World Imagery asked with `ESRI_KEY`, zoom 14–18 over Ukraine only, nothing kept; 404 outside / no key, 429 past a cap, 503 key refused |
@@ -1487,6 +1540,7 @@ All JSON unless stated. Public unless marked 🔒 (`ADMIN_KEY`).
 | 🔒 `GET /api/analytics?days=` | the dashboard's Analytics (§8c), 7–365 days: `af` per date (launched, down, used, impacts, debris, periods), `af_areas`, `af_directions`, `af_models`, `kyiv` per date (city / oblast minutes, city alerts), `starts` (7 × 24), `reports` per date by type, `hours`, `headings`; since 1.33 `weather` per date (`kyiv`, `launch`), `approach` (8 sectors per date), `air` (`per_date`, `stats`, `sorties`), `obl` (`by`, `cols`, `rows`), `weather_status`; since 1.34 `places` (the heat layer's top 25) and `bridges` (`per_date`, `totals`, `recent`) |
 | 🔒 `POST /api/admin/nuke` | `{action: arm}` → `{code, expires_s, phrase}` (refused while one is on); `{action: fire, code, phrase, text: {uk, en, fr}, push}`; `{action: end}` — the nuclear event (§9) |
 | 🔒 `POST /api/admin/channel` | `{action: add|set|delete, name, mode: map|trial|off, via: web|api, home}` — the channels read (§7.1); `home` is the compartment (an oblast uid, `31`, `ua`, or `""`); `add` checks `t.me/s/<name>` for readable posts and starts it on trial |
+| 🔒 `POST /api/admin/ai` | `{reader: bool, live: bool}` — the AI reader's switches (1.51, §7.7): reading at all, and its facts in the target tags (the kill switch) |
 | 🔒 `POST /api/admin/region` | `{id, on}` — an oblast on or off as a whole (1.43, §7.1): its place on the map and its channels; `31` is always on |
 | 🔒 `POST /api/admin/notice` | `{text: {uk, en, fr}, level: info|warn|alert, hours: 0–168 (0 = until removed), push: bool}` or `{clear: true}` — the team's message (§9) |
 | 🔒 `GET /api/ai_reads?limit=&all=` | the AI reader in shadow mode (1.50, §7.7): `stats` (`key`, `enabled`, `model`, `prompt_v`, `usd_month`, `cap_usd`, `queued`, `paused`, `last_error`, `skipped`, `reads_month`, `by_verdict`, `ms_median`) and `reads` (newest first, ≤ 300; only the disagreements and errors unless `all=1`): post, channel, `stored`, `verdict`, `rules`, `ai` (`targets`, `uncertain`), `dropped`, `cost`, `ms`, `model`, `error` |
@@ -1515,6 +1569,8 @@ SQLite in WAL mode (`DB_PATH`; on Fly, the volume). Tables:
 | `weather` | each night's weather per point (`date, place`, JSON: mean wind, strongest gust, mean cloud cover, rain, lowest temperature) |
 | `flags` | readings people reported as wrong |
 | `corpus_reviews` | verdicts from `/admin` review, merged back with `scripts/corpus.py pull` |
+| `targets` | 1.51: each target tag (§7.8) — `night`, `n`, the letter, origin, whose reading (`osrc`), its words, the post, first / last time, type. Kept 60 days |
+| `target_reports` | 1.51: which tag each report of a track belongs to (`report` = the mark id) — how a tag survives the window and a restart |
 | `ai_reads` | 1.50: the AI reader's reading of each post it read (§7.7) — when, the post, whether the rules stored it, model, prompt version, ms, tokens, cost, verdict, the rules' reading and its own (JSON), facts dropped, error. Kept 90 days; the month's spend is `kv` `ai_usd:YYYY-MM` |
 | `usage`, `usage_seen` | anonymous usage counters |
 

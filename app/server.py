@@ -410,7 +410,7 @@ def build_id():
 
 # The version the front end shows in its footer, kept here too so /api/version can answer "what is actually
 # running" without anybody reading it off a screenshot. tests/test_version.py pins the two to each other.
-APP_VERSION = "1.50"
+APP_VERSION = "1.51"
 APP_NAME = "Heimdall"
 BUILD = None    # filled at startup
 
@@ -1165,6 +1165,12 @@ class Store:
             ms INTEGER, tok_in INTEGER, tok_out INTEGER, cost REAL, verdict TEXT, rules TEXT, ai TEXT, dropped INTEGER,
             error TEXT)""")
         c.execute("CREATE INDEX IF NOT EXISTS ix_ai_at ON ai_reads(at)")
+        # 1.51: the target tags — each tag (night + number) with what it shows, and the reports that belong to it
+        c.execute("""CREATE TABLE IF NOT EXISTS targets(
+            night TEXT, n INTEGER, prefix TEXT, origin TEXT, osrc TEXT, oquote TEXT, opost TEXT, first_ts TEXT, last_ts TEXT,
+            type TEXT, PRIMARY KEY(night, n))""")
+        c.execute("CREATE TABLE IF NOT EXISTS target_reports(report TEXT PRIMARY KEY, night TEXT, n INTEGER, ts TEXT)")
+        c.execute("CREATE INDEX IF NOT EXISTS ix_trep_ts ON target_reports(ts)")
         c.execute("CREATE INDEX IF NOT EXISTS ix_alerts_started ON alerts(started_at)")
         c.execute("CREATE INDEX IF NOT EXISTS ix_feed_ts ON feed(ts)")
         c.execute("CREATE INDEX IF NOT EXISTS ix_mlog_ts ON marker_log(ts)")
@@ -1579,6 +1585,17 @@ class Store:
             out.append(d)
         return out
 
+    def ai_get(self, post_id):
+        """One post's reading (1.51: the target tags), or None."""
+        with self.lock:
+            r = self.conn.execute("SELECT ai, error FROM ai_reads WHERE post_id=?", (post_id,)).fetchone()
+        if not r:
+            return None
+        try:
+            return {"ai": json.loads(r[0]) if r[0] else None, "error": r[1]}
+        except ValueError:
+            return None
+
     def ai_counts(self, month):
         """The month's readings (`month` "YYYY-MM", by when they were read): how many, by verdict, what they cost,
         and how long the last 200 calls took (median, ms)."""
@@ -1813,6 +1830,135 @@ def _state_delta(prev, cur):
     return d
 
 
+# ---------------------------------------------------------------------------
+# 1.51: target tags — N-07 ×2, S-12. Heimdall's own number for each target the channels reported, counted per night
+# (12:00 to 12:00 Kyiv time, the replay's nights), and a letter for where a post SAID it came from: N (north, Belarus),
+# E (east, Russia), S (south, the sea, Crimea), W (west), ? (not said). The letter is never worked out from where the
+# target was first seen. It is not an official or military designation and must never look like one (SAFETY.md).
+# ---------------------------------------------------------------------------
+TAG_PREFIX = {"belarus": "N", "n": "N", "nw": "N", "russia": "E", "ne": "E", "e": "E", "se": "E",
+              "sea": "S", "crimea": "S", "s": "S", "sw": "S", "w": "W", "occupied": "?"}
+TAG_KEEP_DAYS = 60
+
+
+def tag_night(ts):
+    """The night a time belongs to, from 12:00 Kyiv time one day to 12:00 the next, named by the date it starts on — as
+    the replay names its nights, and so that tonight is already in the dashboard's charts."""
+    t = parse_iso(ts) if isinstance(ts, str) else ts
+    if not t:
+        return None
+    return (t.astimezone(kyiv_tz()) - timedelta(hours=12)).date().isoformat()
+
+
+class TargetTags:
+    """Which tag each report of a track belongs to (`target_reports`), and each tag's facts (`targets`). A track is
+    recomputed from the window on every pass and its first report leaves the window after 45 minutes: the tag is
+    found by ANY of its reports, the oldest known first, so it does not change while the target is tracked."""
+
+    def __init__(self, store):
+        self.store, self.lock = store, threading.Lock()
+        self.by_report, self.rows, self.last_n = {}, {}, {}
+        self._n = 0
+        since = (datetime.now(timezone.utc) - timedelta(days=2)).isoformat()
+        try:
+            with store.lock:
+                for rep, night, n in store.conn.execute("SELECT report, night, n FROM target_reports WHERE ts>=?", (since,)):
+                    self.by_report[rep] = (night, n)
+                for row in store.conn.execute("SELECT night, n, prefix, origin, osrc, oquote, opost, first_ts, last_ts, type "
+                                              "FROM targets WHERE last_ts>=?", (since,)):
+                    self.rows[(row[0], row[1])] = dict(zip(("night", "n", "prefix", "origin", "osrc", "oquote", "opost",
+                                                            "first_ts", "last_ts", "type"), row))
+                for night, n in store.conn.execute("SELECT night, MAX(n) FROM targets GROUP BY night"):
+                    self.last_n[night] = n
+        except Exception as e:
+            log("target tags: not loaded:", e)
+
+    def lookup(self, reports):
+        with self.lock:
+            return next((self.by_report[r] for r in reports if r in self.by_report), None)
+
+    def assign(self, m):
+        """The (night, n) of a track (a mark with `reports`), a new one for a track never seen."""
+        reps = m.get("reports") or [m["id"]]
+        first = min([h["ts"] for h in m.get("history") or []] + [m["ts"]])
+        with self.lock:
+            key = next((self.by_report[r] for r in reps if r in self.by_report), None)
+            fresh = [r for r in reps if r not in self.by_report]
+            if key is None:
+                night = tag_night(first) or tag_night(now_iso())
+                self.last_n[night] = n = self.last_n.get(night, 0) + 1
+                key = (night, n)
+                self.rows[key] = {"night": night, "n": n, "prefix": "?", "origin": None, "osrc": None, "oquote": None,
+                                  "opost": None, "first_ts": first, "last_ts": m["ts"], "type": m.get("type")}
+                self._write("INSERT OR IGNORE INTO targets(night,n,prefix,first_ts,last_ts,type) VALUES(?,?,?,?,?,?)",
+                            (night, n, "?", first, m["ts"], m.get("type")))
+            for r in fresh:
+                self.by_report[r] = key
+            if fresh:
+                self._write_many("INSERT OR IGNORE INTO target_reports(report,night,n,ts) VALUES(?,?,?,?)",
+                                 [(r, key[0], key[1], m["ts"]) for r in fresh])
+        return key
+
+    def note(self, key, prefix, origin, src, quote, post, m):
+        """Keep what the tag shows (for the analytics and the replay); written only when it changes."""
+        with self.lock:
+            row = self.rows.get(key)
+            if row is None:
+                return
+            new = {"prefix": prefix, "origin": origin, "osrc": src, "oquote": quote, "opost": post,
+                   "last_ts": max(row["last_ts"] or "", m["ts"]), "type": m.get("type") or row["type"]}
+            if all(row.get(k) == v for k, v in new.items()):
+                return
+            row.update(new)
+        self._write("UPDATE targets SET prefix=?, origin=?, osrc=?, oquote=?, opost=?, last_ts=?, type=? WHERE night=? AND n=?",
+                    (prefix, origin, src, quote, post, new["last_ts"], new["type"], key[0], key[1]))
+
+    def row(self, key):
+        with self.lock:
+            return dict(self.rows.get(key) or {})
+
+    def find(self, reports):
+        """The tag of a past track (the replay): "S-07", or None when none of its reports was ever tagged. Never makes
+        one — tags are given by the live map alone."""
+        key = self.lookup(reports)
+        if key is None and reports:
+            try:
+                with self.store.lock:
+                    r = self.store.conn.execute(
+                        f"SELECT night, n FROM target_reports WHERE report IN ({','.join('?' * len(reports))}) ORDER BY ts LIMIT 1",
+                        list(reports)).fetchone()
+                key = tuple(r) if r else None
+            except Exception:
+                key = None
+        if key is None:
+            return None
+        row = self.row(key)
+        if not row:
+            try:
+                with self.store.lock:
+                    r = self.store.conn.execute("SELECT prefix FROM targets WHERE night=? AND n=?", key).fetchone()
+                row = {"prefix": r[0]} if r else {}
+            except Exception:
+                row = {}
+        return f"{row.get('prefix') or '?'}-{key[1]:02d}"
+
+    def _write(self, sql, args):
+        self._write_many(sql, [args])
+
+    def _write_many(self, sql, rows):
+        try:
+            with self.store.lock:
+                self.store.conn.executemany(sql, rows)
+                self._n += 1
+                if self._n % 500 == 1:
+                    cut = (datetime.now(timezone.utc) - timedelta(days=TAG_KEEP_DAYS)).isoformat()
+                    self.store.conn.execute("DELETE FROM target_reports WHERE ts<?", (cut,))
+                    self.store.conn.execute("DELETE FROM targets WHERE last_ts<?", (cut,))
+                self.store.conn.commit()
+        except Exception as e:
+            log("target tags: not written:", e)
+
+
 class State:
     """In-memory current picture + SSE fan-out."""
 
@@ -1820,6 +1966,7 @@ class State:
         self.store = store
         self.cfg = cfg
         self.esri = EsriTiles(cfg, store)      # 1.48: the closest zooms of the satellite layer
+        self.tags = TargetTags(store)          # 1.51: target tags (N-07, S-12)
         self.lock = threading.Lock()
         self.active = {}            # key -> alert dict
         self.sources = {}           # name -> {ok, last, error, ...}
@@ -2222,6 +2369,13 @@ class State:
         # only if it sits close enough to still be about Kyiv.
         out = [m for m in out if in_scope(m)]
         out = self._chain_and_prune(out, ttl, kyiv_ends)
+        try:
+            self._tag_marks(out)                 # 1.51: N-07, S-12 …
+        except Exception as e:
+            log("target tags:", type(e).__name__, e)
+        for m in out:
+            m.pop("reports", None)
+            m.pop("origin_t", None)
         out.sort(key=lambda m: m["ts"], reverse=True)
         # Keep what the app decided, not just what it was told. INSERT OR IGNORE keyed on the marker id, so
         # recomputing the same window many times a minute writes each marker exactly once.
@@ -2233,6 +2387,111 @@ class State:
             self._marker_cache.clear()
             self._ev_cache.clear()
             self._named_cache.clear()
+        return out
+
+    # -- 1.51: target tags ------------------------------------------------------------------------------------------
+    def ai_live(self):
+        """The dashboard's switch: the AI reader's facts — quoted, checked against the post — in the target tags. On
+        unless switched off (kv `ai_live` = "0"); nothing of it ever moves, adds or removes a mark."""
+        ai = getattr(self, "ai", None)
+        return bool(ai and ai.enabled() and ai.live())
+
+    def _tag_marks(self, ms):
+        """Each target in the air gets its tag: night + number (TargetTags), the letter of the origin a post stated —
+        the rules' reading first, the AI's when the rules found none and the switch is on — and the height and speed
+        its latest report stated."""
+        ai = getattr(self, "ai", None) if self.ai_live() else None
+        for m in ms:
+            if m.get("status"):
+                continue
+            key = self.tags.assign(m)
+            o, src = m.get("origin_t"), None
+            if o:
+                src = "rules"
+            facts = self._ai_facts(m, ai) if ai else {}
+            if not o and facts.get("origin"):
+                o, src = facts["origin"], "ai"
+            prefix = TAG_PREFIX.get(o["o"], "?") if o else "?"
+            self.tags.note(key, prefix, o and o["o"], src, o and o["q"], o and (o.get("id") or "").split("#")[0], m)
+            alt = spd = None
+            if (m.get("alt") or {}).get("m"):
+                alt = {"m": m["alt"]["m"], "s": "rules"}
+            elif facts.get("alt"):
+                alt = dict(facts["alt"], s="ai")
+            if m.get("speed"):
+                spd = dict(m["speed"], s="rules")
+            elif facts.get("spd"):
+                spd = dict(facts["spd"], s="ai")
+            # 1.51: descending / climbing / low / high — with the height, what matters most to the people under it
+            vs = {"v": m["alt"]["state"], "s": "rules"} if (m.get("alt") or {}).get("state") else (
+                dict(facts["vs"], s="ai") if facts.get("vs") else None)
+            m["tag"] = {"id": f"{prefix}-{key[1]:02d}", "n": key[1], "p": prefix, "night": key[0],
+                        "o": o and o["o"], "os": src, "oq": o and o["q"], "oc": o and o.get("ch"), "ot": o and o.get("ts"),
+                        "alt": alt, "spd": spd, "vs": vs}
+
+    def ai_context(self, post, cands):
+        """1.51: for the AI reader — the targets on the map now, from every channel, near the places this post may be
+        naming (the candidates' oblasts, or 80 km of them): "S-01 · jet drone ×2 · heading to Київ · from s · @monitor_ukr
+        19:23". Returns (lines, their tags). Never this post's own marks."""
+        pid = post.get("post_id") or ""
+        uids, pts = set(), []
+        for cid, key, _ in cands:
+            if cid.startswith("o"):
+                uids.add(cid[1:])
+            elif geo and key in geo.PLACES:
+                lon, lat, uid = geo.PLACES[key]
+                pts.append((lon, lat))
+                uids.add(uid)
+        home = self.channel_home(post.get("channel"))
+        if home and home != "ua":
+            uids.add(home)
+        out = []
+        for m in self.markers_now():
+            tg = m.get("tag")
+            if not tg or m.get("status") or (m.get("id") or "").startswith(pid + "#"):
+                continue
+            near = m.get("oblast_uid") in uids or any(
+                m.get("lon") is not None and math.hypot((m["lon"] - lo) * 70.7, (m["lat"] - la) * 111) <= 80 for lo, la in pts)
+            if not near:
+                continue
+            out.append(m)
+        out.sort(key=lambda m: m["ts"], reverse=True)
+        lines, tags = [], []
+        for m in out[:10]:
+            line = ai_reader.parser_lines([dict(m, origin={"o": m["tag"]["o"]} if m["tag"].get("o") else m.get("origin"))])[0]
+            t = parse_iso(m["ts"])
+            hm = t.astimezone(kyiv_tz()).strftime("%H:%M") if t else "?"
+            lines.append(f"{m['tag']['id']} · {line} · @{m.get('channel')} {hm}")
+            tags.append(m["tag"]["id"])
+        return lines, tags
+
+    def _ai_facts(self, m, ai):
+        """What the AI reader read, for this track: the first origin any of its reports' posts stated, and the height
+        and speed its latest report's post stated — each only from the AI target that is this track's (its place, or
+        the only target of a post the rules also read as one)."""
+        out = {}
+        wheres = {ai_reader._where_rules(m)} | {ai_reader._where_rules({"place": h.get("place")}) for h in m.get("history") or []}
+        if m.get("target"):
+            wheres.add(ai_reader._canon(m["target"]))
+        wheres.discard("")
+        for rid in m.get("reports") or [m["id"]]:
+            pid = rid.split("#")[0]
+            ts = ai.targets_for(pid)
+            if not ts:
+                continue
+            alone = len([x for x in (self._marker_cache.get(pid) or []) if not x.get("status")]) == 1
+            t = ai_reader.match(ts, wheres, alone)
+            if not t:
+                continue
+            if "origin" not in out and t.get("origin"):
+                out["origin"] = {"o": t["origin"], "q": t.get("origin_quote"), "id": rid, "ch": pid.split("/")[0], "ts": None}
+            if rid == m["id"]:
+                if t.get("vertical"):
+                    out["vs"] = {"v": t["vertical"], "q": t.get("vertical_quote")}
+                if t.get("altitude_m"):
+                    out["alt"] = {"m": t["altitude_m"], "q": t.get("altitude_quote")}
+                if t.get("speed_kmh"):
+                    out["spd"] = {"kmh": t["speed_kmh"], "q": t.get("speed_quote")}
         return out
 
     def _marks_from_posts(self, posts, kyiv_ends, cache, evidence=True):
@@ -2670,7 +2929,25 @@ class State:
                 "weather": self._an_weather(dates), "approach": self._an_approach(t0, dates),
                 "air": self._an_air(t0, dates), "obl": self._an_oblasts(t0, dates),
                 "places": self.drone_heat(days)["points"][:25], "bridges": self._an_bridges(t0, dates),
-                "weather_status": getattr(self, "weather_status", None)}
+                "weather_status": getattr(self, "weather_status", None), "targets": self._an_targets(dates)}
+
+    def _an_targets(self, dates):
+        """1.51: the targets tagged each night (the night starting at 12:00 on that date), by the letter of where a post said they
+        came from, and how many of those letters the AI read. Counts of tags, not of drones: a group is one tag."""
+        out = {d: {"date": d, "N": 0, "E": 0, "S": 0, "W": 0, "?": 0, "ai": 0, "total": 0} for d in dates}
+        with self.store.lock:
+            rows = self.store.conn.execute("SELECT night, prefix, osrc, COUNT(*) FROM targets WHERE night>=? AND night<=? "
+                                           "GROUP BY night, prefix, osrc", (dates[0], dates[-1])).fetchall()
+        for night, prefix, src, n in rows:
+            r = out.get(night)
+            if not r:
+                continue
+            p = prefix if prefix in ("N", "E", "S", "W") else "?"
+            r[p] += n
+            r["total"] += n
+            if src == "ai":
+                r["ai"] += n
+        return [out[d] for d in dates]
 
     # -- 1.33: the weather, the approach sides, the carriers, and the time under alert oblast by oblast ---------------
     def _an_bridges(self, t0, dates):
@@ -3392,7 +3669,7 @@ class State:
             stated = m.get("heading") is not None and hev.get("confidence") not in (None, "none")
             out.append({"ty": m["type"], "jet": 1 if m.get("jet") else 0, "n": m.get("count") or 1,
                         "ap": 1 if m.get("approach") else 0, "h": round(m["heading"]) if stated else None,
-                        "ch": m.get("channel"), "p": pts})
+                        "ch": m.get("channel"), "p": pts, "tg": self.tags.find(m.get("reports") or [m["id"]])})
         out.sort(key=lambda x: x["p"][0][0])
         return out
 
@@ -3412,6 +3689,9 @@ class State:
         for m in tracks:
             m["superseded_by"] = None
             m["history"] = []
+            m["reports"] = [m["id"]]        # 1.51: every report of the track, oldest first — what its tag is found by
+            # 1.51: the first origin any report of the track stated ("з півдня", "з Білорусі"), with the report
+            m["origin_t"] = dict(m["origin"], id=m["id"], ch=m.get("channel"), ts=m["ts"]) if m.get("origin") else None
         def km(a, b):
             return math.hypot((a["lon"] - b["lon"]) * 70.7, (a["lat"] - b["lat"]) * 111)
         def fam(m):
@@ -3464,6 +3744,8 @@ class State:
                     # "…на Васильків" about a target already on the map: where it is going, not where it now is.
                     # The track keeps its reported position and takes the destination; the approach mark goes.
                     m["absorbed"] = True
+                    pm["reports"] = pm["reports"] + [m["id"]]
+                    pm["origin_t"] = pm.get("origin_t") or m.get("origin_t")
                     pm["target"] = pm.get("target") or m.get("target")
                     if pm.get("heading") is None and m.get("target") in geo.PLACES:
                         dlon, dlat, _ = geo.PLACES[m["target"]]
@@ -3474,6 +3756,8 @@ class State:
                         pm["evidence"] = ev
                     continue
                 pm["superseded_by"] = m["id"]
+                m["reports"] = pm["reports"] + [m["id"]]
+                m["origin_t"] = pm.get("origin_t") or m.get("origin_t")
                 # each earlier report keeps the height ITS post stated (if any): two stated heights in a row are a
                 # descent the posts reported, not one this app worked out — 2200 m, then 1600 m, then 800 m
                 # an approach mark's point is a destination, not a place it was: it is no step of the track
@@ -6106,6 +6390,20 @@ class Handler(BaseHTTPRequestHandler):
                         return self._json({"error": f"could not reach t.me: {str(e)[:120]}"}, 502)
                 ok, msg = st.channel_update(action, name, data.get("mode"), via, data.get("home"))
                 return self._json({"ok": ok, "message": msg, "name": name}, 200 if ok else 400)
+            # 1.51: the AI reader's two switches (dashboard → AI reader): reading at all (`reader`), and its facts in the
+            # target tags (`live`) — the kill switch, effective at the next computation of the marks (≤ 10 s)
+            if u.path == "/api/admin/ai":
+                if not self._admin_ok(q):
+                    return self._json({"error": "unauthorized"}, 401)
+                for k, kv in (("reader", "ai_reader_on"), ("live", "ai_live")):
+                    if k in data:
+                        st.store.kv_set(kv, "1" if data.get(k) else "0")
+                        log(f"ai reader: {k} switched {'on' if data.get(k) else 'off'} from the dashboard")
+                hit = st._resp.get("markers")       # the marks recomputed at the next ask, with or without its facts
+                if hit:
+                    st._resp["markers"] = (0,) + tuple(hit[1:])
+                ai = getattr(st, "ai", None)
+                return self._json({"ok": True, "stats": ai.stats() if ai else None})
             if u.path == "/api/admin/region":
                 # 1.43: an oblast on or off as a whole — its channels and its place on the map
                 if not self._admin_ok(q):
@@ -6463,14 +6761,17 @@ def main():
     Watchdog(state).start()
     state.digests = Digests(state, cfg)
     state.digests.start()
-    # 1.50: the AI reader, in shadow mode — reads the channels' posts beside the rules and changes nothing (§7.7)
+    # 1.50: the AI reader — reads the channels' posts beside the rules; it never places a mark. 1.51: its quoted facts
+    # fill the target tags while the dashboard's switch is on (§7.7)
     if ai_reader and geo:
         state.ai = ai_reader.AIReader(cfg, store, geo, rules_fn=lambda ch, t, near: geo.parse_for_channel(ch, t, near or None),
-                                      oblast_names={u: uk for u, uk, _ in OBLASTS}, previous_fn=store.ai_previous, log=log)
+                                      oblast_names={u: uk for u, uk, _ in OBLASTS}, previous_fn=store.ai_previous, log=log,
+                                      context_fn=state.ai_context)
         state.ai.ssl_ctx = _SSL_CTX
         state.ai.start()
-        log("ai reader (shadow): " + (f"on — {state.ai.model()}, at most ${state.ai.cap():g} a month" if state.ai.enabled()
-                                      else "off — no OPENROUTER_API_KEY (scripts/set-openrouter-key.bat)"))
+        log("ai reader: " + (f"on — {state.ai.model()}, at most ${state.ai.cap():g} a month; its facts in the target tags: "
+                             f"{'on' if state.ai.live() else 'off'} (dashboard → AI reader)" if state.ai.enabled()
+                             else "off — no OPENROUTER_API_KEY (scripts/set-openrouter-key.bat), or switched off on the dashboard"))
 
     # Every open page is a socket. Linux's default of 1,024 open files per process would stop the server long
     # before the stream hub does: raise it to what the system allows.

@@ -1,11 +1,12 @@
-"""1.50: a second reader of the channels' posts — a language model through OpenRouter — in SHADOW MODE.
+"""1.50: a second reader of the channels' posts — a language model through OpenRouter.
 
-Nothing it says reaches the map, the alerts, the feed or a push. It reads the same posts the rules read, its reading
-is checked against the post (every fact must quote the post's own words; every place must be one this server offered
-it from its gazetteer) and compared with the rules' reading, and the dashboard shows where the two disagree: posts the
-rules missed, places or weapons they read differently. That is what it is for, first — finding what the rules get
-wrong, so the rules can be fixed (deterministic, free, instant) — and only later, once it has proved itself, perhaps
-a fallback for posts nothing else can read. docs/TECHNICAL.md §7.6, docs/SAFETY.md.
+It never places, moves or removes a mark, and never touches the alerts, the feed or a push. It reads the same posts the
+rules read, its reading is checked against the post (every fact must quote the post's own words; every place must be
+one this server offered it from its gazetteer) and compared with the rules' reading, and the dashboard shows where the
+two disagree: posts the rules missed, places or weapons they read differently — so the rules can be fixed
+(deterministic, free, instant). 1.51: with the dashboard's switch on (`ai_live`, the kill switch), the facts it
+quoted that the rules did not read — where a target comes from, its height, its speed — fill the TARGET TAGS
+(N-07 ×2 · 2200 m), marked as read by the AI. docs/TECHNICAL.md §7.7, docs/SAFETY.md.
 
 The prompt is a component, not a sentence: fixed rules taken from docs/SAFETY.md (SYSTEM), worked examples (EXAMPLES),
 the post's context assembled per post (the channel, its previous posts, the CANDIDATE places), and a strict output
@@ -20,10 +21,10 @@ import threading
 import time
 import urllib.error
 import urllib.request
-from collections import deque
+from collections import OrderedDict, deque
 from datetime import datetime, timezone
 
-PROMPT_VERSION = "2"     # 1.50.2: origin and speed; nothing nullable on the wire
+PROMPT_VERSION = "3"     # 1.51: the parser's reading and the map in the prompt; vertical state, same_as
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 DEFAULT_MODEL = "anthropic/claude-haiku-5.5"
 MAX_CANDIDATES = 30
@@ -49,12 +50,12 @@ _CARD_RX = re.compile(r"(?<!\d)(?:\d[ \-]?){12,18}\d(?!\d)")
 def mask(text):
     return _CARD_RX.sub("[…]", text or "")
 
-SYSTEM = """You read ONE Telegram post from a Ukrainian air-threat monitoring channel and extract only what it STATES about aerial targets (drones, missiles, guided bombs, aircraft). People decide whether to take cover from what is drawn, so a wrong position is worse than none.
+SYSTEM = """You are the second reader of Heimdall, a public air-threat map of Ukraine. People decide whether to take cover from what is drawn. A deterministic parser has already read the post (PARSER READING). Your job is to cross-check it against the post, the channel's previous posts and the targets already ON THE MAP from every channel: confirm it, correct it, and above all ADD the targets it missed. A target missed is worse than a duplicate: when the post names a place for a target, even in loose or unusual words, give it. But you never invent: every fact quotes the post, every place is one the post names, from CANDIDATES.
 
 Rules:
-1. Never infer. A fact the post does not state is left empty: "" for a text, 0 for a number, "none" for a direction or an origin, "unknown" for the weapon. A likely guess is still a guess.
+1. Never infer. A fact the post does not state is left empty: "" for a text, 0 for a number, "none" for a direction, an origin or a vertical state, "unknown" for the weapon. A likely guess is still a guess.
 2. Quote. Every fact you give carries the exact words of the post that state it, copied character for character into its *_quote field. If you cannot quote it, leave it empty.
-3. Places only from CANDIDATES, by their id (c1, c2…, or o<number> for an oblast). Never output coordinates. A place the post names that is not in CANDIDATES: place_id "", its words in place_quote.
+3. Places only from CANDIDATES, by their id (c1, c2…, or o<number> for an oblast). Never output coordinates. A place the post names that is not in CANDIDATES: place_id "", its words in place_quote. Several candidates of the same name: the one in the CHANNEL'S OBLAST or in the OBLASTS ITS LAST POSTS NAMED — a regional tracker reports its own oblast and the one next to it.
 4. The relation to the place is what the words say:
    - "на X", "курсом на X", "в напрямку X", "у бік X" = heading_to X — the target is NOT at X;
    - "над X", "в районі X", "біля X" said of where it is now, or X alone in a tracker's line = at X; "поблизу X", "неподалік X" = near X;
@@ -67,10 +68,12 @@ Rules:
 8. One entry per target or group, in the order of the post. A count only if written ("2 шахеди", "група з 5", "×3"; "кілька", "група" alone are not a number).
 9. Origin: where the post says the target comes from, outside the places above — a direction ("з півночі" = n, "з південного сходу" = se) or a country or area ("з Білорусі", "з території РБ" = belarus; "з Росії", "з Брянщини", "з Курщини", "з боку Бєлгорода" = russia; "з моря", "з акваторії Чорного моря" = sea; "з Криму" = crimea; "з окупованих територій", "з ТОТ" = occupied). A Ukrainian oblast or town it comes from is relation from that place, never an origin.
 10. Heading only when the post gives a course as a direction ("курс на захід" = w). A town it flies to is heading_to that town, not a heading.
-11. Altitude and speed only when written ("висота 2200", "на 1,5 км" = 1500 m; "швидкість 180 км/год" = 180), and only for the target they are written for: the target of the same line or paragraph. A height on a line of its own after several targets belongs to the target just above it.
+11. Height, vertical state and speed matter most to the people under a target: give them whenever the post states them, and only for the target they are written for (the same line or paragraph; a height on a line of its own after several targets belongs to the target just above it). Altitude in metres ("висота 2200", "на 1,5 км" = 1500); vertical: "знижується", "пікірує", "скидає висоту" = descending; "набирає висоту" = climbing; "низько", "на малій висоті" = low; "високо", "на великій висоті" = high; speed ("швидкість 180 км/год" = 180).
 12. Nothing about aerial targets — an alert starting or ending alone ("Відбій"), news, a fundraiser, the Air Force's morning totals: targets [].
 13. PREVIOUS POSTS are context only. "Далі на X" continues the last target named there; but never copy a fact from them into this post's entry unless this post states it.
-14. Unsure? Say so in "uncertain" in one short English sentence ("" when sure), and still give only what is stated.
+14. ON THE MAP NOW lists the targets other posts placed, by their tag (S-01, ?-04…). If one of this post's targets is one of them — the same weapon reported again near the same place, or "Далі на X" continuing it — put its tag in same_as; otherwise "". Such a target is still listed: same_as says which it is.
+15. The PARSER READING may be wrong or miss targets. Never copy it; read the post yourself. Where it missed a target the post names, add it; where it misread one, your reading — by the post's words — is the one to give.
+16. Unsure? Say so in "uncertain" in one short English sentence ("" when sure), and still give only what is stated.
 
 Answer with the JSON object only — no other text, no code fence."""
 
@@ -79,7 +82,8 @@ ORIGINS = ["belarus", "russia", "sea", "crimea", "occupied"] + DIRS
 # nullable: a nullable field is a "union type" to Anthropic's structured outputs, which take at most 16 of them in
 # a schema — and a provider that cannot compile the schema answers "HTTP 400: Provider returned error" (1.50.2).
 TEXTS = ("kind_quote", "count_quote", "status_quote", "place_id", "place_quote", "origin_quote", "heading_quote",
-         "altitude_quote", "speed_quote")
+         "altitude_quote", "vertical_quote", "speed_quote", "same_as")
+VERTICALS = ["descending", "climbing", "low", "high"]
 INTS = ("count", "distance_km", "altitude_m", "speed_kmh")
 _S, _I = {"type": "string"}, {"type": "integer"}
 _DIR = {"type": "string", "enum": DIRS + ["none"]}
@@ -95,7 +99,9 @@ TARGET = {
         "origin": {"type": "string", "enum": ORIGINS + ["none"]}, "origin_quote": _S,
         "heading": _DIR, "heading_quote": _S,
         "altitude_m": _I, "altitude_quote": _S,
+        "vertical": {"type": "string", "enum": VERTICALS + ["none"]}, "vertical_quote": _S,
         "speed_kmh": _I, "speed_quote": _S,
+        "same_as": _S,
     },
 }
 TARGET["required"] = list(TARGET["properties"])
@@ -110,7 +116,7 @@ def wire(ans):
         o = {}
         for k in TARGET["properties"]:
             v = t.get(k)
-            o[k] = ("" if k in TEXTS else 0 if k in INTS else "none" if k in ("side", "heading", "origin") else v) if v is None else v
+            o[k] = ("" if k in TEXTS else 0 if k in INTS else "none" if k in ("side", "heading", "origin", "vertical") else v) if v is None else v
         return o
     return {"targets": [one(t) for t in ans.get("targets") or []], "uncertain": ans.get("uncertain") or ""}
 
@@ -124,7 +130,7 @@ def unwire(t):
     for k in INTS:
         if o[k] in (0, None) or isinstance(o[k], bool):
             o[k] = None
-    for k in ("side", "heading", "origin"):
+    for k in ("side", "heading", "origin", "vertical"):
         if o[k] in ("none", ""):
             o[k] = None
     return o
@@ -138,56 +144,109 @@ def _t(**kw):
     return base
 
 
+def channel_block(ch, home=None, near=()):
+    """Who is speaking, and about which oblast (1.51: "the AI should know which oblast it is reading about — it is
+    crucial"): the channel's own oblast, and the oblasts its posts of the last 30 minutes named."""
+    own = (f"{home} — a regional tracker: a place it names alone is in or near this oblast" if home
+           else "none — a country-wide channel")
+    nb = ", ".join(near) if near else "—"
+    return f"@{ch}\nCHANNEL'S OBLAST: {own}\nOBLASTS ITS LAST POSTS NAMED (30 min): {nb}"
+
+
 # Worked examples, given as earlier turns of the conversation: each is a post, its candidates, the right reading.
 EXAMPLES = [
-    ("@kpszsu (oblast: —)", [], "2 шахеди з півночі на Бровари",
-     "c1 | Бровари | Київська область\no14 | Київська область",
+    # (channel line, previous posts, post, candidates, parser reading, on the map now, the right reading)
+    (channel_block("kpszsu"), [], "2 шахеди з півночі на Бровари",
+     "c1 | Бровари | Київська область\no14 | Київська область", ["drone ×2 · heading to Бровари · from the n"], [],
      {"targets": [_t(kind="shahed", kind_quote="шахеди", count=2, count_quote="2 шахеди", place_id="c1",
                      place_quote="на Бровари", relation="heading_to", origin="n", origin_quote="з півночі")],
       "uncertain": None}),
-    ("@kyiv_airdef (oblast: Kyiv city)", ["[21:02] Дрон над Троєщиною"], "Збито ціль над Оболонню",
-     "c1 | Оболонь | м. Київ\nc2 | Троєщина | м. Київ\no31 | м. Київ",
+    (channel_block("kyiv_airdef", "м. Київ", ["м. Київ"]), ["[21:02] Дрон над Троєщиною"], "Збито ціль над Оболонню",
+     "c1 | Оболонь | м. Київ\nc2 | Троєщина | м. Київ\no31 | м. Київ", ["unknown · at Оболонь · shot down"],
+     ["?-04 · drone · at Троєщина · @kyiv_airdef 21:02"],
      {"targets": [_t(kind="unknown", status="shot_down", status_quote="Збито", place_id="c1",
-                     place_quote="над Оболонню", relation="at")], "uncertain": None}),
-    ("@kpszsu (oblast: —)", [], "БпЛА на півночі від Миколаєва, курс на захід.",
-     "c1 | Миколаїв | Миколаївська область\no17 | Миколаївська область",
+                     place_quote="над Оболонню", relation="at", same_as="?-04")], "uncertain": None}),
+    (channel_block("kpszsu", None, ["Миколаївська область"]), [], "БпЛА на півночі від Миколаєва, курс на захід.",
+     "c1 | Миколаїв | Миколаївська область\no17 | Миколаївська область", ["drone · in Миколаївська область"], [],
      {"targets": [_t(kind="drone", kind_quote="БпЛА", place_id="c1", place_quote="на півночі від Миколаєва",
                      relation="side_of", side="n", heading="w", heading_quote="курс на захід")], "uncertain": None}),
-    ("@monitor_ukr (oblast: —)", [], "Реактивний на Київщині, висота 2200. Ще один шахед над Києвом",
-     "c1 | Київ | м. Київ\no14 | Київська область\no31 | м. Київ",
+    (channel_block("monitor_ukr"), [], "Реактивний на Київщині, висота 2200. Ще один шахед над Києвом",
+     "c1 | Київ | м. Київ\no14 | Київська область\no31 | м. Київ", ["drone · at Київ"], [],
      {"targets": [_t(kind="jet_drone", kind_quote="Реактивний", place_id="o14", place_quote="на Київщині",
                      relation="in_oblast", altitude_m=2200, altitude_quote="висота 2200"),
                   _t(kind="shahed", kind_quote="шахед", count=1, count_quote="один шахед", place_id="c1",
                      place_quote="над Києвом", relation="at")], "uncertain": None}),
-    ("@monitor_ukr (oblast: —)", [], "Група шахедів з території Білорусі на Житомирщину.\n\n1 реактив над Коростенем\nшвидкість 400 км/год, висота 3 км",
+    (channel_block("monitor_ukr"), [], "Група шахедів з території Білорусі на Житомирщину.\n\n1 реактив над Коростенем\nшвидкість 400 км/год, висота 3 км",
      "c1 | Коростень | Житомирська область\no10 | Житомирська область",
+     ["drone ×3 · heading to Житомирська область · from belarus", "drone · at Коростень · 3000 m"], [],
      {"targets": [_t(kind="shahed", kind_quote="шахедів", place_id="o10", place_quote="на Житомирщину",
                      relation="heading_to", origin="belarus", origin_quote="з території Білорусі"),
                   _t(kind="jet_drone", kind_quote="реактив", count=1, count_quote="1 реактив", place_id="c1",
                      place_quote="над Коростенем", relation="at", speed_kmh=400, speed_quote="швидкість 400 км/год",
                      altitude_m=3000, altitude_quote="висота 3 км")], "uncertain": None}),
-    ("@kyivoda (oblast: Kyiv oblast)", [], "Відбій повітряної тривоги в Київській області.", "o14 | Київська область",
+    # a regional tracker's bare name: the candidate in its oblast, not the namesake elsewhere
+    (channel_block("rivne_radar", "Рівненська область", ["Рівненська область", "Житомирська область"]),
+     ["[03:12] Шахед з Житомирщини на Сарни"], "Тепер на Висоцьк",
+     "c1 | Висоцьк | Рівненська область\nc2 | Висоцьк (Житомирський р-н) | Житомирська область\no5 | Рівненська область",
+     [], [],
+     {"targets": [_t(kind="unknown", place_id="c1", place_quote="на Висоцьк", relation="heading_to")],
+      "uncertain": "The weapon is the Shahed of the previous post, but this post does not name it."}),
+    # the parser read nothing: the post names a place for a target in a tracker's loose words — it is given
+    (channel_block("kyiv_airdef", "м. Київ", ["м. Київ"]), ["[22:10] Шахед курсом на Бортничі"], "Ціль заходить на Бортничі, низько, знижується",
+     "c1 | Бортничі | м. Київ\no31 | м. Київ", [], ["S-07 · Shahed · heading to Бортничі · @kyiv_airdef 22:10"],
+     {"targets": [_t(kind="unknown", place_id="c1", place_quote="на Бортничі", relation="heading_to",
+                     vertical="descending", vertical_quote="знижується", same_as="S-07")], "uncertain": None}),
+    (channel_block("kyivoda", "Київська область"), [], "Відбій повітряної тривоги в Київській області.", "o14 | Київська область", [], [],
      {"targets": [], "uncertain": None}),
 ]
 
 
-def user_message(channel_line, previous, text, cand_lines):
+def user_message(channel_line, previous, text, cand_lines, parser=(), on_map=()):
     prev = "\n".join(f"- {p}" for p in previous) if previous else "(none)"
+    pr = "\n".join(f"- {p}" for p in parser) if parser else "(nothing)"
+    om = "\n".join(f"- {p}" for p in on_map) if on_map else "(none)"
     return (f"CHANNEL: {channel_line}\nPREVIOUS POSTS (oldest first, context only):\n{prev}\n\n"
-            f"POST:\n{text}\n\nCANDIDATES (id | name | oblast):\n{cand_lines or '(none)'}")
+            f"POST:\n{text}\n\nCANDIDATES (id | name | oblast):\n{cand_lines or '(none)'}\n\n"
+            f"PARSER READING (Heimdall's rules, for this post — may be wrong or incomplete):\n{pr}\n\n"
+            f"ON THE MAP NOW (targets other posts placed, every channel, the last 30 minutes):\n{om}")
 
 
-def messages(channel_line, previous, text, cand_lines, cache=False):
+def messages(channel_line, previous, text, cand_lines, cache=False, parser=(), on_map=()):
     """The whole conversation: the fixed part first (rules, then the examples), the post last — the order lets the
     provider reuse the unchanged beginning from one post to the next (prompt caching; for Anthropic's models the end
     of that part is marked, `cache`)."""
     out = [{"role": "system", "content": SYSTEM}]
-    for ch, prev, post, cands, ans in EXAMPLES:
-        out.append({"role": "user", "content": user_message(ch, prev, post, cands)})
+    for ch, prev, post, cands, pr, om, ans in EXAMPLES:
+        out.append({"role": "user", "content": user_message(ch, prev, post, cands, pr, om)})
         out.append({"role": "assistant", "content": json.dumps(wire(ans), ensure_ascii=False)})
     if cache:
         out[-1]["content"] = [{"type": "text", "text": out[-1]["content"], "cache_control": {"type": "ephemeral"}}]
-    out.append({"role": "user", "content": user_message(channel_line, previous, text, cand_lines)})
+    out.append({"role": "user", "content": user_message(channel_line, previous, text, cand_lines, parser, on_map)})
+    return out
+
+
+_KW = {"drones": "drone", "banderol_missiles": "jet drone (Banderol)", "cruise_missiles": "cruise missile",
+       "ballistic_missiles": "ballistic missile", "guided_aerial_bombs": "guided bomb", "tactic_aircraft_activity": "aircraft",
+       "unknown": "unknown"}
+
+
+def parser_lines(ms):
+    """The rules' reading of the post, one line a mark, in the words the model is asked to use."""
+    out = []
+    for m in ms or []:
+        p = m.get("place") or ""
+        where = (f"in oblast {m.get('oblast_uid')}" if p == "область" else
+                 f"heading to {p[2:]}" if p.startswith("→ ") else f"at {p}") if p else "no place"
+        bits = [_KW.get(m.get("type"), m.get("type") or "?") + (f" ×{m['count']}" if (m.get("count") or 1) > 1 else ""), where]
+        if (m.get("origin") or {}).get("o"):
+            bits.append(f"from {m['origin']['o']}")
+        if m.get("status"):
+            bits.append({"down": "shot down", "impact": "impact", "lost": "lost"}.get(m["status"], m["status"]))
+        if (m.get("alt") or {}).get("m"):
+            bits.append(f"{m['alt']['m']} m")
+        if (m.get("alt") or {}).get("state"):
+            bits.append(m["alt"]["state"])
+        out.append(" · ".join(bits))
     return out
 
 
@@ -250,7 +309,11 @@ ORIGIN_WORDS = {
 }
 
 
-def validate(out, text, cands):
+_VERT_WORD = re.compile(r"зниж|пікір|скида|набира|підійма|піднима|низьк|низько|мал\w*\s+висот|високо|велик\w*\s+висот|ешелон|"
+                        r"снижа|пикир|высоко|низко")
+
+
+def validate(out, text, cands, tags=()):
     """(targets, dropped) — the model's targets with every fact the post does not bear out removed: a quote that is
     not in the post, a place that is not a candidate, a number its quote does not hold."""
     nt = _norm(text)
@@ -298,6 +361,13 @@ def validate(out, text, cands):
                                                 and ok(t["altitude_quote"]) and re.search(r"\d", t["altitude_quote"])):
             dropped += 1
             t["altitude_m"], t["altitude_quote"] = None, None
+        if t["vertical"] is not None and not (t["vertical"] in VERTICALS and ok(t["vertical_quote"])
+                                              and _VERT_WORD.search(_norm(t["vertical_quote"]))):
+            dropped += 1
+            t["vertical"], t["vertical_quote"] = None, None
+        if t["same_as"] is not None and t["same_as"] not in tags:
+            dropped += 1                        # only a tag it was shown
+            t["same_as"] = None
         if t["speed_kmh"] is not None and not (isinstance(t["speed_kmh"], int) and 30 <= t["speed_kmh"] <= 5000
                                                and ok(t["speed_quote"]) and re.search(r"\d", t["speed_quote"])
                                                and re.search(r"км|km", _norm(t["speed_quote"]))):
@@ -340,6 +410,18 @@ def summarise_ai(targets, places=None):
                     "approach": t["relation"] == "heading_to", "relation": t["relation"],
                     "alt": f"o{p[2]}" if p and t["relation"] == "side_of" else None})
     return out
+
+
+def match(targets, wheres, alone):
+    """1.51: the AI target that is a given track's — the one at one of its places (`wheres`, canonical), or the only
+    target of a post the rules also read as one target (`alone`). None rather than a guess."""
+    if alone and len(targets) == 1:
+        return targets[0]
+    for t in targets:
+        w = _canon(t.get("place") or "")
+        if w and w in wheres:
+            return t
+    return None
 
 
 def compare(rules, ai):
@@ -417,10 +499,11 @@ class AIReader(threading.Thread):
     OpenRouter says each call cost) and PER_HOUR posts an hour. Paused 10 minutes when OpenRouter refuses the key or
     the credits, a minute when it says to slow down."""
 
-    def __init__(self, cfg, store, geo, rules_fn, oblast_names, previous_fn=None, log=print):
+    def __init__(self, cfg, store, geo, rules_fn, oblast_names, previous_fn=None, log=print, context_fn=None):
         super().__init__(daemon=True, name="ai-reader")
         self.cfg, self.store, self.geo, self.rules_fn = cfg, store, geo, rules_fn
         self.oblast_names, self.previous_fn, self.log = oblast_names, previous_fn, log
+        self.context_fn = context_fn      # 1.51: (post, candidates) → (lines of the targets on the map, their tags)
         self.q = deque(maxlen=400)
         self.cond = threading.Condition()
         self.lock = threading.Lock()
@@ -429,6 +512,7 @@ class AIReader(threading.Thread):
         self.hour, self.n_hour = None, 0
         self.month, self.spent = None, 0.0
         self.skipped = {}           # posts not read since the start, by why: paused, budget, rate
+        self.recent = OrderedDict()  # post id → its checked targets (or None: read nothing / never read) — the tags
 
     def key(self):
         return self.cfg.get("openrouter_key")
@@ -443,7 +527,21 @@ class AIReader(threading.Thread):
             return 0.0
 
     def enabled(self):
-        return bool(self.key()) and self.cap() > 0 and self.cfg.get("ai_reader", True) is not False
+        return bool(self.key()) and self.cap() > 0 and self.cfg.get("ai_reader", True) is not False and self.switched_on()
+
+    def switched_on(self):
+        """1.51: the dashboard's switch (kv `ai_reader_on`): off stops every call at once."""
+        try:
+            return self.store.kv_get("ai_reader_on") != "0"
+        except Exception:
+            return True
+
+    def live(self):
+        """1.51: the other switch (kv `ai_live`): its facts in the target tags."""
+        try:
+            return self.store.kv_get("ai_live") != "0"
+        except Exception:
+            return True
 
     def _roll(self):
         m = datetime.now(timezone.utc).strftime("%Y-%m")
@@ -523,16 +621,27 @@ class AIReader(threading.Thread):
         home = home if home not in ("", "ua") else None
         cands = candidates(self.geo, text, ch, home, near, self.oblast_names)
         prev = [mask(p) for p in (self.previous_fn(ch, post["ts"]) if self.previous_fn else [])]
-        line = f"@{ch} (oblast: {self.oblast_names.get(home, '—') if home else '—'})"
-        msgs = messages(line, prev, text, "\n".join(f"{i} | {lab}" for i, _, lab in cands), cache=self.model().startswith("anthropic/"))
+        # 1.51: which oblast it speaks for and has been speaking about, what the rules read in this very post, and the
+        # targets already on the map from every channel — the deterministic reading it is there to cross-check
+        line = channel_block(ch, self.oblast_names.get(home) if home else None,
+                             [self.oblast_names[u] for u in dict.fromkeys(near) if u in self.oblast_names])
+        marks = self.rules_fn(ch, text, list(near))
+        on_map, tags = [], ()
+        if self.context_fn:
+            try:
+                on_map, tags = self.context_fn(post, cands)
+            except Exception as e:
+                self.log("ai reader: no map context:", type(e).__name__)
+        msgs = messages(line, prev, text, "\n".join(f"{i} | {lab}" for i, _, lab in cands), cache=self.model().startswith("anthropic/"),
+                        parser=parser_lines(marks), on_map=on_map)
         t0 = time.time()
         res = self.call(msgs)
         ms = int((time.time() - t0) * 1000)
-        rules = summarise_rules(self.rules_fn(ch, text, list(near)))
+        rules = summarise_rules(marks)
         if res.get("error"):
             self._save(post, text, stored, ms, res, None, rules, 0, "error")
             return "error"
-        targets, dropped = validate(res["out"], text, cands)
+        targets, dropped = validate(res["out"], text, cands, tags)
         ai = summarise_ai(targets, getattr(self.geo, "PLACES", None))
         verdict = compare(rules, ai)
         self._save(post, text, stored, ms, res, {"targets": targets, "uncertain": (res["out"] or {}).get("uncertain")},
@@ -605,6 +714,7 @@ class AIReader(threading.Thread):
                 "model": data.get("model") or self.model(), "way": way}
 
     def _save(self, post, text, stored, ms, res, ai, rules, dropped, verdict):
+        self._remember(post["post_id"], (ai or {}).get("targets") or None)
         try:
             self.store.ai_save({"post_id": post["post_id"], "ts": post["ts"], "channel": post["channel"], "text": text,
                                 "stored": 1 if stored else 0,
@@ -613,6 +723,29 @@ class AIReader(threading.Thread):
                                 "verdict": verdict, "rules": rules, "ai": ai, "dropped": dropped, "error": res.get("error")})
         except Exception as e:
             self.log("ai reader: not saved:", type(e).__name__)
+
+    def targets_for(self, post_id):
+        """The checked targets the reader found in a post, or None (not read, failed, nothing found). Kept in memory for
+        the last few thousand posts; the database answers the others once."""
+        with self.lock:
+            if post_id in self.recent:
+                self.recent.move_to_end(post_id)
+                return self.recent[post_id]
+        ts = None
+        try:
+            row = self.store.ai_get(post_id)
+            ts = ((row or {}).get("ai") or {}).get("targets") if not (row or {}).get("error") else None
+        except Exception:
+            pass
+        self._remember(post_id, ts or None)
+        return ts or None
+
+    def _remember(self, post_id, targets):
+        with self.lock:
+            self.recent[post_id] = targets
+            self.recent.move_to_end(post_id)
+            while len(self.recent) > 4000:
+                self.recent.popitem(last=False)
 
     def stats(self):
         with self.lock:
@@ -623,7 +756,7 @@ class AIReader(threading.Thread):
             counts = self.store.ai_counts(self.month)
         except Exception:
             pass
-        return {"key": bool(self.key()), "enabled": self.enabled(), "model": self.model(), "prompt_v": PROMPT_VERSION,
+        return {"key": bool(self.key()), "enabled": self.enabled(), "reader_on": self.switched_on(), "live": self.live(), "model": self.model(), "prompt_v": PROMPT_VERSION,
                 "month": self.month, "usd_month": round(spent, 4), "cap_usd": self.cap(), "queued": len(self.q),
                 "paused": time.time() < self.down_until, "last_error": self.last_error, "skipped": dict(self.skipped),
                 "format": self.WAYS[self.way],

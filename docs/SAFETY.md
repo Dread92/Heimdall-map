@@ -601,9 +601,10 @@ precision in the same family as an invented trajectory.
 
 ## A language model is a second opinion, never a source (1.50)
 
-The AI reader (TECHNICAL.md §7.7) reads the same posts as the rules, in **shadow mode**: what it says is stored for
-the dashboard and compared with the rules, and nothing of it reaches the map, the alerts, the feed, a banner or a
-push. A model writes fluent, confident answers whether or not the post supports them — exactly the confidently wrong
+The AI reader (TECHNICAL.md §7.7) reads the same posts as the rules: what it says is stored for the dashboard and
+compared with the rules, and it never places, moves or removes a mark, and never reaches the alerts, a banner or a
+push. 1.51, the owner's decision (9 Oct 2026), under a kill switch on the dashboard: the facts it **quoted** that the
+rules did not read — where a target comes from, its height, its speed — fill the target tags, marked as the AI's. A model writes fluent, confident answers whether or not the post supports them — exactly the confidently wrong
 marker this document exists to prevent. So it is held to the same rules as the parser, and checked rather than
 trusted: it may only state what the post states, with the post's own words as the quote for every fact; it may only
 name places this server offers it from its own gazetteer, by id, never coordinates; Banderol is a jet drone to it as
@@ -613,6 +614,20 @@ taken on its measured record — never a default, and never for a post the rules
 
 Only public posts are sent to it: a channel's text, its name, our place names. Never a reader, a watched place, an
 address or a device.
+
+## A target's tag is a number, not a designation (1.51)
+
+"S-07 ×2" is Heimdall's own count of the targets the channels reported tonight, and a letter for where a post **said**
+it came from — N north or Belarus, E east or Russia, S south, the sea or Crimea, W west, ? not said. The letter is
+never worked out: a jet first reported over Chernihiv oblast may have come from Belarus or from Russia, and it is "?"
+until a post says which; "з Чернігівщини" is a place it passed, not an origin. The bottom line (height, speed) is only
+what the target's latest report stated. The format is Heimdall's, not a military one — the card says so — because a
+tag that looks like an air-defence designation would be read as coming from air defence. The rules' reading comes
+first; the AI's fills only what the rules did not read, and the card marks it "AI".
+
+A target drawn at the town it is heading for ("2 реактиви у бік Києва з півдня") is not at that town. Its glyph stands
+off the town on the side the post named, a fixed distance on the screen — not a distance on the ground, which nobody
+stated — and its card says where it is now was not given.
 
 ## Operational security
 

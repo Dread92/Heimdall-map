@@ -2,6 +2,39 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.51.0 — 2026-10-09
+
+### Added
+- **Target tags** — `S-07 Реактивний ×2`, `3500 м · 400 км/год` under it. Every target in the air gets Heimdall's own
+  number for the night (counted from 12:00 Kyiv time) and a letter for where a post *said* it came from: **N** north
+  or Belarus, **E** east or Russia, **S** south, the sea or Crimea, **W** west, **?** not said. The letter is never
+  worked out from where the target was first seen. A tag stays the same while the target is tracked, also after a
+  restart. It is Heimdall's number, not an official or military designation — the card says so.
+- The card shows the tag, where the target came from in the post's own words and from which channel, and the speed
+  when a post stated one. The replay shows the tags the live map gave; the dashboard's Analytics has the tags per
+  night by letter (with CSV).
+- **The AI reader fills the tags.** Where the rules did not read the origin, the height or the speed, the AI reader's
+  quoted, checked reading fills it, with an "AI" chip in the card (italics on the map). It never places, moves or
+  removes a target.
+- **The AI reader now knows the deterministic reading** (prompt version 3): each post comes with what the rules read in
+  it, the targets already on the map from every channel near the places it may name (with their tags), and the oblast
+  the channel speaks for and the oblasts its last posts named. It is asked to cross-check, correct, and above all add
+  the targets the rules missed — a duplicate is better than a miss — while every fact still quotes the post and every
+  place is one of ours. It can say which target on the map a post is about (`same_as`), and whether it is descending,
+  climbing, low or high. Targets only the AI found are on the dashboard for now; putting them on the map is next.
+- **Height and descent are always shown when a post gave them**: at every zoom, after the mark goes stale, and on the
+  chip of a target reported for a whole oblast ("↓2200"). A descent the AI quoted shows like one the rules read.
+- **Two switches on the dashboard's AI reader tab**: the AI reader itself (stops every call at once), and its facts in
+  the target tags — the kill switch, effective on every open map within 10 seconds.
+
+### Changed
+- **A target reported for a whole oblast is now obvious**: the oblast is outlined in cyan over a light hatching and
+  blinks, and its chip says "somewhere in the oblast" with the target's tag, weapon, count and any height stated. It
+  was orange, and disappeared into the amber and red of the alerts.
+- **A target heading for a town from a stated side no longer sits on the town.** "2 реактиви у бік Києва з півдня" drew
+  two jets on top of Kyiv. The glyph now stands off the town on the side the post named — a fixed distance on the
+  screen, not on the ground, since nobody said how far it is — pointing in along its dashed course.
+
 ## 1.50.2 — 2026-10-09
 
 ### Fixed

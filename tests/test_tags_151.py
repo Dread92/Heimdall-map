@@ -1,0 +1,294 @@
+"""1.51: target tags — S-07 ×2 · 3500 м.
+
+Every target in the air gets Heimdall's own number for the night (from 12:00 Kyiv time) and a letter for where a post
+SAID it came from — N north or Belarus, E east or Russia, S south, the sea or Crimea, W west, ? not said. The letter
+is never worked out from where the target was first seen. The rules' reading comes first; with the dashboard's switch
+on, the AI reader's quoted, checked reading fills what the rules did not read (origin, height, speed), marked as the
+AI's; off, the tags carry the rules' reading alone. A tag does not change while the target is tracked, even after its
+first report has left the window, and it survives a restart. It is not an official or military designation.
+"""
+import json
+import os
+import re
+import threading
+import urllib.error
+import urllib.request
+from datetime import datetime, timedelta, timezone
+from unittest import mock
+
+import ai_reader as A
+import geo
+import server
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def _read(p):
+    with open(os.path.join(ROOT, p), encoding="utf-8") as f:
+        return f.read()
+
+
+PAGE, I18N, ADMIN, REPLAY, SAFETY, DOC = (_read("static/kyiv.html"), _read("static/i18n.js"), _read("static/admin.html"),
+                                          _read("static/replay.js"), _read("docs/SAFETY.md"), _read("docs/TECHNICAL.md"))
+NOW = datetime.now(timezone.utc)
+
+
+def ago(m):
+    return (NOW - timedelta(minutes=m)).isoformat()
+
+
+# ---- what a post says about where it comes from -------------------------------------------------------------------
+def test_the_origin_is_what_the_post_says():
+    cases = {"2 реактиви у бік Києва з півдня.": "s", "Група шахедів з території Білорусі на Житомирщину": "belarus",
+             "Шахеди з Брянщини на Сумщину": "russia", "БпЛА з моря на Одесу": "sea", "Крилаті ракети з Криму": "crimea",
+             "Шахед з північного сходу на Бровари": "ne", "Шахед з ТОТ на Запоріжжя": "occupied",
+             "Шахеды со стороны Беларуси на Овруч": "belarus"}
+    for text, o in cases.items():
+        (m,) = geo.parse_for_channel("kpszsu", text)
+        assert (m.get("origin") or {}).get("o") == o, text
+    # a Ukrainian oblast it comes from is a place, not an origin; and nothing is worked out from a position
+    for text in ("Шахеди з Чернігівщини на Київщину", "Шахед над Броварами", "Реактивний на півночі Чернігівщини"):
+        assert not any(m.get("origin") for m in geo.parse_for_channel("kpszsu", text)), text
+
+
+def test_a_speed_only_when_written():
+    assert geo.parse_speed("швидкість 180 км/год") == {"kmh": 180, "q": "швидкість 180 км/год"}
+    assert geo.parse_speed("летить 400 км/год")["kmh"] == 400
+    assert geo.parse_speed("висота 2200") is None and geo.parse_speed("за 20 км від Броварів") is None
+    (m,) = geo.parse_for_channel("kpszsu", "Реактивний над Коростенем, швидкість 400 км/год")
+    assert m["speed"]["kmh"] == 400
+
+
+def test_the_letters():
+    P = server.TAG_PREFIX
+    assert (P["belarus"], P["n"], P["nw"], P["russia"], P["ne"], P["e"], P["se"]) == ("N", "N", "N", "E", "E", "E", "E")
+    assert (P["sea"], P["crimea"], P["s"], P["sw"], P["w"], P["occupied"]) == ("S", "S", "S", "S", "W", "?")
+
+
+def test_a_night_runs_from_noon_to_noon_and_is_named_by_the_day_it_starts():
+    k = server.kyiv_tz()
+    at = lambda d, h, mi=0: datetime(2026, 10, d, h, mi, tzinfo=k).astimezone(timezone.utc).isoformat()   # noqa: E731
+    assert server.tag_night(at(9, 12)) == server.tag_night(at(10, 3)) == server.tag_night(at(10, 11, 59)) == "2026-10-09"
+    assert server.tag_night(at(9, 11, 59)) == "2026-10-08"
+
+
+# ---- the tags ------------------------------------------------------------------------------------------------------
+def _state(**cfg):
+    # post ids are unique in life; the parse cache is shared by every State (a class attribute), so each test here
+    # uses ids of its own
+    st = server.State(server.Store(":memory:"), cfg)
+    return st, server.Telegram(st, cfg)
+
+
+def _tags(st):
+    return {m["id"]: m.get("tag") for m in st.markers() if not m.get("status")}
+
+
+def test_a_track_keeps_its_tag_and_the_letter_its_first_report_stated():
+    st, tg = _state()
+    tg.ingest("kyiv_airdef", [("kyiv_airdef/1", ago(6), "Шахед з півдня на Обухів"), ("kyiv_airdef/2", ago(3), "Шахед над Українкою")],
+              "tg:kyiv_airdef")
+    tg.ingest("kpszsu", [("kpszsu/9", ago(2), "2 реактиви з території Білорусі на Житомирщину")], "tg:kpszsu")
+    t = _tags(st)
+    assert t["kyiv_airdef/2#0"]["id"] == "S-01" and t["kyiv_airdef/2#0"]["os"] == "rules" and t["kyiv_airdef/2#0"]["oq"] == "з півдня"
+    assert t["kpszsu/9#0"]["id"] == "N-02" and t["kpszsu/9#0"]["o"] == "belarus"
+    assert _tags(st) == t                                           # recomputed: the same tags
+    row = st.tags.row(("%s" % t["kpszsu/9#0"]["night"], 2))
+    assert row["prefix"] == "N" and row["origin"] == "belarus" and row["osrc"] == "rules"
+
+
+def test_the_tag_is_found_by_any_report_so_it_survives_the_window_and_a_restart():
+    store = server.Store(":memory:")
+    tt = server.TargetTags(store)
+    k1 = tt.assign({"id": "a/1#0", "ts": ago(50), "reports": ["a/1#0", "a/2#0"], "history": [{"ts": ago(50)}]})
+    k2 = tt.assign({"id": "a/3#0", "ts": ago(5), "reports": ["a/2#0", "a/3#0"]})          # a/1 has left the window
+    other = tt.assign({"id": "b/1#0", "ts": ago(4), "reports": ["b/1#0"]})
+    assert k1 == k2 and other[1] == k1[1] + 1
+    again = server.TargetTags(store)                                                     # a restart
+    assert again.assign({"id": "a/4#0", "ts": ago(1), "reports": ["a/3#0", "a/4#0"]}) == k1
+    assert again.assign({"id": "c/1#0", "ts": ago(1), "reports": ["c/1#0"]})[1] == other[1] + 1
+    assert again.find(["a/1#0"]) == f"?-{k1[1]:02d}" and again.find(["zz/1#0"]) is None
+
+
+# ---- the AI's facts: only with the switch on, only its own target's, only what the rules did not read ---------------
+def _with_ai(st, post_id, targets):
+    st.ai = A.AIReader({"openrouter_key": "sk-or-test"}, st.store, geo, rules_fn=lambda *a: [], oblast_names={})
+    st.store.ai_save({"post_id": post_id, "ts": ago(1), "channel": post_id.split("/")[0], "text": "", "verdict": "ai_only",
+                      "rules": [], "ai": {"targets": targets, "uncertain": None}})
+
+
+def _ait(**kw):
+    t = A._t(**kw)
+    t["place"] = kw.get("place")
+    return t
+
+
+def test_the_ai_fills_the_letter_the_rules_did_not_read_and_the_switch_takes_it_out():
+    st, tg = _state()
+    tg.ingest("kpszsu", [("kpszsu/5", ago(2), "Шахеди на Бровари, висота 900 з боку РБ")], "tg:kpszsu")
+    assert _tags(st)["kpszsu/5#0"]["p"] in ("N", "?")            # the rules may read "з боку РБ" themselves
+    st2, tg2 = _state()
+    tg2.ingest("kpszsu", [("kpszsu/6", ago(2), "Група шахедів на Бровари, ідуть від кордону")], "tg:kpszsu")
+    assert _tags(st2)["kpszsu/6#0"]["p"] == "?"
+    _with_ai(st2, "kpszsu/6", [_ait(kind="shahed", place="Бровари", relation="heading_to", origin="belarus",
+                                    origin_quote="від кордону", altitude_m=1500, altitude_quote="висота 1500")])
+    t = _tags(st2)["kpszsu/6#0"]
+    assert t["id"] == "N-01" and t["os"] == "ai" and t["o"] == "belarus" and t["alt"] == {"m": 1500, "q": "висота 1500", "s": "ai"}
+    st2.store.kv_set("ai_live", "0")                               # the kill switch
+    t = _tags(st2)["kpszsu/6#0"]
+    assert t["id"] == "?-01" and t["os"] is None and t["alt"] is None
+
+
+def test_the_rules_reading_wins_and_another_targets_facts_are_never_borrowed():
+    st, tg = _state()
+    tg.ingest("kpszsu", [("kpszsu/7", ago(2), "Шахед з півдня на Обухів, висота 800\nРеактивний на Бровари")], "tg:kpszsu")
+    _with_ai(st, "kpszsu/7", [_ait(kind="shahed", place="Обухів", relation="heading_to", origin="belarus", origin_quote="x",
+                                   altitude_m=2000, altitude_quote="y"),
+                              _ait(kind="jet_drone", place="Київ", relation="heading_to", origin="russia", origin_quote="z",
+                                   speed_kmh=500, speed_quote="w")])
+    t = _tags(st)
+    ob = next(v for k, v in t.items() if k.startswith("kpszsu/7#") and v and v.get("oq") == "з півдня")
+    assert ob["p"] == "S" and ob["os"] == "rules" and ob["alt"] == {"m": 800, "s": "rules"}
+    jet = next(v for k, v in t.items() if k.startswith("kpszsu/7#") and v is not ob)
+    assert jet["p"] == "?" and jet["spd"] is None                  # the AI's Kyiv target is not the Brovary one
+
+
+def test_match():
+    a, b = _ait(kind="shahed", place="Бровари"), _ait(kind="shahed", place="Бориспіль")
+    assert A.match([a], {"Обухів"}, True) is a                     # one target each way: the same one
+    assert A.match([a, b], {"Бориспіль"}, False) is b and A.match([a, b], {"Обухів"}, False) is None
+    assert A.match([a], {"Обухів"}, False) is None
+    assert A.match([_ait(kind="shahed", place="Київ")], {"o31"}, False) is not None   # Kyiv alone is the city
+
+
+def test_switched_off_the_reader_reads_nothing():
+    st, _ = _state()
+    r = A.AIReader({"openrouter_key": "sk-or-test"}, st.store, geo, rules_fn=lambda *a: [], oblast_names={})
+    assert r.enabled()
+    st.store.kv_set("ai_reader_on", "0")
+    r.add({"post_id": "x/1", "channel": "x", "ts": ago(1), "text": "Шахед на Бровари", "tags": ["drones"]})
+    assert not r.enabled() and not r.q and r.stats()["reader_on"] is False
+
+
+def test_the_switches_are_the_dashboards_alone():
+    st, _ = _state()
+    st.ai = A.AIReader({"openrouter_key": "sk-or-test"}, st.store, geo, rules_fn=lambda *a: [], oblast_names={})
+    old = server.Handler.state
+    server.Handler.state = st
+    srv = server.Server(("127.0.0.1", 0), server.Handler)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    base = f"http://127.0.0.1:{srv.server_address[1]}/api/admin/ai"
+    post = lambda url, body: urllib.request.urlopen(urllib.request.Request(   # noqa: E731
+        url, data=json.dumps(body).encode(), headers={"Content-Type": "application/json"}), timeout=10)
+    try:
+        with mock.patch.dict(os.environ, {"ADMIN_KEY": "adm-test"}):
+            try:
+                post(base, {"live": False})
+                raise AssertionError("switched without the key")
+            except urllib.error.HTTPError as e:
+                assert e.code == 401
+            assert st.store.kv_get("ai_live") is None
+            d = json.loads(post(base + "?key=adm-test", {"live": False}).read())
+            assert d["ok"] and d["stats"]["live"] is False and st.store.kv_get("ai_live") == "0" and not st.ai_live()
+            d = json.loads(post(base + "?key=adm-test", {"live": True, "reader": False}).read())
+            assert d["stats"]["live"] is True and d["stats"]["reader_on"] is False and not st.ai.enabled()
+    finally:
+        srv.shutdown()
+        server.Handler.state = old
+
+
+# ---- the analytics and the replay ---------------------------------------------------------------------------------
+def test_the_nights_counts_by_letter():
+    st, tg = _state()
+    tg.ingest("kpszsu", [("kpszsu/1", ago(9), "Шахед з півдня на Обухів"), ("kpszsu/2", ago(8), "2 реактиви з території Білорусі на Житомирщину"),
+                         ("kpszsu/3", ago(7), "Шахед на Бровари")], "tg:kpszsu")
+    st.markers()
+    night = server.tag_night(NOW)
+    rows = st._an_targets([night])
+    assert rows[0]["S"] == 1 and rows[0]["N"] == 1 and rows[0]["?"] == 1 and rows[0]["total"] == 3 and rows[0]["ai"] == 0
+
+
+def test_the_replay_shows_the_tags_the_live_map_gave():
+    st, tg = _state()
+    tg.ingest("kpszsu", [("kpszsu/1", ago(9), "Шахед з півдня на Обухів"), ("kpszsu/3", ago(7), "Шахед над Броварами")], "tg:kpszsu")
+    st.markers()
+    tracks = st._replay_tracks(NOW - timedelta(hours=1), NOW, [])
+    assert sorted(t["tg"] for t in tracks) == ["?-02", "S-01"]
+
+
+# ---- the pages -----------------------------------------------------------------------------------------------------
+def test_the_map_label_carries_the_tag_and_the_bottom_line_the_telemetry():
+    assert "l1.innerHTML=`<tspan class=\"tid\">${esc(tg.id)}</tspan> ${esc(name)}`" in PAGE
+    assert ".mk .lbl .tid{fill:#ffd500}svg.wide .mk .lbl .tid{display:none}.mk .dn.ai{font-style:italic}" in PAGE
+    assert "spdK?t('tg_spd',spdK):''" in PAGE and "dn.classList.toggle('ai',telAi);" in PAGE
+    assert "${tagLine(m)}" in PAGE and "t('tg_what')" in PAGE and "<span class=\"tagid\">${esc(cur.tag.id)}</span>" in PAGE
+    # the card's style is never the map's: a 12.5 px font inside the map's SVG is 12.5 km tall
+    assert ".tagid{font:800 12.5px" in PAGE and not re.search(r"(?m)^\.tid\{", PAGE)
+    assert "<text class=\"tgc\" x=\"0\" y=\"0\"></text>" in PAGE and "svg:not(.close):not(.wide) .mk:not(.inbound)" in PAGE
+
+
+def test_an_approach_mark_stands_off_the_town_on_the_side_the_post_named():
+    assert "const apOff=!!m.approach&&!m.status&&!m.endedBy&&m.heading!=null;" in PAGE
+    assert "if(apOff){ const a=m.heading*Math.PI/180, D=Math.min(30*KPX,12); gx=x-D*Math.sin(a); gy=y+D*Math.cos(a); }" in PAGE
+    assert "b.g.setAttribute('transform',`translate(${gx.toFixed(3)} ${gy.toFixed(3)})`);" in PAGE
+    assert "lblPos.push({b,m,sx:gx/KPX,sy:gy/KPX});" in PAGE
+
+
+def test_the_strings_exist_in_three_languages():
+    for k in ["tg_what", "tg_nofrom", "tg_said", "tg_ai", "tg_ai_chip", "tg_spd", "tg_spd_l", "tg_alt_l"] + [f"tg_o_{o}" for o in A.ORIGINS]:
+        assert I18N.count(f"{k}:'") == 3, k
+    assert "Not an official or military designation." in I18N and "Це не офіційне й не військове позначення." in I18N
+
+
+def test_the_replay_and_the_dashboard():
+    assert "lb.textContent=(tr.tg?tr.tg+' ':'')" in REPLAY
+    assert "card('c13',tr('an_c_tags')" in ADMIN and "if(k==='targets') csvDownload(" in ADMIN
+    assert "sw('live',s.live!==false,tr('sw_live'))" in ADMIN and "fetch('/api/admin/ai'" in ADMIN
+
+
+def test_safety_and_docs():
+    assert "## A target's tag is a number, not a designation (1.51)" in SAFETY
+    assert "### 7.8 Target tags (1.51)" in DOC
+
+
+# ---- 1.51: the AI is given the map; descent and height are always shown when given ---------------------------------
+def test_the_ai_is_given_the_targets_on_the_map_near_the_post_never_the_posts_own():
+    st, tg = _state()
+    tg.ingest("kyiv_airdef", [("kyiv_airdef/9101", ago(6), "Шахед з півдня на Обухів")], "tg:kyiv_airdef")
+    tg.ingest("kpszsu", [("kpszsu/9102", ago(4), "Група шахедів з території Білорусі на Житомирщину")], "tg:kpszsu")
+    tg.ingest("kpszsu", [("kpszsu/9103", ago(1), "БпЛА на Бровари")], "tg:kpszsu")
+    cands = A.candidates(geo, "Шахед на Обухів", "kpszsu", None, (), {u: uk for u, uk, _ in server.OBLASTS})
+    # the Obukhiv report and the Brovary one are one track to the rules (S-02, "from the south"); the Zhytomyr group is
+    # far from Obukhiv and in another oblast
+    lines, tags = st.ai_context({"post_id": "kpszsu/9104", "channel": "kpszsu"}, cands)
+    assert tags == ["S-02"] and lines[0].startswith("S-02 · drone · heading to Бровари · from s · @kpszsu ")
+    lines, tags = st.ai_context({"post_id": "kpszsu/9103", "channel": "kpszsu"}, cands)
+    assert tags == []                                               # its own mark is not "on the map" for it
+
+
+def test_a_descent_the_ai_quoted_is_in_the_tag_when_the_rules_read_none():
+    st, tg = _state()
+    tg.ingest("kpszsu", [("kpszsu/9108", ago(2), "Шахед над Броварами, пішов униз")], "tg:kpszsu")
+    _with_ai(st, "kpszsu/9108", [_ait(kind="shahed", place="Бровари", relation="at", vertical="descending", vertical_quote="пішов униз")])
+    t = _tags(st)["kpszsu/9108#0"]
+    assert t["vs"] == {"v": "descending", "q": "пішов униз", "s": "ai"}
+    st2, tg2 = _state()
+    tg2.ingest("kpszsu", [("kpszsu/9109", ago(2), "Шахед над Броварами, знижується")], "tg:kpszsu")
+    assert _tags(st2)["kpszsu/9109#0"]["vs"] == {"v": "descending", "s": "rules"}
+
+
+def test_height_and_descent_are_shown_whenever_given():
+    assert "svg.veryfar .mk .dn{display:none}" not in PAGE                   # at every zoom
+    assert "dn.textContent=[altM?((dscAny?'↓':'')+altM+' '+t('m_unit')):(dscAny?'↓':'')" in PAGE   # also once stale
+    assert "tv0.vs&&tv0.vs.v==='descending'" in PAGE
+    assert "function oblAlt(m)" in PAGE and "+(al2?`<text class=\"obtxt obalt\"" in PAGE   # region-wide reports too
+
+
+# ---- 1.51: a target "somewhere in the oblast" says so, and is not drawn in the alert's colours ------------------------
+def test_a_region_wide_target_is_cyan_hatched_blinking_and_says_somewhere_in_the_oblast():
+    chip = PAGE[PAGE.index("function paintOblEvents(){"):PAGE.index("function oblEventSheet")]
+    assert "if(anyLive){ const s0=x; x+=where.length*6.1+7; items.push([s0,`<text class=\"obtxt obwhere\"" in chip
+    assert "${anyLive?`<path class=\"obhatch\" d=\"${o.path}\"/>`:''}" in chip and '<pattern id="obhp"' in chip
+    assert "tid=en[k]===1&&m.tag?m.tag.id:''" in chip                                   # its tag, when it is one report
+    assert "#oblevt .obring.live{fill:none;stroke:#3fe0ff;" in PAGE                   # cyan: never the alerts' amber or red
+    assert "@media (prefers-reduced-motion:reduce){#oblevt .obring.live,#oblevt .obhatch,#oblevt .oblevtchip.live{animation:none}}" in PAGE

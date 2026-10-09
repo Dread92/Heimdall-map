@@ -55,20 +55,20 @@ def test_the_schema_is_strict_and_every_field_is_required():
 
 def test_the_examples_are_right_by_the_validators_own_measure():
     """Each worked example gives only what its post states: the validator keeps every fact of it."""
-    for ch, prev, post, cands, ans in A.EXAMPLES:
+    for ch, prev, post, cands, parser, on_map, ans in A.EXAMPLES:
         cs = [(line.split(" | ")[0], line.split(" | ")[0], line) for line in cands.split("\n")]
-        kept, dropped = A.validate(ans, post, cs)
+        kept, dropped = A.validate(ans, post, cs, [x.split(" · ")[0] for x in on_map])
         assert dropped == 0 and len(kept) == len(ans["targets"]), post
         for t in ans["targets"]:
             assert set(t) == set(A.TARGET["properties"])
 
 
 def test_the_fixed_part_comes_first_and_is_marked_for_caching():
-    m = A.messages("@x (oblast: —)", ["[21:00] Шахед на Бровари"], "Далі на Требухів", "c1 | Требухів | Київська область")
+    m = A.messages(A.channel_block("x"), ["[21:00] Шахед на Бровари"], "Далі на Требухів", "c1 | Требухів | Київська область")
     assert m[0] == {"role": "system", "content": A.SYSTEM} and len(m) == 2 + 2 * len(A.EXAMPLES)
     assert m[-1]["role"] == "user" and "POST:\nДалі на Требухів" in m[-1]["content"] and "- [21:00] Шахед на Бровари" in m[-1]["content"]
     assert all(isinstance(x["content"], str) for x in m)
-    c = A.messages("@x (oblast: —)", [], "Шахед", "", cache=True)
+    c = A.messages(A.channel_block("x"), [], "Шахед", "", cache=True)
     assert c[-2]["content"][0]["cache_control"] == {"type": "ephemeral"} and c[-1]["content"].endswith("(none)")
 
 
@@ -256,7 +256,9 @@ def test_one_request_with_the_post_and_nothing_about_anybody():
     sent = json.dumps(body, ensure_ascii=False)
     assert "TRANSLATION-NOT-SENT" not in sent and "READER-HOME-NOT-SENT" not in sent and "kpszsu/1" not in sent
     last = body["messages"][-1]["content"]
-    assert last.startswith("CHANNEL: @kpszsu (oblast: —)") and "c1 | Бровари | Київська область" in last and "o14 | Київська область" in last
+    assert last.startswith("CHANNEL: @kpszsu\nCHANNEL'S OBLAST: none — a country-wide channel\nOBLASTS ITS LAST POSTS NAMED (30 min): Київська область")
+    assert "c1 | Бровари | Київська область" in last and "o14 | Київська область" in last
+    assert "PARSER READING (Heimdall's rules, for this post — may be wrong or incomplete):\n- drone ×2 · heading to Бровари · from n" in last
     assert "[20:58] Шахед на Бровари" in last
     (row,) = r.store.saved
     assert row["verdict"] == "agree" and row["post_id"] == "kpszsu/1" and row["cost"] == 0.0004 and row["prompt_v"] == A.PROMPT_VERSION
@@ -441,8 +443,8 @@ def test_the_dashboard_tab():
     assert '<button data-tab="ai" role="tab" data-tr="tab_ai">AI reader</button>' in ADMIN
     assert '<section class="tabsec" id="tab-ai" hidden><div id="aiv"></div></section>' in ADMIN
     assert "fetch('/api/ai_reads?limit=100&all='+(AI_ALL?1:0)+KEYQ)" in ADMIN and "if(t==='ai') loadAI();" in ADMIN
-    for s in ("<b>Nothing it says reaches the map, the alerts, the feed or a push.</b>",
-              "<b>Ніщо з її прочитання не потрапляє на мапу, у тривоги, у стрічку чи в сповіщення.</b>"):
+    for s in ("<b>It never places, moves or removes a target, and never touches the alerts or a push.</b>",
+              "<b>Вона ніколи не ставить, не переміщує й не прибирає ціль і не впливає на тривоги чи сповіщення.</b>"):
         assert s in ADMIN
     for v in A.STATUSES[1:]:
         assert ("st_" + {"shot_down": "down"}.get(v, v) + ":") in ADMIN
@@ -453,7 +455,7 @@ def test_the_dashboard_tab():
 
 
 def test_the_documentation():
-    assert "### 7.7 The AI reader, in shadow mode (1.50)" in DOC and "`OPENROUTER_API_KEY`" in DOC
+    assert "### 7.7 The AI reader (1.50; its facts in the target tags since 1.51)" in DOC and "`OPENROUTER_API_KEY`" in DOC
     assert "set-openrouter-key.bat" in DOC and "ai_reader.py" in DOC
 
 
@@ -468,7 +470,7 @@ def test_no_field_is_nullable_on_the_wire():
     t = w["targets"][0]
     assert w["uncertain"] == "" and t["count"] == 0 and t["place_id"] == "" and t["origin"] == "none" and t["side"] == "none"
     assert A.unwire(t)["count"] is None and A.unwire(t)["origin"] is None and A.unwire(t)["kind"] == "shahed"
-    for _, _, post, cands, ans in A.EXAMPLES:      # what the model is shown is what it is asked for
+    for _, _, post, cands, _, _, ans in A.EXAMPLES:      # what the model is shown is what it is asked for
         for tt in A.wire(ans)["targets"]:
             assert set(tt) == set(A.TARGET["properties"]) and None not in tt.values()
 
@@ -539,8 +541,8 @@ def test_refused_both_ways_it_pauses_and_says_why():
 
 
 def test_the_rules_now_ask_for_origin_and_speed():
-    assert A.PROMPT_VERSION == "2"
-    for rule in ("9. Origin:", '"з Білорусі"', "never an origin", "speed only when written", "the target just above it",
+    assert A.PROMPT_VERSION == "3"
+    for rule in ("9. Origin:", '"з Білорусі"', "never an origin", "give them whenever the post states them", "the target just above it",
                  "Answer with the JSON object only"):
         assert rule.lower() in A.SYSTEM.lower(), rule
 
@@ -549,3 +551,46 @@ def test_an_approach_mark_is_not_spotted_at_the_town_it_heads_for():
     page = _read("static/kyiv.html")
     assert "const appr=!!cur.approach&&!cur.status&&!cur.endedBy;" in page
     assert "${appr?esc(t('sh_appr',pn(cur.place))):`${cur.status?t('tp_reported'):t('tp_spotted')}" in page
+
+
+# ---- 1.51: the deterministic reading, the map and the oblast in the prompt -------------------------------------------
+def test_it_is_told_what_the_rules_read_the_map_and_the_oblast_and_asked_to_add_what_they_missed():
+    for rule in ("A deterministic parser has already read the post", "above all ADD the targets it missed",
+                 "A target missed is worse than a duplicate", "But you never invent", "15. The PARSER READING may be wrong",
+                 "14. ON THE MAP NOW", "in the CHANNEL'S OBLAST or in the OBLASTS ITS LAST POSTS NAMED",
+                 "Height, vertical state and speed matter most"):
+        assert rule in A.SYSTEM, rule
+    assert A.channel_block("rivne_radar", "Рівненська область", ["Житомирська область"]) == (
+        "@rivne_radar\nCHANNEL'S OBLAST: Рівненська область — a regional tracker: a place it names alone is in or near this "
+        "oblast\nOBLASTS ITS LAST POSTS NAMED (30 min): Житомирська область")
+    ms = geo.parse_for_channel("kpszsu", "Реактивний над Броварами, висота 2200, знижується")
+    assert A.parser_lines(ms) == ["drone · at Бровари · 2200 m · descending"]
+    msg = A.user_message("@x", [], "пост", "c1 | Бровари | Київська область", ["drone · at Бровари"], ["S-01 · drone · at Бровари · @x 21:00"])
+    assert "PARSER READING" in msg and "- drone · at Бровари" in msg and "- S-01 · drone · at Бровари · @x 21:00" in msg
+
+
+def test_same_as_only_a_tag_it_was_shown_and_a_vertical_state_only_in_its_words():
+    post = "Ціль заходить на Бортничі, низько, знижується"
+    cands = [("c1", "Бортничі", "Бортничі | м. Київ")]
+    out = {"targets": [_ans(kind="unknown", place_id="c1", place_quote="на Бортничі", relation="heading_to",
+                            vertical="descending", vertical_quote="знижується", same_as="S-07")]}
+    (t,), d = A.validate(out, post, cands, ["S-07"])
+    assert d == 0 and t["same_as"] == "S-07" and t["vertical"] == "descending"
+    (t,), d = A.validate(out, post, cands, ["N-02"])
+    assert d == 1 and t["same_as"] is None
+    out["targets"][0].update(vertical="descending", vertical_quote="заходить")
+    assert A.validate(out, post, cands, ["S-07"])[0][0]["vertical"] is None
+
+
+def test_the_reader_sends_the_map_context_the_server_gives_it():
+    r, seen = _reader(), []
+    r.context_fn = lambda post, cands: (["S-01 · drone · heading to Бровари · @kyiv_airdef 20:58"], ["S-01"])
+    good = {"targets": [dict(GOOD["targets"][0], same_as="S-01")], "uncertain": None}
+
+    def fake(req, timeout=None, context=None):
+        seen.append(json.loads(req.data.decode()))
+        return _ok(good)
+    with mock.patch.object(A.urllib.request, "urlopen", fake):
+        r.read(POST, ("14",), "")
+    assert "- S-01 · drone · heading to Бровари · @kyiv_airdef 20:58" in seen[0]["messages"][-1]["content"]
+    assert r.store.saved[-1]["ai"]["targets"][0]["same_as"] == "S-01"

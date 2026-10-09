@@ -105,7 +105,7 @@ def test_a_target_reported_for_a_whole_oblast_marks_the_region_not_a_point():
     tick = PAGE[PAGE.index("function tick(){"):PAGE.index("const ids=new Set(live.map(m=>m.id));")]
     assert "if(!m.status){ if(m.oblast_uid&&!m.endedBy)(g[m.oblast_uid]=g[m.oblast_uid]||[]).push(m); return false; }" in tick
     chip = PAGE[i:PAGE.index("function oblEventSheet", i)]
-    assert "G[gk]" in chip and "KIND_COL(m)" in chip and "obring${onlyLive?' live':''}" in chip
+    assert "G[gk]" in chip and "KIND_COL(m)" in chip and "obring${anyLive?' live':''}" in chip   # 1.51: any target in the air
     assert "const px=v=>`calc(var(--k,1)*${v.toFixed(1)}px)`;" in chip          # its size in screen pixels at every zoom
     # the Near list keeps it, without a distance, as "Chernihiv oblast · somewhere in the oblast"
     assert "vague:m.place==='область'" in PAGE and "km=(r.imm||r.vague)?'—'" in PAGE

@@ -2160,6 +2160,65 @@ NEVER_PLACED = frozenset({"strategic_aircraft_activity", "mig31k_departure"})
 CHANNEL_HOME = {}
 
 
+# 1.51: where a post says a target comes from — the first letter of the target's tag (N-07, S-12…). Only when the post
+# says so: never worked out from where it was first reported (a jet first seen over Chernihiv oblast may have come
+# from Belarus or from Russia). A Ukrainian oblast or town it comes from is a place, not an origin.
+_ORIGIN_RX = [
+    ("belarus", re.compile(r"(?:\bз|\bзі|\bіз|\bвід|\bс|\bсо|\bиз)\s+(?:території\s+|боку\s+|сторони\s+|территории\s+|стороны\s+)?"
+                           r"(?:республіки\s+|республики\s+)?(?:білорус\w*|беларус\w*|рб\b|білорусь)")),
+    ("russia", re.compile(r"(?:\bз|\bзі|\bіз|\bвід|\bс|\bсо|\bиз)\s+(?:території\s+|боку\s+|сторони\s+|территории\s+|стороны\s+)?"
+                          r"(?:рос(?:ії|ии)\b|рф\b|брянщин\w*|курщин\w*|бєлгородщин\w*|білгородщин\w*|белгородск\w*|брянськ\w*|"
+                          r"брянск\w*|курськ\w*|курск\w*|бєлгород\w*|білгород\w*|белгород\w*|орловщин\w*|смоленщин\w*)")),
+    ("sea", re.compile(r"(?:\bз|\bзі|\bіз|\bс|\bсо|\bиз)\s+(?:боку\s+|стороны\s+)?(?:моря\b|акваторі\w+|чорного\s+моря|черного\s+моря|"
+                       r"азовського\s+моря)")),
+    ("crimea", re.compile(r"(?:\bз|\bзі|\bіз|\bс|\bсо|\bиз)\s+(?:боку\s+|стороны\s+)?(?:тимчасово\s+окупованого\s+)?(?:криму|крыма)\b")),
+    ("occupied", re.compile(r"(?:\bз|\bзі|\bіз|\bс|\bиз)\s+(?:тот\b|тимчасово\s+окупован\w+\s+територ\w+|окупован\w+\s+територ\w+|"
+                            r"оккупированн\w+\s+территор\w+)")),
+]
+_DIR8 = ("n", "ne", "e", "se", "s", "sw", "w", "nw")
+
+
+def stated_origin(seg):
+    """{"o": belarus|russia|sea|crimea|occupied|n|ne|e|se|s|sw|w|nw, "q": the words} or None — what the post says."""
+    low = (seg or "").lower()
+    for o, rx in _ORIGIN_RX:
+        m = rx.search(low)
+        if m:
+            return {"o": o, "q": seg[m.start():m.end()].strip()}
+    m = _FROM_COMPASS.search(low)
+    if m:
+        deg = _dir(m.group(1))
+        if deg is not None:
+            return {"o": _DIR8[int(((deg % 360) + 22.5) // 45) % 8], "q": seg[m.start():m.end()].strip()}
+    return None
+
+
+_SPEED_RX = re.compile(r"(?:швидк\w*|скорост\w*)\s*(?:~|бл\.|близько|около|до|понад)?\s*(\d{2,4})\s*(?:км/?\s*(?:год|г|ч)\w*|км)?"
+                       r"|(\d{2,4})\s*км\s*/\s*(?:год|г|ч)\w*", re.I)
+
+
+def parse_speed(seg):
+    """{"kmh": n, "q": the words} when the post states a speed ("швидкість 180 км/год", "400 км/год") — never derived."""
+    m = _SPEED_RX.search(seg or "")
+    if not m:
+        return None
+    v = int(m.group(1) or m.group(2))
+    return {"kmh": v, "q": m.group(0).strip()} if 30 <= v <= 5000 else None
+
+
+def _telemetry(ms, text):
+    """The origin and the speed each mark's own words state (its segment; the whole post when it reports one target)."""
+    for m in ms:
+        seg = (m.get("evidence") or {}).get("segment") or (text if len(ms) == 1 else "")
+        o = stated_origin(seg) or (stated_origin(text) if len(ms) == 1 else None)
+        sp = parse_speed(seg) or (parse_speed(text) if len(ms) == 1 else None)
+        if o:
+            m["origin"] = o
+        if sp:
+            m["speed"] = sp
+    return ms
+
+
 def parse_for_channel(channel, text, near=None):
     """`near` (1.45): the oblasts this regional channel named in its last posts. A tracker follows its targets into the
     next oblast — "Це він на Хмельниччині", then "Маневр на Гулівці", "Далі на Кути" (@rivne_radar): a post that names
@@ -2175,7 +2234,7 @@ def parse_for_channel(channel, text, near=None):
         hc = _OBL_CENTRE.get(home)
         ms = [m for m in ms if m.get("lon") is None or m.get("oblast_uid") in named or not hc
               or _km((m["lon"], m["lat"]), hc) <= 300]
-    return [_city_settle(_rel_settle(_raion_settle(_settle(m)))) for m in ms]
+    return _telemetry([_city_settle(_rel_settle(_raion_settle(_settle(m)))) for m in ms], text)
 
 
 # 1.45.1: "БпЛА на півночі від Миколаєва, курс на захід" (the Air Force) is north OF the city, at a distance the post
