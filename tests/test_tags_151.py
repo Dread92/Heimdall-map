@@ -294,7 +294,8 @@ def test_height_and_descent_are_shown_whenever_given():
 def test_a_region_wide_target_is_cyan_hatched_blinking_and_says_somewhere_in_the_oblast():
     chip = PAGE[PAGE.index("function paintOblEvents(){"):PAGE.index("function oblEventSheet")]
     assert "if(anyLive){ const s0=x; x+=where.length*6.1+7; items.push([s0,`<text class=\"obtxt obwhere\"" in chip
-    assert "${anyLive?`<path class=\"obhatch\" d=\"${o.path}\"/>`:''}" in chip and '<pattern id="obhp"' in chip
+    # 1.52.1: no hatching over an oblast with a target placed in it (test_trail_1521)
+    assert "${anyLive&&!placed.has(uid)?`<path class=\"obhatch\" d=\"${o.path}\"/>`:''}" in chip and '<pattern id="obhp"' in chip
     assert "tid=en[k]===1&&m.tag?m.tag.id:''" in chip                                   # its tag, when it is one report
     assert "#oblevt .obring.live{fill:none;stroke:#3fe0ff;" in PAGE                   # cyan: never the alerts' amber or red
     assert "@media (prefers-reduced-motion:reduce){#oblevt .obring.live,#oblevt .obhatch,#oblevt .oblevtchip.live{animation:none}}" in PAGE

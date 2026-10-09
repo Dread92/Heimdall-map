@@ -1185,6 +1185,10 @@ class Store:
             type TEXT, PRIMARY KEY(night, n))""")
         c.execute("CREATE TABLE IF NOT EXISTS target_reports(report TEXT PRIMARY KEY, night TEXT, n INTEGER, ts TEXT)")
         c.execute("CREATE INDEX IF NOT EXISTS ix_trep_ts ON target_reports(ts)")
+        # 1.52.1: where each report of a tagged track was — the tag's path for the whole night (`/api/trail`)
+        c.execute("""CREATE TABLE IF NOT EXISTS target_points(
+            report TEXT PRIMARY KEY, night TEXT, n INTEGER, ts TEXT, lon REAL, lat REAL, place TEXT, alt_m INTEGER)""")
+        c.execute("CREATE INDEX IF NOT EXISTS ix_tpt_tag ON target_points(night, n)")
         c.execute("CREATE INDEX IF NOT EXISTS ix_alerts_started ON alerts(started_at)")
         c.execute("CREATE INDEX IF NOT EXISTS ix_feed_ts ON feed(ts)")
         c.execute("CREATE INDEX IF NOT EXISTS ix_mlog_ts ON marker_log(ts)")
@@ -1892,6 +1896,7 @@ class TargetTags:
     def __init__(self, store):
         self.store, self.lock = store, threading.Lock()
         self.by_report, self.rows, self.last_n = {}, {}, {}
+        self.pt_seen = set()         # 1.52.1: the reports whose point is written
         self._n = 0
         since = (datetime.now(timezone.utc) - timedelta(days=2)).isoformat()
         try:
@@ -1904,6 +1909,7 @@ class TargetTags:
                                                             "first_ts", "last_ts", "type"), row))
                 for night, n in store.conn.execute("SELECT night, MAX(n) FROM targets GROUP BY night"):
                     self.last_n[night] = n
+                self.pt_seen = {r for (r,) in store.conn.execute("SELECT report FROM target_points WHERE ts>=?", (since,))}
         except Exception as e:
             log("target tags: not loaded:", e)
 
@@ -1952,6 +1958,30 @@ class TargetTags:
         with self.lock:
             return dict(self.rows.get(key) or {})
 
+    def points(self, key, pts):
+        """1.52.1: where each report of a track was (report, ts, lon, lat, place, height) — the tag's path for the whole
+        night, kept after the reports leave the 45-minute window. A point goes to the tag its report belongs to; a
+        destination ("на Бровари") and a whole oblast are no point."""
+        with self.lock:
+            if len(self.pt_seen) > 50000:
+                self.pt_seen.clear()             # INSERT OR IGNORE keeps it right; this only saves writes
+            new = [(r, *self.by_report.get(r, key), ts, lon, lat, place, alt) for r, ts, lon, lat, place, alt in pts
+                   if r not in self.pt_seen and lon is not None and lat is not None]
+            self.pt_seen.update(p[0] for p in new)
+        if new:
+            self._write_many("INSERT OR IGNORE INTO target_points(report,night,n,ts,lon,lat,place,alt_m) "
+                             "VALUES(?,?,?,?,?,?,?,?)", new)
+
+    def trail(self, night, n, limit=300):
+        """The points of a tag, oldest first: [{ts, lon, lat, place, alt}]."""
+        try:
+            with self.store.lock:
+                rows = self.store.conn.execute("SELECT ts, lon, lat, place, alt_m FROM target_points WHERE night=? AND n=? "
+                                               "ORDER BY ts LIMIT ?", (night, n, limit)).fetchall()
+        except Exception:
+            return []
+        return [{"ts": ts, "lon": lon, "lat": lat, "place": place, "alt": alt} for ts, lon, lat, place, alt in rows]
+
     def find(self, reports):
         """The tag of a past track (the replay): "S-07", or None when none of its reports was ever tagged. Never makes
         one — tags are given by the live map alone."""
@@ -1988,6 +2018,7 @@ class TargetTags:
                 if self._n % 500 == 1:
                     cut = (datetime.now(timezone.utc) - timedelta(days=TAG_KEEP_DAYS)).isoformat()
                     self.store.conn.execute("DELETE FROM target_reports WHERE ts<?", (cut,))
+                    self.store.conn.execute("DELETE FROM target_points WHERE ts<?", (cut,))
                     self.store.conn.execute("DELETE FROM targets WHERE last_ts<?", (cut,))
                 self.store.conn.commit()
         except Exception as e:
@@ -2449,6 +2480,12 @@ class State:
                 continue
             key = self.tags.assign(m, taken)
             taken.add(key)
+            # 1.52.1: every point of the track, kept for the tag's whole path (an approach mark stands at a destination)
+            pts = [(h["id"], h["ts"], h.get("lon"), h.get("lat"), h.get("place"), h.get("alt_m")) for h in m.get("history") or []]
+            if not m.get("approach"):
+                pts.append((m["id"], m["ts"], m.get("lon"), m.get("lat"), m.get("place"),
+                            (m.get("alt") or {}).get("m")))
+            self.tags.points(key, pts)
             o, src = m.get("origin_t"), None
             if o:
                 src = "rules"
@@ -6390,6 +6427,12 @@ class Handler(BaseHTTPRequestHandler):
             if u.path == "/api/markers":
                 st.markers_now()
                 return self._send_cached(st._resp["markers"])
+            if u.path == "/api/trail":
+                # 1.52.1: a tag's path for the night — every place its reports put it, oldest first (the card, on a tap)
+                night, n = q.get("night", [""])[0], q.get("n", [""])[0]
+                if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", night) or not n.isdigit() or not 0 < int(n) < 100000:
+                    return self._json({"error": "night=YYYY-MM-DD&n=<number>"}, 400)
+                return self._json({"night": night, "n": int(n), "points": st.tags.trail(night, int(n))})
             # The dashboard is yours alone: it needs ACCESS_KEY, and it refuses to serve anything when no key
             # is configured, so an open deployment can never expose it by accident.
             if u.path in ("/api/usage", "/admin"):

@@ -559,6 +559,12 @@ def plain(msgs):
     return [dict(m, content=m["content"][0]["text"]) if isinstance(m["content"], list) else m for m in msgs]
 
 
+# 1.52.1: the longest answer allowed. Every target is written out field by field with its quotes (the strict schema):
+# 600 tokens for a post is usual, and one post in ten of a busy tracker ("По 1 біля Кіптів та Бобровиці. 1 на
+# Водосховище…") went past the 1,200 allowed until then — cut off mid-answer, read as "not JSON".
+MAX_OUT = 2400
+
+
 def _json_of(content):
     """The answer's JSON object — also when a model asked by the prompt alone wraps it in a code fence or a sentence."""
     if isinstance(content, (dict, list)):
@@ -772,7 +778,7 @@ class AIReader(threading.Thread):
     def _request(self, msgs, way):
         # 1.50.1: only parameters every model that takes a JSON schema accepts. With require_parameters, one the model
         # does not take (claude-haiku-5.5 takes no `temperature`) leaves no provider at all: "HTTP 404: No endpoints".
-        body = {"model": self.model(), "max_tokens": 1200, "messages": msgs,
+        body = {"model": self.model(), "max_tokens": MAX_OUT, "messages": msgs,
                 "provider": {"require_parameters": True}, "usage": {"include": True}}
         if way == 0:
             body["response_format"] = {"type": "json_schema", "json_schema": {"name": "heimdall_reading", "strict": True,
@@ -808,8 +814,12 @@ class AIReader(threading.Thread):
         try:
             out = _json_of(data["choices"][0]["message"]["content"])
         except Exception:
-            self.last_error = "not JSON"
-            return {"error": "not JSON", "cost": cost, "tok_in": usage.get("prompt_tokens"), "tok_out": usage.get("completion_tokens")}
+            # 1.52.1: the answer cut off at the length allowed is not a malformed answer — the dashboard says which
+            cut = ((data.get("choices") or [{}])[0].get("finish_reason") == "length"
+                   or (usage.get("completion_tokens") or 0) >= MAX_OUT)
+            err = f"cut off at {MAX_OUT} tokens" if cut else "not JSON"
+            self.last_error = err
+            return {"error": err, "cost": cost, "tok_in": usage.get("prompt_tokens"), "tok_out": usage.get("completion_tokens")}
         self.last_error = None
         return {"out": out, "cost": cost, "tok_in": usage.get("prompt_tokens"), "tok_out": usage.get("completion_tokens"),
                 "model": data.get("model") or self.model(), "way": way}

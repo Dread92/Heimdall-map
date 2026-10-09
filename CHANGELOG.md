@@ -2,6 +2,23 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.52.1 — 2026-10-09
+
+### Added
+- **A target's whole path for the night.** Tap a target with a tag: every place the posts reported it at tonight, also
+  the ones older than the map's 45 minutes, drawn fainter before the recent ones, and in the card "N-07 tonight: 12
+  reports since 19:02: Ріпки 19:02 → … → Вишгород 20:22". The places are where the posts put it; between two reports
+  nobody saw it.
+
+### Changed
+- **The hatching of an oblast with a target somewhere in it no longer covers the map**: only on the whole-region view,
+  in fine lines, and never over an oblast with a target placed in it. The cyan outline and the chip stay.
+
+### Fixed
+- **"Call failed · not JSON" on one reading in ten** (the dashboard, 9 Oct: 18 of 160): the AI's answer was cut off at
+  1,200 tokens — a busy tracker's post with several targets, each written out with its quotes. It may now be 2,400
+  long, and an answer cut off says so ("cut off at 2400 tokens").
+
 ## 1.52.0 — 2026-10-09
 
 ### Added

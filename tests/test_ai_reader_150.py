@@ -246,7 +246,7 @@ def test_one_request_with_the_post_and_nothing_about_anybody():
     assert req.full_url == A.OPENROUTER_URL == "https://openrouter.ai/api/v1/chat/completions"
     assert req.get_header("Authorization") == "Bearer sk-or-test-0000"
     body = json.loads(req.data.decode())
-    assert body["model"] == "anthropic/claude-haiku-5.5" and body["max_tokens"] == 1200
+    assert body["model"] == "anthropic/claude-haiku-5.5" and body["max_tokens"] == A.MAX_OUT == 2400   # 1.52.1: 1200 cut answers off
     # 1.50.1: nothing the model may not take — with require_parameters, a `temperature` claude-haiku-5.5 does not take
     # left OpenRouter no provider at all ("HTTP 404: No endpoints found that can handle the requested parameters")
     assert set(body) == {"model", "max_tokens", "messages", "response_format", "provider", "usage"}

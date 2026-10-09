@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.52** · last updated 2026-10-09 (1.52.0)
+**Documented version: 1.52** · last updated 2026-10-09 (1.52.1)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -703,7 +703,9 @@ reading (`tag_feed_text`); the stored and shown text is never changed.
 windows; nothing draws it there. The Tactical map puts it on the region with the outcomes of 1.38 (`OBLEVT`,
 `paintOblEvents`): a dashed outline (1.51: for targets in the air, cyan — never the alerts' amber or red — over a hatching
 that says "an area", blinking, and a chip with the tag, the weapon, the count, a stated height and the words "somewhere
-in the oblast"; still under `prefers-reduced-motion`) and a chip with the weapon's silhouette and the
+in the oblast"; still under `prefers-reduced-motion`. 1.52.1, the owner: the hatching hid the targets once they were
+placed — it is drawn only on the whole-region view (`svg.veryfar`), in lines a few screen pixels apart (`#obhp` scaled by
+`KPX`), and never over an oblast with a target placed in it; the outline and the chip stay) and a chip with the weapon's silhouette and the
 count, the posts one tap away (`oblEventSheet`). The Near list keeps it without a distance, as "Chernihiv oblast ·
 somewhere in the oblast" (`oblWhere`, `nearRows` `vague`); it never raises the level. A push never says "within N km
 of you" for it (`proximity_watch`) — only a ballistic warning, which covers the region anyway, is still sent, naming
@@ -910,7 +912,15 @@ take dark colours (`body.m-day`).
 
 **The path of a tapped target** (1.52, `drawSelPath`, layer `#selpath`): the places the posts reported it at, oldest
 first, joined in red dots, each with its time — the path the posts put it on, not a flight path; cleared when the
-card closes.
+card closes. 1.52.1: **the tag's whole path for the night** — every point of a tagged track (the report's place, time
+and stated height; a destination or a whole oblast is no point) is kept with its tag (`TargetTags.points`, table
+`target_points`, 60 days), so it outlives the 45-minute window; a tap fetches it (`GET /api/trail`, `loadTrail`) and
+draws the reports older than the window fainter (`.old`) before the ones still on the map, a time on a dot only where it
+does not sit on the last one shown, and the card adds "N-07 tonight: 12 reports since 19:02: Ріпки 19:02 → … →
+**Вишгород 20:22**" (`trailLine`, `#shtrail`).
+
+1.52.1: an answer may be `MAX_OUT` = 2,400 tokens long (1,200 cut one reading in ten off mid-answer — "not JSON");
+an answer cut off at the length is recorded as "cut off at 2400 tokens".
 
 ### 7.9 The AI reader's targets on the map (1.52)
 
@@ -1574,6 +1584,7 @@ All JSON unless stated. Public unless marked 🔒 (`ADMIN_KEY`).
 | `GET /api/version` | `{v, now, missile, msl, build, app}` — the cheap ping pages poll |
 | `GET /api/state` | active alerts, per-oblast status, whether each source works (1.46: `{ok}` only — the detail is `/api/health`), єРадар counts, the admin's message, the nuclear event, the Kyiv bridges (`bridges`, §9b), the oblasts on the map (`scope`, 1.43), config summary |
 | `GET /api/markers` | live marks with evidence, history, staleness; 1.51: each target in the air with its `tag` (§7.8) |
+| `GET /api/trail?night=&n=` | 1.52.1: a tag's path for the night (§7.8), oldest first: `{night, n, points: [{ts, lon, lat, place, alt}]}` — at most 300 |
 | `GET /api/feed?limit=&lang=` | recent posts (`text`, `text_en`, `text_fr`, `en_mt`, tags, and `home` for a regional channel's post — 1.43); `lang` asks for translation |
 | `GET /api/stream?sync=&ev=&p=&lang=` | the live line (§5.4): `hello`, `sync` (changes of `mk`, `st`, `fd` as asked in `sync`) and, unless `ev=0`, the events `start`, `end`, `threat`, `update`, `feed`, `eradar`, `tr`, `notice`, `nuke`; `p=light` counts it as a Light page |
 | `GET /api/history?hours=&oblast=` | past alerts (1–168 h; cached, one query per change for every page) |
@@ -1625,6 +1636,7 @@ SQLite in WAL mode (`DB_PATH`; on Fly, the volume). Tables:
 | `corpus_reviews` | verdicts from `/admin` review, merged back with `scripts/corpus.py pull` |
 | `targets` | 1.51: each target tag (§7.8) — `night`, `n`, the letter, origin, whose reading (`osrc`), its words, the post, first / last time, type. Kept 60 days |
 | `target_reports` | 1.51: which tag each report of a track belongs to (`report` = the mark id) — how a tag survives the window and a restart |
+| `target_points` | 1.52.1: where each report of a tagged track was (`report`, `night`, `n`, `ts`, `lon`, `lat`, `place`, `alt_m`) — the tag's path for the night, `/api/trail`; 60 days |
 | `ai_reads` | 1.50: the AI reader's reading of each post it read (§7.7) — when, the post, whether the rules stored it, model, prompt version, ms, tokens, cost, verdict, the rules' reading and its own (JSON), facts dropped, error. Kept 90 days; the month's spend is `kv` `ai_usd:YYYY-MM` |
 | `usage`, `usage_seen` | anonymous usage counters |
 
