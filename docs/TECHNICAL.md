@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.52** · last updated 2026-10-09 (1.52.1)
+**Documented version: 1.53** · last updated 2026-10-09 (1.53.0)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -181,7 +181,8 @@ clear-sky/
 | `Watchdog` | the database and alert-state locks must be free within 15 s; a held lock logs every thread's stack, five in a row (~2 min) → exit, Fly restarts it; a starved process is only logged (load, not a deadlock) | 20 s |
 | `Digests` | each night (18:00–08:00 Kyiv) after `digest_hour`, and each Monday for the week: the figures (`State.digest_facts`), and with `ANTHROPIC_API_KEY` a written summary in EN + UK; stored in `digests` | 5 min check |
 | `Translations` | machine-translates feed posts into a language somebody reads | on demand, ~3 calls/s max |
-| `ai-reader` | 1.50, with `OPENROUTER_API_KEY`: the AI reader in **shadow mode** (§7.7) — reads the new posts one at a time beside the rules, stores both readings in `ai_reads`; never touches the map, the alerts, the feed or a push | queue; ≤ 400 posts/h, ≤ `ai_reader_monthly_usd` a month |
+| `ai-reader` | 1.50, with `OPENROUTER_API_KEY`: the AI reader (§7.7) — 1.53: every `ai_check_minutes` one call for the posts of those minutes (§7.10; `ai_reader_mode` "post": one at a time as before), stores its findings in `ai_reads` and the check in `ai_checks`; never touches the alerts or the feed, never sends a push | queue; ≤ 400 posts/h, ≤ `ai_reader_monthly_usd` a month |
+| `night-reports` | 1.53: after `ai_report_hour` (Kyiv), the AI's report on the night before (§7.10) → `ai_reports`; or a night the dashboard asks for | 5 min |
 | `Pusher` | sends Web Push: one notification at a time, each to all its phones at once through `push.Sender` (32 workers, one kept-open HTTPS connection per push service per worker, VAPID signed once an hour per service) | queue |
 | `streams` | **every open page's live line** (`StreamHub`, §5.4): one thread, non-blocking sockets (epoll), the data sent as changes | events + every 15 / 5 / 2 s |
 | `proximity` | per-subscriber distance checks → push | continuous |
@@ -282,6 +283,9 @@ the committed template.
 | `ai_reader` | `true` | `false` keeps the AI reader off even with a key. |
 | `ai_reader_model` | `"anthropic/claude-haiku-5.5"` | Its model on OpenRouter (any model that takes a strict JSON schema). |
 | `ai_reader_monthly_usd` | `10` | What it may spend in a calendar month (UTC), counted from OpenRouter's own cost of each call; past it, it stops until the 1st. |
+| `ai_reader_mode` | `"check"` | 1.53: `"check"` — one call every `ai_check_minutes` for all the posts of those minutes (§7.10); `"post"` — one call a post (until 1.52). The dashboard's switch (`kv` `ai_mode`) wins. |
+| `ai_check_minutes` | `10` | 1.53: how often the check runs, on the clock (2–60). |
+| `ai_report_hour` | `9` | 1.53: the Kyiv hour after which the AI writes its report on the night that began the day before at 12:00. |
 | `demo` | `false` | Fake alerts and posts. |
 
 ### 5.3 Environment variables
@@ -961,6 +965,75 @@ can continue — it made a second track sharing that report, and both found the 
 skips a tag another track of the same pass already has (`taken`, the tracks taken oldest first). Place names ending in
 "-лець" decline with a soft sign (Козелець → Козельця, Козельцем): the stem index has that form too.
 
+### 7.10 The 10-minute check and the night's report (1.53)
+
+The owner (9 Oct 2026): one call a post costs too much at the channels' pace — the dashboard showed ~150 posts an hour
+at ~$0.0004 each (≈ 8,000 tokens in: the rules and eleven worked examples, for every post), the month's $10 gone in a
+week. **The check** (`ai_reader_mode` "check", the default): every `ai_check_minutes` (10, on the clock: :00, :10…) the
+`ai-reader` thread takes the queue (the same posts as before, `AIReader.wants`) and makes one call
+(`AIReader.check` → `_check_call`): the posts **grouped by the oblast they concern** (the oblast of the rules' marks, else
+of the places they name, else the channel's own; `=== OBLAST o14 · Київська область ===`), each block with **what the
+map shows there now** (`State.ai_map`: every target in the air, tagged or for the whole oblast), each post with its time,
+channel, text (700 characters at most), `RULES:` (`parser_lines` of the rules' marks — or "set aside") and `NAMES:` (its
+candidate ids; one numbering for the whole check). At most 60 posts a call; more → several, by oblast. The prompt
+(`SYSTEM_CHECK`, version 5) reuses the reading rules 1–12 of the one-post prompt (`RULES_READ`) and asks only for
+**findings** — where a post's words show the rules wrong or incomplete: `missed` (a target no rules line has), `place`,
+`weapon`, `outcome`, `not_sky` (the rules drew a target from a post that reports none), `facts` (the right place, a
+stated origin, height, descent, speed, count or destination missing) — each with its target in the one-post schema
+(`CHECK_SCHEMA`) and a few words why, and a **note per oblast** on what its posts show together. One worked check
+(`CHECK_EXAMPLE`) is the earlier turn. Every finding's target goes through `validate` with that post's text and
+candidates; a `missed` target at a place the rules have is `facts`; a `not_sky` where the rules drew nothing is
+dropped. Each post read gets its row (`ai_reads`, `chk`, cost 0, the word from `check_verdict`: agree / none / place /
+ai_only / kind / status / rules_only / **facts**) and the check its own (`ai_checks`: posts, tokens, cost, findings,
+notes). A failed call is kept as a failed check and its posts go back to the queue once. ~$0.001–0.002 a check.
+
+What the findings do on the map is what 1.52's readings did: the facts fill the tags (`_ai_facts`; a `missed` or
+`place` target is never taken for the track's own, `match`); a `missed` / `place` target the rules have nowhere is
+drawn, marked AI (`_ai_marks_of`; `facts`, `weapon`, `outcome` never are) — **up to ten minutes late, so never pushed**
+(`proximity_watch` skips `ai` marks; the owner's decision). A namesake is the place the rules read (`_canon` drops the
+disambiguation: "Козин (Прилуцький р-н)" was drawn 120 km from the Kyiv Kozyn the post meant), and of several candidates
+of one name the one nearest the target's other place, the post's other places, the rules' marks or the channel's own
+oblast (Kyiv for the Kyiv channels) is kept, whichever the AI chose (`pick_namesakes`, `anchors_of`; both modes). The dashboard: the
+switch "How it reads" (`mode`), "Check now", the checks with their findings and notes, each post's findings with why.
+
+**The night's report.** `State.night_summary(night)` is everything recorded over one tag night (12:00 → 12:00 Kyiv): the
+official alerts by oblast (minutes, alerts, first start, last end, raions), every tag with its **path** (`target_points`),
+heights, origin and who read it, minutes followed, reports, km, oblasts crossed; the entry places by letter; heights
+by band; the reports by hour and oblast and those for a whole oblast; the outcomes; the Air Force's summaries; the
+channels; the checks (cost, findings, every note) and every post where the AI and the rules parted. Counts and the
+places the posts named — no reader, no watched place. `State.night_text` is the same as plain text (`compact`: a path cut
+to its ends, 40 partings). The `night-reports` thread gives the compact text, after `ai_report_hour` (9), to the reader's
+model with `REPORT_SYSTEM` (sections: the night in brief, routes, heights and speeds, against the Air Force, patterns,
+Heimdall itself — only what the record shows, "reported", no forecast as a fact, ≤ 900 words) and keeps the answer
+(`ai_reports`). Dashboard → Analytics: the night card (pick a night, the report, "write it now / again", the record as
+JSON or text to download for any AI), and "the AI's checks per night" (findings by kind, checks, posts, cost; CSV).
+
+**Tags that hold (1.53)**, the owner: "the ID number changes during the course — it is probably the same drone".
+`TargetTags.assign` gives a track the tag its **latest shown** report had (`shown`, kept by `show` for every mark drawn),
+then the tag of any of its reports, oldest first; and a new track whose first report sits ≤ 6 km and ≤ 4 minutes from
+another tagged track's report of the same kind (another channel's word for the same target, `State._twin`) takes that
+track's tag — one target, two reports, one number (`twins`: those reports may share it).
+
+**Nothing over a target (1.53)**, the owner: "do not stack things like this". The label de-collision (tick) also keeps
+clear of every mark's height (`.dn`) and compact tag (`.tgc`) and of the history layer's glyphs; an explosion's name
+(`.imp .it`) that would touch a target's label, glyph or height, or another explosion, is hidden (`.imp.nolbl`); and the
+town names give way to the targets' glyphs and heights as well as their labels (`LBLBOX`).
+
+**A short card (1.53)**: on a phone a target's card opens at most 38 % of the screen high — the kind, height, tag, where
+and the post in three lines; the track, the night's path, the notes and the evidence are `.sec` and come with "More"
+(`#shmore`, `.sheet.more`).
+
+**The map opens at once (1.53)**: `sw.js` keeps the satellite tiles (`/tiles/sat/`, cache `heimdall-tiles-1`,
+cache-first, ≤ 5,000, the oldest dropped) — their address carries the layer's version, so a kept tile is never stale —
+and answers the map's drawing (`FAST`: the map JSON files) from its cache at once, refreshing it behind. The page asks it
+once per version to fetch the tiles of Kyiv and the oblasts around it ahead (`warmTiles`, z5–8 over the region, z9–10
+over Kyiv oblast, ~200 tiles), never with `saveData` or on 2G. Esri's closer tiles are left to the browser's cache. The
+data (`/api/…`) is never kept.
+
+**Full-screen map (1.53)**: the last button of the map's column (`#fsbtn`, yellow) hides the header and the drawer
+(`body.fullmap`) and asks the browser for full screen where it allows it (Android); the alert status stays as a chip
+top left (`#fmchip`, mirroring the band `#kyiv`; a tap, Escape or the phone's Back leaves).
+
 ## 8. Translation
 
 The feed is Ukrainian; EN and FR readers get a translation.
@@ -1605,7 +1678,9 @@ All JSON unless stated. Public unless marked 🔒 (`ADMIN_KEY`).
 | 🔒 `GET /api/analytics?days=` | the dashboard's Analytics (§8c), 7–365 days: `af` per date (launched, down, used, impacts, debris, periods), `af_areas`, `af_directions`, `af_models`, `kyiv` per date (city / oblast minutes, city alerts), `starts` (7 × 24), `reports` per date by type, `hours`, `headings`; since 1.33 `weather` per date (`kyiv`, `launch`), `approach` (8 sectors per date), `air` (`per_date`, `stats`, `sorties`), `obl` (`by`, `cols`, `rows`), `weather_status`; since 1.34 `places` (the heat layer's top 25) and `bridges` (`per_date`, `totals`, `recent`) |
 | 🔒 `POST /api/admin/nuke` | `{action: arm}` → `{code, expires_s, phrase}` (refused while one is on); `{action: fire, code, phrase, text: {uk, en, fr}, push}`; `{action: end}` — the nuclear event (§9) |
 | 🔒 `POST /api/admin/channel` | `{action: add|set|delete, name, mode: map|trial|off, via: web|api, home}` — the channels read (§7.1); `home` is the compartment (an oblast uid, `31`, `ua`, or `""`); `add` checks `t.me/s/<name>` for readable posts and starts it on trial |
-| 🔒 `POST /api/admin/ai` | `{reader: bool, live: bool}` — the AI reader's switches (1.51, §7.7): reading at all, and its facts in the target tags (the kill switch) |
+| 🔒 `POST /api/admin/ai` | `{reader: bool, live: bool}` — the AI reader's switches (1.51, §7.7): reading at all, and its facts in the target tags (the kill switch); 1.53: `mode: "check"\|"post"`, `check_now: true` (§7.10) |
+| 🔒 `GET /api/admin/night?night=YYYY-MM-DD` | 1.53: one night in full (§7.10): `summary` (`State.night_summary`), `text` (`State.night_text`), `report` (the AI's, or null), `reports` (the nights that have one), `writing`, `report_hour` |
+| 🔒 `POST /api/admin/ai_report` | 1.53: `{night}` — asks the `night-reports` thread to write (again) that night's report |
 | 🔒 `POST /api/admin/region` | `{id, on}` — an oblast on or off as a whole (1.43, §7.1): its place on the map and its channels; `31` is always on |
 | 🔒 `POST /api/admin/notice` | `{text: {uk, en, fr}, level: info|warn|alert, hours: 0–168 (0 = until removed), push: bool}` or `{clear: true}` — the team's message (§9) |
 | 🔒 `GET /api/ai_reads?limit=&all=` | the AI reader in shadow mode (1.50, §7.7): `stats` (`key`, `enabled`, `model`, `prompt_v`, `usd_month`, `cap_usd`, `queued`, `paused`, `last_error`, `skipped`, `reads_month`, `by_verdict`, `ms_median`) and `reads` (newest first, ≤ 300; only the disagreements and errors unless `all=1`): post, channel, `stored`, `verdict`, `rules`, `ai` (`targets`, `uncertain`), `dropped`, `cost`, `ms`, `model`, `error` |
@@ -1637,7 +1712,9 @@ SQLite in WAL mode (`DB_PATH`; on Fly, the volume). Tables:
 | `targets` | 1.51: each target tag (§7.8) — `night`, `n`, the letter, origin, whose reading (`osrc`), its words, the post, first / last time, type. Kept 60 days |
 | `target_reports` | 1.51: which tag each report of a track belongs to (`report` = the mark id) — how a tag survives the window and a restart |
 | `target_points` | 1.52.1: where each report of a tagged track was (`report`, `night`, `n`, `ts`, `lon`, `lat`, `place`, `alt_m`) — the tag's path for the night, `/api/trail`; 60 days |
-| `ai_reads` | 1.50: the AI reader's reading of each post it read (§7.7) — when, the post, whether the rules stored it, model, prompt version, ms, tokens, cost, verdict, the rules' reading and its own (JSON), facts dropped, error. Kept 90 days; the month's spend is `kv` `ai_usd:YYYY-MM` |
+| `ai_reads` | 1.50: the AI reader's reading of each post it read (§7.7) — when, the post, whether the rules stored it, model, prompt version, ms, tokens, cost, verdict, the rules' reading and its own (JSON), facts dropped, error. Kept 90 days; the month's spend is `kv` `ai_usd:YYYY-MM`. 1.53: `chk`, the check that read it (its `ai` then holds the findings: `targets` with `f`, `findings`) |
+| `ai_checks` | 1.53: each 10-minute check (§7.10) — `id` (its UTC time), the posts' first and last time, how many, the oblasts, model, prompt version, ms, tokens, cost, `findings` (by kind), `notes` (per oblast), `uncertain`, `error` |
+| `ai_reports` | 1.53: the AI's report on each night (§7.10) — `night`, when, up to when, model, tokens, cost, `text`, `error` |
 | `usage`, `usage_seen` | anonymous usage counters |
 
 Columns are added in place by `Store.__init__` (`ALTER TABLE … ADD COLUMN`), so an old database upgrades itself.

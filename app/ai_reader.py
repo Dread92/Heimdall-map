@@ -257,7 +257,8 @@ def parser_lines(ms):
         p = m.get("place") or ""
         where = (f"in oblast {m.get('oblast_uid')}" if p == "область" else
                  f"heading to {p[2:]}" if p.startswith("→ ") else f"at {p}") if p else "no place"
-        bits = [_KW.get(m.get("type"), m.get("type") or "?") + (f" ×{m['count']}" if (m.get("count") or 1) > 1 else ""), where]
+        kw = "jet drone" if m.get("type") == "drones" and m.get("jet") else _KW.get(m.get("type"), m.get("type") or "?")
+        bits = [kw + (f" ×{m['count']}" if (m.get("count") or 1) > 1 else ""), where]
         if (m.get("origin") or {}).get("o"):
             bits.append(f"from {m['origin']['o']}")
         if m.get("status"):
@@ -266,6 +267,8 @@ def parser_lines(ms):
             bits.append(f"{m['alt']['m']} m")
         if (m.get("alt") or {}).get("state"):
             bits.append(m["alt"]["state"])
+        if (m.get("speed") or {}).get("kmh"):
+            bits.append(f"{m['speed']['kmh']} km/h")
         out.append(" · ".join(bits))
     return out
 
@@ -471,7 +474,10 @@ def validate(out, text, cands, tags=()):
 
 # ---- the two readings side by side ---------------------------------------------------------------------------------
 def _canon(w):
-    """Kyiv itself is the city's region to the rules (a post naming no place in it, geo._city_settle)."""
+    """Kyiv itself is the city's region to the rules (a post naming no place in it, geo._city_settle). 1.53: and a
+    village is its name — "На Козин" is one place in the post, whichever namesake each reader took ("Козин (Прилуцький
+    р-н)", 120 km from the Kyiv one, was drawn as a second target the rules had missed): where the rules placed it stands."""
+    w = (w or "").split(" (")[0]
     return "o31" if w == "Київ" else w
 
 
@@ -488,6 +494,51 @@ def place_of(geo, key):
     if p:
         return p
     return getattr(geo, "EXTRA_PLACES", {}).get(key)
+
+
+def anchors_of(geo, marks, home=None, channel=None):
+    """1.53: where a post is about, to choose between namesakes: the rules' marks (their places, a destination too), and
+    the channel's own oblast — Kyiv for the Kyiv channels."""
+    out = [(m["lon"], m["lat"]) for m in marks or [] if m.get("lon") is not None and m.get("lat") is not None]
+    kyiv = home in ("31", "14") or channel in getattr(geo, "_KYIV_CH", ())
+    c = (getattr(geo, "_OBL_CENTRE", {}) or {}).get(home) if home and not kyiv else None
+    if kyiv and geo and "Київ" in geo.PLACES:
+        c = geo.PLACES["Київ"][:2]
+    if c:
+        out.append((c[0], c[1]))
+    return out
+
+
+def pick_namesakes(targets, cands, geo, anchors=()):
+    """1.53: "з Козина на Ходосівку" — the AI took Козин (Прилуцький р-н), 150 km off, for the village by Kyiv the post
+    meant. Of several candidates of one name, the one nearest to the other places of the same target, then of the
+    post's other targets, then to `anchors` (anchors_of) is kept — whichever the AI chose. Changes `targets` in place."""
+    by = {}
+    for cid, key, _ in cands:
+        if not key.startswith("o"):
+            by.setdefault(key.split(" (")[0], []).append((cid, key))
+
+    def pos(k):
+        p = place_of(geo, k)
+        return (p[0], p[1]) if p else None
+
+    def km(a, b):
+        return ((a[0] - b[0]) * 70.7) ** 2 + ((a[1] - b[1]) * 111) ** 2
+    sure = [pos(t[f]) for t in targets for f in ("place", "toward") if t.get(f) and len(by.get(t[f].split(" (")[0], [])) < 2]
+    for t in targets:
+        for fld, idf in (("place", "place_id"), ("toward", "toward_id")):
+            k = t.get(fld)
+            alts = by.get((k or "").split(" (")[0], [])
+            if not k or len(alts) < 2:
+                continue
+            other = t.get("toward" if fld == "place" else "place")
+            anc = ([pos(other)] if other and len(by.get(other.split(" (")[0], [])) < 2 else []) + sure + list(anchors)
+            anc = [a for a in anc if a]
+            if not anc:
+                continue
+            best = min(alts, key=lambda a: min(km(pos(a[1]), x) for x in anc) if pos(a[1]) else 1e18)
+            t[fld], t[idf] = best[1], best[0]
+    return targets
 
 
 def summarise_rules(ms):
@@ -512,7 +563,8 @@ def summarise_ai(targets, places=None):
 def match(targets, wheres, alone):
     """1.51: the AI target that is a given track's — the one at one of its places (`wheres`, canonical), or the only
     target of a post the rules also read as one target (`alone`). None rather than a guess."""
-    if alone and len(targets) == 1:
+    # 1.53: a check stores only what it found (`f`): a target it found MISSING, or at another place, is not the track's
+    if alone and len(targets) == 1 and targets[0].get("f") in (None, "facts", "weapon", "outcome"):
         return targets[0]
     for t in targets:
         w = _canon(t.get("place") or "")
@@ -598,17 +650,197 @@ def _why(e):
     return msg
 
 
+# ---- 1.53: the 10-minute check ------------------------------------------------------------------------------------
+# The owner (9 Oct 2026): one call a post costs too much at the channels' pace (~150 posts an hour, ~$0.0004 each:
+# the month's budget gone in a week). Every `ai_check_minutes` (10) one call reads the posts of those minutes, grouped by
+# the oblast they concern, with what the rules drew from each and what the map shows in each oblast — and answers only
+# where the rules are wrong or incomplete (FINDINGS), with a short NOTE per oblast. The rules stay the reader; the
+# check is the second opinion, ten minutes late at most.
+CHECK_VERSION = "5"
+FINDINGS = ["missed", "place", "weapon", "outcome", "not_sky", "facts"]
+MAX_CHECK_POSTS = 60          # posts in one call; more in the window → several calls, by oblast
+MAX_OUT_CHECK = 6000
+CHECK_TEXT = 700              # characters of a post sent (a long post is news; its first lines are what matter)
+CHECK_SCHEMA = {
+    "type": "object", "additionalProperties": False,
+    "properties": {
+        "findings": {"type": "array", "items": {
+            "type": "object", "additionalProperties": False,
+            "properties": {"post": _S, "finding": {"type": "string", "enum": FINDINGS}, "target": TARGET, "why": _S},
+            "required": ["post", "finding", "target", "why"]}},
+        "notes": {"type": "array", "items": {
+            "type": "object", "additionalProperties": False,
+            "properties": {"oblast": _S, "note": _S}, "required": ["oblast", "note"]}},
+        "uncertain": _S},
+    "required": ["findings", "notes", "uncertain"]}
+
+# the reading rules are the same as for one post (1 to 12 of SYSTEM): one text, two prompts
+RULES_READ = SYSTEM[SYSTEM.index("1. Never infer."):SYSTEM.index("13. PREVIOUS POSTS")].rstrip()
+
+SYSTEM_CHECK = """You are the second reader of Heimdall, a public air-threat map of Ukraine. People decide whether to take cover from what is drawn. Every few minutes you check the channel posts of those minutes against what Heimdall's deterministic rules drew from each (RULES, under each post) and against the targets ON THE MAP NOW in each oblast. The rules are fast and stay the main reader: you do not repeat what they got right. You report only FINDINGS — where a post's own words show the rules wrong or incomplete — and a short NOTE per oblast on what the posts show together. A target missed is worse than a duplicate: when a post names a place for a target the rules did not draw, report it, even in loose or unusual words. But you never invent: every fact quotes its post, every place is one the post names, from CANDIDATES.
+
+How to read a post:
+""" + RULES_READ + """
+
+The check:
+13. The posts come grouped by the oblast they concern (=== OBLAST … === blocks), oldest first. Each has its id ([p4]), its time, its channel with the channel's own oblast and the oblasts its last posts named, its text, RULES (what the rules drew from it, one line a target; "set aside" = the server judged it not about the sky and drew nothing) and NAMES (the ids of the CANDIDATES its words match).
+14. One finding per target the rules got wrong or missed, with "post" = the post's id and "finding" =
+   - "missed": a target the post names that no RULES line of that post has — give the whole target;
+   - "place": a RULES line put the target at the wrong place — the target at the right place;
+   - "weapon": the right place, the wrong weapon; "outcome": shot down, impact or lost read wrongly or not at all;
+   - "facts": the right place, but a stated origin, height, vertical state, speed, count or destination is missing from the RULES line — the target at the rules' place, with them;
+   - "not_sky": the rules drew a target from a post that reports none (an official alert message, news, an advert, a fundraiser) — a target of kind "unknown" with no place.
+   "why": a few English words. A post the rules read right gets no finding.
+15. A channel's earlier posts in the check are the context of its later ones ("Далі на X" continues the last target that channel named). Never carry a fact from one post into another post's finding.
+16. same_as: the tag of the target ON THE MAP NOW that this one is (the same weapon reported again near the same place, or continued); otherwise "".
+17. NOTES: for each oblast block with targets, one or two English sentences on what its posts show together — how many targets, of what kind, where they come in from and where they head, waves, heights, and what the map misses or overstates. Only what the posts and the map show: no forecast, no advice. "oblast" is the block's id (o14).
+18. Unsure about something? Say it in "uncertain" ("" when sure).
+
+Answer with the JSON object only — no other text, no code fence."""
+
+
+def _hm(ts):
+    """HH:MM in Kyiv time."""
+    try:
+        from zoneinfo import ZoneInfo
+        tz = ZoneInfo("Europe/Kyiv")
+    except Exception:
+        from datetime import timedelta
+        tz = timezone(timedelta(hours=3))
+    try:
+        return datetime.fromisoformat(str(ts).replace("Z", "+00:00")).astimezone(tz).strftime("%H:%M")
+    except Exception:
+        return "?"
+
+
+def check_text(blocks, cand_lines, window=""):
+    """The check's message. `blocks`: [(oblast id or "", oblast name, [map lines], [post dicts])], a post dict:
+    {label, hm, ch, home, near, text, rules (lines, or None when set aside), names}."""
+    out = [f"CHECK OF THE POSTS {window}".rstrip(), "", "CANDIDATES (id | name | oblast):", cand_lines or "(none)", ""]
+    for oid, name, lines, posts in blocks:
+        out.append(f"=== OBLAST {oid} · {name} ===" if oid else "=== NO OBLAST NAMED ===")
+        out.append("ON THE MAP NOW:")
+        out += [f"- {x}" for x in lines] or ["(nothing)"]
+        out.append("POSTS:")
+        for p in posts:
+            own = p.get("home") or "none — a country-wide channel"
+            out.append(f"[{p['label']}] {p['hm']} @{p['ch']} · CHANNEL'S OBLAST: {own} · OBLASTS ITS LAST POSTS NAMED: "
+                       f"{', '.join(p.get('near') or []) or '—'}")
+            out.append(p["text"])
+            r = p.get("rules")
+            out.append("RULES: " + ("set aside — nothing drawn" if r is None else "; ".join(r) if r else "(nothing)"))
+            out.append("NAMES: " + (", ".join(p.get("names") or []) or "—"))
+            out.append("")
+    return "\n".join(out).rstrip()
+
+
+def _p(label, hm, ch, text, rules, names, home=None, near=()):
+    return {"label": label, "hm": hm, "ch": ch, "text": text, "rules": rules, "names": names, "home": home, "near": list(near)}
+
+
+# one worked check, given as an earlier turn: what to report, and what not to
+CHECK_EXAMPLE = (
+    check_text([
+        ("o14", "Київська область", ["S-07 · drone · heading to Бортничі · @kyiv_airdef 22:10"], [
+            _p("p1", "22:12", "kyiv_airdef", "Ціль заходить на Бортничі, низько, знижується", [], ["c1", "o31"], "м. Київ", ["м. Київ"]),
+            _p("p2", "22:13", "trevoga_kartaa_noviny", "🚨Повітряна тривога · жовтий рівень🟡\nБучанський р-н\nДронова загроза",
+               ["drone · in oblast 14"], ["o14"]),
+            _p("p3", "22:14", "kpszsu", "2 шахеди з півночі на Бровари", ["drone ×2 · heading to Бровари · from n"], ["c2", "o14"]),
+            _p("p4", "22:15", "eRadarrua", "🛵 Наливайківка\n\n🛵 2 повз Бородянку на Ворзель",
+               ["drone · at Наливайківка", "drone ×2 · at Бородянка"], ["c3", "c4", "c5", "o14"], None, ["Київська область"])]),
+        ("o5", "Рівненська область", ["?-04 · drone · heading to Сарни · @rivne_radar 22:05"], [
+            _p("p5", "22:17", "rivne_radar", "Тепер на Висоцьк", None, ["c6", "c7"], "Рівненська область", ["Рівненська область"])]),
+        ("o10", "Житомирська область", [], [
+            _p("p6", "22:11", "kpszsu", "🏍 Реактивний БпЛА на Житомирщині в напрямку Коростеня", ["jet drone · heading to Коростень"], ["c8", "o10"]),
+            _p("p7", "22:16", "monitor_ukr", "1 реактив над Коростенем\nшвидкість 400 км/год, висота 3 км", ["jet drone · at Коростень"], ["c8", "o10"])])],
+        "c1 | Бортничі | м. Київ\nc2 | Бровари | Київська область\nc3 | Наливайківка | Київська область\nc4 | Бородянка | Київська область\n"
+        "c5 | Ворзель | Київська область\nc6 | Висоцьк | Рівненська область\nc7 | Висоцьк (Житомирський р-н) | Житомирська область\n"
+        "c8 | Коростень | Житомирська область\no5 | Рівненська область\no10 | Житомирська область\no14 | Київська область\no31 | м. Київ",
+        "22:10–22:20 Kyiv time"),
+    {"findings": [
+        {"post": "p1", "finding": "missed", "why": "a tracker's target heading to Bortnychi, descending",
+         "target": _t(kind="unknown", place_id="c1", place_quote="на Бортничі", relation="heading_to",
+                      vertical="descending", vertical_quote="знижується", same_as="S-07")},
+        {"post": "p2", "finding": "not_sky", "why": "an official alert message, not a target", "target": _t()},
+        {"post": "p4", "finding": "facts", "why": "the course to Vorzel", "target": _t(
+            kind="shahed", kind_quote="🛵", count=2, count_quote="2 повз", place_id="c4", place_quote="повз Бородянку",
+            relation="near", toward_id="c5", toward_quote="на Ворзель")},
+        {"post": "p5", "finding": "missed", "why": "the tracker's next point (its own oblast's Vysotsk), set aside by the server",
+         "target": _t(kind="unknown", place_id="c6", place_quote="на Висоцьк", relation="heading_to", same_as="?-04")},
+        {"post": "p7", "finding": "facts", "why": "height and speed", "target": _t(
+            kind="jet_drone", kind_quote="реактив", count=1, count_quote="1 реактив", place_id="c8", place_quote="над Коростенем",
+            relation="at", speed_kmh=400, speed_quote="швидкість 400 км/год", altitude_m=3000, altitude_quote="висота 3 км")}],
+     "notes": [
+        {"oblast": "o14", "note": "Two Shaheds from the north toward Brovary, two passing Borodianka toward Vorzel, and S-07 descending onto Bortnychi; the yellow-level message for Bucha raion is an alert, not a target."},
+        {"oblast": "o5", "note": "?-04, heading for Sarny, now goes on toward Vysotsk."},
+        {"oblast": "o10", "note": "One jet drone came in toward Korosten and is now over it at 3 km, 400 km/h."}],
+     "uncertain": ""})
+
+
+def wire_check(ans):
+    """A check's answer as the model writes it (no field is nullable on the wire)."""
+    one = wire({"targets": [f["target"] for f in ans["findings"]]})["targets"]
+    return {"findings": [{"post": f["post"], "finding": f["finding"], "target": t, "why": f.get("why") or ""}
+                         for f, t in zip(ans["findings"], one)],
+            "notes": [{"oblast": n["oblast"], "note": n["note"]} for n in ans.get("notes") or []],
+            "uncertain": ans.get("uncertain") or ""}
+
+
+def check_messages(text, cache=False):
+    out = [{"role": "system", "content": SYSTEM_CHECK},
+           {"role": "user", "content": CHECK_EXAMPLE[0]},
+           {"role": "assistant", "content": json.dumps(wire_check(CHECK_EXAMPLE[1]), ensure_ascii=False)}]
+    if cache:
+        out[-1]["content"] = [{"type": "text", "text": out[-1]["content"], "cache_control": {"type": "ephemeral"}}]
+    out.append({"role": "user", "content": text})
+    return out
+
+
+# ---- 1.53: the night's report --------------------------------------------------------------------------------------
+REPORT_VERSION = "1"
+MAX_OUT_REPORT = 3000
+REPORT_SYSTEM = """You are the analyst of Heimdall, an unofficial air-threat map of Ukraine built from public Telegram channels and the official alert feed. You are given the complete record of one night (12:00 to 12:00 Kyiv time): the official alerts by oblast, every target Heimdall tagged with the path its reports drew, its heights and where it came from, the reports by hour and oblast, the outcomes reported, the Air Force's figures, and the notes of the AI checks run every few minutes, with the posts where the AI and Heimdall's rules parted.
+
+Write the night's report for the owner, in English, plain text with short headed sections:
+1. The night in brief — when it started and ended, the waves, the oblasts most concerned, the few figures that matter.
+2. Routes — where targets came in from (by tag letter and entry places), where they went, the longest paths; Kyiv city and oblast in particular.
+3. Heights and speeds — what was reported, and the descents.
+4. Against the Air Force — what its summary says beside what the channels reported, where both exist.
+5. Patterns — what this night shows about how the attack unfolded: timing, routes, mixes of weapons, repeats; only what the record supports.
+6. Heimdall itself — what the map missed or overstated, read from the posts where the AI and the rules parted and from the checks' notes: name the kinds of post, and the rule that would fix each.
+
+Only what the record shows: take every figure from it, never invent a number, a place or a weapon; say "reported" (these are channel reports, not a count of drones); no forecast stated as a fact, no advice on sheltering, no names of people. At most 900 words."""
+
+
+# a post's word for the dashboard, from what the check found in it (the same words as one post's reading)
+F_VERDICT = {"not_sky": "rules_only", "place": "place", "weapon": "kind", "outcome": "status", "facts": "facts"}
+F_ORDER = ["not_sky", "missed", "place", "weapon", "outcome", "facts"]
+
+
+def check_verdict(kinds, rules):
+    """agree / none when it found nothing; otherwise the weightiest finding's word."""
+    if not kinds:
+        return "agree" if rules else "none"
+    k = min(kinds, key=F_ORDER.index)
+    if k == "missed":
+        return "place" if rules else "ai_only"
+    return F_VERDICT[k]
+
+
 # ---- the reader --------------------------------------------------------------------------------------------------
 class AIReader(threading.Thread):
     """Reads the queued posts one at a time, within the month's budget (`ai_reader_monthly_usd`, counted from what
     OpenRouter says each call cost) and PER_HOUR posts an hour. Paused 10 minutes when OpenRouter refuses the key or
     the credits, a minute when it says to slow down."""
 
-    def __init__(self, cfg, store, geo, rules_fn, oblast_names, previous_fn=None, log=print, context_fn=None):
+    def __init__(self, cfg, store, geo, rules_fn, oblast_names, previous_fn=None, log=print, context_fn=None, map_fn=None):
         super().__init__(daemon=True, name="ai-reader")
         self.cfg, self.store, self.geo, self.rules_fn = cfg, store, geo, rules_fn
         self.oblast_names, self.previous_fn, self.log = oblast_names, previous_fn, log
         self.context_fn = context_fn      # 1.51: (post, candidates) → (lines of the targets on the map, their tags)
+        self.map_fn = map_fn              # 1.53: (oblast uids) → ({uid: lines of the targets on the map}, their tags)
+        self.next_at = 0.0                # 1.53: when the next check is due (Unix time)
+        self.checks = 0
         self.q = deque(maxlen=400)
         self.cond = threading.Condition()
         self.lock = threading.Lock()
@@ -685,22 +917,220 @@ class AIReader(threading.Thread):
 
     def run(self):
         while True:
-            with self.cond:
-                while not self.q:
-                    self.cond.wait(30)
-                item = self.q.popleft()
-            if not self.enabled():
-                continue
             try:
-                why = self.read(*item)
-                if why in ("paused", "budget", "rate"):
-                    self.skipped[why] = self.skipped.get(why, 0) + 1
-            except Exception as e:              # never the reader's death: the next post is read
+                if self.mode() == "post":
+                    self._one_post()
+                else:
+                    self._tick_check()
+            except Exception as e:              # never the reader's death: the next post, the next check
                 self.last_error = f"{type(e).__name__}"
                 self.log("ai reader:", type(e).__name__, str(e)[:120])
+                time.sleep(5)
+
+    def _one_post(self):
+        with self.cond:
+            if not self.q:
+                self.cond.wait(30)
+            if not self.q:
+                return
+            item = self.q.popleft()
+        if not self.enabled():
+            return
+        why = self.read(*item)
+        if why in ("paused", "budget", "rate"):
+            self.skipped[why] = self.skipped.get(why, 0) + 1
+
+    # -- 1.53: the 10-minute check -------------------------------------------------------------------------------
+    def mode(self):
+        """"check" — every `ai_check_minutes`, one call for the posts of those minutes (the default) — or "post", one
+        call a post as until 1.52: the dashboard's choice (kv `ai_mode`), else the config's (`ai_reader_mode`)."""
+        try:
+            v = self.store.kv_get("ai_mode")
+        except Exception:
+            v = None
+        v = v or self.cfg.get("ai_reader_mode") or "check"
+        return v if v in ("check", "post") else "check"
+
+    def interval(self):
+        try:
+            return max(2, min(60, int(self.cfg.get("ai_check_minutes", 10))))
+        except (TypeError, ValueError):
+            return 10
+
+    def check_now(self):
+        """The dashboard's "check now": the posts waiting are read at once."""
+        self.next_at = 1.0
+
+    def _tick_check(self):
+        iv, now = self.interval() * 60, time.time()
+        if not self.next_at:
+            self.next_at = (now // iv + 1) * iv          # on the clock: :00, :10, :20…
+        if now < self.next_at:
+            time.sleep(min(15.0, self.next_at - now))
+            return
+        self.next_at = (now // iv + 1) * iv
+        with self.cond:
+            items = list(self.q)
+            self.q.clear()
+        if items and self.enabled():
+            self.check(items)
+
+    def check(self, items, retry=False):
+        """One check of the posts (`items`: the queue's (post, near, home, stored)): grouped by the oblast they concern,
+        in calls of at most MAX_CHECK_POSTS posts. Returns the number of calls, or why none was made."""
+        why = self._allowed(len(items))
+        if why:
+            self.skipped[why] = self.skipped.get(why, 0) + len(items)
+            return why
+        xs = [self._prep(*it) for it in sorted(items, key=lambda it: it[0].get("ts") or "")]
+        groups = OrderedDict()
+        for x in xs:
+            groups.setdefault(x["uid"], []).append(x)
+        chunks, cur, size = [], [], 0
+        for uid, part in groups.items():
+            for i in range(0, len(part), MAX_CHECK_POSTS):
+                sl = part[i:i + MAX_CHECK_POSTS]
+                if cur and size + len(sl) > MAX_CHECK_POSTS:
+                    chunks.append(cur)
+                    cur, size = [], 0
+                cur.append((uid, sl))
+                size += len(sl)
+        if cur:
+            chunks.append(cur)
+        failed = []
+        for blocks in chunks:
+            if self._check_call(blocks) == "error" and not retry:
+                failed += [x["item"] for _, sl in blocks for x in sl]
+        if failed:                                        # once more at the next check (a timeout, a busy provider)
+            with self.cond:
+                self.q.extendleft(reversed(failed))
+        return len(chunks)
+
+    def _prep(self, post, near=(), home=None, stored=True):
+        ch, full = post["channel"], mask(post["text"])
+        home = home if home not in ("", "ua") else None
+        cands = candidates(self.geo, full, ch, home, near, self.oblast_names)
+        marks = self.rules_fn(ch, full, list(near)) if stored else []
+        uids = [m.get("oblast_uid") for m in marks if m.get("oblast_uid")]
+        for _, key, _ in cands:
+            if key.startswith("o") and key[1:].isdigit():
+                uids.append(key[1:])
+            else:
+                pl = place_of(self.geo, key)
+                if pl:
+                    uids.append(pl[2])
+        uids.append(home)
+        uid = next((u for u in uids if u and u in self.oblast_names), "")
+        return {"item": (post, near, home, stored), "post": post, "ch": ch, "full": full, "text": full[:CHECK_TEXT],
+                "stored": stored, "cands": cands, "marks": marks, "uid": uid,
+                "home": self.oblast_names.get(home) if home else None,
+                "near": [self.oblast_names[u] for u in dict.fromkeys(near or ()) if u in self.oblast_names]}
+
+    def _check_call(self, blocks):
+        gid, lines_c, n = {}, OrderedDict(), 0
+        for _, xs in blocks:
+            for x in xs:
+                n += 1
+                x["label"], x["gc"] = f"p{n}", []
+                for _, key, lab in x["cands"]:
+                    if key.startswith("o") and key[1:].isdigit():
+                        g = key
+                    else:
+                        g = gid.setdefault(key, f"c{len(gid) + 1}")
+                    lines_c.setdefault(g, lab)
+                    x["gc"].append((g, key, lab))
+        uids = [u for u, _ in blocks if u]
+        on_map, tags = {}, ()
+        if self.map_fn:
+            try:
+                on_map, tags = self.map_fn(uids)
+            except Exception as e:
+                self.log("ai reader: no map context:", type(e).__name__)
+        allx = [x for _, xs in blocks for x in xs]
+        window = f"{_hm(allx[0]['post'].get('ts'))}–{_hm(allx[-1]['post'].get('ts'))} Kyiv time" if allx else ""
+        text = check_text([(f"o{u}" if u else "", self.oblast_names.get(u, ""), on_map.get(u, []), [
+            _p(x["label"], _hm(x["post"].get("ts")), x["ch"], x["text"], parser_lines(x["marks"]) if x["stored"] else None,
+               [g for g, _, _ in x["gc"]], x["home"], x["near"]) for x in xs]) for u, xs in blocks],
+            "\n".join(f"{g} | {lab}" for g, lab in sorted(lines_c.items(), key=lambda kv: (kv[0][0] != "c", int(kv[0][1:]) if kv[0][1:].isdigit() else 0))),
+            window)
+        msgs = check_messages(text, cache=self.model().startswith("anthropic/"))
+        t0 = time.time()
+        res = self.call(msgs, kind="check")
+        ms = int((time.time() - t0) * 1000)
+        self.checks += 1
+        cid = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S") + f".{self.checks % 1000:03d}"
+        row = {"id": cid, "at": datetime.now(timezone.utc).isoformat(timespec="seconds"), "first": allx[0]["post"].get("ts"),
+               "last": allx[-1]["post"].get("ts"), "posts": len(allx), "oblasts": uids, "model": res.get("model") or self.model(),
+               "prompt_v": CHECK_VERSION + ("p" if res.get("way") == 1 else ""), "ms": ms, "tok_in": res.get("tok_in"),
+               "tok_out": res.get("tok_out"), "cost": res.get("cost") or 0, "error": res.get("error")}
+        if res.get("error"):
+            self._save_check(row)
+            return "error"
+        out = res["out"] if isinstance(res.get("out"), dict) else {}
+        by = {}
+        for f in out.get("findings") or []:
+            if isinstance(f, dict) and f.get("finding") in FINDINGS:
+                by.setdefault(str(f.get("post") or ""), []).append(f)
+        found = {}
+        for x in allx:
+            targets, meta, dropped = [], [], 0
+            wheres = {_where_rules(m) for m in x["marks"]} - {""}
+            for f in by.get(x["label"], []):
+                k, why = f["finding"], str(f.get("why") or "")[:200]
+                if k == "not_sky":
+                    if x["marks"]:
+                        meta.append({"f": k, "why": why})
+                    else:
+                        dropped += 1               # nothing drawn: nothing to set aside
+                    continue
+                ts, d = validate({"targets": [f.get("target")]}, x["full"], x["gc"], tags)
+                dropped += d
+                if not ts:
+                    continue
+                pick_namesakes(ts, x["gc"], self.geo, anchors_of(self.geo, x["marks"], x["item"][2], x["ch"]))
+                t = ts[0]
+                if k == "missed" and t.get("place") and _canon(t["place"]) in wheres:
+                    k = "facts"                    # the rules have it at that place: what it adds are facts
+                t["f"], t["why"] = k, why
+                targets.append(t)
+                meta.append({"f": k, "why": why, "t": len(targets) - 1})
+            kinds = [m["f"] for m in meta]
+            for k in kinds:
+                found[k] = found.get(k, 0) + 1
+            verdict = check_verdict(kinds, x["marks"])
+            self._remember(x["post"]["post_id"], targets or None)
+            try:
+                self.store.ai_save({"post_id": x["post"]["post_id"], "ts": x["post"].get("ts"), "channel": x["ch"], "text": x["full"],
+                                    "stored": 1 if x["stored"] else 0, "model": row["model"], "prompt_v": row["prompt_v"],
+                                    "ms": None, "tok_in": None, "tok_out": None, "cost": 0, "verdict": verdict,
+                                    "rules": summarise_rules(x["marks"]), "ai": {"targets": targets, "findings": meta, "uncertain": None},
+                                    "dropped": dropped, "error": None, "chk": cid})
+            except Exception as e:
+                self.log("ai reader: not saved:", type(e).__name__)
+        ok = {f"o{u}" for u in uids}
+        row["findings"] = found
+        row["notes"] = [{"oblast": str(n_.get("oblast")), "note": str(n_.get("note") or "").strip()[:600]}
+                        for n_ in out.get("notes") or [] if isinstance(n_, dict) and str(n_.get("oblast")) in ok
+                        and str(n_.get("note") or "").strip()]
+        row["uncertain"] = str(out.get("uncertain") or "")[:400] or None
+        self._save_check(row)
+        return "ok"
+
+    def ask_text(self, system, text):
+        """1.53: one request for words (the night's report): {"out": text, …} or {"error": …}. Within the budget."""
+        why = self._allowed(0)
+        if why:
+            return {"error": why}
+        return self._request([{"role": "system", "content": system}, {"role": "user", "content": text}], 1, "text")
+
+    def _save_check(self, row):
+        try:
+            self.store.ai_check_save(row)
+        except Exception as e:
+            self.log("ai reader: check not saved:", type(e).__name__)
 
     # -- one post -----------------------------------------------------------------------------------------------
-    def _allowed(self):
+    def _allowed(self, n=1):
         if not self.enabled():
             return "off"
         now = time.time()
@@ -715,7 +1145,7 @@ class AIReader(threading.Thread):
                 self.hour, self.n_hour = hr, 0
             if self.n_hour >= PER_HOUR:
                 return "rate"
-            self.n_hour += 1
+            self.n_hour += n
         return None
 
     def read(self, post, near=(), home=None, stored=True):
@@ -749,6 +1179,7 @@ class AIReader(threading.Thread):
             self._save(post, text, stored, ms, res, None, rules, 0, "error")
             return "error"
         targets, dropped = validate(res["out"], text, cands, tags)
+        pick_namesakes(targets, cands, self.geo, anchors_of(self.geo, marks, home, ch))
         ai = summarise_ai(targets, getattr(self.geo, "PLACES", None))
         verdict = compare(rules, ai)
         self._save(post, text, stored, ms, res, {"targets": targets, "uncertain": (res["out"] or {}).get("uncertain")},
@@ -760,12 +1191,13 @@ class AIReader(threading.Thread):
     WAYS = ("schema", "prompt")
     way = 0
 
-    def call(self, msgs):
+    def call(self, msgs, kind="post"):
         """{"out": dict, "cost", "tok_in", "tok_out"} or {"error": "..."} — the one request to OpenRouter. A provider
-        that refuses the request as asked (400) is asked once more the simpler way, which is kept if it works."""
-        res = self._request(msgs, self.way)
+        that refuses the request as asked (400) is asked once more the simpler way, which is kept if it works.
+        `kind`: "post" (one post's reading) or "check" (1.53)."""
+        res = self._request(msgs, self.way, kind)
         if res.get("code") == 400 and self.way == 0:
-            res2 = self._request(plain(msgs), 1)
+            res2 = self._request(plain(msgs), 1, kind)
             if not res2.get("error"):
                 self.way = 1
                 self.log("ai reader: the provider refused the JSON schema —", res["error"], "— answering by the prompt alone")
@@ -775,14 +1207,16 @@ class AIReader(threading.Thread):
             self.down_until = time.time() + 600
         return res
 
-    def _request(self, msgs, way):
+    def _request(self, msgs, way, kind="post"):
         # 1.50.1: only parameters every model that takes a JSON schema accepts. With require_parameters, one the model
         # does not take (claude-haiku-5.5 takes no `temperature`) leaves no provider at all: "HTTP 404: No endpoints".
-        body = {"model": self.model(), "max_tokens": MAX_OUT, "messages": msgs,
+        mx = {"check": MAX_OUT_CHECK, "text": MAX_OUT_REPORT}.get(kind, MAX_OUT)
+        body = {"model": self.model(), "max_tokens": mx, "messages": msgs,
                 "provider": {"require_parameters": True}, "usage": {"include": True}}
-        if way == 0:
-            body["response_format"] = {"type": "json_schema", "json_schema": {"name": "heimdall_reading", "strict": True,
-                                                                              "schema": SCHEMA}}
+        if way == 0 and kind != "text":
+            body["response_format"] = {"type": "json_schema", "json_schema": (
+                {"name": "heimdall_check", "strict": True, "schema": CHECK_SCHEMA} if kind == "check"
+                else {"name": "heimdall_reading", "strict": True, "schema": SCHEMA})}
         req = urllib.request.Request(OPENROUTER_URL, data=json.dumps(body, ensure_ascii=False).encode("utf-8"), headers={
             "Authorization": "Bearer " + self.key(), "Content-Type": "application/json", "X-Title": "Heimdall (shadow reader)"})
         try:
@@ -811,13 +1245,21 @@ class AIReader(threading.Thread):
                 self.store.kv_set(f"ai_usd:{self.month}", f"{self.spent:.6f}")
             except Exception:
                 pass
+        if kind == "text":                               # 1.53: the night's report — words, not JSON
+            text = ((data.get("choices") or [{}])[0].get("message") or {}).get("content")
+            text = text.strip() if isinstance(text, str) else ""
+            if not text:
+                self.last_error = "empty answer"
+                return {"error": "empty answer", "cost": cost}
+            return {"out": text, "cost": cost, "tok_in": usage.get("prompt_tokens"), "tok_out": usage.get("completion_tokens"),
+                    "model": data.get("model") or self.model(), "way": way}
         try:
             out = _json_of(data["choices"][0]["message"]["content"])
         except Exception:
             # 1.52.1: the answer cut off at the length allowed is not a malformed answer — the dashboard says which
             cut = ((data.get("choices") or [{}])[0].get("finish_reason") == "length"
-                   or (usage.get("completion_tokens") or 0) >= MAX_OUT)
-            err = f"cut off at {MAX_OUT} tokens" if cut else "not JSON"
+                   or (usage.get("completion_tokens") or 0) >= mx)
+            err = f"cut off at {mx} tokens" if cut else "not JSON"
             self.last_error = err
             return {"error": err, "cost": cost, "tok_in": usage.get("prompt_tokens"), "tok_out": usage.get("completion_tokens")}
         self.last_error = None
@@ -867,7 +1309,16 @@ class AIReader(threading.Thread):
             counts = self.store.ai_counts(self.month)
         except Exception:
             pass
-        return {"key": bool(self.key()), "enabled": self.enabled(), "reader_on": self.switched_on(), "live": self.live(), "model": self.model(), "prompt_v": PROMPT_VERSION,
+        chk = {}
+        try:
+            chk = self.store.ai_check_counts(self.month)
+        except Exception:
+            pass
+        mode = self.mode()
+        return {"key": bool(self.key()), "enabled": self.enabled(), "reader_on": self.switched_on(), "live": self.live(), "model": self.model(),
+                "prompt_v": CHECK_VERSION if mode == "check" else PROMPT_VERSION, "mode": mode, "every_min": self.interval(),
+                "next_check": datetime.fromtimestamp(self.next_at, timezone.utc).isoformat(timespec="seconds") if mode == "check" and self.next_at > 1 else None,
+                **chk,
                 "month": self.month, "usd_month": round(spent, 4), "cap_usd": self.cap(), "queued": len(self.q),
                 "paused": time.time() < self.down_until, "last_error": self.last_error, "skipped": dict(self.skipped),
                 "format": self.WAYS[self.way],

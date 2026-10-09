@@ -1581,11 +1581,17 @@ _SEA_FROM_RX = re.compile(r"(?<![а-яіїєґ'])(з|із|зі)\s+(?:акват�
 _SIG_LINE_RX = re.compile(r"\n[^\n\w]*[A-Za-z]{2,8}\s*\|\s*[^\n|]{2,40}\s*$")
 
 
+# 1.53: "Буде тривога в столиці. БпЛА на Козин" (@eRadarrua) drew the drone over the centre of Kyiv: an alert said to
+# be coming for a place is not where the target is
+_ALERT_SAY_RX = re.compile(r"(?<![а-яіїєґ'])(?:(?:буде|будуть|можлив\w*|ймовірн\w*|очікуєт\w*|скоро|незабаром)\s+(?:повітрян\w+\s+)?"
+                           r"тривог\w*\s+(?:в|у|для|по)\s+[а-яіїєґ'\-]+|тривог\w*\s+(?:в|у|для)\s+столиц\w*)", re.I)
+
 _KYIV_CH = {"kyiv_airdef", "chyste_nebo", "kievinfo_kyiv"}
 
 
 def _fix_readings(t, channel=None):
     t = _SIG_LINE_RX.sub("", t)
+    t = _ALERT_SAY_RX.sub("", t)
     t = _SEA_FROM_RX.sub(lambda m: f"{m.group(1)} півдня", t)
     kyiv = CHANNEL_HOME.get(channel) == "31" or channel in _KYIV_CH
 

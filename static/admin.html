@@ -75,11 +75,23 @@ details.rgmore{margin:4px 0 10px}details.rgmore summary{cursor:pointer;font:600 
 .aisw{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;font:13.5px var(--sans)}.aisw span{flex:1 1 220px}
 .aisw b{font:700 11.5px var(--mono);letter-spacing:.08em;padding:3px 8px;border-radius:2px}.aisw.on b{color:#111;background:var(--green)}.aisw.off b{color:var(--ink);background:#3a1512;border:1px solid var(--red)}
 .ard{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--ink3);padding:10px 12px;margin:0 0 10px}
+/* 1.53: the night's record and the AI's report on it (Analytics) */
+.nbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 10px}.nbar .sp{flex:1}
+.nbar select{background:#0b0d11;border:1px solid var(--line);color:var(--ink);padding:6px 8px;font:13px var(--sans);margin-left:4px}
+.nrep{white-space:pre-wrap;overflow-wrap:anywhere;font:14px/1.6 var(--sans);background:var(--bg);border:1px solid var(--line);padding:12px 14px;max-height:640px;overflow:auto;margin:8px 0 6px}
+.nstat{font:12.5px var(--mono);color:var(--ink2);margin:0 0 6px}
+/* 1.53: the checks, and what each found */
+.aih3{font:600 12px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);margin:18px 0 8px}
+.ack{background:var(--panel);border:1px solid var(--line);border-left:3px solid #7fd3c8;padding:9px 12px;margin:0 0 8px}.ack.bad{border-left-color:var(--red)}
+.ackf{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 6px}.ackn{font:13px/1.5 var(--sans);margin:4px 0 0}.ackn b{font-weight:600;color:var(--ink2);margin-right:4px}
+.fk{display:inline-block;font:600 10.5px var(--mono);letter-spacing:.04em;text-transform:uppercase;color:#7fd3c8;border:1px solid #2c5a55;padding:1px 6px;border-radius:2px;margin:0 6px 3px 0}
+.ardf{margin:0 0 6px}.ardf .tg{display:inline}
+#aick{margin-left:8px;padding:3px 9px;font-size:12px}
 .ard.v-agree{border-left-color:var(--green)}.ard.v-place,.ard.v-kind,.ard.v-status{border-left-color:var(--orange)}
 .ard.v-ai_only,.ard.v-rules_only{border-left-color:var(--blue)}.ard.v-error{border-left-color:var(--red)}
 .ardh{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font:12px var(--mono);color:var(--ink3);margin:0 0 6px}.ardh .sp{flex:1}
 .vb{display:inline-block;font:600 10.5px var(--mono);letter-spacing:.05em;text-transform:uppercase;padding:2px 6px;border-radius:2px;border:1px solid var(--line);color:var(--ink2)}
-.vb.v-agree{color:var(--green)}.vb.v-place,.vb.v-kind,.vb.v-status{color:var(--orange)}.vb.v-ai_only,.vb.v-rules_only{color:var(--blue)}.vb.v-error{color:#ff8a80}
+.vb.v-facts{color:#7fd3c8}.ard.v-facts{border-left-color:#7fd3c8}.vb.v-agree{color:var(--green)}.vb.v-place,.vb.v-kind,.vb.v-status{color:var(--orange)}.vb.v-ai_only,.vb.v-rules_only{color:var(--blue)}.vb.v-error{color:#ff8a80}
 .ardt{font:14px/1.5 var(--sans);white-space:pre-wrap;overflow-wrap:anywhere;margin:0 0 8px}
 .ardu{font:11.5px var(--mono);color:var(--ink3);margin:-4px 0 8px}
 .ardc{display:grid;grid-template-columns:1fr 1fr;gap:10px;font:13px/1.45 var(--sans)}
@@ -367,7 +379,7 @@ const T={
   ch_api:'Telegram API',ch_prev:'web preview',ch_off:'not read',
   ch_note:'“Read” is the share of the channel’s posts over 7 days that put something on the map. A channel silent for 12 h or more, or whose reader fails, is highlighted.',
   tab_ai:'AI reader',h_ai:'AI reader',
-  ai_note:'A language model (through OpenRouter) reads the same posts as the rules, beside them. <b>It never places, moves or removes a target, and never touches the alerts or a push.</b> Every fact it gives must quote the post and every place must be one of ours: what it cannot back up is dropped. While the switch below is on, the facts it quoted that the rules did not read — where a target comes from, its height, its speed — fill the target tags on the map (S-07 ×2 · 3500 m), marked AI. It is sent a post’s public text, the channel’s name and our place names — never anything about a reader. Here: where it and the rules read a post differently, so that the rules can be fixed.',sw_h:'Switches',sw_reader:'AI reader — reads the posts (and spends)',sw_live:'Its facts in the target tags on the map',sw_on:'ON',sw_off:'OFF',sw_turn_off:'Switch off',sw_turn_on:'Switch on',sw_q_live_off:'Take the AI’s facts out of the target tags now? The tags keep only what the rules read.',sw_q_live_on:'Put the AI’s quoted facts (origin, height, speed) in the target tags on the map?',sw_q_reader_off:'Stop the AI reader? No post is sent to OpenRouter until it is switched on again.',sw_q_reader_on:'Start the AI reader again?',sw_note:'Takes effect within 10 seconds on every open map.',
+  ai_note:'A language model (through OpenRouter) reads the same posts as the rules, beside them — since 1.53 every 10 minutes, all the posts of those minutes in one call, grouped by oblast, with what the rules drew and what the map shows. <b>It never moves or removes a target, never touches the alerts, and never sends a push.</b> A target only it found is drawn on the map marked AI. Every fact it gives must quote the post and every place must be one of ours: what it cannot back up is dropped. While the switch below is on, the facts it quoted that the rules did not read — where a target comes from, its height, its speed — fill the target tags on the map (S-07 ×2 · 3500 m), marked AI. It is sent a post’s public text, the channel’s name and our place names — never anything about a reader. Here: where it and the rules read a post differently, so that the rules can be fixed.',sw_h:'Switches',sw_reader:'AI reader — reads the posts (and spends)',sw_live:'Its facts in the target tags on the map',sw_on:'ON',sw_off:'OFF',sw_turn_off:'Switch off',sw_turn_on:'Switch on',sw_q_live_off:'Take the AI’s facts out of the target tags now? The tags keep only what the rules read.',sw_q_live_on:'Put the AI’s quoted facts (origin, height, speed) in the target tags on the map?',sw_q_reader_off:'Stop the AI reader? No post is sent to OpenRouter until it is switched on again.',sw_q_reader_on:'Start the AI reader again?',sw_note:'Takes effect within 10 seconds on every open map.',
   ai_nokey:'Off — no OpenRouter key: run scripts/set-openrouter-key.bat once.',ai_off:'Off — ai_reader is false in config.json, or the monthly cap is 0.',
   ai_on:'On — model {0}, prompt v{1}',ai_paused:'Paused for a few minutes — OpenRouter refused: {0}',ai_err:'The last call failed: {0}',
   ai_budget:'The month’s cap is reached — it reads again on the 1st.',
@@ -384,6 +396,20 @@ const T={
   ty_drones:'drone',ty_banderol_missiles:'Banderol (jet drone)',ty_cruise_missiles:'cruise missile',ty_ballistic_missiles:'ballistic missile',ty_guided_aerial_bombs:'guided bomb',ty_tactic_aircraft_activity:'aircraft',ty_unknown:'unknown target',
   st_down:'shot down',st_impact:'impact',st_lost:'lost',ai_count:'×{0}',ai_alt:'{0} m',ai_head:'course {0}',ai_fromside:'from the {0}',ai_km:'{0} km',
   ai_speed:'{0} km/h',v_descending:'descending',v_climbing:'climbing',v_low:'low',v_high:'high',o_belarus:'from Belarus',o_russia:'from Russia',o_sea:'from the sea',o_crimea:'from Crimea',o_occupied:'from the occupied territories',
+  v_facts:'adds facts',ai_mode_check:'Reads every {0} min — one call for the posts of those minutes, grouped by oblast',ai_mode_post:'Reads each post as it comes — one call a post',
+  ai_next:'next check {0}',ai_checknow:'Check now',ai_last:'last check {0}: {1} posts · ${2}',sw_mode:'How it reads',sw_mode_check:'every {0} min',sw_mode_post:'each post',
+  sw_to_check:'Every {0} min',sw_to_post:'Each post',sw_q_mode_check:'Read every {0} minutes, all the new posts in one call (cheaper; up to {0} minutes late)?',
+  sw_q_mode_post:'Read each post as it comes, one call a post (about ten times the cost)?',
+  h_checks:'The checks',h_ai_posts:'Post by post',ai_ck_none:'No check yet — the first comes at the next {0}-minute mark with posts waiting.',ai_ck_posts:'{0} posts',ai_ck_find:'{0} findings',
+  ai_ck_err:'failed: {0}',ai_ck_unsure:'unsure: {0}',ai_chk:'check {0}',ai_checks_m:'Checks this month',ai_per_check:'{0} per check',
+  f_missed:'missed by the rules',f_place:'misplaced by the rules',f_weapon:'wrong weapon',f_outcome:'outcome',f_not_sky:'not about the sky',f_facts:'adds facts',
+  an_c_night:'The night — the AI’s report',an_src_night:'Everything recorded over one night (12:00 to 12:00 Kyiv time): the alerts by oblast, every tag with its path, heights, origins, the reports by hour and oblast, outcomes, the Air Force, the AI’s checks and their notes. The record downloads in full, as JSON or text, for any AI to read; the AI’s own report on it is written after {0}:00.',
+  an_n_pick:'Night of',an_n_write:'Write the report now',an_n_rewrite:'Write it again',an_n_json:'Record (JSON)',an_n_txt:'Record (text)',
+  an_n_none:'No report on this night yet — it is written after {0}:00 Kyiv time, or now with the button.',an_n_writing:'Being written…',
+  an_n_asked:'Asked — the report appears here within a minute or two.',an_n_err:'Not written: {0}',an_n_meta:'written {0} · {1} · ${2}',
+  an_n_stats:'{0} tags · {1} reports · {2} oblasts under alert · {3} AI checks (${4})',an_n_loading:'Loading the night…',
+  an_c_ai:'The AI’s checks per night — what they found',an_src_ai:'Every 10 minutes one call reads the new posts against what the rules drew. A finding is a post where the rules missed or misread something — the list of what to fix in them.',
+  an_ai_none:'No check in this range yet.',an_ai_checks:'checks',an_ai_posts:'posts read',an_ai_cost:'cost',an_tg_paths:'followed over 2 places or more',
   ai_fmt_schema:'answers in a strict JSON schema',ai_fmt_prompt:'answers by the prompt alone (the provider refused the schema)',
   dirs:'N,NE,E,SE,S,SW,W,NW',
   h_img:'Satellite imagery',img_sat:'Sentinel-2 tiles: version {0}, to zoom {1}',img_nosat:'no Sentinel-2 tiles on the volume — scripts/upload-imagery.bat',img_esri:'Esri close zoom: {0} tiles this month (cap {1}) · {2} today (cap {3})',img_noesri:'Esri close zoom off — no ESRI_KEY (scripts/set-esri-key.bat)',img_ref_img:'Esri refused the key for the imagery — {0} — asked again in 5 min',img_ref_st:'Esri refused the key for the names and the map (Static Basemap Tiles) — {0} — asked again in 5 min; the key needs that privilege too',img_ref:'Esri refused the key ({0}) — asked again in 5 min',
@@ -481,7 +507,7 @@ const T={
   ch_api:'Telegram API',ch_prev:'веб-перегляд',ch_off:'не читається',
   ch_note:'«Зчитано» — частка дописів каналу за 7 днів, що поставили щось на мапу. Канал, що мовчить 12 год і більше, або чиє читання збоїть, підсвічено.',
   tab_ai:'ШІ-читач',h_ai:'ШІ-читач',
-  ai_note:'Мовна модель (через OpenRouter) читає ті самі дописи, що й правила, поруч із ними. <b>Вона ніколи не ставить, не переміщує й не прибирає ціль і не впливає на тривоги чи сповіщення.</b> Кожен факт вона має підтвердити цитатою з допису, кожне місце — вибрати з наших; непідтверджене відкидається. Поки перемикач нижче увімкнено, факти, які вона процитувала, а правила не прочитали, — звідки летить ціль, висота, швидкість — потрапляють у номери цілей на мапі (S-07 ×2 · 3500 м) з позначкою ШІ. Їй надсилається лише публічний текст допису, назва каналу й наші назви місць — нічого про читачів. Тут видно, де вона й правила читають допис по-різному, щоб виправити правила.',sw_h:'Перемикачі',sw_reader:'ШІ-читач — читає дописи (і витрачає кошти)',sw_live:'Його факти в номерах цілей на мапі',sw_on:'УВІМК.',sw_off:'ВИМК.',sw_turn_off:'Вимкнути',sw_turn_on:'Увімкнути',sw_q_live_off:'Прибрати факти ШІ з номерів цілей зараз? У номерах лишиться тільки те, що прочитали правила.',sw_q_live_on:'Додати процитовані ШІ факти (звідки, висота, швидкість) у номери цілей на мапі?',sw_q_reader_off:'Зупинити ШІ-читача? Жоден допис не надсилатиметься в OpenRouter, доки його знову не увімкнуть.',sw_q_reader_on:'Знову запустити ШІ-читача?',sw_note:'Діє протягом 10 секунд на кожній відкритій мапі.',
+  ai_note:'Мовна модель (через OpenRouter) читає ті самі дописи, що й правила, поруч із ними — з 1.53 раз на 10 хвилин, усі дописи цих хвилин одним запитом, за областями, разом із тим, що намалювали правила і що показує мапа. <b>Вона ніколи не переміщує й не прибирає ціль, не впливає на тривоги й не надсилає сповіщень.</b> Ціль, яку знайшла лише вона, з’являється на мапі з позначкою ШІ. Кожен факт вона має підтвердити цитатою з допису, кожне місце — вибрати з наших; непідтверджене відкидається. Поки перемикач нижче увімкнено, факти, які вона процитувала, а правила не прочитали, — звідки летить ціль, висота, швидкість — потрапляють у номери цілей на мапі (S-07 ×2 · 3500 м) з позначкою ШІ. Їй надсилається лише публічний текст допису, назва каналу й наші назви місць — нічого про читачів. Тут видно, де вона й правила читають допис по-різному, щоб виправити правила.',sw_h:'Перемикачі',sw_reader:'ШІ-читач — читає дописи (і витрачає кошти)',sw_live:'Його факти в номерах цілей на мапі',sw_on:'УВІМК.',sw_off:'ВИМК.',sw_turn_off:'Вимкнути',sw_turn_on:'Увімкнути',sw_q_live_off:'Прибрати факти ШІ з номерів цілей зараз? У номерах лишиться тільки те, що прочитали правила.',sw_q_live_on:'Додати процитовані ШІ факти (звідки, висота, швидкість) у номери цілей на мапі?',sw_q_reader_off:'Зупинити ШІ-читача? Жоден допис не надсилатиметься в OpenRouter, доки його знову не увімкнуть.',sw_q_reader_on:'Знову запустити ШІ-читача?',sw_note:'Діє протягом 10 секунд на кожній відкритій мапі.',
   ai_nokey:'Вимкнено — немає ключа OpenRouter: один раз запустіть scripts/set-openrouter-key.bat.',ai_off:'Вимкнено — у config.json ai_reader = false або місячний ліміт 0.',
   ai_on:'Увімкнено — модель {0}, промпт v{1}',ai_paused:'Призупинено на кілька хвилин — OpenRouter відмовив: {0}',ai_err:'Останній запит не вдався: {0}',
   ai_budget:'Місячний ліміт вичерпано — читання відновиться 1-го числа.',
@@ -498,6 +524,20 @@ const T={
   ty_drones:'БпЛА',ty_banderol_missiles:'Бандерол (реактивний БпЛА)',ty_cruise_missiles:'крилата ракета',ty_ballistic_missiles:'балістична ракета',ty_guided_aerial_bombs:'КАБ',ty_tactic_aircraft_activity:'авіація',ty_unknown:'невідома ціль',
   st_down:'збито',st_impact:'влучання',st_lost:'втрачено',ai_count:'×{0}',ai_alt:'{0} м',ai_head:'курс {0}',ai_fromside:'з {0}',ai_km:'{0} км',
   ai_speed:'{0} км/год',v_descending:'знижується',v_climbing:'набирає висоту',v_low:'низько',v_high:'високо',o_belarus:'з Білорусі',o_russia:'з Росії',o_sea:'з моря',o_crimea:'з Криму',o_occupied:'з окупованих територій',
+  v_facts:'додає факти',ai_mode_check:'Читає раз на {0} хв — один запит на всі дописи цих хвилин, за областями',ai_mode_post:'Читає кожен допис одразу — один запит на допис',
+  ai_next:'наступна перевірка {0}',ai_checknow:'Перевірити зараз',ai_last:'остання перевірка {0}: дописів {1} · ${2}',sw_mode:'Як читає',sw_mode_check:'раз на {0} хв',sw_mode_post:'кожен допис',
+  sw_to_check:'Раз на {0} хв',sw_to_post:'Кожен допис',sw_q_mode_check:'Читати раз на {0} хвилин, усі нові дописи одним запитом (дешевше; із запізненням до {0} хвилин)?',
+  sw_q_mode_post:'Читати кожен допис одразу, по запиту на допис (приблизно вдесятеро дорожче)?',
+  h_checks:'Перевірки',h_ai_posts:'Допис за дописом',ai_ck_none:'Перевірок ще немає — перша буде на найближчій {0}-хвилинній позначці, якщо є дописи.',ai_ck_posts:'дописів: {0}',ai_ck_find:'знахідок: {0}',
+  ai_ck_err:'не вдалася: {0}',ai_ck_unsure:'сумнів: {0}',ai_chk:'перевірка {0}',ai_checks_m:'Перевірок за місяць',ai_per_check:'{0} за перевірку',
+  f_missed:'правила пропустили',f_place:'правила поставили не там',f_weapon:'інша зброя',f_outcome:'результат',f_not_sky:'не про небо',f_facts:'додає факти',
+  an_c_night:'Ніч — звіт ШІ',an_src_night:'Усе, що записано за одну ніч (з 12:00 до 12:00 за Києвом): тривоги за областями, кожен номер із його шляхом, висоти, звідки летіли, повідомлення за годинами й областями, результати, Повітряні сили, перевірки ШІ та їхні нотатки. Увесь запис можна завантажити — JSON або текст — для будь-якого ШІ; власний звіт ШІ пишеться після {0}:00.',
+  an_n_pick:'Ніч',an_n_write:'Написати звіт зараз',an_n_rewrite:'Написати знову',an_n_json:'Запис (JSON)',an_n_txt:'Запис (текст)',
+  an_n_none:'Звіту за цю ніч ще немає — він пишеться після {0}:00 за Києвом або зараз кнопкою.',an_n_writing:'Пишеться…',
+  an_n_asked:'Запит надіслано — звіт з’явиться тут за хвилину-дві.',an_n_err:'Не написано: {0}',an_n_meta:'написано {0} · {1} · ${2}',
+  an_n_stats:'номерів: {0} · повідомлень: {1} · областей під тривогою: {2} · перевірок ШІ: {3} (${4})',an_n_loading:'Завантаження ночі…',
+  an_c_ai:'Перевірки ШІ за ніч — що вони знайшли',an_src_ai:'Раз на 10 хвилин один запит читає нові дописи поруч із тим, що намалювали правила. Знахідка — допис, де правила щось пропустили або прочитали не так: список того, що в них виправити.',
+  an_ai_none:'У цьому діапазоні перевірок ще немає.',an_ai_checks:'перевірок',an_ai_posts:'прочитано дописів',an_ai_cost:'вартість',an_tg_paths:'відстежено щонайменше у 2 місцях',
   ai_fmt_schema:'відповідає за суворою JSON-схемою',ai_fmt_prompt:'відповідає лише за промптом (провайдер не прийняв схему)',
   dirs:'пн,пн-сх,сх,пд-сх,пд,пд-зх,зх,пн-зх',
   h_img:'Супутникові знімки',img_sat:'Тайли Sentinel-2: версія {0}, до зуму {1}',img_nosat:'тайлів Sentinel-2 на томі немає — scripts/upload-imagery.bat',img_esri:'Esri, близький зум — тайлів цього місяця: {0} (ліміт {1}) · сьогодні: {2} (ліміт {3})',img_noesri:'Esri вимкнено — немає ESRI_KEY (scripts/set-esri-key.bat)',img_ref_img:'Esri відхилив ключ для знімків — {0} — повтор за 5 хв',img_ref_st:'Esri відхилив ключ для назв і карти (Static Basemap Tiles) — {0} — повтор за 5 хв; ключу потрібен і цей дозвіл',img_ref:'Esri відхилив ключ ({0}) — повтор за 5 хв',
@@ -825,7 +865,7 @@ function drawNuke(){ const cur=ON&&ON.nuke;
 
 // ---- 1.50: the AI reader, in shadow mode — its reading of each post beside the rules'; nothing of it reaches the map --
 let AI=null, AI_ERR='', AI_ALL=false; try{ AI_ALL=localStorage.getItem('aiall')==='1'; }catch(e){}
-const AI_V=['agree','place','kind','status','ai_only','rules_only','none','error'];
+const AI_V=['agree','place','kind','status','ai_only','rules_only','facts','none','error'];
 function aiPlace(w){ if(!w) return '—'; const m=/^o(\d+)$/.exec(w); if(!m) return w;
   // Kyiv oblast and the city are one compartment of the dashboard's regions ("31"): named here
   if(m[1]==='14'||m[1]==='31') return m[1]==='14'?(L==='uk'?'Київська область':'Kyiv oblast'):(L==='uk'?'м. Київ':'Kyiv city');
@@ -862,23 +902,40 @@ function drawAI(){
     <div class="card g"><div class="v">${pc(bv.agree||0)}</div><div class="l">${tr('ai_agree')}</div></div>
     <div class="card o"><div class="v">${pc(diff)}</div><div class="l">${tr('ai_diff')}</div></div>
     <div class="card"><div class="v">$${(s.usd_month||0).toFixed(2)}</div><div class="l">${tr('ai_spent')} · ${esc(tr('ai_of',s.cap_usd==null?'—':s.cap_usd))}</div></div>
+    ${s.checks_month?`<div class="card"><div class="v">${fmt(s.checks_month)}</div><div class="l">${tr('ai_checks_m')} · ${esc(tr('ai_per_check','$'+(s.usd_checks_month/s.checks_month).toFixed(4)))}</div></div>`:''}
     <div class="card"><div class="v">${s.ms_median!=null?(s.ms_median/1000).toFixed(1)+' s':'—'}</div><div class="l">${tr('ai_ms')}</div></div></div>`;
   const vt=`<table class="aivt"><tr><th>${tr('ai_t_verdict')}</th><th style="text-align:right">${tr('ai_t_n')}</th><th style="text-align:right">${tr('ai_t_share')}</th></tr>${
     AI_V.filter(v=>bv[v]).map(v=>`<tr><td><span class="vb v-${v}">${esc(tr('v_'+v))}</span></td><td class="n">${fmt(bv[v])}</td><td class="n">${Math.round(bv[v]/n*100)}%</td></tr>`).join('')}</table>`;
   const tm=x=>{ const d=new Date(x); return isNaN(d)?'':d.toLocaleString(L==='uk'?'uk-UA':'en-GB',{timeZone:'Europe/Kyiv',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}); };
   const reads=AI.reads||[];
-  const list=reads.length?reads.map(r=>{ const a=(r.ai&&r.ai.targets)||[], ru=r.rules||[], v=AI_V.includes(r.verdict)?r.verdict:'error';
-    return `<div class="ard v-${v}"><div class="ardh"><span>${esc(tm(r.ts||r.at))} · @${esc(r.channel)}</span><span class="vb v-${v}">${esc(tr('v_'+v))}</span><span class="sp"></span><span>${r.error?esc(r.error):'$'+(r.cost||0).toFixed(5)+' · '+((r.ms||0)/1000).toFixed(1)+' s'}</span></div>
+  // 1.53: a check's id is its UTC time
+  const ckt=id=>tm(String(id||'').slice(0,19)+'Z');
+  // a post read by a check: what it found, each with its why (a post not about the sky has no target)
+  const finds=r=>{ const a=(r.ai&&r.ai.targets)||[], fs=(r.ai&&r.ai.findings)||[];
+    return fs.map(f=>`<div class="ardf"><span class="fk">${esc(tr('f_'+f.f))}</span>${f.t!=null&&a[f.t]?aiTarget(a[f.t]):''}${f.why?`<div class="mut">${esc(f.why)}</div>`:''}</div>`).join(''); };
+  const list=reads.length?reads.map(r=>{ const a=(r.ai&&r.ai.targets)||[], ru=r.rules||[], v=AI_V.includes(r.verdict)?r.verdict:'error', fs=r.ai&&r.ai.findings;
+    return `<div class="ard v-${v}"><div class="ardh"><span>${esc(tm(r.ts||r.at))} · @${esc(r.channel)}</span><span class="vb v-${v}">${esc(tr('v_'+v))}</span><span class="sp"></span><span>${r.error?esc(r.error):r.chk?esc(tr('ai_chk',ckt(r.chk))):'$'+(r.cost||0).toFixed(5)+' · '+((r.ms||0)/1000).toFixed(1)+' s'}</span></div>
       <div class="ardt">${esc(r.text)}</div>${r.stored?'':`<div class="ardu">${tr('ai_unstored')}</div>`}
       <div class="ardc"><div><b>${tr('ai_rules')}</b>${ru.length?ru.map(x=>`<div class="tg">${esc(aiRule(x))}</div>`).join(''):`<div class="mut">${tr('ai_nothing')}</div>`}</div>
-      <div><b>${tr('ai_ai')}</b>${r.error?'<div class="mut">—</div>':a.length?a.map(aiTarget).join(''):`<div class="mut">${tr('ai_nothing')}</div>`}${
+      <div><b>${tr('ai_ai')}</b>${r.error?'<div class="mut">—</div>':fs?(fs.length?finds(r):`<div class="mut">${tr('v_'+v)}</div>`):a.length?a.map(aiTarget).join(''):`<div class="mut">${tr('ai_nothing')}</div>`}${
         r.ai&&r.ai.uncertain?`<div class="mut">${esc(tr('ai_unsure',r.ai.uncertain))}</div>`:''}${r.dropped?`<div class="mut">${esc(tr('ai_dropped',r.dropped))}</div>`:''}</div></div></div>`; }).join('')
     :`<div style="color:var(--ink3)">${tr('ai_none')}</div>`;
   // 1.51: the two switches — the reader itself, and its facts in the target tags (the kill switch)
   const sw=(k,on,lab)=>`<div class="aisw ${on?'on':'off'}"><span>${esc(lab)}</span><b>${esc(tr(on?'sw_on':'sw_off'))}</b><button class="dgb" data-sw="${k}" data-on="${on?0:1}">${esc(tr(on?'sw_turn_off':'sw_turn_on'))}</button></div>`;
-  const sws=AI.stats&&s.key?`<div class="aisws">${sw('reader',s.reader_on!==false,tr('sw_reader'))}${sw('live',s.live!==false,tr('sw_live'))}<div class="aist mut">${esc(tr('sw_note'))}</div></div>`:'';
-  box.innerHTML=head+sws+`<div class="aist">${esc(state)}${s.queued?' · '+esc(tr('ai_queue',s.queued)):''}</div>${warn.map(w=>`<div class="aiw">${esc(w)}</div>`).join('')}${
-    sk.length?`<div class="aist mut">${esc(sk.join(' · '))}</div>`:''}${cards}${n?vt:''}
+  // 1.53: how it reads — every N minutes (one call) or each post — and "check now"
+  const ck=s.mode!=='post', ev=s.every_min||10;
+  const msw=`<div class="aisw on"><span>${esc(tr('sw_mode'))}</span><b>${esc(ck?tr('sw_mode_check',ev):tr('sw_mode_post'))}</b><button class="dgb" data-mode="${ck?'post':'check'}">${esc(ck?tr('sw_to_post'):tr('sw_to_check',ev))}</button></div>`;
+  const sws=AI.stats&&s.key?`<div class="aisws">${sw('reader',s.reader_on!==false,tr('sw_reader'))}${sw('live',s.live!==false,tr('sw_live'))}${msw}<div class="aist mut">${esc(tr('sw_note'))}</div></div>`:'';
+  const CK=AI.checks||[], last=CK[0];
+  const modeLine=!s.key?'':`<div class="aist">${esc(ck?tr('ai_mode_check',ev):tr('ai_mode_post'))}${ck&&s.next_check?' · '+esc(tr('ai_next',tm(s.next_check))):''}${
+    last?' · '+esc(tr('ai_last',ckt(last.id),last.posts,(last.cost||0).toFixed(4))):''}${ck&&s.enabled?` <button class="dgb" id="aick">${esc(tr('ai_checknow'))}</button>`:''}</div>`;
+  const ckList=!ck&&!CK.length?'':`<h3 class="aih3">${esc(tr('h_checks'))}</h3>`+(CK.length?CK.map(c=>{ const fk=Object.entries(c.findings||{}).filter(([,n])=>n);
+    return `<div class="ack${c.error?' bad':''}"><div class="ardh"><span>${esc(tm(c.first))}–${esc(tm(c.last).slice(-5))} · ${esc(tr('ai_ck_posts',c.posts))}${(c.oblasts||[]).length?' · '+esc((c.oblasts||[]).map(u=>aiPlace('o'+u)).join(', ')):''}</span><span class="sp"></span><span>${c.error?esc(tr('ai_ck_err',c.error)):'$'+(c.cost||0).toFixed(4)+' · '+((c.ms||0)/1000).toFixed(1)+' s · '+(c.tok_in||0)+'/'+(c.tok_out||0)+' tok'}</span></div>${
+      fk.length?`<div class="ackf">${fk.map(([k,n])=>`<span class="fk">${esc(tr('f_'+k))} ×${n}</span>`).join(' ')}</div>`:''}${
+      (c.notes||[]).map(n=>`<div class="ackn"><b>${esc(aiPlace(n.oblast))}</b> ${esc(n.note)}</div>`).join('')}${c.uncertain?`<div class="mut">${esc(tr('ai_ck_unsure',c.uncertain))}</div>`:''}</div>`; }).join('')
+    :`<div class="mut">${esc(tr('ai_ck_none',ev))}</div>`);
+  box.innerHTML=head+sws+`<div class="aist">${esc(state)}${s.queued?' · '+esc(tr('ai_queue',s.queued)):''}</div>${modeLine}${warn.map(w=>`<div class="aiw">${esc(w)}</div>`).join('')}${
+    sk.length?`<div class="aist mut">${esc(sk.join(' · '))}</div>`:''}${cards}${n?vt:''}${ckList}<h3 class="aih3">${esc(tr('h_ai_posts'))}</h3>
     <div class="anbar"><div class="seg" id="aif"><button data-a="0" class="${AI_ALL?'':'on'}">${tr('ai_f_diff')}</button><button data-a="1" class="${AI_ALL?'on':''}">${tr('ai_f_all')}</button></div><button class="dgb" id="aire">${tr('ai_reload')}</button></div>
     <div class="note" style="margin:0 0 14px">${tr('ai_legend')}</div>${list}`;
   $('aif').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; AI_ALL=b.dataset.a==='1'; try{localStorage.setItem('aiall',AI_ALL?'1':'0');}catch(err){} loadAI(); };
@@ -887,6 +944,13 @@ function drawAI(){
     if(!confirm(tr('sw_q_'+k+(on?'_on':'_off')))) return; b.disabled=true;
     try{ await fetch('/api/admin/ai'+(KEYQ?'?'+KEYQ.slice(1):''),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({[k]:on})}); }catch(e){}
     loadAI(); });
+  box.querySelectorAll('[data-mode]').forEach(b=>b.onclick=async()=>{ const m=b.dataset.mode;
+    if(!confirm(tr('sw_q_mode_'+m,ev))) return; b.disabled=true;
+    try{ await fetch('/api/admin/ai'+(KEYQ?'?'+KEYQ.slice(1):''),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:m})}); }catch(e){}
+    loadAI(); });
+  const cn=$('aick'); if(cn) cn.onclick=async()=>{ cn.disabled=true;
+    try{ await fetch('/api/admin/ai'+(KEYQ?'?'+KEYQ.slice(1):''),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({check_now:true})}); }catch(e){}
+    setTimeout(loadAI,20000); cn.textContent='…'; };
 }
 async function loadAI(){
   try{ const r=await fetch('/api/ai_reads?limit=100&all='+(AI_ALL?1:0)+KEYQ); const d=await r.json();
@@ -987,6 +1051,42 @@ function afRow(r){ const la=r.launched||{}, dn=r.down||{};
   return {la,dn,mis,dl:ok?dl:0,dd:ok?dd:0,rate:ok&&dl?Math.round(dd/dl*100):null,
           jet:(la.drones&&la.jet!=null)?Math.round(la.jet/la.drones*100):null}; }
 let CHW=860;
+// ---- 1.53: one night in full — the record any AI can read, and the AI's own report on it ----------------------------
+let NIGHT=null, NIGHT_SEL=null, NIGHT_ERR='';
+const nextDay=n=>{ const d=new Date(n+'T12:00:00Z'); d.setUTCDate(d.getUTCDate()+1); return d.toISOString().slice(0,10); };
+function nightList(A){ const s=new Set(); (A.targets||[]).forEach(r=>{ if(r.total) s.add(r.date); }); (A.ai||[]).forEach(r=>{ if(r.checks) s.add(r.date); });
+  ((NIGHT&&NIGHT.reports)||[]).forEach(n=>{ if(n>=A.from) s.add(n); }); if(A.to) s.add(A.to); return [...s].sort().reverse(); }
+function nightCard(A){ const hr=(NIGHT&&NIGHT.report_hour)||9, ns=nightList(A); if(!NIGHT_SEL||!ns.includes(NIGHT_SEL)) NIGHT_SEL=ns[0];
+  return card('c0',tr('an_c_night'),tr('an_src_night',hr),`<div class="nbar"><label>${escA(tr('an_n_pick'))}<select id="nsel">${ns.map(n=>`<option value="${n}"${n===NIGHT_SEL?' selected':''}>${escA(dshort(n))} → ${escA(dshort(nextDay(n)))}</option>`).join('')}</select></label><span class="sp"></span>`
+    +`<button class="dgb" id="nwrite">${escA(tr('an_n_write'))}</button><button class="csvb" id="njson">${escA(tr('an_n_json'))}</button><button class="csvb" id="ntxt">${escA(tr('an_n_txt'))}</button></div><div id="nightbox"><div class="ans">${escA(tr('an_n_loading'))}</div></div>`); }
+async function loadNight(){ const n=NIGHT_SEL; if(!n) return;
+  try{ const r=await fetch('/api/admin/night?night='+n+(KEYQ?'&'+KEYQ.slice(1):'')); const d=await r.json(); if(d.error) throw new Error(d.error);
+       if(n!==NIGHT_SEL) return; NIGHT=d; NIGHT_ERR=''; }
+  catch(e){ NIGHT=null; NIGHT_ERR=String(e.message||e); }
+  drawNight(); }
+function drawNight(){ const box=$('nightbox'); if(!box) return;
+  if(NIGHT_ERR){ box.innerHTML=`<div class="err">${escA(NIGHT_ERR)}</div>`; return; }
+  if(!NIGHT) return;
+  const d=NIGHT, S=d.summary||{}, rp=d.report, hr=d.report_hour||9, ai=S.ai||{};
+  const stat=tr('an_n_stats',(S.targets||{}).tags||0,(S.reports||{}).total||0,(S.official_alerts||[]).length,ai.checks||0,(ai.cost_usd||0).toFixed(3));
+  const when=x=>x?new Date(x).toLocaleString(L==='uk'?'uk-UA':'en-GB',{timeZone:'Europe/Kyiv',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';
+  const body=d.writing===d.night?`<div class="ans">${escA(tr('an_n_writing'))}</div>`
+    :rp&&rp.text?`<div class="nrep">${escA(rp.text)}</div><div class="ans">${escA(tr('an_n_meta',when(rp.at),rp.model||'—',(rp.cost||0).toFixed(4)))}</div>`
+    :rp&&rp.error?`<div class="err">${escA(tr('an_n_err',rp.error))}</div>`:`<div class="ans">${escA(tr('an_n_none',hr))}</div>`;
+  box.innerHTML=`<div class="nstat">${escA(stat)}</div>${body}`;
+  const sel=$('nsel'); if(sel&&AN){ const ns=nightList(AN); if(ns.length!==sel.options.length)
+    sel.innerHTML=ns.map(n=>`<option value="${n}"${n===NIGHT_SEL?' selected':''}>${escA(dshort(n))} → ${escA(dshort(nextDay(n)))}</option>`).join(''); }
+  const w=$('nwrite'); if(w) w.textContent=tr(rp&&rp.text?'an_n_rewrite':'an_n_write'); }
+function fileDownload(name,text,type){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([text],{type})); a.download=name;
+  document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500); }
+document.addEventListener('change',e=>{ if(e.target.id!=='nsel') return; NIGHT_SEL=e.target.value; NIGHT=null; const b=$('nightbox'); if(b) b.innerHTML=`<div class="ans">${escA(tr('an_n_loading'))}</div>`; loadNight(); });
+document.addEventListener('click',async e=>{ const id=e.target&&e.target.id;
+  if(id==='njson'&&NIGHT) fileDownload(`heimdall-night-${NIGHT.night}.json`,JSON.stringify(NIGHT.summary,null,1),'application/json');
+  if(id==='ntxt'&&NIGHT) fileDownload(`heimdall-night-${NIGHT.night}.txt`,NIGHT.text||'','text/plain;charset=utf-8');
+  if(id==='nwrite'&&NIGHT_SEL){ const b=e.target; b.disabled=true;
+    try{ await fetch('/api/admin/ai_report'+(KEYQ?'?'+KEYQ.slice(1):''),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({night:NIGHT_SEL})}); }catch(err){}
+    const box=$('nightbox'); if(box) box.insertAdjacentHTML('afterbegin',`<div class="ans">${escA(tr('an_n_asked'))}</div>`);
+    setTimeout(loadNight,30000); setTimeout(()=>{ loadNight(); b.disabled=false; },90000); } });
 function drawAnalytics(){
   const box=$('an'); CHW=Math.round(Math.min(860,Math.max(300,(box.clientWidth||860)-30))); document.querySelectorAll('#anr button').forEach(b=>b.classList.toggle('on',+b.dataset.d===AN_DAYS));
   if(AN_ERR){ box.innerHTML=`<div class="err">${escA(AN_ERR)}</div>`; return; }
@@ -1022,10 +1122,16 @@ function drawAnalytics(){
   const repChart=bars(dates,REP.map(([k,c])=>({n:tr('an_r_'+k),c,v:repRows.map(o=>o[k])})),{h:170});
   // 1.51: the targets tagged each night, by the letter of where a post said they came from (fixed order, never by rank)
   const TGS=[['N',C[0]],['E',C[1]],['S',C[2]],['W',C[3]],['?',C[4]]], TG=A.targets||[];
-  const tgChart=TG.some(r=>r.total)?bars(dates,TGS.map(([k,c])=>({n:tr('an_tg_'+(k==='?'?'q':k)),c,v:TG.map(r=>r[k]||0)})),{h:170,extra:i=>[`${escA(tr('an_tg_ai'))}: <b>${TG[i]?TG[i].ai:0}</b>`]}):`<div class="ans">${escA(tr('an_tg_none'))}</div>`;
+  const tgChart=TG.some(r=>r.total)?bars(dates,TGS.map(([k,c])=>({n:tr('an_tg_'+(k==='?'?'q':k)),c,v:TG.map(r=>r[k]||0)})),{h:170,extra:i=>[`${escA(tr('an_tg_ai'))}: <b>${TG[i]?TG[i].ai:0}</b>`,`${escA(tr('an_tg_paths'))}: <b>${TG[i]?TG[i].paths||0:0}</b>`]}):`<div class="ans">${escA(tr('an_tg_none'))}</div>`;
   const dirs=tr('an_dirs').split(',');
   const hoursChart=bars(Array.from({length:24},(_,i)=>i),[{n:tr('an_s_reports'),c:C[0],v:A.hours}],{w:CHW>700?430:CHW,h:200,ticks:CHW>700?6:4,label:i=>`${i}:00–${i+1}:00`,axl:i=>i+':00'});
+  // 1.53: what the AI's checks found, night by night (fixed order of the kinds, never by rank)
+  const FK=['missed','place','weapon','outcome','not_sky','facts'], AIR=A.ai||[];
+  const aiChart=AIR.some(r=>r.checks)?bars(dates,FK.map((k,i)=>({n:tr('f_'+k),c:C[i],v:AIR.map(r=>r[k]||0)})),{h:170,extra:i=>{ const r=AIR[i]||{};
+    return [`${escA(tr('an_ai_checks'))}: <b>${r.checks||0}</b>`,`${escA(tr('an_ai_posts'))}: <b>${r.posts||0}</b>`,`${escA(tr('an_ai_cost'))}: <b>$${(r.cost||0).toFixed(3)}</b>`]; }})
+    :`<div class="ans">${escA(tr('an_ai_none'))}</div>`;
   box.innerHTML=`<div class="annote">${escA(tr('an_note'))}</div>${kp}
+    ${nightCard(A)}
     ${card('c1',tr('an_c_drones'),tr('an_src_af'),legend([[tr('an_s_piston'),C[0]],[tr('an_s_jet'),C[1]],[tr('an_s_banderol'),C[3]],[tr('an_s_down'),C[2],'ln']])+dronesChart,'af')}
     ${card('c2',tr('an_c_missiles'),tr('an_src_mis'),legend(MT.map((k,i)=>[tr('an_m_'+k),C[i]]))+misChart+(misNights.length?`<div class="ans">${escA(tr('an_misnights'))}: ${misNights.map(([k,v])=>`${escA(k)} ${v}`).join(' · ')}</div>`:''),'af')}
     ${card('c3',tr('an_c_rate'),tr('an_src_rate'),legend([[tr('an_s_rate'),C[2],'ln'],[tr('an_s_jetshare'),C[1],'ln']])+rateChart,'af')}
@@ -1036,8 +1142,10 @@ function drawAnalytics(){
     ${card('c9',tr('an_c_starts'),tr('an_src_starts'),heat(A.starts))}
     ${card('c10',tr('an_c_reports'),tr('an_src_reports'),legend(REP.map(([k,c])=>[tr('an_r_'+k),c]))+repChart,'reports')}
     ${card('c13',tr('an_c_tags'),tr('an_src_tags'),legend(TGS.map(([k,c])=>[tr('an_tg_'+(k==='?'?'q':k)),c]))+tgChart,'targets')}
+    ${card('c14',tr('an_c_ai'),tr('an_src_ai'),legend(FK.map((k,i)=>[tr('f_'+k),C[i]]))+aiChart,'ai')}
     <div class="an2">${card('c11',tr('an_c_hours'),tr('an_src_hours'),hoursChart)}${card('c12',tr('an_c_heads'),tr('an_src_heads'),hbars(dirs.map((d,i)=>[d,A.headings[i]]),C[0]))}</div>
     ${drawMore(A)}`;
+  if(NIGHT&&NIGHT.night===NIGHT_SEL) drawNight(); else loadNight();
 }
 // redrawn only when the width changes: a phone fires "resize" when its address bar hides on scroll
 let AN_RS=0; addEventListener('resize',()=>{ clearTimeout(AN_RS); AN_RS=setTimeout(()=>{ if(!AN||TAB!=='analytics') return;
@@ -1136,7 +1244,9 @@ document.addEventListener('click',e=>{ const b=e.target.closest('.csvb'); if(!b|
       ...A.af.map(r=>[r.date,r.periods.join('+'),...T.map(x=>(r.launched||{})[x]),(r.used||[]).join(' '),...['total','drones','jet','banderol',...MT].map(x=>(r.down||{})[x]),r.periods.length?r.impacts:'',r.periods.length?r.debris:''])]); }
   if(k==='kyiv') csvDownload(`heimdall-kyiv-alerts-${tag}.csv`,[['date','kyiv_city_minutes','kyiv_oblast_minutes','kyiv_city_alerts'],...A.kyiv.map(r=>[r.date,r.city_min,r.oblast_min,r.city_alerts])]);
   csvMore(k,A,tag);
-  if(k==='targets') csvDownload(`heimdall-target-tags-${tag}.csv`,[['night','N','E','S','W','not_said','origin_read_by_ai','total'],...(A.targets||[]).map(r=>[r.date,r.N,r.E,r.S,r.W,r['?'],r.ai,r.total])]);
+  if(k==='ai') csvDownload(`heimdall-ai-checks-${tag}.csv`,[['night','checks','posts_read','cost_usd','errors','missed','misplaced','weapon','outcome','not_sky','facts'],
+    ...(A.ai||[]).map(r=>[r.date,r.checks,r.posts,r.cost,r.errors,r.missed,r.place,r.weapon,r.outcome,r.not_sky,r.facts])]);
+  if(k==='targets') csvDownload(`heimdall-target-tags-${tag}.csv`,[['night','N','E','S','W','not_said','origin_read_by_ai','total','followed_2_places'],...(A.targets||[]).map(r=>[r.date,r.N,r.E,r.S,r.W,r['?'],r.ai,r.total,r.paths])]);
   if(k==='reports'){ const keys=[...new Set(A.reports.flatMap(r=>Object.keys(r)).filter(x=>x!=='date'))].sort(); csvDownload(`heimdall-kyiv-reports-${tag}.csv`,[['date',...keys],...A.reports.map(r=>[r.date,...keys.map(x=>r[x]||0)])]); } });
 
 $('langsw').addEventListener('click',e=>{

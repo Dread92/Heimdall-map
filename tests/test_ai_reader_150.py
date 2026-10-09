@@ -320,7 +320,7 @@ def test_what_it_is_given_to_read():
 
 
 def test_a_failure_never_stops_the_reader():
-    r, n = _reader(), {"rules": 0}
+    r, n = _reader(ai_reader_mode="post"), {"rules": 0}       # 1.53: one post at a time is now the dashboard's choice
 
     def rules(ch, t, near):
         n["rules"] += 1
@@ -443,8 +443,9 @@ def test_the_dashboard_tab():
     assert '<button data-tab="ai" role="tab" data-tr="tab_ai">AI reader</button>' in ADMIN
     assert '<section class="tabsec" id="tab-ai" hidden><div id="aiv"></div></section>' in ADMIN
     assert "fetch('/api/ai_reads?limit=100&all='+(AI_ALL?1:0)+KEYQ)" in ADMIN and "if(t==='ai') loadAI();" in ADMIN
-    for s in ("<b>It never places, moves or removes a target, and never touches the alerts or a push.</b>",
-              "<b>Вона ніколи не ставить, не переміщує й не прибирає ціль і не впливає на тривоги чи сповіщення.</b>"):
+    # 1.52 drew a target only it found; 1.53: never pushed
+    for s in ("<b>It never moves or removes a target, never touches the alerts, and never sends a push.</b>",
+              "<b>Вона ніколи не переміщує й не прибирає ціль, не впливає на тривоги й не надсилає сповіщень.</b>"):
         assert s in ADMIN
     for v in A.STATUSES[1:]:
         assert ("st_" + {"shot_down": "down"}.get(v, v) + ":") in ADMIN
@@ -564,7 +565,7 @@ def test_it_is_told_what_the_rules_read_the_map_and_the_oblast_and_asked_to_add_
         "@rivne_radar\nCHANNEL'S OBLAST: Рівненська область — a regional tracker: a place it names alone is in or near this "
         "oblast\nOBLASTS ITS LAST POSTS NAMED (30 min): Житомирська область")
     ms = geo.parse_for_channel("kpszsu", "Реактивний над Броварами, висота 2200, знижується")
-    assert A.parser_lines(ms) == ["drone · at Бровари · 2200 m · descending"]
+    assert A.parser_lines(ms) == ["jet drone · at Бровари · 2200 m · descending"]      # 1.53: a jet says so
     msg = A.user_message("@x", [], "пост", "c1 | Бровари | Київська область", ["drone · at Бровари"], ["S-01 · drone · at Бровари · @x 21:00"])
     assert "PARSER READING" in msg and "- drone · at Бровари" in msg and "- S-01 · drone · at Бровари · @x 21:00" in msg
 

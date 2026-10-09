@@ -2,6 +2,46 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.53.0 — 2026-10-09
+
+### Added
+- **The AI reads every 10 minutes instead of every post** (the cost: ~150 posts an hour at ~$0.0004 each would have
+  spent the month's $10 in a week). One call reads the posts of those minutes, grouped by oblast, with what the rules
+  drew from each and what the map shows in each oblast, and answers only where the rules are wrong or incomplete —
+  a target they missed or misplaced, the wrong weapon or outcome, a post that is not about the sky, a height or an
+  origin they did not read — with a short note per oblast. About $0.001–0.002 a check. The dashboard can switch back
+  to one call a post, and "check now".
+- **The AI's report on each night** (Analytics): after 09:00 the AI reads the whole record of the night — alerts by
+  oblast, every tag with its path, heights, origins, the reports by hour and oblast, outcomes, the Air Force, the
+  checks and their notes — and writes what it shows: routes, waves, heights, patterns, and what the map missed. The
+  record itself downloads as JSON or text, for any AI to read. "Write it now" for any night.
+- Analytics: what the AI's checks found, night by night (CSV); the tags followed over two places or more.
+- **Full-screen map** — the last button of the map's column (yellow): the map alone on the whole screen, the alert
+  status kept as a chip at the top (a tap, or the phone's Back, leaves).
+- **The map opens at once**: the satellite pictures are kept on the phone (the service worker), those of Kyiv and the
+  oblasts around it fetched ahead once (never on a phone saving data or on 2G); the map's drawing (borders, towns) is
+  shown from the phone at once and refreshed behind. Alerts and targets are never kept — they always come live.
+
+### Changed
+- **A target found only by the AI is never pushed "near you"** — it can be ten minutes old. It is still drawn, marked AI.
+- **A tag holds under a target**: a track keeps the number it was last shown with, and another channel's report of
+  the same target at the same moment (≤ 6 km, ≤ 4 min) takes the same number — the number no longer jumps from N-56 to
+  N-23 on the same drone.
+- **The card of a target is short on a phone** — what it is, its height, where, its tag and the post in three lines;
+  the rest under "More". The map keeps two thirds of the screen. The tag's line lost the empty box round it (it had
+  the buttons' style).
+- The dashboard's AI reader tab: the checks with their findings and notes; a post's findings with why.
+- **Nothing written over a target**: no label is written over a target's height or tag, or over an explosion's
+  glyph; an explosion's name gives way to a live target's label; a town name under a target's glyph or height is
+  hidden.
+
+### Fixed
+- "Буде тривога в столиці. БпЛА на Козин" drew the drone over the centre of Kyiv: an alert said to be coming for a
+  place is not the target's position — it is drawn heading for Kozyn.
+- "На Козин 900", "З Козина на Ходосівку": the AI took the namesake village in Chernihiv oblast and a second target
+  was drawn 150 km away, at the Poltava border. A namesake is now the place the rules read, and of several villages of
+  one name the one beside the post's other places (or the channel's own area) is kept.
+
 ## 1.52.1 — 2026-10-09
 
 ### Added

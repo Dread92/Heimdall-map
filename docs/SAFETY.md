@@ -619,12 +619,25 @@ address or a device.
 
 The owner's decision (9 Oct 2026): a target missed is worse than a duplicate — a "ghost" ten kilometres from a real
 target is better than a target nobody drew because a post was worded loosely. So a target the AI reader found that the
-rules did not read is drawn, marked "AI" on the map and in its card, and it can push "near you" like any other. What
+rules did not read is drawn, marked "AI" on the map and in its card (1.53: never pushed "near you" — see below). What
 does not change: it is placed only at a place the post itself names, one the server offered from its gazetteer —
 loose wording is read, a place is never made up; never at an official alert message's district; never at
 coordinates of the model's own. When the rules and the AI read a post's one target more than 30 km apart, both are
 drawn ("біля Сомкової Долини" was read by the rules as Dolyna, 500 km off). The dashboard's switch takes every such
 target off the map within ten seconds.
+
+## The AI reads every 10 minutes and writes up the night (1.53)
+
+The owner's decision (9 Oct 2026), on cost: the AI reads the posts of each ten minutes in one call, beside what the
+rules drew and what the map shows, and reports only where the rules are wrong or incomplete. The rules stay the reader
+of the map: what the AI finds fills the tags (quoted, checked against the post) and a target only it found is drawn,
+marked AI — but it can be ten minutes old, so **it is never pushed "near you"**. A namesake is never a second target:
+where the post names one place, the rules' choice of it stands. Its notes and its report on each night are the
+dashboard's alone — counts and the places the posts named, "reported", never a forecast stated as a fact; they are
+there to find patterns and to fix the rules, not to tell anyone what to do.
+
+A tag no longer changes under a target being followed: a track keeps the number it was last shown with, and a second
+channel's report of the same target at the same time takes the same number.
 
 ## A target's tag is a number, not a designation (1.51)
 

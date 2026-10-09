@@ -228,6 +228,19 @@ button.chip{cursor:pointer;font-family:var(--mono)}button.chip:hover{border-colo
 .mapctl button{width:44px;height:44px;border:1px solid var(--line);background:rgba(18,21,27,.94);color:var(--ink);border-radius:10px;font:600 18px var(--mono);padding:0;display:flex;align-items:center;justify-content:center}
 .mapctl svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2;stroke-linejoin:round}
 .mapctl button.on{color:var(--ua-yellow);border-color:#5a4d00}
+/* 1.53, the owner: the map alone on the whole screen of a phone — the last button of the column, under the thumb, in the
+   yellow of the active buttons so it is found at once; the alert status stays on screen as a chip (a tap leaves) */
+#fsbtn{color:var(--ua-yellow);border-color:#5a4d00}#fsbtn .fsout{display:none}body.fullmap #fsbtn .fsin{display:none}body.fullmap #fsbtn .fsout{display:inline}
+body.fullmap #top,body.fullmap #drawer,body.fullmap #updbar,body.fullmap #pwabar{display:none!important}
+body.fullmap #stage{top:var(--sat)!important;bottom:var(--sab)!important;right:0!important}
+#fmchip{display:none}
+body.fullmap #fmchip{position:fixed;left:8px;top:calc(var(--sat) + 8px);z-index:16;display:flex;align-items:center;gap:8px;max-width:calc(100vw - 76px);
+  padding:7px 10px;border-radius:10px;background:rgba(18,40,28,.94);border:1px solid rgba(47,191,113,.6);color:#bff3d6;font:800 13.5px/1.2 var(--sans);cursor:pointer}
+#fmchip .t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-transform:uppercase}#fmchip .x{opacity:.75;font-weight:600}
+body.fullmap #fmchip.R,body.fullmap #fmchip.A{background:#c62a22;border-color:#c62a22;color:#fff}
+body.fullmap #fmchip.Y,body.fullmap #fmchip.P{background:var(--yellow);border-color:var(--yellow);color:#111}
+body.fullmap #fmchip.H{background:#4a3a06;border-color:#8a6d00;color:#ffe9a8}
+body.m-day.fullmap #fmchip.N{background:#d8f0e2;border-color:#0d6b3f;color:#04321d}
 #impbtn{position:relative;color:#ff8a80}#impbtn .impico{width:22px;height:22px;fill:currentColor}#impbtn:not(.on){color:#8f9bb0}#impbtn small{position:absolute;right:3px;bottom:2px;font:700 10px var(--mono);color:var(--ua-yellow)}
 .imp{cursor:pointer}
 .imp .ig{fill:#ff3b2f;stroke:#fff;stroke-width:calc(var(--k,1)*.8px);filter:drop-shadow(0 0 calc(var(--k,1)*3px) rgba(255,70,50,.95))}
@@ -239,6 +252,7 @@ button.chip{cursor:pointer;font-family:var(--mono)}button.chip:hover{border-colo
 @keyframes impflash{0%,55%{fill:#ff3b2f}56%,100%{fill:#ffd08a}}
 body.lite .imp .ig{fill:#fff;filter:none;animation:none}body.lite .imp.fresh .sw{stroke:#fff}
 .imp .it{font:600 calc(var(--k,1)*9.5px) system-ui;fill:#ffb3ad;paint-order:stroke;stroke:#080b10;stroke-width:calc(var(--k,1)*3px)}svg.far .imp .it{display:none}
+.imp.nolbl .it{display:none}   /* 1.53: its name gives way to a live target's label */
 .imp.d1{opacity:.75}.imp.d2{opacity:.5}
 .imp .icnt circle{fill:#fff;stroke:#080b10;stroke-width:1}.imp .icnt text{font:800 9px var(--mono);fill:#080b10;text-anchor:middle}
 /* a grouped dot says so: a second ring around it, so ×3 is not mistaken for one big explosion */
@@ -323,6 +337,7 @@ body.lite #drawer .dchev{background:#111;border-color:#fff;color:#fff}
 .sheet.top{z-index:65}   /* the support sheet opened from the welcome notice (z 60) sits above it */
 .sheet.show{transform:none}
 .sheet .grab{display:none}
+.shmore{display:none;align-items:center;gap:4px;margin-top:6px;background:transparent;border:1px solid var(--line);color:var(--ink2);border-radius:8px;padding:5px 10px;font:600 12.5px var(--sans);cursor:pointer}
 .sheet .type{font:800 22px/1.05 var(--cond);letter-spacing:.03em;text-transform:uppercase;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .sheet .kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:14px;margin:8px 0;color:var(--ink3)}
 .sheet .kv>span{font:600 12px/1.6 var(--mono);letter-spacing:.04em;text-transform:uppercase}
@@ -623,7 +638,7 @@ body.lite .leader{stroke:#fff;stroke-opacity:.6}body.lite .anchor{fill:#fff}
 .mk .tgc{display:none;font:700 calc(var(--k,1)*9px) var(--mono);fill:#ffd500;paint-order:stroke;stroke:#080b10;stroke-width:calc(var(--k,1)*2.5px);text-anchor:middle}
 svg:not(.close):not(.wide) .mk:not(.inbound):not(.tohome):not(.st):not(.desc):not(.appr):not(.ended) .tgc,svg:not(.wide) .mk.nolbl:not(.ended) .tgc{display:block}
 .tagid{font:800 12.5px var(--mono);color:#ffd500;letter-spacing:.03em}.chip.ai{border-color:#7f9cff;color:#b9c8ff}
-.kv1.tgl{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:baseline}
+.kv1.tagl{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:baseline}   /* 1.53: was .tgl — the buttons' class: a 44 px box round the line */
 .chip.desc{color:#ffb3c5;border-color:#7a2a3a;background:rgba(255,45,85,.12)}
 /* ---------- display modes ----------
    Three, and they are for three different problems, which is why none of them is a brightness slider.
@@ -971,6 +986,16 @@ body.m-night .tstrip.bal,body.m-night .tstrip.mig,body.m-night .tstrip.offr{back
   body.shmk #notice,body.shmk #moved{display:none!important}
   .sheet.mark{max-height:52vh;max-height:52dvh;padding-top:10px}
   .sheet.mark .type{font-size:20px}
+  /* 1.53, the owner: the card was "way too big" — on a phone it opens short (what it is, how high, where, the tag, the
+     post in three lines) and the rest comes with "More"; the map keeps two thirds of the screen */
+  .sheet.mark:not(.more){max-height:38vh;max-height:38dvh}
+  .sheet.mark:not(.more) .sec{display:none}
+  .sheet.mark .type{font-size:17px;gap:6px}.sheet.mark .chip{font-size:11px;padding:1px 6px}
+  .sheet.mark .kv1{font-size:13.5px;margin-top:4px}.sheet.mark .tagid{font-size:13px}
+  .sheet.mark:not(.more) .txt{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;font-size:13.5px;padding:6px 8px;margin-top:6px!important}
+  .sheet.mark .shmore{display:inline-flex}
+  .sheet.mark #sheetbody{background:inherit}     /* the buttons' bar, sticky at the bottom, covers what scrolls under it */
+  .sheet.mark:not(.more) .kv1.yellow:not(.sec){display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
   .sheet.mark .shact{position:sticky;bottom:calc(-14px - var(--sab));margin:8px -14px calc(-14px - var(--sab));padding:8px 14px calc(10px + var(--sab));background:inherit;border-top:1px solid var(--line)}
   .toast{padding:8px 10px}.toast b{font-size:14.5px}
   .toast div{font-size:12.5px!important;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
@@ -1065,7 +1090,7 @@ body.lite #mycard,body.lite .panel{background:#000;border-color:#666}body.lite .
   <button class="mi" id="supbtn" type="button" data-t="m_support">Support the project</button>
   <a class="mi" id="tgbtn" data-t="m_tg" target="_blank" rel="noopener" hidden>Community on Telegram</a>
   <button class="mi" id="aboutbtn" type="button" data-t="m_about">About · disclaimer</button>
-  <div class="mi bt" id="buildtag">v1.52</div>
+  <div class="mi bt" id="buildtag">v1.53</div>
 </div>
 <div class="panel" id="lay" hidden role="dialog" aria-labelledby="layh"><div class="pgrab"></div>
   <div class="ph"><b id="layh" data-t="m_layers">Map layers</b><button type="button" class="px" data-close="lay" data-t-aria="btn_close" aria-label="Close">✕</button></div>
@@ -1110,7 +1135,7 @@ body.lite #mycard,body.lite .panel{background:#000;border-color:#666}body.lite .
   <div class="attrib" id="attrib" hidden>© OpenStreetMap contributors</div>
   <div id="pinhold"></div>
   <div id="pinarm" hidden><span data-t="sl_pin_arm">Tap the map where the pin goes</span><button type="button" id="pinarmx" data-t="sl_pin_cancel">Cancel</button></div>
-  <div class="mapctl"><button id="laybtn" type="button" data-t-title="m_layers" data-t-aria="m_layers" title="Map layers" aria-label="Map layers"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 3 8l9 5 9-5-9-5z"/><path d="m3 13 9 5 9-5"/></svg></button><button id="zin" type="button" aria-label="+">+</button><button id="zout" type="button" aria-label="−">−</button><button id="zkyiv" type="button" data-t-title="t_center" data-t-aria="t_center" title="Centre on my place">◎</button><button id="impbtn" type="button" data-t-title="t_hist" data-t-aria="t_hist" title="History of explosions and confirmed shoot-downs: off / 24 h / 48 h / 72 h" ><svg class="impico" viewBox="-14 -14 28 28" aria-hidden="true"><path d="M0-10 L2-3 L9-6 L4 0 L10 4 L3 3 L2 10 L-1 4 L-8 7 L-4 0 L-10-3 L-3-2 Z"/></svg><small id="imph"></small></button><button id="rpbtn" type="button" data-t-title="rp_open" data-t-aria="rp_open" title="Replay — the last 7 days" aria-label="Replay — the last 7 days"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1"/><path d="M3 4v4.5h4.5"/><path d="M12 7.5V12l3 2"/></svg></button></div>
+  <div class="mapctl"><button id="laybtn" type="button" data-t-title="m_layers" data-t-aria="m_layers" title="Map layers" aria-label="Map layers"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 3 8l9 5 9-5-9-5z"/><path d="m3 13 9 5 9-5"/></svg></button><button id="zin" type="button" aria-label="+">+</button><button id="zout" type="button" aria-label="−">−</button><button id="zkyiv" type="button" data-t-title="t_center" data-t-aria="t_center" title="Centre on my place">◎</button><button id="impbtn" type="button" data-t-title="t_hist" data-t-aria="t_hist" title="History of explosions and confirmed shoot-downs: off / 24 h / 48 h / 72 h" ><svg class="impico" viewBox="-14 -14 28 28" aria-hidden="true"><path d="M0-10 L2-3 L9-6 L4 0 L10 4 L3 3 L2 10 L-1 4 L-8 7 L-4 0 L-10-3 L-3-2 Z"/></svg><small id="imph"></small></button><button id="rpbtn" type="button" data-t-title="rp_open" data-t-aria="rp_open" title="Replay — the last 7 days" aria-label="Replay — the last 7 days"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1"/><path d="M3 4v4.5h4.5"/><path d="M12 7.5V12l3 2"/></svg></button><button id="fsbtn" type="button" data-t-title="m_full" data-t-aria="m_full" title="Full-screen map" aria-label="Full-screen map"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="fsin" d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/><path class="fsout" d="M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5"/></svg></button></div>
   <div class="tip" id="tip" hidden></div>
   <div id="heatleg" hidden><div class="hlh"><b data-t="hm_title">Where drones were reported</b><button type="button" id="heatx" data-t-aria="hm_off" aria-label="Hide">✕</button></div>
     <div class="hlw" id="heatw"></div><div class="hlt" id="heattop"></div><div class="hlr" id="heatramp"></div><div class="hln" data-t="hm_not_live">Not live.</div><div class="hln" data-t="hm_alerts">Official alerts are outlined while it is on.</div></div>
@@ -1140,6 +1165,7 @@ body.lite #mycard,body.lite .panel{background:#000;border-color:#666}body.lite .
 <input id="homeq" data-t-ph="h_ph" placeholder="Search: Troieshchyna, Bucha, Boryspil, Obolon…">
 <div id="homelist" style="max-height:40vh;overflow:auto;margin-top:8px"></div>
 <div style="margin-top:8px;display:flex;justify-content:space-between"><button class="tgl" id="homeclear" data-t="btn_clear">Clear</button><button class="tgl" onclick="$('homesheet').classList.remove('show')" data-t="btn_close">Close</button></div></div>
+<div id="fmchip" role="button" tabindex="0" data-t-title="m_full_exit" title="Exit full screen"></div>
 <div class="sheet" id="sheet"><div class="grab"></div><div id="sheetbody"></div></div>
 <div class="toast" id="toast"></div>
 <div class="modal" id="disc" hidden><div class="mbox"><img class="dlogo" src="/static/heimdall-full.webp" alt="Heimdall" width="170" height="157" loading="lazy"><div class="type dtitle" data-t="d_title">IMPORTANT INFORMATION</div><div class="dlangrow"><select class="lsel" id="dlang" aria-label="Language"></select></div>
@@ -2243,7 +2269,16 @@ function tick(){
    const glyphs=[];
    for(const p of lblPos){const g=p.b.g; p.on=getComputedStyle(g).display!=='none';
      p.v1=p.on&&drawn(g.querySelector('.lbl')); p.v2=p.on&&drawn(g.querySelector('.lbl2')); p.pri=pri(g);
-     if(p.on) glyphs.push({x:p.sx-12,y:p.sy-12,w:24,h:28,p});}
+     if(p.on){ glyphs.push({x:p.sx-12,y:p.sy-12,w:24,h:28,p});
+       // 1.53 (the owner: "nothing on top of anything"): the height under the glyph and the tag above it are the mark's
+       // too — no other label is written over them
+       const dn=g.querySelector('.dn'), tc=g.querySelector('.tgc');
+       if(drawn(dn)){ const w=dn.textContent.length*6.4+6; glyphs.push({x:p.sx-w/2,y:p.sy+6,w,h:14,p}); }
+       if(drawn(tc)){ const w=tc.textContent.length*6+6; glyphs.push({x:p.sx-w/2,y:p.sy-27,w,h:12,p}); } }}
+   // the explosions and shoot-downs of the history layer: a target's label never covers their glyph
+   const imps=[...document.querySelectorAll('#impactsg .imp')].filter(g=>g.dataset.tx!==undefined).map(g=>{
+     const m=(g.getAttribute('transform')||'').match(/translate\(([-\d.]+) ([-\d.]+)\)/), ix=(m?+m[1]:+g.dataset.tx)/KPX, iy=(m?+m[2]:+g.dataset.ty)/KPX;
+     glyphs.push({x:ix-10,y:iy-10,w:20,h:20}); return {g,ix,iy}; });
    const size=p=>{ const t1=p.v1?p.b.g.querySelector('.lbl').textContent:'',t2=p.v2?p.b.g.querySelector('.lbl2').textContent:'';
      p.w=Math.max(t1.length*6.6,t2.length*6.2); p.h=(p.v1&&p.v2)?25:(p.v1||p.v2)?14:0; };
    lblPos.forEach(size);
@@ -2266,8 +2301,14 @@ function tick(){
      const {side,dy}=f, x=kx(side*14*KPX), an=side>0?'start':'end';
      l1.setAttribute('x',x); l2.setAttribute('x',x); l1.setAttribute('text-anchor',an); l2.setAttribute('text-anchor',an);
      l1.setAttribute('y',kx(((p.v2?-6:4)+dy)*KPX)); l2.setAttribute('y',kx(((p.v1?6:4)+dy)*KPX)); }
-   // the boxes, relative to the map's top-left corner, for the town names
-   const ox=VB.x/KPX, oy=VB.y/KPX, bx=placed.map(q=>({x:q.x-ox,y:q.y-oy,w:q.w,h:q.h}));
+   // 1.53: an explosion's name gives way to a target's label, glyph and height (the target is now; it is the past)
+   for(const im of imps){ const it=im.g.querySelector('.it'); if(!drawn(it)&&!im.g.classList.contains('nolbl')) continue;
+     const r={x:im.ix+10,y:im.iy-7,w:(it?it.textContent.length:0)*5.8+4,h:12};
+     const clash=placed.some(q=>touch(r,q))||glyphs.some(q=>q.p&&touch(r,q))||imps.some(o=>o!==im&&touch(r,{x:o.ix-10,y:o.iy-10,w:20,h:20}));
+     im.g.classList.toggle('nolbl',clash); if(!clash) placed.push(r); }
+   // the boxes, relative to the map's top-left corner, for the town names — the labels, and the targets' glyphs and
+   // heights (a town name written under a target was read as its label)
+   const ox=VB.x/KPX, oy=VB.y/KPX, bx=placed.concat(glyphs.filter(q=>q.p)).map(q=>({x:q.x-ox,y:q.y-oy,w:q.w,h:q.h}));
    const sig=bx.map(q=>[q.x,q.y,q.w].map(Math.round).join(',')).join(';');
    if(sig!==LBLBOX.sig){ clearTimeout(LBLBOX.t); LBLBOX={sig,boxes:bx,t:setTimeout(()=>{ if(typeof layoutTownLabels==='function') layoutTownLabels(); },250)}; } }
   // edge indicators — prioritised (inbound first, then nearest), max 6, spread along each edge
@@ -2436,7 +2477,7 @@ function tagLine(m){ const tg=m.tag; if(!tg||m.status||m.endedBy) return '';
   const tel=[tg.vs&&tg.vs.s==='ai'?`${esc(t(tg.vs.v==='descending'?'alt_desc_l':tg.vs.v==='climbing'?'alt_climb':tg.vs.v==='low'?'alt_low':'alt_high'))} <span style="color:var(--muted)">«${esc(tg.vs.q||'')}»</span> <span class="chip ai">${esc(t('tg_ai_chip'))}</span>`:'',
     tg.alt&&tg.alt.s==='ai'&&!(m.alt&&m.alt.m)?`${t('tg_alt_l',tg.alt.m)} <span style="color:var(--muted)">«${esc(tg.alt.q||'')}»</span> <span class="chip ai">${esc(t('tg_ai_chip'))}</span>`:'',
     tg.spd?`${t('tg_spd_l',tg.spd.kmh)} <span style="color:var(--muted)">«${esc(tg.spd.q||'')}»</span>${tg.spd.s==='ai'?` <span class="chip ai">${esc(t('tg_ai_chip'))}</span>`:''}`:''].filter(Boolean);
-  return `<div class="kv1 tgl"><b class="tagid">${esc(tg.id)}</b><span>${esc(tagOrigin(tg))}${said}${ai}</span></div>${tel.map(x=>`<div class="kv1" style="font-size:12.5px">${x}</div>`).join('')}`; }
+  return `<div class="kv1 tagl"><b class="tagid">${esc(tg.id)}</b><span>${esc(tagOrigin(tg))}${said}${ai}</span></div>${tel.map(x=>`<div class="kv1" style="font-size:12.5px">${x}</div>`).join('')}`; }
 function openSheet(id){
   const m=MK.find(x=>x.id===id); if(!m) return; SELP=id; const sp=$('selpath'); if(sp) sp._sig=''; setTimeout(drawSelPath,0); setTimeout(()=>loadTrail(m),0); $('tip').hidden=true; const [x,y,x0,y0]=posOf(m,Date.now()); const info=inboundInfo(m,x,y);
   const th=THREAT[m.type]||THREAT.unknown; const appr=!!m.approach&&!m.status&&!m.endedBy; const placeEn=(m.place==='область'||relOf(m))?oblWhere(m):pn(m.place);
@@ -2461,7 +2502,7 @@ function openSheet(id){
     <div class="kv1 muted">${src} · <a href="https://t.me/${esc(m.id.split('#')[0])}" target="_blank" rel="noopener">${t('sh_post')}</a></div>
     ${tagLine(m)}
     ${m.ai?`<div class="kv1" style="font-size:12.5px"><span class="chip ai">${esc(t('tg_ai_chip'))}</span> ${esc(t('ai_placed'))}</div>`:''}
-    <div class="kv1">${where}</div>${state}${merged}${track}<div id="shtrail"></div>
+    <div class="kv1">${where}</div>${state}<div class="sec">${merged}${track}<div id="shtrail"></div></div>
     ${(()=>{ if(!HOME||m.status||m.endedBy||appr) return '';
       const [mx,my]=posOf(m,Date.now()); const hz=homeInfo(m,mx,my);
       const z=hz.zone; const eb=etaBand(m,hz.dist);
@@ -2470,13 +2511,14 @@ function openSheet(id){
       // "if it holds its course" is not a hedge bolted on — it is the whole content of the number.
       const el=eb?` <b>${esc(t('eta_band',eb.lo,eb.hi))}</b> <span style="color:var(--muted)">${esc(t('eta_if'))}</span>`:'';
       return `<div class="kv1">${zl}${el}</div>`; })()}
-    ${m.type==='unknown'&&!m.status?`<div class="kv1 yellow">${esc(t('unk_note'))}${m.likely==='drones'?' '+esc(m.alt&&m.alt.m?t('alt_likely'):t('unk_likely_l')):''}</div>`:''}
-    ${mk?`<div class="kv1 muted" style="font-size:12px">${esc(m.type==='ballistic_missiles'?t('msl_bal'):m.type==='banderol_missiles'?t('msl_band'):t('msl_cru'))}</div>`:''}
+    ${m.type==='unknown'&&!m.status?`<div class="kv1 yellow sec">${esc(t('unk_note'))}${m.likely==='drones'?' '+esc(m.alt&&m.alt.m?t('alt_likely'):t('unk_likely_l')):''}</div>`:''}
+    ${mk?`<div class="kv1 muted sec" style="font-size:12px">${esc(m.type==='ballistic_missiles'?t('msl_bal'):m.type==='banderol_missiles'?t('msl_band'):t('msl_cru'))}</div>`:''}
     ${m._gone?`<div class="kv1 yellow"><b>${esc(t('msl_gone'))}</b> — ${esc(t('msl_seen',placeEn,fmtT(m.ts)))}</div>`:''}
     ${(m._reach>0)?`<div class="kv1 yellow"><b>${esc(t('msl_reach',Math.round(m._reach)))}</b> — ${esc(t('msl_seen',placeEn,fmtT(m.ts)))}<div style="color:var(--muted);font-size:11.5px;margin-top:3px">${esc(t('msl_note',mk.v))}</div></div>`:''}
     <div class="txt" style="border-left-color:var(--orange);margin-top:8px">${esc(showUA()?(ev.segment||m.text):(ev.segment_en||ev.segment||m.text_en||m.text))}</div>
-    <div class="kv1 muted" style="font-size:11.5px">${conf}</div>
-    <details style="margin-top:6px"><summary style="font:12px var(--mono);color:var(--muted);cursor:pointer">${t('sh_details')}</summary>
+    <button class="shmore" type="button" id="shmore">${esc(t('sh_more'))}</button>
+    <div class="kv1 muted sec" style="font-size:11.5px">${conf}</div>
+    <details class="sec" style="margin-top:6px"><summary style="font:12px var(--mono);color:var(--muted);cursor:pointer">${t('sh_details')}</summary>
       ${(ev.segment&&ev.segment.trim().length<(m.text||'').trim().length-8)?`<div class="txt" style="margin-top:6px">${esc(ptxt(m))}</div>`:''}
       ${m.status?'':phaseLadder(m)}
       <div class="kv" style="margin-top:6px">${evRow(t('ev_type'),ev.type)}${evRow(t('ev_pos'),ev.position,null,accTxt('pos',ev.position,m))}${m.status?'':evRow(t('ev_hdg'),ev.heading,t('tp_nr'),accTxt('hdg',ev.heading,m))}${evRow(t('ev_count'),ev.count,t('ev_count_fb'))}
@@ -2484,11 +2526,14 @@ function openSheet(id){
       <div style="font-size:11px;color:var(--muted);margin-top:6px">${t('sh_note',STALE)}</div>
       ${m.tag?`<div style="font-size:11px;color:var(--muted);margin-top:6px">${esc(t('tg_what'))}</div>`:''}
     </details>
-    ${alt?`<div class="kv1 muted" style="font-size:11.5px">${esc(alt.state?(ALTL[alt.state]||alt.state):(alt.m+' m'))}: “${esc(alt.matched)}” — ${esc(t('alt_src'))}</div>`:''}
-    ${(()=>{const gsd=groundSpeed(m); return gsd?`<div class="kv1 muted" style="font-size:11.5px">${esc(t('tel_gs',gsd.kmh))} — ${esc(t('tel_gs_src',gsd.mins))}</div>`:'';})()}
-    ${contactLost(m)?`<div class="kv1 yellow">✖ ${esc(t('lost_t'))}<div style="color:var(--muted);font-size:11.5px;margin-top:3px">${esc(t('lost_b',m.stale))}</div></div>`:''}
+    ${alt?`<div class="kv1 muted sec" style="font-size:11.5px">${esc(alt.state?(ALTL[alt.state]||alt.state):(alt.m+' m'))}: “${esc(alt.matched)}” — ${esc(t('alt_src'))}</div>`:''}
+    ${(()=>{const gsd=groundSpeed(m); return gsd?`<div class="kv1 muted sec" style="font-size:11.5px">${esc(t('tel_gs',gsd.kmh))} — ${esc(t('tel_gs_src',gsd.mins))}</div>`:'';})()}
+    ${contactLost(m)?`<div class="kv1 yellow sec">✖ ${esc(t('lost_t'))}<div style="color:var(--muted);font-size:11.5px;margin-top:3px">${esc(t('lost_b',m.stale))}</div></div>`:''}
     <div class="shact"><button class="tgl" id="flagbtn" data-fid="${esc(m.id)}">${t('flag_btn')}</button><button class="tgl" id="shbtn">${t('share_btn')}</button><button class="tgl" onclick="closeSheet()">${t('btn_close')}</button></div>`;
   $('shbtn').onclick=()=>shareMarker(m.id,$('shbtn'));
+  // 1.53: short first; "More" opens the rest (and "Less" folds it)
+  $('sheet').classList.remove('more'); $('sheet').scrollTop=0;
+  $('shmore').onclick=()=>{ const on=$('sheet').classList.toggle('more'); $('shmore').textContent=t(on?'sh_less':'sh_more'); };
   $('sheet').classList.add('show','mark'); document.body.classList.add('shmk'); syncMini();
 }
 // 1.42.1: a mark's sheet takes the lower half on a phone, the card folds to its line and the admin's message steps
@@ -2529,7 +2574,25 @@ function drawSelPath(){ const g=$('selpath'); if(!g) return; const m=SELP?MK.fin
     +`<polyline class="selp" points="${line(pts.slice(Math.max(k,0)))}"/>`
     +pts.map((o,i)=>o.cur?'':`<circle class="selpd${o.old?' old':''}" cx="${kx(o.p[0])}" cy="${kx(o.p[1])}" r="${kx((o.old?2.6:3.2)*KPX)}"/>`
       +(lab[i]?`<text class="selpt${o.old?' old':''}" x="${kx(o.p[0]+5*KPX)}" y="${kx(o.p[1]-5*KPX)}">${esc(fmtT(o.ts))}</text>`:'')).join(''); }
-function closeSheet(){ SELP=null; drawSelPath(); $('sheet').classList.remove('show','top','mark'); if(document.body.classList.contains('shmk')){ document.body.classList.remove('shmk'); syncMini(); }}
+// 1.53: the map alone, on the whole screen (a phone's browser bars too, where the browser allows it)
+let FULL=false;
+function setFull(on){ FULL=!!on; document.body.classList.toggle('fullmap',FULL);
+  const b=$('fsbtn'); if(b){ const k=FULL?'m_full_exit':'m_full'; b.title=t(k); b.setAttribute('aria-label',t(k)); }
+  try{ const el=document.documentElement;
+    if(FULL&&el.requestFullscreen&&!document.fullscreenElement) el.requestFullscreen({navigationUI:'hide'}).catch(()=>{});
+    if(!FULL&&document.fullscreenElement&&document.exitFullscreen) document.exitFullscreen().catch(()=>{}); }catch(e){}
+  if(FULL) syncFmChip();
+  syncTop(); setView(VB.x+VB.w/2,VB.y+VB.h/2,VB.w); }
+function syncFmChip(){ const c=$('fmchip'), k=$('kyiv'); if(!c||!k) return; const big=k.querySelector('.big'), sm=k.querySelector('.small');
+  const lv=(k.className.match(/\b(N|R|A|Y|P|H)\b/)||[])[1]||'N';
+  c.className=lv; c.innerHTML=`<span class="t">${esc(big?big.textContent:'')}${sm&&sm.textContent?' · '+esc(sm.textContent.split('·')[0].trim()):''}</span><span class="x">✕</span>`; }
+$('fsbtn').onclick=()=>setFull(!FULL);
+$('fmchip').onclick=()=>setFull(false);
+$('fmchip').onkeydown=e=>{ if(e.key==='Enter'||e.key===' ') setFull(false); };
+document.addEventListener('fullscreenchange',()=>{ if(!document.fullscreenElement&&FULL) setFull(false); });   // the phone's Back
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&FULL&&!document.fullscreenElement) setFull(false); });
+try{ new MutationObserver(()=>{ if(FULL) syncFmChip(); }).observe($('kyiv'),{subtree:true,childList:true,characterData:true,attributes:true}); }catch(e){}
+function closeSheet(){ SELP=null; drawSelPath(); $('sheet').classList.remove('show','top','mark','more'); if(document.body.classList.contains('shmk')){ document.body.classList.remove('shmk'); syncMini(); }}
 // ---- oblast selection: tap an oblast to show its cities (and zoom to it from the whole-Ukraine view) ----
 let SEL_OBL=null;
 // ---- my oblast: the status band follows the oblast the user chose (default Kyiv) ----
@@ -2651,7 +2714,21 @@ function satAvail(c){ c=c||{}; const ok=!!c.sat, v=String(c.sat_v||'1'), z=Math.
   if(SAT_KNOWN&&ok===SAT_OK&&v===SAT_V&&z===SAT_MAX&&e===ESRI_OK&&st===ESRI_ST) return;
   if(v!==SAT_V){ const g=$('sat'); if(g) g.innerHTML=''; }      // a new file on the volume: its tiles, not the kept ones
   SAT_KNOWN=true; SAT_OK=ok; SAT_V=v; SAT_MAX=z; ESRI_OK=e; ESRI_ST=st;
-  const lb=document.querySelector('#lbase label[data-b="sat"]'); if(lb) lb.hidden=!ok; updateTiles(); }
+  const lb=document.querySelector('#lbase label[data-b="sat"]'); if(lb) lb.hidden=!ok; updateTiles();
+  if(ok&&!warmTiles.t) warmTiles.t=setTimeout(warmTiles,15000); }
+// 1.53, the owner: "pre-load the satellite and the map on the phone". The satellite tiles of Kyiv and the oblasts
+// around it (~200, a few MB) are fetched ahead once per version of the layer, after the page has settled, and kept by
+// the service worker (sw.js, cache-first) — never on a phone that saves data or on 2G
+function warmTiles(){ try{
+  const c=navigator.connection||{}; if(c.saveData||/(^|-)2g$/.test(c.effectiveType||'')||document.hidden) return;
+  const sw=navigator.serviceWorker&&navigator.serviceWorker.controller; if(!sw||!SAT_OK) return;
+  if(localStorage.getItem('satwarm')===SAT_V) return;
+  const urls=[], box=(z,lo0,la0,lo1,la1)=>{ const n=2**z, X=lon=>Math.floor((lon+180)/360*n),
+    Y=lat=>{ const f=lat*Math.PI/180; return Math.floor((1-Math.log(Math.tan(f)+1/Math.cos(f))/Math.PI)/2*n); };
+    for(let x=X(lo0);x<=X(lo1);x++) for(let y=Y(la1);y<=Y(la0);y++) urls.push(`/tiles/sat/${z}/${x}/${y}.webp?v=${SAT_V}`); };
+  for(const z of [5,6,7,8]) if(z<=SAT_MAX) box(z,27,48,36,52.6);      // Kyiv and the oblasts around it
+  for(const z of [9,10]) if(z<=SAT_MAX) box(z,29.2,49.2,32.2,51.6);   // Kyiv oblast
+  sw.postMessage({warm:urls}); localStorage.setItem('satwarm',SAT_V); }catch(e){} }
 function updateSat(){
   const g=$('sat'); if(!g) return; const on=SAT_OK&&LAYERS.sat&&MAP&&!CITY&&!LITE_ON(); svg.classList.toggle('satd',!!on);
   if(!on){g.innerHTML='';return;}
@@ -3298,7 +3375,7 @@ function renderStats(){ if(!STATS) return; const el=$('stats'); if(!el) return; 
 // =====================================================================================
 // ---------------------------------------------------------------------------------------------------
 // The contacts (CONTACT) and the footer (footerHTML, shareApp) are in static/i18n.js since 1.39, shared with Light.
-const APP_VERSION='1.52';
+const APP_VERSION='1.53';
 const DONATE=CONTACT.ngo;
 const ls=(k,v)=>{try{return v===undefined?localStorage.getItem(k):(localStorage.setItem(k,v),v);}catch(e){return null;}};
 
