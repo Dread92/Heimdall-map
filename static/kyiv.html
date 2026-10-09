@@ -601,10 +601,6 @@ svg.no-roads .road,svg.no-roads .roadlbl,svg.no-roads .bridge{display:none}svg.n
 .leader{stroke:#9aa5b8;stroke-width:1px;vector-effect:non-scaling-stroke;stroke-opacity:.55;pointer-events:none}
 .anchor{fill:#9aa5b8;fill-opacity:.8;pointer-events:none}
 body.lite .leader{stroke:#fff;stroke-opacity:.6}body.lite .anchor{fill:#fff}
-.edge{pointer-events:none}
-.edge .arrow{fill:#ff8a3d;stroke:#080b10;stroke-width:1px;vector-effect:non-scaling-stroke}
-.edge.inbound .arrow{fill:#ff3b3f}
-.edge .etxt{font:700 calc(var(--k,1)*10px) var(--mono);fill:#fff;paint-order:stroke;stroke:#080b10;stroke-width:calc(var(--k,1)*3px)}
   svg#map{height:100%}
 /* ---------- update banner / install prompt / support / credits / blackout ---------- */
 .nbar{position:fixed;left:8px;right:8px;z-index:45;background:#14171d;border:1px solid var(--line);border-left:4px solid var(--ua-yellow);padding:9px 11px;display:flex;gap:10px;align-items:center;box-shadow:0 10px 30px rgba(0,0,0,.6)}
@@ -824,7 +820,7 @@ body.lite .imp .ig{fill:#fff}body.lite .imp .it{fill:#ddd}
 #litetag{display:none;position:absolute;left:8px;bottom:8px;z-index:7;font:700 9.5px var(--mono);letter-spacing:.1em;color:#8a8a8a;border:1px solid #3a3a3a;padding:2px 5px}
 body.lite #litetag{display:block}
 body.lite #litetag{bottom:8px}
-body.lite .edge .arrow,body.lite .edge.inbound .arrow{fill:#fff;stroke:#000}body.lite .edge .etxt{fill:#fff}
+
 body.lite .livebar .chip,body.lite .rt,body.lite .chip{color:#fff;border-color:#666;background:#000}
 body.lite .rt.R{background:#fff;color:#000;border-left-color:#fff}body.lite .rt.Y{background:#2a2a2a;color:#fff;border-left-color:#fff}
 body.lite .towndot{fill:#fff;stroke:#000}body.lite .town{fill:#fff;stroke:#000}body.lite .town.big{fill:#fff}
@@ -2141,7 +2137,7 @@ function tick(){
     live=live.filter(m=>!drop.has(m.id));}
   const ids=new Set(live.map(m=>m.id));
   for(const [id,b] of built){ if(!ids.has(id)){b.g.remove();b.trail.remove();b.hist.remove();built.delete(id);} }
-  const edges=[],lblPos=[]; let totShahed=0,totJet=0,totMsl=0,totUnk=0,totStale=0,inboundCount=0, nearest=null, tracked=0, downed=0, homeThreats=0, homeNamedN=0, homeNearest=null;
+  const lblPos=[]; let totShahed=0,totJet=0,totMsl=0,totUnk=0,totStale=0,inboundCount=0, nearest=null, tracked=0, downed=0, homeThreats=0, homeNamedN=0, homeNearest=null;
   for(const m of live){
     let b=built.get(m.id); if(!b){b=buildMarker(m);built.set(m.id,b);$('markers').appendChild(b.g);$('trails').appendChild(b.hist);$('trails').appendChild(b.trail);}
     // The tail: where this track was reported over the last few minutes, fading with age.
@@ -2252,7 +2248,6 @@ function tick(){
     const descTxt=(m.alt&&m.alt.state==='descending'&&!m.status&&!m.endedBy&&!m.stale)?('↓ '+t('alt_desc')+' · '):'';
     b.g.querySelector('.lbl2').textContent=descTxt+(appr?t('lbl_appr',pn(m.target||m.place),m.heading!=null?t('lbl_from',dirName((m.heading+180)%360)):'',fmtT(m.ts)):m._gone?`${t('msl_gone')} · ${placeEn?t('msl_seen',placeEn,fmtT(m.ts)):t('msl_seen_np',fmtT(m.ts))}`:m._reach>0?`${t('msl_reach',Math.round(m._reach))} · ${placeEn?t('msl_seen',placeEn,fmtT(m.ts)):t('msl_seen_np',fmtT(m.ts))}`:m.stale&&!m.status&&!m.endedBy?t('lbl_stale',m.stale,placeEn,fmtT(m.ts)):m.status?`${placeEn} · ${fmtT(m.ts)}`:(hi.inbound?t('lbl_to',homeName(),Math.round(hi.dist)):hi.near&&!m.endedBy?t('lbl_from',Math.round(hi.dist),homeName(),fmtT(m.ts)):null)||(m.endedBy?t('lbl_ended',STATUS_W[m.endedBy.status]||statusName(m.endedBy.status),pn(m.endedBy.place),fmtT(m.endedBy.ts)):info.inbound?t('lbl_to',t('b_kyiv'),Math.round(info.dist)):(m.heading!=null?`${dirName(m.heading)} · ${m.history&&m.history.length?t('lbl_updated'):t('lbl_reported')} ${fmtT(m.ts)}${m.history&&m.history.length?' '+t('lbl_reports',m.history.length+1):''}`:`${m.history&&m.history.length?t('lbl_updated'):t('lbl_reported')} ${fmtT(m.ts)}`)));
     if(m.status){ if(m.status!=='clear') downed++; } else if(!m.endedBy){ tracked++; const c=m.csum||m.count||1; if(m.stale) totStale+=c; else if(m.type==='drones'){ if(m.jet) totJet+=c; else totShahed+=c; } else if(m.type==='unknown') totUnk+=c; else totMsl+=c; if(info.inbound&&!m.stale){inboundCount++; if(!nearest||info.dist<nearest.dist) nearest={...info,m};} }
-    if(!m.status&&!m.endedBy&&(x<VB.x||x>VB.x+VB.w||y<VB.y||y>VB.y+VB.h)) edges.push({m,x,y,info,name});
     lblPos.push({b,m,sx:gx/KPX,sy:gy/KPX});
   }
   // Label de-collision (screen px). No text is written over other text. Each mark's label block (one or two
@@ -2313,23 +2308,9 @@ function tick(){
    const ox=VB.x/KPX, oy=VB.y/KPX, bx=placed.concat(glyphs.filter(q=>q.p)).map(q=>({x:q.x-ox,y:q.y-oy,w:q.w,h:q.h}));
    const sig=bx.map(q=>[q.x,q.y,q.w].map(Math.round).join(',')).join(';');
    if(sig!==LBLBOX.sig){ clearTimeout(LBLBOX.t); LBLBOX={sig,boxes:bx,t:setTimeout(()=>{ if(typeof layoutTownLabels==='function') layoutTownLabels(); },250)}; } }
-  // edge indicators — prioritised (inbound first, then nearest), max 6, spread along each edge
-  const cx=VB.x+VB.w/2, cy=VB.y+VB.h/2, pad=14*KPX;
-  edges.sort((a,b)=>(b.info.inbound-a.info.inbound)||(a.info.dist-b.info.dist));
-  const shown=edges.slice(0,3).map(e=>{const dx=e.x-cx,dy=e.y-cy;const sx=(VB.w/2-pad)/Math.abs(dx||1e-6),sy=(VB.h/2-(dy>0?52*KPX:pad))/Math.abs(dy||1e-6);const sc=Math.min(sx,sy);
-    const ex=cx+dx*sc,ey=cy+dy*sc;const side=sx<sy?(dx>0?'R':'L'):(dy>0?'B':'T');return {...e,ex,ey,side,ang:Math.atan2(dy,dx)*180/Math.PI};});
-  const gap=26*KPX;
-  for(const side of ['L','R','T','B']){const arr=shown.filter(e=>e.side===side);const key=(side==='L'||side==='R')?'ey':'ex';arr.sort((a,b)=>a[key]-b[key]);
-    // vertical edges stack by height; horizontal edges must clear the label's own width or the texts overprint
-    const need=(side==='L'||side==='R')?gap:Math.max(gap,(arr.length?Math.max(...arr.map(e=>e.name.length)):0)*7*KPX);
-    for(let i=1;i<arr.length;i++) if(arr[i][key]-arr[i-1][key]<need) arr[i][key]=arr[i-1][key]+need;
-    const lim=(side==='L'||side==='R')?VB.y+VB.h-pad:VB.x+VB.w-pad; for(let i=arr.length-1;i>=0;i--){ if(arr[i][key]>lim) arr[i][key]=lim-(arr.length-1-i)*need; }}
-  $('edges').innerHTML=shown.map(({m,info,name,ex,ey,side,ang,x,y})=>{
-    const dkm=Math.round(info.dist);
-    const short=name.replace(t('th_kab'),t('e_kab')).replace(t('th_cruise'),t('e_cruise')).replace(t('th_bal'),t('e_bal')); const txt=info.inbound?`${short} ${t('lb_tokyiv')} ${dkm}km`:`${short} ${dkm}km ${dirName((Math.atan2(x,-y)*180/Math.PI+360)%360)}`;
-    const anchor=side==='R'?'end':(side==='L'?'start':'middle'); const o=12*KPX; const tx=side==='R'?ex-o:side==='L'?ex+o:ex; const ty=side==='T'?ey+o+4*KPX:side==='B'?ey-o:ey+4*KPX;
-    return `<g class="edge ${info.inbound?'inbound':''}"><polygon class="arrow" points="0,-3 6,0 0,3" transform="translate(${ex.toFixed(1)} ${ey.toFixed(1)}) rotate(${ang.toFixed(0)}) scale(${kx(1.6*KPX)})"/><text class="etxt" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anchor}">${esc(txt)}</text></g>`;
-  }).join('');
+  // edge indicators: gone (1.53.3, the owner — "a good idea before, not now that the map has more on it"): a target off
+  // the screen is in the Near list, the card and its counts; nothing is written along the map's border any more
+  if($('edges').innerHTML) $('edges').innerHTML='';
   const parts=[]; if(tracked){ const tot=[totShahed?`<b>${totShahed}</b> ${t('lb_shahed')}`:'',totJet?`<b>${totJet}</b> ${t('lb_jet')}`:'',totMsl?`<b>${totMsl}</b> ${t('lb_msl')}`:'',totUnk?`<b>${totUnk}</b> ⚠`:'',totStale?`<b>${totStale}</b> ?`:''].filter(Boolean).join(' · '); parts.push(tot||`<b>${tracked}</b> ${t('lb_targets')}`); } if(inboundCount) parts.push(`<b class="lvr">${inboundCount} ${t('lb_tokyiv')}</b>`); if(HOME&&homeNamedN) parts.push(`<b class="lvp">${homeNamedN} → ${esc(homeName())}</b>`);
   else if(HOME&&homeThreats) parts.push(`<b class="lvr">${homeThreats} ${t('lb_nearhome',esc(homeName()))}</b>`); if(ESTIMATE) parts.push('EST'); 
   // The counters live in the Statistics tab now, not across the bottom of the map. A running tally is

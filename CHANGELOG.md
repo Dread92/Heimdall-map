@@ -2,6 +2,12 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.53.3 — 2026-10-09
+
+### Changed
+- **No more arrows along the edge of the map** for targets off the screen ("ймовірно, дрон 70km ПнЗ"): a good idea when
+  the map had little on it, clutter now. A target off the screen is in the Near list and its card.
+
 ## 1.53.2 — 2026-10-09
 
 ### Changed

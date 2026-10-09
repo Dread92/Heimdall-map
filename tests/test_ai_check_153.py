@@ -361,3 +361,9 @@ def test_a_tag_is_its_number_and_no_direction_is_shown():
     assert "tagOrigin" not in page and "t('tg_num')" in page and "tr.tg" in replay
     lines, _ = st.ai_map(["25", "14"])
     assert not any(" from " in x for ls in lines.values() for x in ls)        # the AI is not told it either
+
+
+def test_no_arrows_along_the_edge_of_the_map():
+    page = _read("static/kyiv.html")
+    assert "edges.push(" not in page and "class=\"edge " not in page and ".edge .arrow" not in page
+    assert "if($('edges').innerHTML) $('edges').innerHTML='';" in page

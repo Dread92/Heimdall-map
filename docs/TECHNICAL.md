@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.53** · last updated 2026-10-09 (1.53.2)
+**Documented version: 1.53** · last updated 2026-10-09 (1.53.3)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -1409,7 +1409,7 @@ Main parts:
 
 - `render()` — official colours (raions, oblasts, banner band, raion chips, alerts tab);
 - `tick()` — marks: silhouettes per weapon (`G`, `GLYPH_BY_TYPE` from `static/glyphs.js`), turned only to a stated course (`orientOf`),
-  uncertainty ring up to 25 km, 5-minute tail, labels, off-screen edge indicators;
+  uncertainty ring up to 25 km, 5-minute tail, labels (1.53.3: no off-screen edge indicators any more — the owner: the map has too much on it now; a target off the screen is in the Near list);
 - `threatStrip()` — the banner stack, coloured by `officialLevel()`; `idleLine()` when calm;
 - the four places (`SLOTS`: Home / Work / Kids / Pin — `localStorage` only), zones 10 / 30 / 60 km (their
   labels sized in screen pixels, `--k`), the conditional ETA band (`etaBand`);
