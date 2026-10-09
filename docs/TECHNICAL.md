@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.51** · last updated 2026-10-09 (1.51.0)
+**Documented version: 1.52** · last updated 2026-10-09 (1.52.0)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -139,10 +139,12 @@ clear-sky/
 ├── data/
 │   ├── ua_regions.json     official region id → oblast / parent raion / map shape (built)
 │   ├── regional_places.json the villages and city districts of the oblasts with a tracker (GeoNames, built, 1.43)
+│   ├── extra_places.json   the villages of Kyiv oblast, offered to the AI reader alone — never read by the rules (built, 1.52)
 │   └── corpus.jsonl        regression corpus of real posts and their expected readings
 ├── scripts/
 │   ├── build_geo.py        rebuilds data/ua_regions.json and static/light-map.json (`--light`: the Light maps only)
 │   ├── build_places.py     rebuilds data/regional_places.json from GeoNames (1.43)
+│   ├── build_extra_places.py rebuilds data/extra_places.json from GeoNames (1.52)
 │   ├── build_mapdata.py    rebuilds static/map-ua.json from Natural Earth (1.45)
 │   ├── build_towns.py      rebuilds static/towns-ua.json from GeoNames (1.49)
 │   ├── build_imagery.py    builds the satellite layer (imagery/sat-ua.mbtiles) from ESA WorldCover / Sentinel-2 (1.47)
@@ -896,6 +898,58 @@ hover say where it came from, in the post's words and from which channel, with a
 what the tag is. **A target drawn at the town it is heading for** (an approach mark with a stated side) stands off
 the town on that side, 30 px on the screen, pointing in along its dashed course: nobody said where it is, and the
 town stays clear.
+
+**1.52 — only when it is sure, and "probably".** A target reported for a whole oblast (`place == "область"`) gets **no
+tag** (the owner's rule: a number only when we are sure which target it is); it gets one when a post places it. Where
+no post says where a target came from, the oblast its **first** report was in (`first_uid`, carried by `_chain`) says
+it probably — `TAG_REGION`: Chernihiv oblast `n` (Belarus), Cherkasy oblast `s` (the south or the east) — in **lower
+case** (`n-07`), `os` = `region`, and the card says "probably from …, first reported in …; no post said so". A stated
+origin, the rules' or the AI's, always wins. The height on the bottom line is the latest the track stated (`alt.cur`
+false: an earlier report's, shown with its age "2900 м (4′)"). In daylight the tag, the height and the region outline
+take dark colours (`body.m-day`).
+
+**The path of a tapped target** (1.52, `drawSelPath`, layer `#selpath`): the places the posts reported it at, oldest
+first, joined in red dots, each with its time — the path the posts put it on, not a flight path; cleared when the
+card closes.
+
+### 7.9 The AI reader's targets on the map (1.52)
+
+The owner's decision (9 Oct 2026): a target missed is worse than a duplicate. A target the AI reader found that the
+rules did not read goes **on the map**, while the switch `live` is on (§7.7), with the same chaining, scope, ageing,
+tags and pushes ("near you", for the phones that asked) as any other — `State._ai_marks`, from the readings of the
+window (`Store.ai_recent`), each AI target of a post that the rules have no mark for at its place or its destination,
+and none when both read one target within 30 km of each other (`_ai_marks_of`; read further apart — "біля Сомкової
+Долини", which the rules took for Dolyna in Ivano-Frankivsk oblast — the AI's stands too). It is placed **only at a place the post names**, a candidate the
+server offered (`ai_reader.place_of`: the gazetteer, or 1.52's `data/extra_places.json`, the villages of Kyiv oblast,
+which the rules never read): at it, near it, heading to it (an approach), or for its whole oblast; never at an official
+alert message (`geo.ALERT_MSG_RX` without `MOVE_RX`). Its id is `<post>#ai<n>`, it carries `ai: true`, the map dashes
+its halo and heads its label with "AI", and its card says the AI placed it from the post and to check the post.
+
+What the first 54 real readings showed (dashboard, 9 Oct) and 1.52 changed:
+
+- the prompt (version 4): **two places per target** — where it is (`place_id`) and where it is going (`toward_id`;
+  only the latter → it is the place, `heading_to`); the channels' **emoji** are weapons and quotes (`EMOJI_KIND`:
+  🛵 Shahed, 🏍 jet, 🛸 drone, 🚀 missile, 💣 guided bomb); a tracker's **bare place name** is a target at it; "н.п. X"
+  after an oblast is at X; "повз X" is near X; an **official alert message** is not a target; "спускається" is a
+  descent; a `missile` of no stated kind;
+- the candidates: **a looser match** (`fuzzy_places`) among the oblasts in play (Kyiv oblast for the Kyiv channels) —
+  a village the rules' matchers do not read and a slip of one letter ("Пепеяслав" → Переяслав), by the stem;
+- a post the server set aside is compared with **nothing** — the rules did not draw it.
+
+The rules' own errors it showed, fixed in `geo._fix_readings` (applied once, by `prepare` with the channel): a channel's
+signature on the last line ("‼️ RND | Житомир") is dropped; "з Чорного/Азовського моря" followed by a course is "from the
+south", not a position in the sea; an oblast named by its adjective alone after a preposition ("З Житомирської",
+"через черкаську", "в київську") is the oblast — except, from a Kyiv channel, going to a Kyiv place of that name ("на
+Житомирську", the metro station). And `is_relevant` drops posts about power cuts, giveaways and subscriptions that name
+no weapon and no strike (`NOT_SKY_RX`). A relay of a report already read (another channel, ≤ 5 min, the same place) is
+still not drawn twice, but **the height, descent, speed and origin it adds** go onto the mark it relays
+(`State._merge_relay`, the evidence names the channel) — "Вишеньки 2900" had lost its 2,900 m that way. A post giving a
+height and a descent together ("Хотів 1200 знижується") keeps both (`geo._alt_full`).
+
+Two tracks never show one tag: an approach mark a track took over (`absorbed` in `State._chain`) is no longer a report a later one
+can continue — it made a second track sharing that report, and both found the same tag by it — and `TargetTags.assign`
+skips a tag another track of the same pass already has (`taken`, the tracks taken oldest first). Place names ending in
+"-лець" decline with a soft sign (Козелець → Козельця, Козельцем): the stem index has that form too.
 
 ## 8. Translation
 

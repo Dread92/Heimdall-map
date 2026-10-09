@@ -41,7 +41,7 @@ def _ans(**kw):
 # ---- the prompt ----------------------------------------------------------------------------------------------------
 def test_the_prompt_carries_the_safety_rules():
     for rule in ("Never infer.", "Quote.", "Places only from CANDIDATES", "Never output coordinates",
-                 "Banderol is a jet drone, never a cruise missile", "= heading_to X — the target is NOT at X",
+                 "Banderol is a jet drone, never a cruise missile", "— the target is NOT at X",
                  "is the city itself", "PREVIOUS POSTS are context only", "targets []"):
         assert rule in A.SYSTEM, rule
 
@@ -541,7 +541,7 @@ def test_refused_both_ways_it_pauses_and_says_why():
 
 
 def test_the_rules_now_ask_for_origin_and_speed():
-    assert A.PROMPT_VERSION == "3"
+    assert A.PROMPT_VERSION == "4"
     for rule in ("9. Origin:", '"з Білорусі"', "never an origin", "give them whenever the post states them", "the target just above it",
                  "Answer with the JSON object only"):
         assert rule.lower() in A.SYSTEM.lower(), rule

@@ -24,25 +24,28 @@ import urllib.request
 from collections import OrderedDict, deque
 from datetime import datetime, timezone
 
-PROMPT_VERSION = "3"     # 1.51: the parser's reading and the map in the prompt; vertical state, same_as
+PROMPT_VERSION = "4"     # 1.52: where it is AND where it is going; the channels' emoji; bare names; alerts are not targets
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 DEFAULT_MODEL = "anthropic/claude-haiku-5.5"
 MAX_CANDIDATES = 30
 PER_HOUR = 400                       # posts a reader of this server sends at most in an hour
 
-KINDS = ["shahed", "jet_drone", "drone", "cruise_missile", "ballistic_missile", "guided_bomb", "aircraft", "unknown"]
+KINDS = ["shahed", "jet_drone", "drone", "cruise_missile", "ballistic_missile", "missile", "guided_bomb", "aircraft", "unknown"]
 STATUSES = ["in_flight", "shot_down", "impact", "lost"]
 RELATIONS = ["at", "heading_to", "from", "near", "side_of", "in_oblast", "none"]
 DIRS = ["n", "ne", "e", "se", "s", "sw", "w", "nw"]
 # our own words for them (the rules' marker types), to compare the two readings
 KIND_TYPE = {"shahed": "drones", "jet_drone": "drones", "drone": "drones", "cruise_missile": "cruise_missiles",
-             "ballistic_missile": "ballistic_missiles", "guided_bomb": "guided_aerial_bombs",
+             "ballistic_missile": "ballistic_missiles", "missile": "unspecified_missiles", "guided_bomb": "guided_aerial_bombs",
              "aircraft": "tactic_aircraft_activity", "unknown": "unknown"}
 STATUS_OF = {"in_flight": None, "lost": None, "shot_down": "down", "impact": "impact"}
 # the rules' types that say the same as the model's word ("Реактивний" is a drone to the rules, "Бандерол" a banderol)
 KIND_OK = {"shahed": {"drones"}, "jet_drone": {"drones", "banderol_missiles"}, "drone": {"drones", "banderol_missiles"},
            "cruise_missile": {"cruise_missiles"}, "ballistic_missile": {"ballistic_missiles"},
+           "missile": {"cruise_missiles", "ballistic_missiles", "unspecified_missiles", "supersonic_missiles", "banderol_missiles"},
            "guided_bomb": {"guided_aerial_bombs"}, "aircraft": {"tactic_aircraft_activity"}}
+# 1.52: the channels' own shorthand for a weapon — an emoji is a quote of its own
+EMOJI_KIND = {"🛵": "shahed", "🏍": "jet_drone", "🏍️": "jet_drone", "🛸": "drone", "🚀": "missile", "💣": "guided_bomb"}
 # a long run of digits — a card number in a fundraising line — never leaves the server and is never stored here
 _CARD_RX = re.compile(r"(?<!\d)(?:\d[ \-]?){12,18}\d(?!\d)")
 
@@ -56,20 +59,22 @@ Rules:
 1. Never infer. A fact the post does not state is left empty: "" for a text, 0 for a number, "none" for a direction, an origin or a vertical state, "unknown" for the weapon. A likely guess is still a guess.
 2. Quote. Every fact you give carries the exact words of the post that state it, copied character for character into its *_quote field. If you cannot quote it, leave it empty.
 3. Places only from CANDIDATES, by their id (c1, c2…, or o<number> for an oblast). Never output coordinates. A place the post names that is not in CANDIDATES: place_id "", its words in place_quote. Several candidates of the same name: the one in the CHANNEL'S OBLAST or in the OBLASTS ITS LAST POSTS NAMED — a regional tracker reports its own oblast and the one next to it.
-4. The relation to the place is what the words say:
-   - "на X", "курсом на X", "в напрямку X", "у бік X" = heading_to X — the target is NOT at X;
-   - "над X", "в районі X", "біля X" said of where it is now, or X alone in a tracker's line = at X; "поблизу X", "неподалік X" = near X;
+4. Two places per target: where it is (place_id, with its relation) and where it is going (toward_id). "на Житомирщині в напрямку Житомира" = place o10 in_oblast, toward Житомир; "повз Хорішки на Семенівку" = place Хорішки near, toward Семенівка; "з Требухова вектор Бровари" = place Требухів from, toward Бровари. When the post gives only where it is going, that place is place_id with relation heading_to and toward_id stays "". The relation to the place is what the words say:
+   - "на X", "курсом на X", "в напрямку X", "у бік X", "вектор X" = heading_to X (or toward X, when the post also says where it is) — the target is NOT at X;
+   - "над X", "в районі X", "біля X" said of where it is now = at X; "поблизу X", "неподалік X", "повз X", "околиці X" = near X;
+   - a tracker's line that is only a place name, or a place and "увага" ("Яготин", "Наливайківка увага") = at X — give it: that is how trackers report a target;
+   - "на Київщині, н.п. Гребінка", "в районі н.п. X" = at X — the settlement named is where it is;
    - "з X", "від X", "із X" (a Ukrainian place) = from X;
    - "північніше X", "на півночі від X", "за 20 км на північ від X" = side_of X (side n; distance_km 20 only if written);
    - an oblast only ("на Київщині", "Сумщина", "в Черкаській області") = in_oblast, with the oblast's o-id.
 5. A city named with no place in it ("над Києвом", "околиці Києва", "правий берег Києва") is the city itself (relation at, the city's id). Never pick a district or a street the post does not name.
-6. Weapons, by the post's words: "шахед", "герань", "мопед", "ударний БпЛА" = shahed; "реактивний", "реактив", "реактивний БпЛА/дрон", "Бандерол" = jet_drone (Banderol is a jet drone, never a cruise missile); "БпЛА", "дрон" of no stated kind = drone; "крилата ракета", "Калібр", "Х-101", "Х-55" = cruise_missile; "балістика", "балістична", "Іскандер", "КН-23" = ballistic_missile; "КАБ", "керовані авіабомби" = guided_bomb; "тактична авіація", "МіГ", "Су-34" = aircraft; nothing said ("ціль", "увага") = unknown.
+6. Weapons, by the post's words or the channel's emoji (the emoji is the quote): "🛵", "шахед", "герань", "мопед", "ударний БпЛА" = shahed; "🏍" = jet_drone; "🛸" = drone; "🚀" or "ракета" of no stated kind = missile; "💣" = guided_bomb; "реактивний", "реактив", "реактивний БпЛА/дрон", "Бандерол" = jet_drone (Banderol is a jet drone, never a cruise missile); "БпЛА", "дрон" of no stated kind = drone; "крилата ракета", "Калібр", "Х-101", "Х-55" = cruise_missile; "балістика", "балістична", "Іскандер", "КН-23" = ballistic_missile; "КАБ", "керовані авіабомби" = guided_bomb; "тактична авіація", "МіГ", "Су-34" = aircraft; nothing said ("ціль", "увага") = unknown.
 7. Status only when stated: "збито", "знищено", "мінус", "мінуснули", "приземлили" (of a target) = shot_down; "вибух", "вибухи", "приліт", "влучання" = impact; "втрачено контакт", "зник", "не фіксується" = lost; otherwise in_flight.
 8. One entry per target or group, in the order of the post. A count only if written ("2 шахеди", "група з 5", "×3"; "кілька", "група" alone are not a number).
 9. Origin: where the post says the target comes from, outside the places above — a direction ("з півночі" = n, "з південного сходу" = se) or a country or area ("з Білорусі", "з території РБ" = belarus; "з Росії", "з Брянщини", "з Курщини", "з боку Бєлгорода" = russia; "з моря", "з акваторії Чорного моря" = sea; "з Криму" = crimea; "з окупованих територій", "з ТОТ" = occupied). A Ukrainian oblast or town it comes from is relation from that place, never an origin.
 10. Heading only when the post gives a course as a direction ("курс на захід" = w). A town it flies to is heading_to that town, not a heading.
-11. Height, vertical state and speed matter most to the people under a target: give them whenever the post states them, and only for the target they are written for (the same line or paragraph; a height on a line of its own after several targets belongs to the target just above it). Altitude in metres ("висота 2200", "на 1,5 км" = 1500); vertical: "знижується", "пікірує", "скидає висоту" = descending; "набирає висоту" = climbing; "низько", "на малій висоті" = low; "високо", "на великій висоті" = high; speed ("швидкість 180 км/год" = 180).
-12. Nothing about aerial targets — an alert starting or ending alone ("Відбій"), news, a fundraiser, the Air Force's morning totals: targets [].
+11. Height, vertical state and speed matter most to the people under a target: give them whenever the post states them, and only for the target they are written for (the same line or paragraph; a height on a line of its own after several targets belongs to the target just above it). Altitude in metres ("висота 2200", "на 1,5 км" = 1500); vertical: "знижується", "спускається", "пікірує", "скидає висоту" = descending; "набирає висоту" = climbing; "низько", "на малій висоті" = low; "високо", "на великій висоті" = high; speed ("швидкість 180 км/год" = 180).
+12. Nothing about aerial targets — an official alert message ("Повітряна тривога", "Відбій", "жовтий рівень", "Дронова загроза" with a district: that is an alert, not a target), news, a fundraiser, an advert, the Air Force's morning totals: targets [].
 13. PREVIOUS POSTS are context only. "Далі на X" continues the last target named there; but never copy a fact from them into this post's entry unless this post states it.
 14. ON THE MAP NOW lists the targets other posts placed, by their tag (S-01, ?-04…). If one of this post's targets is one of them — the same weapon reported again near the same place, or "Далі на X" continuing it — put its tag in same_as; otherwise "". Such a target is still listed: same_as says which it is.
 15. The PARSER READING may be wrong or miss targets. Never copy it; read the post yourself. Where it missed a target the post names, add it; where it misread one, your reading — by the post's words — is the one to give.
@@ -81,7 +86,7 @@ ORIGINS = ["belarus", "russia", "sea", "crimea", "occupied"] + DIRS
 # the facts a target can carry, and how each is written on the wire when the post does not state it. No field is
 # nullable: a nullable field is a "union type" to Anthropic's structured outputs, which take at most 16 of them in
 # a schema — and a provider that cannot compile the schema answers "HTTP 400: Provider returned error" (1.50.2).
-TEXTS = ("kind_quote", "count_quote", "status_quote", "place_id", "place_quote", "origin_quote", "heading_quote",
+TEXTS = ("kind_quote", "count_quote", "status_quote", "place_id", "place_quote", "toward_id", "toward_quote", "origin_quote", "heading_quote",
          "altitude_quote", "vertical_quote", "speed_quote", "same_as")
 VERTICALS = ["descending", "climbing", "low", "high"]
 INTS = ("count", "distance_km", "altitude_m", "speed_kmh")
@@ -95,6 +100,7 @@ TARGET = {
         "status": {"type": "string", "enum": STATUSES}, "status_quote": _S,
         "place_id": _S, "place_quote": _S,
         "relation": {"type": "string", "enum": RELATIONS},
+        "toward_id": _S, "toward_quote": _S,
         "side": _DIR, "distance_km": _I,
         "origin": {"type": "string", "enum": ORIGINS + ["none"]}, "origin_quote": _S,
         "heading": _DIR, "heading_quote": _S,
@@ -196,6 +202,20 @@ EXAMPLES = [
      "c1 | Бортничі | м. Київ\no31 | м. Київ", [], ["S-07 · Shahed · heading to Бортничі · @kyiv_airdef 22:10"],
      {"targets": [_t(kind="unknown", place_id="c1", place_quote="на Бортничі", relation="heading_to",
                      vertical="descending", vertical_quote="знижується", same_as="S-07")], "uncertain": None}),
+    # 1.52: where it is and where it is going, both; the channel's emoji is the weapon
+    (channel_block("kpszsu"), [], "🏍 Реактивний БпЛА на Житомирщині в напрямку Коростеня",
+     "c1 | Коростень | Житомирська область\no10 | Житомирська область", ["drone · heading to Коростень"], [],
+     {"targets": [_t(kind="jet_drone", kind_quote="Реактивний БпЛА", place_id="o10", place_quote="на Житомирщині",
+                     relation="in_oblast", toward_id="c1", toward_quote="в напрямку Коростеня")], "uncertain": None}),
+    (channel_block("eRadarrua", None, ["Київська область"]), [], "🛵 Наливайківка\n\n🛵 2 повз Бородянку на Ворзель",
+     "c1 | Наливайківка | Київська область\nc2 | Бородянка | Київська область\nc3 | Ворзель | Київська область\no14 | Київська область",
+     ["drone · at Наливайківка", "drone ×2 · at Бородянка"], [],
+     {"targets": [_t(kind="shahed", kind_quote="🛵", place_id="c1", place_quote="Наливайківка", relation="at"),
+                  _t(kind="shahed", kind_quote="🛵", count=2, count_quote="2 повз", place_id="c2", place_quote="повз Бородянку",
+                     relation="near", toward_id="c3", toward_quote="на Ворзель")], "uncertain": None}),
+    # an official alert message names a district and a threat: it is an alert, not a target
+    (channel_block("trevoga_kartaa_noviny"), [], "🚨Повітряна тривога · жовтий рівень🟡\nБучанський р-н\nДронова загроза",
+     "o14 | Київська область", [], [], {"targets": [], "uncertain": None}),
     (channel_block("kyivoda", "Київська область"), [], "Відбій повітряної тривоги в Київській області.", "o14 | Київська область", [], [],
      {"targets": [], "uncertain": None}),
 ]
@@ -277,12 +297,19 @@ def candidates(geo, text, channel, home=None, near=(), oblast_names=None):
                 names += keys
         except Exception:
             pass
+    # 1.52: the places the rules' matchers miss — a village they do not read, a slip of spelling ("Пепеяслав") — among
+    # the oblasts in play (Kyiv oblast for the Kyiv channels), by the stem of the name, one letter off at most
+    play = set(uids) | ({"14"} if {"31", "14"} & set(uids) or home in ("31", "14") else set())
+    try:
+        names += [k for k in fuzzy_places(geo, t, play) if k not in names]
+    except Exception:
+        pass
     out, seen = [], set()
     for n in names:
         if n in seen or len(out) >= MAX_CANDIDATES:
             continue
         seen.add(n)
-        p = geo.PLACES.get(n)
+        p = place_of(geo, n)
         if not p:
             continue
         out.append((f"c{len(out) + 1}", n, f"{n} | {oblast_names.get(p[2], p[2])}"))
@@ -290,6 +317,59 @@ def candidates(geo, text, channel, home=None, near=(), oblast_names=None):
         if u in oblast_names and f"o{u}" not in seen:
             seen.add(f"o{u}")
             out.append((f"o{u}", f"o{u}", oblast_names[u]))
+    return out
+
+
+_END = re.compile(r"(ами|ями|ого|ому|ою|ею|єю|ів|їв|ій|ий|ої|ам|ям|ах|ях|ом|ем|у|ю|а|я|і|ї|и|е|є|о|й|ь)$")
+_FUZZ = {}
+
+
+def _stem(w):
+    return " ".join(_END.sub("", x) for x in w.lower().replace("’", "'").replace("ʼ", "'").split())
+
+
+def _lev1(a, b):
+    """True when a and b differ by one letter at most (one changed, added or dropped)."""
+    if a == b:
+        return True
+    if abs(len(a) - len(b)) > 1:
+        return False
+    if len(a) == len(b):
+        return sum(x != y for x, y in zip(a, b)) == 1
+    if len(a) > len(b):
+        a, b = b, a
+    i = 0
+    while i < len(a) and a[i] == b[i]:
+        i += 1
+    return a[i:] == b[i + 1:]
+
+
+def _fuzzy_index(geo):
+    if not _FUZZ:
+        src = list(dict.items(geo.PLACES)) + list(getattr(geo, "REGIONAL", {}).items()) + list(getattr(geo, "EXTRA_PLACES", {}).items())
+        for key, (_, _, uid) in src:
+            base = re.sub(r"\s+\d+$", "", key.split(" (")[0])
+            st = _stem(base)
+            if len(st.replace(" ", "")) >= 4:
+                _FUZZ.setdefault(uid, []).append((st, key, len(st.split())))
+    return _FUZZ
+
+
+def fuzzy_places(geo, t, uids, limit=8):
+    """1.52: the gazetteer keys (core, regional, extra) of the oblasts `uids` whose name a word of the post — or two
+    words, for "Сомкова Долина" — matches by its stem, exactly for a short name, one letter off for a long one."""
+    words = [w for w in re.findall(r"[а-яіїєґ'’]+", t.lower()) if len(w) >= 4]
+    stop = getattr(geo, "REGIONAL_STOP", frozenset())
+    one = {_stem(w) for w in words if w not in stop}
+    two = {_stem(f"{a} {b}") for a, b in zip(words, words[1:])}
+    idx, out = _fuzzy_index(geo), []
+    for uid in uids:
+        for st, key, nw in idx.get(uid, ()):
+            pool = two if nw == 2 else one if nw == 1 else ()
+            if any((w == st) or (len(st) >= 6 and w[:1] == st[:1] and _lev1(w, st)) for w in pool):
+                out.append(key)
+                if len(out) >= limit:
+                    return out
     return out
 
 
@@ -319,13 +399,14 @@ def validate(out, text, cands, tags=()):
     nt = _norm(text)
     ids = {c[0]: c for c in cands}
     ok = lambda q: bool(q) and len(_norm(q)) >= 2 and _norm(q) in nt      # noqa: E731
+    emo = lambda q: bool(q) and q.strip() in EMOJI_KIND and q.strip() in text    # noqa: E731  (1.52: 🛵 is a quote)
     dropped, res = 0, []
     for raw in (out or {}).get("targets") or []:
         if not isinstance(raw, dict):
             dropped += 1
             continue
         t = unwire(raw)
-        if t["kind"] not in KINDS or (t["kind"] != "unknown" and not ok(t["kind_quote"])):
+        if t["kind"] not in KINDS or (t["kind"] != "unknown" and not (ok(t["kind_quote"]) or emo(t["kind_quote"]))):
             dropped += t["kind"] != "unknown"
             t["kind"], t["kind_quote"] = "unknown", None
         if t["status"] not in STATUSES or (t["status"] != "in_flight" and not ok(t["status_quote"])):
@@ -338,6 +419,12 @@ def validate(out, text, cands, tags=()):
         if t["place_id"] is not None and not (t["place_id"] in ids and ok(t["place_quote"])):
             dropped += 1
             t["place_id"] = None
+        if t["toward_id"] is not None and not (t["toward_id"] in ids and ok(t["toward_quote"]) and t["toward_id"] != t["place_id"]):
+            dropped += t["toward_id"] != t["place_id"]
+            t["toward_id"], t["toward_quote"] = None, None
+        if t["place_id"] is None and t["toward_id"] is not None:      # only where it is going: that is the place
+            t["place_id"], t["place_quote"], t["relation"] = t["toward_id"], t["toward_quote"], "heading_to"
+            t["toward_id"], t["toward_quote"] = None, None
         if t["place_id"] is None or t["relation"] not in RELATIONS:
             t["relation"] = "none"
         if t["relation"] != "side_of":
@@ -377,6 +464,7 @@ def validate(out, text, cands, tags=()):
             dropped += 1
             continue            # nothing the post bears out is left of it
         t["place"] = ids[t["place_id"]][1] if t["place_id"] else None
+        t["toward"] = ids[t["toward_id"]][1] if t["toward_id"] else None
         res.append(t)
     return res, dropped
 
@@ -394,6 +482,14 @@ def _where_rules(m):
     return _canon(p[2:] if p.startswith("→ ") else p)
 
 
+def place_of(geo, key):
+    """(lon, lat, oblast uid) of a candidate place: the gazetteer's (core and regional), or 1.52's extra villages."""
+    p = geo.PLACES.get(key) if geo else None
+    if p:
+        return p
+    return getattr(geo, "EXTRA_PLACES", {}).get(key)
+
+
 def summarise_rules(ms):
     return [{"where": _where_rules(m), "type": m.get("type"), "status": m.get("status"),
              "approach": bool(m.get("approach"))} for m in ms or []]
@@ -408,7 +504,8 @@ def summarise_ai(targets, places=None):
         p = (places or {}).get(t.get("place") or "")
         out.append({"where": w, "kind": t["kind"], "status": STATUS_OF.get(t["status"]),
                     "approach": t["relation"] == "heading_to", "relation": t["relation"],
-                    "alt": f"o{p[2]}" if p and t["relation"] == "side_of" else None})
+                    "alt": f"o{p[2]}" if p and t["relation"] == "side_of" else None,
+                    "toward": _canon(t.get("toward") or "") or None})
     return out
 
 
@@ -419,7 +516,7 @@ def match(targets, wheres, alone):
         return targets[0]
     for t in targets:
         w = _canon(t.get("place") or "")
-        if w and w in wheres:
+        if (w and w in wheres) or (t.get("toward") and _canon(t["toward"]) in wheres):
             return t
     return None
 
@@ -439,6 +536,8 @@ def compare(rules, ai):
         w = a["where"]
         if w and w not in rw and a.get("alt") in rw:
             w = a["alt"]
+        if w and w not in rw and a.get("toward") in rw:       # the rules drew it at where it is going
+            w = a["toward"]
         aw.append(w)
     if rw != {w for w in aw if w}:
         return "place"
@@ -625,7 +724,9 @@ class AIReader(threading.Thread):
         # targets already on the map from every channel — the deterministic reading it is there to cross-check
         line = channel_block(ch, self.oblast_names.get(home) if home else None,
                              [self.oblast_names[u] for u in dict.fromkeys(near) if u in self.oblast_names])
-        marks = self.rules_fn(ch, text, list(near))
+        # 1.52: a post the server set aside put nothing on the map — that is the rules' reading of it, not what the parser
+        # would have made of it ("rules_only" for an advert the rules never drew was a false alarm about the rules)
+        marks = self.rules_fn(ch, text, list(near)) if stored else []
         on_map, tags = [], ()
         if self.context_fn:
             try:

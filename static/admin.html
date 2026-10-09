@@ -380,10 +380,10 @@ const T={
   v_agree:'agree',v_place:'place differs',v_kind:'weapon differs',v_status:'outcome differs',v_ai_only:'only the AI',v_rules_only:'only the rules',v_none:'no target',v_error:'call failed',
   ai_legend:'<b>Place differs</b>: the two put it in different places. <b>Weapon differs</b>, <b>outcome differs</b> (shot down, impact): at the same place. <b>Only the AI</b> found a target: perhaps a post the rules missed. <b>Only the rules</b> found one: perhaps a misreading by the rules, or the AI missed it. Check each against the post itself.',
   r_at:'at',r_heading_to:'heading to',r_from:'from',r_near:'near',r_side_of:'of',r_in_oblast:'in',r_none:'',
-  k_shahed:'Shahed',k_jet_drone:'jet drone',k_drone:'drone',k_cruise_missile:'cruise missile',k_ballistic_missile:'ballistic missile',k_guided_bomb:'guided bomb',k_aircraft:'aircraft',k_unknown:'unknown target',
+  k_shahed:'Shahed',k_jet_drone:'jet drone',k_drone:'drone',k_cruise_missile:'cruise missile',k_ballistic_missile:'ballistic missile',k_missile:'missile',ai_toward:'→ {0}',k_guided_bomb:'guided bomb',k_aircraft:'aircraft',k_unknown:'unknown target',
   ty_drones:'drone',ty_banderol_missiles:'Banderol (jet drone)',ty_cruise_missiles:'cruise missile',ty_ballistic_missiles:'ballistic missile',ty_guided_aerial_bombs:'guided bomb',ty_tactic_aircraft_activity:'aircraft',ty_unknown:'unknown target',
   st_down:'shot down',st_impact:'impact',st_lost:'lost',ai_count:'×{0}',ai_alt:'{0} m',ai_head:'course {0}',ai_fromside:'from the {0}',ai_km:'{0} km',
-  ai_speed:'{0} km/h',o_belarus:'from Belarus',o_russia:'from Russia',o_sea:'from the sea',o_crimea:'from Crimea',o_occupied:'from the occupied territories',
+  ai_speed:'{0} km/h',v_descending:'descending',v_climbing:'climbing',v_low:'low',v_high:'high',o_belarus:'from Belarus',o_russia:'from Russia',o_sea:'from the sea',o_crimea:'from Crimea',o_occupied:'from the occupied territories',
   ai_fmt_schema:'answers in a strict JSON schema',ai_fmt_prompt:'answers by the prompt alone (the provider refused the schema)',
   dirs:'N,NE,E,SE,S,SW,W,NW',
   h_img:'Satellite imagery',img_sat:'Sentinel-2 tiles: version {0}, to zoom {1}',img_nosat:'no Sentinel-2 tiles on the volume — scripts/upload-imagery.bat',img_esri:'Esri close zoom: {0} tiles this month (cap {1}) · {2} today (cap {3})',img_noesri:'Esri close zoom off — no ESRI_KEY (scripts/set-esri-key.bat)',img_ref_img:'Esri refused the key for the imagery — {0} — asked again in 5 min',img_ref_st:'Esri refused the key for the names and the map (Static Basemap Tiles) — {0} — asked again in 5 min; the key needs that privilege too',img_ref:'Esri refused the key ({0}) — asked again in 5 min',
@@ -494,10 +494,10 @@ const T={
   v_agree:'збігаються',v_place:'різне місце',v_kind:'різна зброя',v_status:'різний результат',v_ai_only:'лише ШІ',v_rules_only:'лише правила',v_none:'цілі немає',v_error:'запит не вдався',
   ai_legend:'<b>Різне місце</b>: вони ставлять ціль у різні місця. <b>Різна зброя</b>, <b>різний результат</b> (збито, влучання): на тому самому місці. Ціль знайшов <b>лише ШІ</b>: можливо, правила пропустили допис. <b>Лише правила</b>: можливо, правила прочитали хибно, або ШІ пропустив. Перевіряйте кожен за самим дописом.',
   r_at:'над',r_heading_to:'курсом на',r_from:'з',r_near:'біля',r_side_of:'від',r_in_oblast:'в області:',r_none:'',
-  k_shahed:'шахед',k_jet_drone:'реактивний БпЛА',k_drone:'БпЛА',k_cruise_missile:'крилата ракета',k_ballistic_missile:'балістична ракета',k_guided_bomb:'КАБ',k_aircraft:'авіація',k_unknown:'невідома ціль',
+  k_shahed:'шахед',k_jet_drone:'реактивний БпЛА',k_drone:'БпЛА',k_cruise_missile:'крилата ракета',k_ballistic_missile:'балістична ракета',k_missile:'ракета',ai_toward:'→ {0}',k_guided_bomb:'КАБ',k_aircraft:'авіація',k_unknown:'невідома ціль',
   ty_drones:'БпЛА',ty_banderol_missiles:'Бандерол (реактивний БпЛА)',ty_cruise_missiles:'крилата ракета',ty_ballistic_missiles:'балістична ракета',ty_guided_aerial_bombs:'КАБ',ty_tactic_aircraft_activity:'авіація',ty_unknown:'невідома ціль',
   st_down:'збито',st_impact:'влучання',st_lost:'втрачено',ai_count:'×{0}',ai_alt:'{0} м',ai_head:'курс {0}',ai_fromside:'з {0}',ai_km:'{0} км',
-  ai_speed:'{0} км/год',o_belarus:'з Білорусі',o_russia:'з Росії',o_sea:'з моря',o_crimea:'з Криму',o_occupied:'з окупованих територій',
+  ai_speed:'{0} км/год',v_descending:'знижується',v_climbing:'набирає висоту',v_low:'низько',v_high:'високо',o_belarus:'з Білорусі',o_russia:'з Росії',o_sea:'з моря',o_crimea:'з Криму',o_occupied:'з окупованих територій',
   ai_fmt_schema:'відповідає за суворою JSON-схемою',ai_fmt_prompt:'відповідає лише за промптом (провайдер не прийняв схему)',
   dirs:'пн,пн-сх,сх,пд-сх,пд,пд-зх,зх,пн-зх',
   h_img:'Супутникові знімки',img_sat:'Тайли Sentinel-2: версія {0}, до зуму {1}',img_nosat:'тайлів Sentinel-2 на томі немає — scripts/upload-imagery.bat',img_esri:'Esri, близький зум — тайлів цього місяця: {0} (ліміт {1}) · сьогодні: {2} (ліміт {3})',img_noesri:'Esri вимкнено — немає ESRI_KEY (scripts/set-esri-key.bat)',img_ref_img:'Esri відхилив ключ для знімків — {0} — повтор за 5 хв',img_ref_st:'Esri відхилив ключ для назв і карти (Static Basemap Tiles) — {0} — повтор за 5 хв; ключу потрібен і цей дозвіл',img_ref:'Esri відхилив ключ ({0}) — повтор за 5 хв',
@@ -827,6 +827,8 @@ function drawNuke(){ const cur=ON&&ON.nuke;
 let AI=null, AI_ERR='', AI_ALL=false; try{ AI_ALL=localStorage.getItem('aiall')==='1'; }catch(e){}
 const AI_V=['agree','place','kind','status','ai_only','rules_only','none','error'];
 function aiPlace(w){ if(!w) return '—'; const m=/^o(\d+)$/.exec(w); if(!m) return w;
+  // Kyiv oblast and the city are one compartment of the dashboard's regions ("31"): named here
+  if(m[1]==='14'||m[1]==='31') return m[1]==='14'?(L==='uk'?'Київська область':'Kyiv oblast'):(L==='uk'?'м. Київ':'Kyiv city');
   const r=((H&&H.regions)||[]).find(x=>x.id===m[1]); return r?rgName(r):(L==='uk'?'область '+m[1]:'oblast '+m[1]); }
 const aiDir=d=>{ const i=['n','ne','e','se','s','sw','w','nw'].indexOf(d); return i<0?'?':tr('dirs').split(',')[i]; };
 const aiRule=r=>(r.approach?'→ ':'')+aiPlace(r.where)+' · '+tr('ty_'+(r.type||'unknown'))+(r.status?' · '+tr('st_'+r.status):'');
@@ -838,9 +840,10 @@ function aiTarget(t){
     :(tr('r_'+t.relation)+' '+aiPlace(t.place)).trim();
   else if(t.place_quote) where='“'+t.place_quote+'” ('+tr('ai_notours')+')';
   const st={shot_down:'down',impact:'impact',lost:'lost'}[t.status];
-  const bits=[tr('k_'+t.kind)+(t.count?' '+tr('ai_count',t.count):''), where, st?tr('st_'+st):'',
-    aiOrigin(t), t.heading?tr('ai_head',aiDir(t.heading)):'', t.altitude_m?tr('ai_alt',t.altitude_m):'', t.speed_kmh?tr('ai_speed',t.speed_kmh):''].filter(Boolean);
-  const q=[...new Set(['kind_quote','count_quote','place_quote','status_quote','origin_quote','from_quote','heading_quote','altitude_quote','speed_quote'].map(k=>t[k]).filter(Boolean))];
+  const bits=[tr('k_'+t.kind)+(t.count?' '+tr('ai_count',t.count):''), where, t.toward?tr('ai_toward',aiPlace(t.toward)):'', st?tr('st_'+st):'',
+    aiOrigin(t), t.heading?tr('ai_head',aiDir(t.heading)):'', t.altitude_m?tr('ai_alt',t.altitude_m):'',
+    ['descending','climbing','low','high'].includes(t.vertical)?tr('v_'+t.vertical):'', t.speed_kmh?tr('ai_speed',t.speed_kmh):''].filter(Boolean);
+  const q=[...new Set(['kind_quote','count_quote','place_quote','toward_quote','status_quote','origin_quote','from_quote','heading_quote','altitude_quote','vertical_quote','speed_quote'].map(k=>t[k]).filter(Boolean))];
   return `<div class="tg">${esc(bits.join(' · '))}${q.length?`<div class="ardq">${q.map(x=>'«'+esc(x)+'»').join(' ')}</div>`:''}</div>`; }
 function drawAI(){
   const box=$('aiv'); if(!box) return;

@@ -2,6 +2,45 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.52.0 — 2026-10-09
+
+### Added
+- **Targets only the AI reader found are on the map** — marked "AI" (a dashed ring, "AI" on the label, a line in the
+  card), with the "near you" alerts of any other target, under the dashboard's kill switch. Placed only at a place the
+  post names: loose wording is read, a place is never made up.
+- **Tap a target: its path so far** — the places the posts reported it at, joined in red dots with their times.
+- The AI reader can name a village of Kyiv oblast the rules do not know ("Сомкова Долина", "Фарбоване") and a misspelt
+  place ("Пепеяслав"), among the oblasts in play.
+- Where no post says where a target came from: first reported in Chernihiv oblast — probably Belarus (`n-07`); in
+  Cherkasy oblast — probably the south or the east (`s-07`). Lower case, and the card says it is a guess.
+
+### Changed
+- **No tag for a target reported for a whole oblast** — a number only when it is sure which target it is.
+- The AI reader (prompt version 4) gives where a target is AND where it is going ("на Житомирщині в напрямку Житомира"),
+  reads the channels' emoji (🛵 🏍 🛸 🚀), takes a tracker's bare place name as a target, and no longer takes an
+  official alert message for a drone.
+- A height stays shown: an earlier report's height, with its age, when the latest report did not repeat it.
+
+### Fixed
+- **A relay's height was lost**: "Вишеньки 2900" (@chyste_nebo) relayed "Вишеньки" (@kyiv_airdef) and was dropped as a
+  duplicate with its 2,900 m. A relay still draws nothing twice, but its height, descent, speed and origin now go onto
+  the report it relays.
+- "Хотів 1200 знижується": the descent replaced the 1,200 m — both are kept.
+- Errors the AI reader showed in the rules: a channel's signature ("‼️ RND | Житомир") read as a second jet over
+  Zhytomyr; "з Чорного моря в напрямку Миколаївщини" drawn in the middle of the sea (now: Mykolaiv oblast, from the
+  south); "З Житомирської" read as the village Житомирське and "через черкаську" as the city of Cherkasy (now: the
+  oblasts); power-cut news and an advert drawn as targets over Kyiv and Odesa.
+- The target's tag, its height and an oblast-wide target were unreadable in daylight mode.
+- **Two targets could show the same tag**: a report heading for a town ("на Бровари") that a target already on the map
+  took over could still be continued by a later report, which made a second track out of it — and both showed one tag.
+  A report taken over is no longer continued, and two tracks never show one tag.
+- "біля Сомкової Долини" was read by the rules as Dolyna (Ivano-Frankivsk oblast, off the map) and nothing was drawn;
+  when the rules and the AI read the one target of a post far apart, the AI's reading is drawn too.
+- "над Козельцем", "біля Козельця" — Kozelets was not found in its declined forms.
+- Zoomed out, a target only the AI found showed its tag alone; it now reads "AI ?-03", and a whole-oblast one
+  "AI · somewhere in the oblast".
+- Dashboard, AI reader: Kyiv oblast was shown as "oblast 14"; a descent or climb the AI read is now in the summary line.
+
 ## 1.51.0 — 2026-10-09
 
 ### Added

@@ -615,12 +615,26 @@ taken on its measured record — never a default, and never for a post the rules
 Only public posts are sent to it: a channel's text, its name, our place names. Never a reader, a watched place, an
 address or a device.
 
+## A target only the AI reader found (1.52)
+
+The owner's decision (9 Oct 2026): a target missed is worse than a duplicate — a "ghost" ten kilometres from a real
+target is better than a target nobody drew because a post was worded loosely. So a target the AI reader found that the
+rules did not read is drawn, marked "AI" on the map and in its card, and it can push "near you" like any other. What
+does not change: it is placed only at a place the post itself names, one the server offered from its gazetteer —
+loose wording is read, a place is never made up; never at an official alert message's district; never at
+coordinates of the model's own. When the rules and the AI read a post's one target more than 30 km apart, both are
+drawn ("біля Сомкової Долини" was read by the rules as Dolyna, 500 km off). The dashboard's switch takes every such
+target off the map within ten seconds.
+
 ## A target's tag is a number, not a designation (1.51)
 
 "S-07 ×2" is Heimdall's own count of the targets the channels reported tonight, and a letter for where a post **said**
 it came from — N north or Belarus, E east or Russia, S south, the sea or Crimea, W west, ? not said. The letter is
-never worked out: a jet first reported over Chernihiv oblast may have come from Belarus or from Russia, and it is "?"
-until a post says which; "з Чернігівщини" is a place it passed, not an origin. The bottom line (height, speed) is only
+not worked out from a position, with one exception the owner made (1.52): a target first reported in Chernihiv oblast
+is "probably from Belarus", one first reported in Cherkasy oblast "probably from the south or the east" — shown in
+lower case (n-07) and said to be a guess in the card; a stated origin always replaces it. "з Чернігівщини" is a place
+it passed, not an origin. A target reported for a whole oblast gets no tag at all: a number only when it is sure which
+target it is. The bottom line (height, speed) is only
 what the target's latest report stated. The format is Heimdall's, not a military one — the card says so — because a
 tag that looks like an air-defence designation would be read as coming from air defence. The rules' reading comes
 first; the AI's fills only what the rules did not read, and the card marks it "AI".

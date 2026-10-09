@@ -388,6 +388,8 @@ for name in PLACES:
         stems.append(re.escape(st[:-2] + "ен"))
     elif st.endswith("ец"):
         stems.append(re.escape(st[:-2] + "ц"))
+        if st[:-2].endswith("л"):
+            stems.append(re.escape(st[:-2] + "ьц"))     # Козелець → Козельця, Козельцем
     elif st.endswith("ок"):
         stems.append(re.escape(st[:-2] + "к"))
     if " " in st and "(" not in name and all(len(w) >= 3 for w in st.split()):
@@ -505,6 +507,8 @@ def _reg_stems(alias):
         out.append(st[:-2] + "к")
     elif st.endswith("ець"):
         out.append(st[:-3] + "ц")
+        if st[:-3].endswith("л"):
+            out.append(st[:-3] + "ьц")
     return out
 
 
@@ -1296,6 +1300,18 @@ def parse_altitude(seg):
     return out
 
 
+def _alt_full(t):
+    """1.52: the height and the vertical state together — "Хотів 1200 знижується" said both, and the descent took the
+    place of the 1,200 m (the bare figure is read only when no worded height is)."""
+    a = parse_altitude(t)
+    if a and a.get("m"):
+        return a
+    b = parse_altitude_bare(re.sub(r"зниж\w*|знижуєть\w*|пікіру\w*|набира\w*|низьк\w*|низько|високо", " ", t, flags=re.I))
+    if a and b:
+        return dict(a, m=b["m"])
+    return a or b
+
+
 def parse_altitude_bare(t):
     """A follow-up post that is only a number and a place — '1600, Вороньків' — is a height report."""
     if len(t.split()) > 5 or re.search(r"висот|бпла|шахед|ракет|курс", t, re.I):
@@ -1540,10 +1556,50 @@ def ru_to_uk(text):
 
 
 def prepare(text, channel=None):
-    """What the parser and the tagger read for a post: the text itself, or for a post in Russian, its Ukrainian reading."""
+    """What the parser and the tagger read for a post: the text itself, or for a post in Russian, its Ukrainian reading.
+    1.52: and three readings the AI reader showed the rules getting wrong (9 Oct) — see _fix_readings."""
     if text and (channel in RU_CHANNELS or looks_russian(text)):
-        return ru_to_uk(text)
-    return text
+        text = ru_to_uk(text)
+    # once, where the channel is known (parse_for_channel); the inner readers call prepare() again on prepared text
+    return _fix_readings(text, channel) if text and channel else text
+
+
+# 1.52: an oblast named by its adjective alone — "З Житомирської повертається", "через черкаську на Фарбоване", "В київську
+# на Переяслав", "З чернігівської три буде" — was read as the village Житомирське and the city of Cherkasy. It is the
+# oblast: rewritten as its -щина name, which every reader below already knows. Not Donetsk and Luhansk (their cities).
+_ADJ_OBL = {"житомирськ": "житомирщ", "черкаськ": "черкащ", "полтавськ": "полтавщ", "київськ": "київщ", "сумськ": "сумщ",
+            "чернігівськ": "чернігівщ", "харківськ": "харківщ", "одеськ": "одещ", "миколаївськ": "миколаївщ",
+            "херсонськ": "херсонщ", "рівненськ": "рівненщ", "тернопільськ": "тернопільщ", "львівськ": "львівщ",
+            "кіровоградськ": "кіровоградщ", "дніпропетровськ": "дніпропетровщ", "вінницьк": "вінниччин", "хмельницьк": "хмельниччин"}
+_ADJ_OBL_RX = re.compile(r"(?<![а-яіїєґ'])(з|із|зі|від|до|через|на|в|у|по)\s+(" + "|".join(_ADJ_OBL) + r")(ої|ою|у|ій)(?![а-яіїєґ'])"
+                         r"(?!\s+(?:обл|област|район|р-н|громад|водосх|міськ|напрям))", re.I)
+_ADJ_END = {"ої": ("ини", "и"), "ою": ("ини", "и"), "у": ("ину", "у"), "ій": ("ині", "і")}
+# "з Чорного моря в напрямку Миколаївщини" put the target in the middle of the sea: the sea is where it came FROM — the
+# south — when the post goes on to say where it is heading
+_SEA_FROM_RX = re.compile(r"(?<![а-яіїєґ'])(з|із|зі)\s+(?:акваторії\s+)?(?:чорного|азовського)\s+моря(?=[^.\n!?]*?(?:напрям|курс|\bна\s|\bу бік|\bв бік))", re.I)
+# a channel's signature on its last line — "‼️ RND | Житомир" (@zt_radar) — is not a second target at Zhytomyr
+_SIG_LINE_RX = re.compile(r"\n[^\n\w]*[A-Za-z]{2,8}\s*\|\s*[^\n|]{2,40}\s*$")
+
+
+_KYIV_CH = {"kyiv_airdef", "chyste_nebo", "kievinfo_kyiv"}
+
+
+def _fix_readings(t, channel=None):
+    t = _SIG_LINE_RX.sub("", t)
+    t = _SEA_FROM_RX.sub(lambda m: f"{m.group(1)} півдня", t)
+    kyiv = CHANNEL_HOME.get(channel) == "31" or channel in _KYIV_CH
+
+    def adj(m):
+        # in Kyiv, "на Житомирську" is the metro station and the street (PLACES): a Kyiv channel's target going TO one
+        # stays there; coming FROM one ("з Житомирської") is the oblast
+        if kyiv and m.group(1).lower() not in ("з", "із", "зі", "від", "через"):
+            fem = m.group(2)[0].upper() + m.group(2)[1:].lower() + "а"
+            if fem in PLACES:
+                return m.group(0)
+        stem = _ADJ_OBL[m.group(2).lower()]
+        end = _ADJ_END[m.group(3).lower()][1 if stem.endswith("ччин") else 0]
+        return f"{m.group(1)} {stem}{end}"
+    return _ADJ_OBL_RX.sub(adj, t)
 
 
 # 1.43: "Любеч-Славутич", "Сновськ-Березна-Куликівка", "Лесное - Пятихатки": two places joined by a dash are a route —
@@ -1824,7 +1880,7 @@ def parse_post(text, home=None):
         elif GROUP_RX.search(seg):
             cnt = 3
             ev["count"] = {"matched": GROUP_RX.search(seg).group(0), "method": "'group' → shown as ×3 (unknown size)"}
-        alt = parse_altitude(seg) or _alt_below.get(_si)
+        alt = _alt_full(seg) or _alt_below.get(_si)
         if alt:
             ev["altitude"] = {"matched": alt["matched"], "method": "stated in the post", "confidence": "high"}
         # The sentence first: a post can open with a general assessment and then report one specific stage.
@@ -2031,7 +2087,7 @@ def _parse_live(text, uid):
     mc = COUNT_RX.search(t)
     if mc:
         cnt = int(mc.group(1) or mc.group(2))
-    alt = parse_altitude(t) or parse_altitude_bare(t)
+    alt = _alt_full(t)
     if alt and alt.get("m") and cnt == alt["m"]:
         cnt = None                      # "1600, Вороньків" is a height, never a count of 1600 drones
     heading, hev = None, {"matched": None, "method": "derived from the previous report of this channel when available", "confidence": "medium"}
@@ -2657,5 +2713,33 @@ if __name__ == "__main__":
         print(s, "\n   ->", parse_post(s))
 
 
+# 1.52: the villages of Kyiv oblast, for the AI reader alone (data/extra_places.json, scripts/build_extra_places.py).
+# The rules never read them: they are offered to the AI as CANDIDATES when a post's words match one ("На Сомкова
+# Долина", "на Фарбоване"); a key resolves to its coordinates through ai_reader.place_of, never through PLACES.
+EXTRA_PLACES = {}      # key → (lon, lat, oblast uid)
+
+
+def _load_extra(path=None):
+    path = path or os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "extra_places.json")
+    try:
+        with open(path, encoding="utf-8") as f:
+            doc = json.load(f)
+    except Exception:
+        return
+    for uid, rows in (doc.get("oblasts") or {}).items():
+        names = {}
+        for name, lon, lat, raion in rows:
+            names.setdefault(name, []).append((lon, lat, raion))
+        for name, entries in names.items():
+            for lon, lat, raion in entries:
+                if name in PLACES and len(entries) == 1:
+                    continue                     # the core gazetteer has it, by that name
+                key = name if len(entries) == 1 else f"{name} ({raion or uid})"
+                if key in PLACES or key in EXTRA_PLACES:
+                    continue
+                EXTRA_PLACES[key] = (lon, lat, uid)
+
+
 _load_regional()
 _load_raions()
+_load_extra()

@@ -235,11 +235,24 @@ LIVE_TAGS = {"drones", "ballistic_missiles", "cruise_missiles", "banderol_missil
 NEWS_CHANNELS = {"kyiv_times_official", "eRadarrua", "kievinfo_kyiv", "RadarDnepr"}
 
 
+# 1.52: posts the AI reader showed were not about the sky at all, yet put a mark on the map — "Графік відключення світла
+# на завтра для Київщини" (@kievinfo_kyiv, a mark over all Kyiv) and an advert in an Odesa channel ("кто подпишется на …
+# Ищу Одесса, тот найдёт айфон", a mark on Odesa). Power cuts, giveaways and subscriptions, with no weapon named.
+NOT_SKY_RX = re.compile(r"відключен\w*\s+(?:світла|електро)|графік\w*\s+(?:відключен|подачі|стабілізац)|без\s+світла|"
+                        r"електропостачан|светл\w*\s+(?:нет|отключ)|отключени\w*\s+свет|"
+                        r"підпиш\w*|подпиш\w*|розіграш|розыгрыш|айфон|iphone|промокод|знижк\w+\s+\d", re.I)
+_STRIKE_RX = re.compile(r"удар|вибух|приліт|прилет|атак|обстріл|шахед|ракет|бпла|дрон", re.I)   # a strike's aftermath stays
+WEAPON_TAGS = {"drones", "ballistic_missiles", "banderol_missiles", "cruise_missiles", "supersonic_missiles",
+               "unspecified_missiles", "guided_aerial_bombs", "tactic_aircraft_activity", "impact"}
+
+
 def is_relevant(text, tags, channel=None):
     """Keep only posts about the air situation: a threat / alert / outcome keyword, a parsed position, or an
     official alert message. Everything else (news, fundraising, culture, ads) is dropped before storage."""
     if "af_summary" in tags or "retract" in tags:
         return True
+    if NOT_SKY_RX.search(text or "") and not (WEAPON_TAGS & set(tags)) and not _STRIKE_RX.search(text or ""):
+        return False
     if channel in NEWS_CHANNELS:
         if channel == "eRadarrua" and "◦" in text:
             return True
@@ -410,7 +423,7 @@ def build_id():
 
 # The version the front end shows in its footer, kept here too so /api/version can answer "what is actually
 # running" without anybody reading it off a screenshot. tests/test_version.py pins the two to each other.
-APP_VERSION = "1.51"
+APP_VERSION = "1.52"
 APP_NAME = "Heimdall"
 BUILD = None    # filled at startup
 
@@ -1165,6 +1178,7 @@ class Store:
             ms INTEGER, tok_in INTEGER, tok_out INTEGER, cost REAL, verdict TEXT, rules TEXT, ai TEXT, dropped INTEGER,
             error TEXT)""")
         c.execute("CREATE INDEX IF NOT EXISTS ix_ai_at ON ai_reads(at)")
+        c.execute("CREATE INDEX IF NOT EXISTS ix_ai_ts ON ai_reads(ts)")
         # 1.51: the target tags — each tag (night + number) with what it shows, and the reports that belong to it
         c.execute("""CREATE TABLE IF NOT EXISTS targets(
             night TEXT, n INTEGER, prefix TEXT, origin TEXT, osrc TEXT, oquote TEXT, opost TEXT, first_ts TEXT, last_ts TEXT,
@@ -1585,6 +1599,22 @@ class Store:
             out.append(d)
         return out
 
+    def ai_recent(self, since):
+        """1.52: the readings of the posts since `since` (post time) that found targets — for the marks the AI alone
+        found."""
+        with self.lock:
+            rows = self.conn.execute("SELECT post_id, ts, channel, text, ai FROM ai_reads WHERE ts>=? AND error IS NULL "
+                                     "AND ai IS NOT NULL ORDER BY ts", (since,)).fetchall()
+        out = []
+        for pid, ts, ch, text, ai in rows:
+            try:
+                d = json.loads(ai)
+            except ValueError:
+                continue
+            if d.get("targets"):
+                out.append((pid, ts, ch, text or "", d["targets"]))
+        return out
+
     def ai_get(self, post_id):
         """One post's reading (1.51: the target tags), or None."""
         with self.lock:
@@ -1839,6 +1869,10 @@ def _state_delta(prev, cur):
 TAG_PREFIX = {"belarus": "N", "n": "N", "nw": "N", "russia": "E", "ne": "E", "e": "E", "se": "E",
               "sea": "S", "crimea": "S", "s": "S", "sw": "S", "w": "W", "occupied": "?"}
 TAG_KEEP_DAYS = 60
+# 1.52, the owner's call (9 Oct 2026): where no post says where a target came from, the oblast it was FIRST reported in
+# says it probably: Chernihiv oblast — Belarus; Cherkasy oblast — the south or the east. Shown in lower case ("n-07")
+# and called "probably" in the card; a stated origin, the rules' or the AI's, always wins.
+TAG_REGION = {"25": ("n", "belarus"), "24": ("s", "se")}
 
 
 def tag_night(ts):
@@ -1877,12 +1911,13 @@ class TargetTags:
         with self.lock:
             return next((self.by_report[r] for r in reports if r in self.by_report), None)
 
-    def assign(self, m):
-        """The (night, n) of a track (a mark with `reports`), a new one for a track never seen."""
+    def assign(self, m, taken=()):
+        """The (night, n) of a track (a mark with `reports`), a new one for a track never seen. `taken`: the tags other
+        tracks of the same pass already have — two tracks never show one tag."""
         reps = m.get("reports") or [m["id"]]
         first = min([h["ts"] for h in m.get("history") or []] + [m["ts"]])
         with self.lock:
-            key = next((self.by_report[r] for r in reps if r in self.by_report), None)
+            key = next((self.by_report[r] for r in reps if r in self.by_report and self.by_report[r] not in taken), None)
             fresh = [r for r in reps if r not in self.by_report]
             if key is None:
                 night = tag_night(first) or tag_night(now_iso())
@@ -2363,6 +2398,10 @@ class State:
             return []
         kyiv_ends = self.kyiv_city_all_clears(ttl)
         out = self._marks_from_posts(sorted(self.store.feed_since(ttl), key=lambda p: p["ts"]), kyiv_ends, self._marker_cache)
+        try:
+            out += self._ai_marks(out, ttl)      # 1.52: the targets only the AI reader found, while the switch is on
+        except Exception as e:
+            log("ai marks:", type(e).__name__, e)
         # Kyiv, its oblast, the five oblasts around it, and Sumy — the corridor most Shaheds into Kyiv arrive
         # through. Everything else is dropped here rather than hidden in the page, so a raid over Odesa never
         # reaches the Kyiv map, the counts, the proximity pushes or the light page. A mark with no oblast is kept
@@ -2376,6 +2415,7 @@ class State:
         for m in out:
             m.pop("reports", None)
             m.pop("origin_t", None)
+            m.pop("first_uid", None)
         out.sort(key=lambda m: m["ts"], reverse=True)
         # Keep what the app decided, not just what it was told. INSERT OR IGNORE keyed on the marker id, so
         # recomputing the same window many times a minute writes each marker exactly once.
@@ -2401,10 +2441,14 @@ class State:
         the rules' reading first, the AI's when the rules found none and the switch is on — and the height and speed
         its latest report stated."""
         ai = getattr(self, "ai", None) if self.ai_live() else None
-        for m in ms:
-            if m.get("status"):
+        taken = set()
+        for m in sorted(ms, key=lambda m: min([h["ts"] for h in m.get("history") or []] + [m["ts"]])):
+            # 1.52, the owner's rule: a number only when we are sure which target it is — never for one reported for a
+            # whole oblast ("3 реактиви на Чернігівщині"); it gets one the moment a post places it
+            if m.get("status") or m.get("place") == "область":
                 continue
-            key = self.tags.assign(m)
+            key = self.tags.assign(m, taken)
+            taken.add(key)
             o, src = m.get("origin_t"), None
             if o:
                 src = "rules"
@@ -2412,12 +2456,21 @@ class State:
             if not o and facts.get("origin"):
                 o, src = facts["origin"], "ai"
             prefix = TAG_PREFIX.get(o["o"], "?") if o else "?"
-            self.tags.note(key, prefix, o and o["o"], src, o and o["q"], o and (o.get("id") or "").split("#")[0], m)
+            if not o and m.get("first_uid") in TAG_REGION:
+                prefix, said = TAG_REGION[m["first_uid"]]
+                o, src = {"o": said, "q": None, "uid": m["first_uid"]}, "region"
+            self.tags.note(key, prefix, o and o["o"], src, o and o.get("q"), o and (o.get("id") or "").split("#")[0], m)
             alt = spd = None
             if (m.get("alt") or {}).get("m"):
-                alt = {"m": m["alt"]["m"], "s": "rules"}
+                alt = {"m": m["alt"]["m"], "s": "rules", "at": m["ts"], "cur": True}
             elif facts.get("alt"):
-                alt = dict(facts["alt"], s="ai")
+                alt = dict(facts["alt"], s="ai", at=m["ts"], cur=True)
+            else:
+                # 1.52: the latest height the track's earlier reports stated — a height is shown whenever one was given
+                # (with its age: a later report did not repeat it)
+                h = next((h for h in reversed(m.get("history") or []) if h.get("alt_m")), None)
+                if h:
+                    alt = {"m": h["alt_m"], "s": "rules", "at": h.get("ts"), "cur": False}
             if m.get("speed"):
                 spd = dict(m["speed"], s="rules")
             elif facts.get("spd"):
@@ -2426,7 +2479,8 @@ class State:
             vs = {"v": m["alt"]["state"], "s": "rules"} if (m.get("alt") or {}).get("state") else (
                 dict(facts["vs"], s="ai") if facts.get("vs") else None)
             m["tag"] = {"id": f"{prefix}-{key[1]:02d}", "n": key[1], "p": prefix, "night": key[0],
-                        "o": o and o["o"], "os": src, "oq": o and o["q"], "oc": o and o.get("ch"), "ot": o and o.get("ts"),
+                        "o": o and o["o"], "os": src, "oq": o and o.get("q"), "oc": o and o.get("ch"), "ot": o and o.get("ts"),
+                        "ou": o and o.get("uid"),
                         "alt": alt, "spd": spd, "vs": vs}
 
     def ai_context(self, post, cands):
@@ -2464,6 +2518,107 @@ class State:
             lines.append(f"{m['tag']['id']} · {line} · @{m.get('channel')} {hm}")
             tags.append(m["tag"]["id"])
         return lines, tags
+
+    _ai_mark_cache = {}
+
+    def _ai_marks(self, out, ttl):
+        """1.52: the targets the AI reader found that the rules did not — on the map, marked "AI", while the dashboard's
+        switch is on (the owner's decision: a target missed is worse than a duplicate). Each is placed only at a place
+        the post names, one the server offered the AI from its gazetteer; never at an official alert message's
+        district; each goes through the same chaining, scope, ageing and pushes as the rules' marks."""
+        if not geo or not self.ai_live():
+            return []
+        since = (datetime.now(timezone.utc) - timedelta(minutes=ttl)).isoformat()
+        rules = {}
+        for m in out:
+            rules.setdefault(m["id"].split("#")[0], []).append(m)
+        res = []
+        for pid, ts, ch, text, targets in self.store.ai_recent(since):
+            if self.channel_mode(ch) != "map":
+                continue
+            key = (pid, len(rules.get(pid, ())))
+            got = self._ai_mark_cache.get(key)
+            if got is None:
+                got = self._ai_marks_of(pid, ts, ch, text, targets, rules.get(pid, []))
+                if len(self._ai_mark_cache) > 3000:
+                    self._ai_mark_cache.clear()
+                self._ai_mark_cache[key] = got
+            res += [dict(m) for m in got]
+        return res
+
+    @staticmethod
+    def _ai_marks_of(pid, ts, ch, text, targets, rules):
+        if geo.ALERT_MSG_RX.search(text or "") and not geo.MOVE_RX.search(text or ""):
+            return []                            # an official alert message names a district, not a target
+        live = [m for m in rules if not m.get("status")]
+        one = len(targets) == 1 and len(live) == 1
+        rw = {ai_reader._where_rules(m) for m in rules} - {""}
+        out = []
+        for i, t in enumerate(targets):
+            place, toward = t.get("place"), t.get("toward")
+            if not place:
+                continue
+            if ai_reader._canon(place) in rw or (toward and ai_reader._canon(toward) in rw):
+                continue                         # the rules have this one
+            m = State._ai_mark(pid, i, ts, ch, text, t)
+            if not m:
+                continue
+            # one target each way, read about the same place: the rules read it. Read far apart — "біля Сомкової
+            # Долини" the rules took for Dolyna, 500 km off and out of the map — the AI's stands too (a duplicate is
+            # better than a miss)
+            if one and (m["place"] == "область" or math.hypot((m["lon"] - live[0]["lon"]) * 70.7,
+                                                                (m["lat"] - live[0]["lat"]) * 111) <= 30):
+                continue
+            out.append(m)
+        return out
+
+    @staticmethod
+    def _ai_mark(pid, i, ts, ch, text, t):
+        """One AI target as a mark, in the rules' own shape."""
+        place, toward, rel = t.get("place"), t.get("toward"), t.get("relation")
+        if place.startswith("o") and place[1:].isdigit():
+            uid = place[1:]
+            c = geo._OBL_CENTRE.get(uid)
+            if not c:
+                return None
+            lon, lat, where = c[0], c[1], "область"
+        else:
+            p = ai_reader.place_of(geo, place)
+            if not p:
+                return None
+            lon, lat, uid = p
+            where = ("→ " + place) if rel == "heading_to" else place
+        heading = None
+        if toward:
+            q = ai_reader.place_of(geo, toward)
+            if q:
+                heading = round(geo.bearing(lon, lat, q[0], q[1]))
+        elif t.get("heading") in ai_reader.DIRS:
+            heading = ai_reader.DIRS.index(t["heading"]) * 45
+        elif rel == "heading_to" and t.get("origin") in ai_reader.DIRS:
+            heading = (ai_reader.DIRS.index(t["origin"]) * 45 + 180) % 360
+        kind = t.get("kind") or "unknown"
+        typ = ai_reader.KIND_TYPE.get(kind, "unknown")
+        alt = None
+        if t.get("altitude_m") or t.get("vertical"):
+            alt = {"m": t.get("altitude_m"), "state": t.get("vertical"), "matched": t.get("altitude_quote") or t.get("vertical_quote")}
+        ev = {"segment": text, "type": {"matched": t.get("kind_quote"), "method": "read by the AI reader", "confidence": "medium"},
+              "position": {"matched": t.get("place_quote"), "place": place, "confidence": "low",
+                           "method": "read by the AI reader from the post — the rules did not read it"},
+              "heading": ({"matched": t.get("toward_quote") or t.get("heading_quote"), "confidence": "medium",
+                           "method": "the course the post gave, read by the AI reader"} if heading is not None
+                          else {"matched": None, "method": "no course stated", "confidence": "none"})}
+        m = {"id": f"{pid}#ai{i}", "ts": ts, "channel": ch, "text": text, "text_en": None, "tags": [], "ai": True,
+             "type": typ, "jet": kind == "jet_drone", "lon": round(lon, 3), "lat": round(lat, 3), "place": where,
+             "oblast_uid": uid, "heading": heading, "count": t.get("count"), "approach": rel == "heading_to" and not toward,
+             "target": toward or (place if rel == "heading_to" else None), "alt": alt,
+             "status": ai_reader.STATUS_OF.get(t.get("status")) or ("lost" if t.get("status") == "lost" else None),
+             "evidence": ev}
+        if t.get("origin"):
+            m["origin"] = {"o": t["origin"], "q": t.get("origin_quote"), "by": "ai"}
+        if t.get("speed_kmh"):
+            m["speed"] = {"kmh": t["speed_kmh"], "q": t.get("speed_quote"), "by": "ai"}
+        return m
 
     def _ai_facts(self, m, ai):
         """What the AI reader read, for this track: the first origin any of its reports' posts stated, and the height
@@ -2636,14 +2791,15 @@ class State:
                 merged.append(m)
             ms = merged
             for i, m in enumerate(ms):
-                dup = False
-                for (t2, ty2, st2, ch2, lo2, la2) in seen:
+                dup = None
+                for (t2, ty2, st2, ch2, lo2, la2, kept) in seen:
                     if ch2 != p["channel"] and ty2 == m["type"] and st2 == m.get("status") and abs(lo2 - m["lon"]) < 0.08 and abs(la2 - m["lat"]) < 0.06 and pts and abs((pts - t2).total_seconds()) < 300:
-                        dup = True   # the same report relayed by another channel
+                        dup = kept   # the same report relayed by another channel
                         break
-                if dup:
+                if dup is not None:
+                    self._merge_relay(out, dup, m, p)
                     continue
-                seen.append((pts, m["type"], m.get("status"), p["channel"], m["lon"], m["lat"]))
+                seen.append((pts, m["type"], m.get("status"), p["channel"], m["lon"], m["lat"], len(out)))
                 ev = m.get("evidence")
                 if not evidence:
                     out.append(dict(m, id=f"{p['post_id']}#{i}", ts=p["ts"], channel=p["channel"]))
@@ -2666,6 +2822,32 @@ class State:
                         ev = cached
                 out.append(dict(m, id=f"{p['post_id']}#{i}", ts=p["ts"], text=p["text"], text_en=p.get("text_en"), channel=p["channel"], tags=p["tags"], evidence=ev))
         return self._drop_retracted(out, posts)
+
+    @staticmethod
+    def _merge_relay(out, idx, m, p):
+        """1.52: another channel's relay of a report already read is not drawn twice — but what it adds is kept. On 9
+        Oct "Вишеньки 2900" (@chyste_nebo, 20:05) relayed "Вишеньки" (@kyiv_airdef, 20:04), and its 2,900 m was lost
+        with it; "Затишне на Ревне 3500" the same way. The height (and a descent), the speed and the origin the
+        relay stated go onto the mark it relays, when that mark has none, with the channel that said it."""
+        if idx >= len(out):
+            return
+        kept = out[idx]
+        hm = parse_iso(p["ts"])
+        when = hm.astimezone(kyiv_tz()).strftime("%H:%M") if hm else ""
+        add = {}
+        a, ka = m.get("alt") or {}, kept.get("alt") or {}
+        if (a.get("m") and not ka.get("m")) or (a.get("state") and not ka.get("state")):
+            add["alt"] = {"m": ka.get("m") or a.get("m"), "state": ka.get("state") or a.get("state"),
+                          "matched": a.get("matched"), "by": p["channel"]}
+        for k in ("speed", "origin"):
+            if m.get(k) and not kept.get(k):
+                add[k] = dict(m[k], by=p["channel"])
+        if not add:
+            return
+        kept.update(add)
+        if "alt" in add and isinstance(kept.get("evidence"), dict):
+            kept["evidence"] = dict(kept["evidence"], altitude={"matched": a.get("matched"), "confidence": "high",
+                                                                "method": f"stated by @{p['channel']} relaying the same report, {when}"})
 
     @staticmethod
     def _drop_retracted(out, posts):
@@ -2942,7 +3124,7 @@ class State:
             r = out.get(night)
             if not r:
                 continue
-            p = prefix if prefix in ("N", "E", "S", "W") else "?"
+            p = prefix.upper() if prefix and prefix.upper() in ("N", "E", "S", "W") else "?"
             r[p] += n
             r["total"] += n
             if src == "ai":
@@ -3692,6 +3874,7 @@ class State:
             m["reports"] = [m["id"]]        # 1.51: every report of the track, oldest first — what its tag is found by
             # 1.51: the first origin any report of the track stated ("з півдня", "з Білорусі"), with the report
             m["origin_t"] = dict(m["origin"], id=m["id"], ch=m.get("channel"), ts=m["ts"]) if m.get("origin") else None
+            m["first_uid"] = m.get("oblast_uid")    # 1.52: the oblast its first report was in (TAG_REGION)
         def km(a, b):
             return math.hypot((a["lon"] - b["lon"]) * 70.7, (a["lat"] - b["lat"]) * 111)
         def fam(m):
@@ -3709,7 +3892,9 @@ class State:
             t1 = parse_iso(m["ts"])
             best = None
             for pm in tracks[:i]:
-                if pm["superseded_by"] or fam(pm) != fam(m):
+                # 1.52: an approach mark a track took over is that track's now — continued from it, a later report
+                # made a second track out of the same report (and the two shared one tag)
+                if pm["superseded_by"] or pm.get("absorbed") or fam(pm) != fam(m):
                     continue
                 dt = (t1 - parse_iso(pm["ts"])).total_seconds() / 60
                 same = pm["channel"] == m["channel"]
@@ -3746,6 +3931,7 @@ class State:
                     m["absorbed"] = True
                     pm["reports"] = pm["reports"] + [m["id"]]
                     pm["origin_t"] = pm.get("origin_t") or m.get("origin_t")
+                    pm["first_uid"] = pm.get("first_uid") or m.get("first_uid")
                     pm["target"] = pm.get("target") or m.get("target")
                     if pm.get("heading") is None and m.get("target") in geo.PLACES:
                         dlon, dlat, _ = geo.PLACES[m["target"]]
@@ -3758,6 +3944,7 @@ class State:
                 pm["superseded_by"] = m["id"]
                 m["reports"] = pm["reports"] + [m["id"]]
                 m["origin_t"] = pm.get("origin_t") or m.get("origin_t")
+                m["first_uid"] = pm.get("first_uid") or m.get("first_uid")
                 # each earlier report keeps the height ITS post stated (if any): two stated heights in a row are a
                 # descent the posts reported, not one this app worked out — 2200 m, then 1600 m, then 800 m
                 # an approach mark's point is a destination, not a place it was: it is no step of the track

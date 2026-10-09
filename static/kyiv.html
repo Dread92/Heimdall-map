@@ -738,6 +738,18 @@ body.m-night .town.minor,body.m-night .towndot.minor,body.m-night .poi,body.m-ni
 /* Marker labels carry their own dark halo, which in daylight is a black smear under light text. */
 body.m-day .mk .lbl{fill:#0a0c10;stroke:#fff;stroke-width:calc(var(--k,1)*3px)}
 body.m-day .mk .lbl2{fill:#7a2f00;stroke:#fff;stroke-width:calc(var(--k,1)*3px)}
+/* 1.52: a target only the AI reader found — its halo dashed, "AI" at the head of its label */
+.mk.ai .halo{stroke-dasharray:3 3}
+/* 1.52: the path the posts put a tapped target on — red dots, the time of each report */
+#selpath .selp{fill:none;stroke:#ff3b3f;stroke-width:2.2px;vector-effect:non-scaling-stroke;stroke-dasharray:1 6;stroke-linecap:round;pointer-events:none}
+#selpath .selpd{fill:#ff3b3f;stroke:#fff;stroke-width:1px;vector-effect:non-scaling-stroke;pointer-events:none}
+#selpath .selpt{font:700 calc(var(--k,1)*10px) var(--mono);fill:#ffb3b5;paint-order:stroke;stroke:#080b10;stroke-width:calc(var(--k,1)*3px);pointer-events:none}
+body.m-day #selpath .selpt{fill:#8c0f09;stroke:#fff}.mk .lbl .aitag{fill:#9fb3ff}body.m-day .mk .lbl .aitag{fill:#2340a0}
+/* 1.52: the tag, the height and an oblast-wide target in daylight — the night's yellow and cyan vanish on a light map */
+body.m-day .mk .lbl .tid,body.m-day .mk .tgc{fill:#7a4b00;stroke:#fff}body.m-day .tagid{color:#7a4b00}
+body.m-day .mk .dn,body.m-day .mk.hasalt:not(.desc) .dn{fill:#0b3d91;stroke:#fff}body.m-day .mk.desc .dn{fill:#b0001e;stroke:#fff}
+body.m-day #oblevt .obring.live{stroke:#006b85}body.m-day #oblevt .obhatch{fill-opacity:.2}
+body.m-night .mk .lbl .tid,body.m-night .mk .tgc{fill:#a8923e}body.m-night .tagid{color:#a8923e}
 body.m-day .imp .it{fill:#8c0f09;stroke:#fff}
 body.m-day .zlbl{stroke-width:calc(var(--k,1)*1.6px)}
 body.m-day .roadlbl,body.m-day .rvlbl{fill:#3f4753;stroke:#fff}
@@ -1048,7 +1060,7 @@ body.lite #mycard,body.lite .panel{background:#000;border-color:#666}body.lite .
   <button class="mi" id="supbtn" type="button" data-t="m_support">Support the project</button>
   <a class="mi" id="tgbtn" data-t="m_tg" target="_blank" rel="noopener" hidden>Community on Telegram</a>
   <button class="mi" id="aboutbtn" type="button" data-t="m_about">About · disclaimer</button>
-  <div class="mi bt" id="buildtag">v1.51</div>
+  <div class="mi bt" id="buildtag">v1.52</div>
 </div>
 <div class="panel" id="lay" hidden role="dialog" aria-labelledby="layh"><div class="pgrab"></div>
   <div class="ph"><b id="layh" data-t="m_layers">Map layers</b><button type="button" class="px" data-close="lay" data-t-aria="btn_close" aria-label="Close">✕</button></div>
@@ -1084,6 +1096,7 @@ body.lite #mycard,body.lite .panel{background:#000;border-color:#666}body.lite .
     <g id="oblevt"></g>
     <g id="impactsg"></g>
     <g id="trails"></g>
+    <g id="selpath"></g>
     <g id="markers"></g>
     <g id="edges"></g>
   </svg>
@@ -1943,7 +1956,9 @@ function paintOblEvents(){
         +(al2?`<text class="obtxt obalt" dominant-baseline="central" style="transform:translateX(${px(tw+13+c.length*8+6)})">${esc(al2)}</text>`:'')]; });
     // 1.51: a target in the air reported for the whole oblast says so on the chip — "somewhere in the oblast" —
     // instead of a lone glyph and a number nobody could read as an area
-    const anyLive=evs.some(m=>!m.status), where=t(uid==='31'?'city_somewhere':'obl_somewhere');
+    // 1.52: only the AI reader found it — the chip says so ("AI · somewhere in the oblast")
+    const anyLive=evs.some(m=>!m.status), aiOnly=anyLive&&evs.every(m=>m.status||m.ai);
+    const where=(aiOnly?t('tg_ai_chip')+' · ':'')+t(uid==='31'?'city_somewhere':'obl_somewhere');
     if(anyLive){ const s0=x; x+=where.length*6.1+7; items.push([s0,`<text class="obtxt obwhere" dominant-baseline="central">${esc(where)}</text>`]); }
     const W=Math.max(10,x-7);
     const parts=items.map(([s0,h])=>`<g style="transform:translate(${px(s0-W/2)},0px)">${h}</g>`);
@@ -2001,7 +2016,7 @@ function growReach(){ if(document.hidden) return;
   for(const m of MK){ if(!mslKind(m)||m.status||m.endedBy) continue; const b=built.get(m.id); if(b) paintReach(b,m); } }
 setInterval(growReach,1000);
 function buildMarker(m){
-  const g=document.createElementNS('http://www.w3.org/2000/svg','g'); g.setAttribute('class',`mk ${m.type} ${m.jet?'jet':''} ${m.status?'st st-'+m.status:''}`); g.dataset.id=m.id;
+  const g=document.createElementNS('http://www.w3.org/2000/svg','g'); g.setAttribute('class',`mk ${m.type} ${m.jet?'jet':''} ${m.status?'st st-'+m.status:''}${m.ai?' ai':''}`); g.dataset.id=m.id;
   const gk=glyphKey(m), glyph=G[gk];
   const isNew=!seenMk.has(m.id); seenMk.add(m.id);
   const isMsl=/missile/.test(m.type)&&!m.status; if(isMsl) g.classList.add('msl');
@@ -2163,12 +2178,14 @@ function tick(){
     // AI's quoted one (in italics) where the rules found none
     const live1=!m.status&&!m.endedBy, tgv=live1?m.tag:null;
     const altM=(m.alt&&m.alt.m&&live1)?m.alt.m:(tgv&&tgv.alt&&tgv.alt.m)||null, spdK=(tgv&&tgv.spd&&tgv.spd.kmh)||null;
+    // 1.52: a height an earlier report of the track gave, when the latest did not repeat it — with its age
+    const altOld=!(m.alt&&m.alt.m)&&tgv&&tgv.alt&&tgv.alt.cur===false&&tgv.alt.at?Math.round(agoMin(tgv.alt.at)):null;
     const telAi=!!tgv&&((!(m.alt&&m.alt.m)&&tgv.alt&&tgv.alt.s==='ai')||(tgv.spd&&tgv.spd.s==='ai'));
     b.g.classList.toggle('desc',dsc); b.g.classList.toggle('hasalt',!!(altM||spdK||dscAny));
     {const dn=b.g.querySelector('.dn'); if(dn){ dn.setAttribute('y',kx(16*KPX)); dn.classList.toggle('ai',telAi);
       // the height and a reported descent are always shown when a post gave them — the arrow stays after the mark goes
       // stale (it was reported; the red highlight does not)
-      dn.textContent=[altM?((dscAny?'↓':'')+altM+' '+t('m_unit')):(dscAny?'↓':''), spdK?t('tg_spd',spdK):''].filter(Boolean).join(' · '); }}
+      dn.textContent=[altM?((dscAny?'↓':'')+altM+' '+t('m_unit')+(altOld!=null?` (${altOld}′)`:'')):(dscAny?'↓':''), spdK?t('tg_spd',spdK):''].filter(Boolean).join(' · '); }}
     b.g.classList.toggle('lostc',contactLost(m));
     b.g.classList.toggle('inbound',info.inbound&&!m.stale); b.g.classList.toggle('old',age>ttl*0.65); b.g.classList.toggle('ended',!!m.endedBy); b.g.classList.toggle('stale',!!m.stale&&!m.endedBy&&!m.status); b.g.classList.toggle('s2',!!m.stale&&m.stale>=(m.slow?15:8)); b.g.classList.toggle('s3',!!m.stale&&m.stale>=(m.slow?20:11)); b.g.querySelector('.qm').setAttribute('y',kx(-12*KPX));
     const v=SPEED(m); const ah=b.g.querySelector('.ahead'); const cone=b.g.querySelector('.cone');
@@ -2189,9 +2206,13 @@ function tick(){
     const name=m.status?(({down:t('mk_down'),impact:t('mk_impact'),lost:t('mk_lost'),clear:t('mk_clear'),damage:t('mk_damage'),fire:t('mk_fire')})[m.status]||statusName(m.status)+((m.cluster||1)>1?` ×${m.cluster}`:m.count>1?` ×${m.count}`:'')):kind+((m.csum||m.count||1)>1?` ×${m.csum||m.count}`:'');
     // 1.51: the target's tag at the head of its label — S-07: Heimdall's number for tonight, the letter where a post
     // said it came from (never worked out); set only when it changes
-    {const l1=b.g.querySelector('.lbl'), tg=(!m.status&&!m.endedBy)?m.tag:null, lk=(tg?tg.id:'')+'|'+name;
-     if(l1.dataset.k!==lk){ l1.dataset.k=lk; if(tg){ l1.innerHTML=`<tspan class="tid">${esc(tg.id)}</tspan> ${esc(name)}`; } else l1.textContent=name; }
-     const tc=b.g.querySelector('.tgc'); if(tc){ tc.setAttribute('y',kx(-15*KPX)); if(tc.textContent!==(tg?tg.id:'')) tc.textContent=tg?tg.id:''; }}
+    {const l1=b.g.querySelector('.lbl'), tg=(!m.status&&!m.endedBy)?m.tag:null, lk=(tg?tg.id:'')+'|'+name+(m.ai?'|ai':'');
+     // 1.52: a target only the AI reader found says so at the head of its label
+     const aiT=m.ai?`<tspan class="aitag">${esc(t('tg_ai_chip'))}</tspan> `:'';
+     if(l1.dataset.k!==lk){ l1.dataset.k=lk; if(tg||m.ai){ l1.innerHTML=`${aiT}${tg?`<tspan class="tid">${esc(tg.id)}</tspan> `:''}${esc(name)}`; } else l1.textContent=name; }
+     // the compact tag (zoomed out) too: "AI ?-03"
+     const ct=(m.ai?t('tg_ai_chip')+(tg?' ':''):'')+(tg?tg.id:'');
+     const tc=b.g.querySelector('.tgc'); if(tc){ tc.setAttribute('y',kx(-15*KPX)); if(tc.textContent!==ct) tc.textContent=ct; }}
     const placeEn=m.place==='область'?'':pn(m.place);
     const descTxt=(m.alt&&m.alt.state==='descending'&&!m.status&&!m.endedBy&&!m.stale)?('↓ '+t('alt_desc')+' · '):'';
     b.g.querySelector('.lbl2').textContent=descTxt+(appr?t('lbl_appr',pn(m.target||m.place),m.heading!=null?t('lbl_from',dirName((m.heading+180)%360)):'',fmtT(m.ts)):m._gone?`${t('msl_gone')} · ${placeEn?t('msl_seen',placeEn,fmtT(m.ts)):t('msl_seen_np',fmtT(m.ts))}`:m._reach>0?`${t('msl_reach',Math.round(m._reach))} · ${placeEn?t('msl_seen',placeEn,fmtT(m.ts)):t('msl_seen_np',fmtT(m.ts))}`:m.stale&&!m.status&&!m.endedBy?t('lbl_stale',m.stale,placeEn,fmtT(m.ts)):m.status?`${placeEn} · ${fmtT(m.ts)}`:(hi.inbound?t('lbl_to',homeName(),Math.round(hi.dist)):hi.near&&!m.endedBy?t('lbl_from',Math.round(hi.dist),homeName(),fmtT(m.ts)):null)||(m.endedBy?t('lbl_ended',STATUS_W[m.endedBy.status]||statusName(m.endedBy.status),pn(m.endedBy.place),fmtT(m.endedBy.ts)):info.inbound?t('lbl_to',t('b_kyiv'),Math.round(info.dist)):(m.heading!=null?`${dirName(m.heading)} · ${m.history&&m.history.length?t('lbl_updated'):t('lbl_reported')} ${fmtT(m.ts)}${m.history&&m.history.length?' '+t('lbl_reports',m.history.length+1):''}`:`${m.history&&m.history.length?t('lbl_updated'):t('lbl_reported')} ${fmtT(m.ts)}`)));
@@ -2277,6 +2298,7 @@ function tick(){
            + `<span class="chip">${IMP_H} h</span>`;})():'');
   paintOblEvents();
   declutter();
+  if(SELP) drawSelPath();       // 1.52: the tapped target's path follows the zoom and its new reports
   paintCard();
   scheduleTick();
 }
@@ -2370,6 +2392,7 @@ function showTip(m,e){
   $('tip').innerHTML=`<b>${title}</b><div class="m">${appr?esc(t('sh_appr',pn(cur.place))):`${cur.status?t('tp_reported'):t('tp_spotted')} ${t('tp_near')} <b style="display:inline">${esc(where)}</b>`} · ${fmtT(cur.ts)} (${t('tp_ago',Math.round(agoMin(cur.ts)))}) · ${esc(CH[cur.channel]||cur.channel)}</div>
     ${cur.status?'':`<div class="m">${t('tp_heading')} ${cur.heading==null?t('tp_nr'):dirName(cur.heading)+' ('+cur.heading+'°)'}${cur.target?' → '+esc(tgtName(cur)):''}${info.inbound?` · <span style="color:#ffb3b5">${t('tp_tokyiv')}</span>`:''}</div>`}
     ${phaseTxt(cur)?`<div class="m">${t('ph_label')}: <b style="display:inline">${esc(phaseTxt(cur))}</b></div>`:''}
+    ${cur.ai?`<div class="m"><b style="display:inline">${esc(t('tg_ai_chip'))}</b> · ${esc(t('ai_placed'))}</div>`:''}
     ${cur.endedBy?`<div class="m" style="color:#a8f0cf">${statusName(cur.endedBy.status)} ${t('tp_near')} ${esc(pn(cur.endedBy.place))} ${t('tp_at')} ${fmtT(cur.endedBy.ts)}</div>`:''}
     ${cur.history&&cur.history.length?`<div class="m">${t('tp_reports',cur.history.length+1)}: ${cur.history.map(h=>pn(h.place||'?')+' '+fmtT(h.ts)).join(' → ')} → ${esc(where)}</div>`:''}
     ${ev.position?`<div class="m">${t('tp_pos')}: ${esc(ev.position.method)} · ${cf(ev.position.confidence)} ${t('tp_conf')}${accTxt('pos',ev.position,cur)?' · '+esc(accTxt('pos',ev.position,cur)):''}</div>`:''}
@@ -2396,7 +2419,8 @@ function moveTip(e){const w=$('mapwrap').getBoundingClientRect(); const tip=$('t
   tip.style.top=Math.max(4,Math.min(y,Math.max(4,w.height-th-4)))+'px';}
 // 1.51: the target's tag in its card — the number, where a post said it came from (the words, the channel), and who
 // read it: the rules, or the AI (a chip says so); the height and speed the AI quoted, when the rules read none
-function tagOrigin(tg){ return tg.o?t('tg_o_'+tg.o):t('tg_nofrom'); }
+function tagOrigin(tg){ if(tg.os==='region') return t('tg_inf_'+tg.o,tg.ou?oblFull(tg.ou):'');   // 1.52: inferred, said so
+  return tg.o?t('tg_o_'+tg.o):t('tg_nofrom'); }
 function tagLine(m){ const tg=m.tag; if(!tg||m.status||m.endedBy) return '';
   // the post's words, unless they are just what the line already says ("з півдня" — "з півдня")
   const same=tg.oq&&tg.oq.toLowerCase().replace(/\s+/g,' ').trim()===tagOrigin(tg).toLowerCase();
@@ -2407,7 +2431,7 @@ function tagLine(m){ const tg=m.tag; if(!tg||m.status||m.endedBy) return '';
     tg.spd?`${t('tg_spd_l',tg.spd.kmh)} <span style="color:var(--muted)">«${esc(tg.spd.q||'')}»</span>${tg.spd.s==='ai'?` <span class="chip ai">${esc(t('tg_ai_chip'))}</span>`:''}`:''].filter(Boolean);
   return `<div class="kv1 tgl"><b class="tagid">${esc(tg.id)}</b><span>${esc(tagOrigin(tg))}${said}${ai}</span></div>${tel.map(x=>`<div class="kv1" style="font-size:12.5px">${x}</div>`).join('')}`; }
 function openSheet(id){
-  const m=MK.find(x=>x.id===id); if(!m) return; $('tip').hidden=true; const [x,y,x0,y0]=posOf(m,Date.now()); const info=inboundInfo(m,x,y);
+  const m=MK.find(x=>x.id===id); if(!m) return; SELP=id; const sp=$('selpath'); if(sp) sp._sig=''; setTimeout(drawSelPath,0); $('tip').hidden=true; const [x,y,x0,y0]=posOf(m,Date.now()); const info=inboundInfo(m,x,y);
   const th=THREAT[m.type]||THREAT.unknown; const appr=!!m.approach&&!m.status&&!m.endedBy; const placeEn=(m.place==='область'||relOf(m))?oblWhere(m):pn(m.place);
   const kind=m.status?`${statusIco(m.status)} ${statusName(m.status)}`:`${m.type==='drones'&&m.jet?t('k_jet'):m.type==='drones'?t('k_shahed'):m.type==='unknown'?'⚠ '+t('th_unknown2'):th[1]}`;
   const ev=m.evidence||{}; const cor=corroboration(m); const closer=m.endedBy; const closed=m.closes?MK.find(o=>o.id===m.closes):null;
@@ -2429,6 +2453,7 @@ function openSheet(id){
   $('sheetbody').innerHTML=`<div class="type">${kind}${m.count?` <span class="chip">×${m.count}</span>`:''}${altChip}${m.status?'':phaseChip(m)}${info.inbound&&!m.stale&&!closer?` <span class="chip red">${t('lb_tokyiv')}</span>`:''}<span class="chip ${CONF[overall][0]}" style="margin-left:auto">${cf(overall)}</span></div>
     <div class="kv1 muted">${src} · <a href="https://t.me/${esc(m.id.split('#')[0])}" target="_blank" rel="noopener">${t('sh_post')}</a></div>
     ${tagLine(m)}
+    ${m.ai?`<div class="kv1" style="font-size:12.5px"><span class="chip ai">${esc(t('tg_ai_chip'))}</span> ${esc(t('ai_placed'))}</div>`:''}
     <div class="kv1">${where}</div>${state}${merged}${track}
     ${(()=>{ if(!HOME||m.status||m.endedBy||appr) return '';
       const [mx,my]=posOf(m,Date.now()); const hz=homeInfo(m,mx,my);
@@ -2461,7 +2486,20 @@ function openSheet(id){
 }
 // 1.42.1: a mark's sheet takes the lower half on a phone, the card folds to its line and the admin's message steps
 // aside — the map stays visible between them (it was 7 px on a phone with a ballistic warning and a message showing)
-function closeSheet(){$('sheet').classList.remove('show','top','mark'); if(document.body.classList.contains('shmk')){ document.body.classList.remove('shmk'); syncMini(); }}
+// 1.52: tap a target and the places the posts reported it at, oldest first, are joined in red dots with their times —
+// the path the posts put it on so far. Not a flight path: between two reports nobody saw it.
+var SELP=null;      // var: tick() may run before this line is reached
+function drawSelPath(){ const g=$('selpath'); if(!g) return; const m=SELP?MK.find(x=>x.id===SELP):null;
+  if(!m||m.status||m.endedBy||!m.history||!m.history.length){ if(g.innerHTML) g.innerHTML=''; return; }
+  const pts=m.history.filter(h=>h.lon!=null&&h.lat!=null).map(h=>({p:proj(h.lon,h.lat),ts:h.ts,pl:h.place}));
+  const b=built.get(m.id), cx=b&&b.g.dataset.tx!==undefined?+b.g.dataset.tx:posOf(m,Date.now())[0], cy=b&&b.g.dataset.ty!==undefined?+b.g.dataset.ty:posOf(m,Date.now())[1];
+  pts.push({p:[cx,cy],ts:m.ts,cur:1});
+  const sig=pts.map(o=>o.p.map(v=>kx(v)).join(',')).join(' ')+'|'+String(KPX);
+  if(g._sig===sig) return; g._sig=sig;
+  g.innerHTML=`<polyline class="selp" points="${pts.map(o=>kx(o.p[0])+','+kx(o.p[1])).join(' ')}"/>`
+    +pts.filter(o=>!o.cur).map(o=>`<circle class="selpd" cx="${kx(o.p[0])}" cy="${kx(o.p[1])}" r="${kx(3.2*KPX)}"/>`
+      +`<text class="selpt" x="${kx(o.p[0]+5*KPX)}" y="${kx(o.p[1]-5*KPX)}">${esc(fmtT(o.ts))}</text>`).join(''); }
+function closeSheet(){ SELP=null; drawSelPath(); $('sheet').classList.remove('show','top','mark'); if(document.body.classList.contains('shmk')){ document.body.classList.remove('shmk'); syncMini(); }}
 // ---- oblast selection: tap an oblast to show its cities (and zoom to it from the whole-Ukraine view) ----
 let SEL_OBL=null;
 // ---- my oblast: the status band follows the oblast the user chose (default Kyiv) ----
@@ -3230,7 +3268,7 @@ function renderStats(){ if(!STATS) return; const el=$('stats'); if(!el) return; 
 // =====================================================================================
 // ---------------------------------------------------------------------------------------------------
 // The contacts (CONTACT) and the footer (footerHTML, shareApp) are in static/i18n.js since 1.39, shared with Light.
-const APP_VERSION='1.51';
+const APP_VERSION='1.52';
 const DONATE=CONTACT.ngo;
 const ls=(k,v)=>{try{return v===undefined?localStorage.getItem(k):(localStorage.setItem(k,v),v);}catch(e){return null;}};
 
