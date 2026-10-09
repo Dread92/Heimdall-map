@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no, interactive-widget=resizes-content">
 <meta name="theme-color" content="#0b0e13">
 <!-- 1.54.7: the page draws its own dark and light modes; a browser's "dark theme for sites" must not recolour it (or its map tiles) -->
 <meta name="color-scheme" content="only light">
@@ -366,8 +366,15 @@ body.lite #drawer .dchev{background:#111;border-color:#fff;color:#fff}
 .chip.red{color:#ffd9d6;border-color:#6a2a26}.chip.yellow{color:#ffefa8;border-color:#5a4d00}.chip.green{color:#c9f2da;border-color:#1f5a3a}.chip.blue{color:#bcd5ff;border-color:#2b4370}.chip.orange{color:#ffc9a3}
 .tgl{border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:8px;min-height:44px;padding:0 14px;font:600 14px var(--sans)}
 .tgl.on{color:var(--ua-yellow);border-color:#5a4d00}
+/* 1.54.9, the owner: "on a phone the keyboard covers the suggestions". The sheet stands on the keyboard (the visual
+   viewport, --kb / --vvh from vvSync), and while it is up the list takes the room that is left and scrolls */
+#homesheet{bottom:var(--kb,0px);max-height:calc(var(--vvh,100dvh) - 10px);display:flex;flex-direction:column}
+#homesheet>*{flex:0 0 auto}#homelist{overflow:auto;margin-top:8px;max-height:40vh;overscroll-behavior:contain}
+body.kbd #homesheet{max-height:calc(var(--vvh,100dvh) - 4px);padding-top:8px;padding-bottom:8px}body.kbd #homesheet .grab,body.kbd #homed{display:none}
+body.kbd #homelist{flex:1 1 auto;min-height:0;max-height:none}
+.pinrow{display:flex;gap:8px;align-items:center;margin:0 0 8px;flex-wrap:wrap}.pinrow input{flex:1 1 160px;min-width:0}.pinrow .tgl{flex:0 0 auto}
 .hitem{padding:12px 6px;min-height:48px;border-bottom:1px solid var(--line);cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-size:15.5px}.hitem:hover{background:var(--panel2)}.hitem span{color:var(--ink3);font:500 13px var(--sans)}
-#homeq{width:100%;padding:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font:15px var(--sans);border-radius:2px}
+#homeq,#homen{width:100%;padding:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font:15px var(--sans);border-radius:2px}#homeq,#homen{font-size:16px}#homen{width:auto}
 .toast{position:fixed;left:10px;right:10px;top:calc(var(--sat) + var(--top) + 8px);z-index:40;background:#14171d;border:1px solid var(--line);border-left:4px solid var(--red);padding:10px 12px;display:none;box-shadow:0 10px 30px rgba(0,0,0,.6)}
 .toast.show{display:block}.toast b{font:700 16px/1.1 var(--cond);text-transform:uppercase;letter-spacing:.03em}
 
@@ -630,7 +637,7 @@ body.lite .mk.st-impact .glyph.x{fill:#fff;filter:none;animation:none}
 body.lite .trail.hist line{stroke:#000}
 .mk .cone{fill:#ff8a3d;fill-opacity:.07;stroke:none}.mk.inbound .cone{fill:#ff3b3f;fill-opacity:.10}
 .homemk .ring{stroke:#5b9cff;stroke-opacity:.5;stroke-dasharray:3 3}
-.homemk .ico{fill:#ffd9a8}.homemk .ico .pg{transform:scale(calc(var(--k,1)*.8))}
+.homemk .ico{fill:#ffd9a8}.homemk .ico .pg{transform:scale(calc(var(--k,1)*.8))}.homemk .pnn{font:800 9px var(--mono);fill:#080b10;stroke:none;text-anchor:middle;dominant-baseline:central}
 .homemk .hl{fill:#bcd5ff;font:700 calc(var(--k,1)*11px) system-ui;paint-order:stroke;stroke:#080b10;stroke-width:calc(var(--k,1)*3px)}
 .mk.tohome .glyph{fill:#ff2d55}.mk.tohome .halo{stroke:#ff2d55;animation-duration:.8s}.mk.tohome .ahead{stroke:#ff2d55}.mk.tohome .lbl2{fill:#ffb3c5}
 svg.no-trails .trail{display:none}svg.no-cones .ahead,svg.no-cones .cone{display:none}svg.no-rivers .river,svg.no-rivers .rvlbl{display:none}
@@ -667,8 +674,10 @@ body.lite .leader{stroke:#fff;stroke-opacity:.6}body.lite .anchor{fill:#fff}
 /* 1.54.6, the owner: the height is critical — "a more visible colour, eye-catching… only when the height was stated".
    A stated height (and speed) is written white on a small blue pill under the mark — red when it is coming down;
    nothing is shown when no post gave one. Blue is the height's colour everywhere: the card's chip, an oblast's badge. */
-.mk .dnb{display:none;fill:#1d6fe0}.mk.desc .dnb,.mk.hasalt .dnb{display:block}.mk.desc .dnb{fill:#d7263d}
-svg#map .mk.hasalt .dn,svg#map .mk.desc .dn{fill:#fff;stroke:none;font-weight:800}
+/* 1.54.9, the owner: "not a filled bullet — just make the characters more visible, with an outline": larger, heavier,
+   a vivid colour (sky blue; red while it descends) on a dark outline — only when a height or a descent was stated */
+svg#map .mk.hasalt .dn,svg#map .mk.desc .dn{font:800 calc(var(--k,1)*12px) var(--mono);fill:#5cc8ff;stroke:#04070c;stroke-width:calc(var(--k,1)*3.6px);stroke-linejoin:round;paint-order:stroke;letter-spacing:.02em}
+svg#map .mk.desc .dn{fill:#ff4d6a}
 /* 1.51: the target's tag (S-07) at the head of its label; the telemetry under the glyph in italics when the AI read it */
 .mk .lbl .tid{fill:#ffd500}svg.wide .mk .lbl .tid{display:none}
 /* the tag alone, above the glyph, where the zoom hides the full label (never zoomed out to the whole country) */
@@ -677,7 +686,8 @@ svg#map .mk.hasalt .dn,svg#map .mk.desc .dn{fill:#fff;stroke:none;font-weight:80
 svg:not(.close):not(.wide) .mk:not(.inbound):not(.tohome):not(.st):not(.desc):not(.appr):not(.ended) .tgc,svg:not(.wide) .mk.nolbl:not(.ended) .tgc{display:block}
 .tagid{font:800 12.5px var(--mono);color:#ffd500;letter-spacing:.03em}
 .kv1.tagl{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:baseline}   /* 1.53: was .tgl — the buttons' class: a 44 px box round the line */
-.chip.desc{color:#fff;border-color:#d7263d;background:#d7263d}.chip.alt{color:#fff;border-color:#1d6fe0;background:#1d6fe0}
+.chip.desc{color:#ff6b80;border-color:#d7263d;font-weight:800}.chip.alt{color:#6cc4ff;border-color:#2a7fe0;font-weight:800}
+body.m-day .chip.desc{color:#c8102e;border-color:#c8102e}body.m-day .chip.alt{color:#0a4cc2;border-color:#0a4cc2}
 /* ---------- display modes ----------
    Three, and they are for three different problems, which is why none of them is a brightness slider.
 
@@ -813,10 +823,10 @@ body.m-day #selpath .selpt{fill:#8c0f09;stroke:#fff}
 /* 1.52: the tag, the height and an oblast-wide target in daylight — the night's yellow and cyan vanish on a light map */
 body.m-day .mk .lbl .tid,body.m-day .mk .tgc{fill:#7a4b00;stroke:#fff}body.m-day .tagid{color:#7a4b00}
 body.m-day .mk .dn,body.m-day .mk.hasalt:not(.desc) .dn{fill:#0b3d91;stroke:#fff}body.m-day .mk.desc .dn{fill:#b0001e;stroke:#fff}
-body.m-day svg#map .mk.hasalt .dn{fill:#fff;stroke:none}body.m-day .mk .dnb{fill:#1557c8}body.m-day .mk.desc .dnb{fill:#c41230}
+body.m-day svg#map .mk.hasalt .dn{fill:#0a4cc2;stroke:#fff}body.m-day svg#map .mk.desc .dn{fill:#c8102e;stroke:#fff}
 body.m-day #oblevt .obring.live,body.m-day #oblevt .obglow path{stroke:#1d2533}body.m-day #oblevt .obbg{fill:#fff;stroke:var(--c,#1d2533)}body.m-day:not(.rp) #obllbl .oblbl.hot{fill:#0b0e14;stroke:#fff}body.m-day #oblevt .oblevtchip.live .obtxt.obalt{fill:#1557c8}
 body.m-day #oblevt .oblevtchip.live .obtxt{fill:#14171c;stroke:#fff;stroke-width:0}body.m-day #oblevt .obtxt.obwhere{fill:#14171c;stroke:#fff}
-body.m-night .mk .lbl .tid,body.m-night .mk .tgc{fill:#a8923e}body.m-night svg#map .mk.hasalt .dn{fill:#dce8ff}body.m-night svg#map .mk.desc .dn{fill:#ffd6dc}body.m-night .mk .dnb{fill:#24467e}body.m-night .mk.desc .dnb{fill:#7a1d2a}body.m-night .chip.alt{background:#24467e;border-color:#24467e;color:#dce8ff}body.m-night .chip.desc{background:#7a1d2a;border-color:#7a1d2a;color:#ffd6dc}body.m-night #oblevt .oblevtchip.live .obtxt.obalt{fill:#9fbbe8}body.m-night #oblevt .obglow path,body.m-night #oblevt .obring.live{stroke:#a39b86}body.m-night:not(.rp) #obllbl .oblbl.hot{fill:#c9c2ad}body.m-night .tagid{color:#a8923e}
+body.m-night .mk .lbl .tid,body.m-night .mk .tgc{fill:#a8923e}body.m-night svg#map .mk.hasalt .dn{fill:#8fb8ec;stroke:#000}body.m-night svg#map .mk.desc .dn{fill:#ff8c9c;stroke:#000}body.m-night .chip.alt{border-color:#3d5f94;color:#a9c8f0}body.m-night .chip.desc{border-color:#8a2a38;color:#ffa3b0}body.m-night #oblevt .oblevtchip.live .obtxt.obalt{fill:#9fbbe8}body.m-night #oblevt .obglow path,body.m-night #oblevt .obring.live{stroke:#a39b86}body.m-night:not(.rp) #obllbl .oblbl.hot{fill:#c9c2ad}body.m-night .tagid{color:#a8923e}
 body.m-day .imp .it{fill:#8c0f09;stroke:#fff}
 body.m-day .zlbl{stroke-width:calc(var(--k,1)*1.6px)}
 body.m-day .roadlbl,body.m-day .rvlbl{fill:#3f4753;stroke:#fff}
@@ -861,7 +871,7 @@ body.lite .rn{fill:#000;stroke:#777}body.lite .rn.R{fill:#fff;fill-opacity:.45}b
 body.lite .ob{stroke:#8a8a8a}body.lite .oblbl,body.lite .nblbl,body.lite .rnlbl{fill:#9a9a9a}
 body.lite .mk .glyph{fill:#fff!important;stroke:#000}body.lite .mk.stale .glyph{fill:#8a8a8a!important}
 body.lite .mk .halo,body.lite .mk .ahead,body.lite .mk .cone,body.lite .mk .trail{stroke:#fff;fill:none}
-body.lite .mk .hdg{fill:#fff}body.lite .mk.desc .glyph{fill:#fff!important}body.lite .mk .dn{fill:#fff}body.lite svg#map .mk.hasalt .dn,body.lite svg#map .mk.desc .dn{fill:#000;stroke:none}body.lite .mk .dnb{fill:#fff}
+body.lite .mk .hdg{fill:#fff}body.lite .mk.desc .glyph{fill:#fff!important}body.lite .mk .dn{fill:#fff}body.lite svg#map .mk.hasalt .dn,body.lite svg#map .mk.desc .dn{fill:#fff;stroke:#000}
 body.lite .band.R,body.lite .band.A{background:#fff;border-left-color:#fff}body.lite .band.R .big,body.lite .band.A .big{color:#000}
 body.lite .band.R .small,body.lite .band.A .small,body.lite .band.R .dur,body.lite .band.A .dur{color:#222}
 body.lite .band.Y,body.lite .band.P{background:#2a2a2a;border-left-color:#fff}body.lite .band.Y .big,body.lite .band.P .big{color:#fff}
@@ -1224,9 +1234,10 @@ body.lite #mycard,body.lite .panel{background:#000;border-color:#666}body.lite .
   </div>
 </aside>
 
-<div class="sheet" id="homesheet"><div class="grab"></div><div class="type" data-t="h_title">Priority location</div><div style="color:var(--ink3);font:12px var(--mono);margin:6px 0 10px" data-t="h_desc">Your district or village. Targets heading there or within 10 km alert first; its raion is watched first.</div>
-<input id="homeq" data-t-ph="h_ph" placeholder="Search: Troieshchyna, Bucha, Boryspil, Obolon…">
-<div id="homelist" style="max-height:40vh;overflow:auto;margin-top:8px"></div>
+<div class="sheet" id="homesheet"><div class="grab"></div><div class="type" id="homet" data-t="h_title">Priority location</div><div id="homed" style="color:var(--ink3);font:12px var(--mono);margin:6px 0 10px" data-t="h_desc">Your district or village.</div>
+<div class="pinrow"><input id="homen" maxlength="24" autocomplete="off" data-t-ph="sl_name" placeholder="Name — kept only on this phone" aria-label="Name"><button class="tgl" id="homemap" type="button" data-t="sl_onmap">📍 Put it on the map</button></div>
+<input id="homeq" data-t-ph="h_ph" placeholder="Search: Troieshchyna, Bucha, Boryspil, Obolon…" autocomplete="off" enterkeyhint="search">
+<div id="homelist"></div>
 <div style="margin-top:8px;display:flex;justify-content:space-between"><button class="tgl" id="homeclear" data-t="btn_clear">Clear</button><button class="tgl" onclick="$('homesheet').classList.remove('show')" data-t="btn_close">Close</button></div></div>
 <div id="fmchip" role="button" tabindex="0" data-t-title="m_full_exit" title="Exit full screen"></div>
 <div class="sheet" id="sheet"><div class="grab"></div><div id="sheetbody"></div></div>
@@ -1248,6 +1259,9 @@ body.lite #mycard,body.lite .panel{background:#000;border-color:#666}body.lite .
 const THREAT={drones:['🛸',t('th_drones')],ballistic_missiles:['🚀',t('th_bal')],cruise_missiles:['🎯',t('th_cruise')],supersonic_missiles:['⚡',t('th_super')],banderol_missiles:['🛩',t('th_band')],unspecified_missiles:['🎯',t('th_msl')],
   mig31k_departure:['✈️',t('th_mig')],strategic_aircraft_activity:['🛩️',t('th_strat')],tactic_aircraft_activity:['🛩️',t('th_tac')],
   guided_aerial_bombs:['💣',t('th_kab')],air_defense:['🛡️',t('th_ad')],kyiv:['📍',t('th_kyiv')],clear:['✅',t('th_clear')],official:['🏛️',t('th_official')],geo:['🗺️',t('th_geo')],unknown:['⚠️',t('th_unknown2')]};
+// 1.54.8/1.54.9: "probably a drone" — or "drone or missile" while missiles are reported — wherever the table is read
+// (the hover card, a shared text, a notice), never "type not specified" alone
+Object.defineProperty(THREAT,'unknown',{get(){ let m=false; try{ m=mslCtx(); }catch(e){} return m?['⚠️',t('th_unk_mix')]:['🛸',t('th_unk_dr')]; }});
 const ATYPE={air_raid:t('at_air_raid'),artillery_shelling:t('at_art'),urban_fights:t('at_urban'),chemical:t('at_chem'),nuclear:t('at_nuc'),info:t('at_info')};
 const LT=x=>({oblast:t('lt_oblast'),raion:t('lt_raion'),hromada:t('lt_hromada'),city:t('lt_city')}[x]||x);
 // static markup: data-t = textContent, data-t-html = innerHTML, data-t-title / data-t-ph = attributes
@@ -1311,7 +1325,7 @@ const dirName=d=>DIRS[Math.round(d/45)%8];
 // buy. They live in localStorage, the server is never told they exist, and push notifications keep using
 // only the coarse ~10 km cell of the browser's own geolocation, exactly as before.
 const SLOT_IDS=['home','work','kids','pin'];
-const SLOT_ICO={home:'🏠',work:'💼',kids:'🏫',pin:'📍'};
+const SLOT_ICO={home:'📍',work:'📍',kids:'📍',pin:'📍'};   // 1.54.9: four pins alike, numbered and named by their owner
 let SLOTS={home:null,work:null,kids:null,pin:null};
 let ACTIVE='home';
 try{ const raw=JSON.parse(localStorage.getItem('slots')||'null');
@@ -1373,7 +1387,7 @@ $('pushbtn').onclick=async()=>{ if(!('PushManager' in window)) return;
     const perm=await Notification.requestPermission(); if(perm!=='granted'){notify(t('n_blocked'),t('n_blocked_b'),'threat');return;}
     const raw=atob(info.key.replace(/-/g,'+').replace(/_/g,'/')); const key=new Uint8Array([...raw].map(c=>c.charCodeAt(0)));
     PUSH_SUB=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:key});
-    await fetch('/api/push/subscribe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({subscription:PUSH_SUB.toJSON(),home:Object.assign({name:HOME?HOME.name:null,raion:homeRaion()},(typeof GEO!=='undefined'&&GEO)||{}),topics:BRG_ON?['bridges']:[],lang:LANG})});
+    await fetch('/api/push/subscribe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({subscription:PUSH_SUB.toJSON(),home:Object.assign({},(typeof GEO!=='undefined'&&GEO)||{}),topics:BRG_ON?['bridges']:[],lang:LANG})});
     await fetch('/api/push/test',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({endpoint:PUSH_SUB.endpoint})});
     pushLabel(); notify(t('n_push_on'),t('n_push_on_b',HOME?t('n_push_raion',HOME.name):''),'end');
   }catch(e){ notify(t('n_push_fail'),String(e).slice(0,120),'threat'); } };
@@ -1567,7 +1581,8 @@ async function loadVillages(){ if(VILL||!MAP) return; VILL=[];
 const POI_G={air:'<path d="M0-11 L1.5-7.5 L1.5-3 L10 2.5 L10 4.5 L1.5 1.8 L1.5 7 L4.2 9.6 L4.2 11 L0 9.8 L-4.2 11 L-4.2 9.6 L-1.5 7 L-1.5 1.8 L-10 4.5 L-10 2.5 L-1.5-3 L-1.5-7.5 Z"/>',
   pow:'<path d="M2.5-11 L-7 2 L-1 2 L-3.5 11 L7-2 L1-2 Z"/>',
   nuc:'<circle r="2.4"/>'+[0,120,240].map(a=>`<path transform="rotate(${a})" d="M-1.75-3.03 L-5-8.66 A10 10 0 0 1 5-8.66 L1.75-3.03 A3.5 3.5 0 0 0 -1.75-3.03 Z"/>`).join(''),
-  home:'<path d="M0-10 L10-1.5 L7-1.5 L7 9 L2 9 L2 3 L-2 3 L-2 9 L-7 9 L-7-1.5 L-10-1.5 Z"/>'};
+  home:'<path d="M0-10 L10-1.5 L7-1.5 L7 9 L2 9 L2 3 L-2 3 L-2 9 L-7 9 L-7-1.5 L-10-1.5 Z"/>',
+  pin:'<path d="M0 10 C-2.6 5.6 -7.5 2.4 -7.5 -3.2 A7.5 7.5 0 1 1 7.5 -3.2 C7.5 2.4 2.6 5.6 0 10 Z"/>'};
 const TR={а:'a',б:'b',в:'v',г:'h',ґ:'g',д:'d',е:'e',є:'ie',ж:'zh',з:'z',и:'y',і:'i',ї:'i',й:'i',к:'k',л:'l',м:'m',н:'n',о:'o',п:'p',р:'r',с:'s',т:'t',у:'u',ф:'f',х:'kh',ц:'ts',ч:'ch',ш:'sh',щ:'shch',ь:'',ю:'iu',я:'ia',"'":'',"ʼ":''};
 function translit(s){let out='';for(let i=0;i<s.length;i++){const c=s[i],l=c.toLowerCase();let t;if(l==='є'&&i===0)t='ye';else if(l==='ї'&&i===0)t='yi';else if(l==='й'&&i===0)t='y';else if(l==='ю'&&i===0)t='yu';else if(l==='я'&&i===0)t='ya';else t=TR[l]??c;if(c!==l&&t)t=t[0].toUpperCase()+t.slice(1);out+=t;}return out;}
 // pan/zoom
@@ -1773,14 +1788,16 @@ const HOLD_SLOP_PX=10;
 let PIN_ARM=false;
 function pinRing(on,px,py){ const el=$('pinhold'); if(!el) return; el.classList.remove('on'); if(!on) return;
   const r=wrap.getBoundingClientRect(); el.style.left=(px-r.left)+'px'; el.style.top=(py-r.top)+'px'; void el.offsetWidth; el.classList.add('on'); }
-function armPin(on){ PIN_ARM=!!on; wrap.classList.toggle('arm',PIN_ARM); const b=$('pinarm'); if(b) b.hidden=!PIN_ARM; }
+let PIN_FOR='pin';   // 1.54.9: the pin the next tap on the map puts down (a long press on open map: the fourth, as before)
+function armPin(on,id){ PIN_ARM=!!on; PIN_FOR=(on&&id)||'pin'; wrap.classList.toggle('arm',PIN_ARM); const b=$('pinarm'); if(b){ b.hidden=!PIN_ARM;
+  const sp=b.querySelector('span'); if(sp) sp.textContent=PIN_ARM?t('sl_arm_n',slotName(PIN_FOR)):t('sl_pin_arm'); } }
 function dropPin(px,py){
   const [cx,cy]=toSvg(px,py); const lon=+(C[0]+cx/KX).toFixed(4), lat=+(C[1]-cy/KY).toFixed(4);
-  armPin(false);
+  const id=PIN_ARM?PIN_FOR:'pin'; armPin(false);
   // A dropped pin stores no label at all — it is named at paint time, so it follows the language.
-  setSlot('pin',{lon,lat,dropped:true});
+  setSlot(id,{lon,lat,dropped:true});
   if(navigator.vibrate&&vibOn) navigator.vibrate(40);
-  notify(t('sl_pin_set'),t('sl_pin_b'),'end'); }
+  notify('📍 '+slotName(id),t('sl_pin_b'),'end'); }
 $('pinarmx').onclick=()=>armPin(false);
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&PIN_ARM) armPin(false); });
 // a long press must not open the browser's own menu, or select a label under the finger (iOS), which cancels it
@@ -1853,6 +1870,12 @@ const IMMEDIATE=new Set(['ballistic_missiles','mig31k_departure','supersonic_mis
 // "drone or missile"; none — "probably a drone". Never "a drone" as a fact: the post did not say.
 const MSL_TYPES=new Set(['ballistic_missiles','cruise_missiles','supersonic_missiles','unspecified_missiles']);
 function mslCtx(){ return (typeof TS_TOP!=='undefined'&&!!TS_TOP)||MK.some(m=>!m.status&&!m.endedBy&&MSL_TYPES.has(m.type)); }
+// 1.54.9, the owner: "instead of the triangles, Shahed icons by default — outside a ballistic or cruise missile context
+// these threats are to be treated as drones". Drawn, coloured, turned and counted as a drone; the card still says the
+// type was not stated, and no ETA is worked out for it (a jet flies 2.4 times as fast: a countdown on a guess could be
+// late). MSLX is the missile context of the paint under way (set where the marks are painted).
+let MSLX=false;
+const asDrone=m=>m.type==='unknown'&&!m.status&&!MSLX;
 const unkKind=()=>t(mslCtx()?'k_unk_mix':'k_unk_dr');
 const REGION_R=150;   // km — proj() is scaled in km, so distances here are already kilometres
 function homeInfo(m,x,y){
@@ -1923,22 +1946,23 @@ function etaBand(m,dist){
   return {lo:Math.max(0,lo),hi:hi,off:off};
 }
 function drawHome(){ if(!MAP) return; if(!HOME){$('homeg').innerHTML='';return;} const [x,y]=proj(HOME.lon,HOME.lat);
-  $('homeg').innerHTML=`<g class="homemk"><circle class="ring" cx="${x}" cy="${y}" r="5" fill="none" style="stroke-width:1px;vector-effect:non-scaling-stroke"/><circle class="ring" cx="${x}" cy="${y}" r="10" fill="none" style="stroke-width:1px;vector-effect:non-scaling-stroke"/><g class="ico" transform="translate(${x} ${y})"><g class="pg">${POI_G.home}</g></g><text class="hl" x="${x}" y="${kx(y-8*KPX)}" text-anchor="middle">${esc(homeName())}</text></g>`; }
+  $('homeg').innerHTML=`<g class="homemk"><circle class="ring" cx="${x}" cy="${y}" r="5" fill="none" style="stroke-width:1px;vector-effect:non-scaling-stroke"/><circle class="ring" cx="${x}" cy="${y}" r="10" fill="none" style="stroke-width:1px;vector-effect:non-scaling-stroke"/><g class="ico" transform="translate(${x} ${y})"><g class="pg">${POI_G.pin}<text class="pnn" x="0" y="-.6">${SLOT_ORDER.indexOf(ACTIVE)+1}</text></g></g><text class="hl" x="${x}" y="${kx(y-11*KPX)}" text-anchor="middle">${esc(slotNames()[ACTIVE]&&!HOME.dropped?slotName(ACTIVE)+' · '+homeName():homeName())}</text></g>`; }
 function paintSlots(){ const el=$('slotrow'); if(!el) return;
   const html=SLOT_IDS.map(id=>{const p=SLOTS[id]; const on=id===ACTIVE&&p;
     // The role, not the place. Shorter, so the four fit one line on a phone — and the place a child is at does
     // not sit permanently on screen for whoever is standing behind you. The place itself is named in the card
     // below, and in the button's own tooltip. The dot is that place's official status (1.36).
-    const nm=!p?t('sl_'+id):p.dropped?t('sl_pin_dropped'):(LANG==='uk'&&p.uk?p.uk:townName(p.name));
+    // 1.54.9: the pin's number, or the name its owner gave it
+    const nm=!p?slotName(id):p.dropped?t('sl_pin_dropped'):(LANG==='uk'&&p.uk?p.uk:townName(p.name));
     const k=p?placeLevel(p).k:'';
-    return `<button type="button" data-slot="${id}" class="${on?'on':''}${p?'':' empty'}" aria-pressed="${on?'true':'false'}" title="${esc(p?t('sl_switch',nm):t('sl_set',t('sl_'+id)))}"><i class="${k}"></i><span class="sl">${esc(t('sl_'+id))}</span></button>`;}).join('');
+    return `<button type="button" data-slot="${id}" class="${on?'on':''}${p?'':' empty'}" aria-pressed="${on?'true':'false'}" title="${esc(p?t('sl_switch',nm):t('sl_set',slotName(id)))}"><i class="${k}"></i><span class="sl">${esc(slotName(id))}</span></button>`;}).join('');
   if(el._h!==html){ el._h=html; el.innerHTML=html; } }
 // Tap switches. Long-press (or a tap on an empty one) sets the place. The pin is set on the map: its chip arms
 // the map, and the next tap there puts it down (press and hold anywhere on the map does the same).
 (()=>{ let hold=null, held=false;
   const row=()=>$('slotrow'); if(!row()) return;
-  const setFor=id=>{ held=true; if(id==='pin'){ armPin(!PIN_ARM); return; }
-    SLOT_PICKING=id; if($('homebtn')) $('homebtn').onclick(); };
+  // 1.54.9: every pin the same way — its sheet: a name, a search, or "on the map"
+  const setFor=id=>{ held=true; SLOT_PICKING=id; if($('homebtn')) $('homebtn').onclick(); };
   row().addEventListener('pointerdown',e=>{const b=e.target.closest('[data-slot]'); if(!b) return;
     held=false; hold=setTimeout(()=>setFor(b.dataset.slot),550);});
   const cancel=()=>{clearTimeout(hold);hold=null;};
@@ -1964,7 +1988,7 @@ function lostGoneIn(m){                       // minutes left before the mark is
 }
 let SLOT_PICKING=null;   // which slot the place picker is currently filling
 let PLACES_ALL=[];
-const homeName=()=>!HOME?'':HOME.dropped?t('sl_pin_dropped'):(LANG==='uk'&&HOME.uk?HOME.uk:townName(HOME.name));
+const homeName=()=>!HOME?'':HOME.dropped?slotName(ACTIVE):(LANG==='uk'&&HOME.uk?HOME.uk:townName(HOME.name));   // 1.54.9: a pin put on the map is its own name
 async function loadPlacesList(){try{const pl=(await (await fetch('/api/places?oblast=scope')).json()).places;PLACES_ALL=pl.filter(p=>!/громада|берег|столиця|водосховище|море|АЕС|ГЕС|траса|шосе|проспект/i.test(p.name)).map(p=>({name:translit(p.name),uk:p.name,lon:p.lon,lat:p.lat,obl:p.oblast_uid,kind:OBL_N[p.oblast_uid]?oblFull(p.oblast_uid):t('kd_region')}));
   for(const [r,n] of Object.entries(RAION)) if(r!=='kyiv-city'){const c=RAION_LBL[r];PLACES_ALL.push({name:RAION_N[r][0]+' raion',uk:RAION_N[r][1]+' район',lon:C[0]+c[0]/KX,lat:C[1]-c[1]/KY,obl:'14',kind:t('kd_raion')});}
   PLACES_ALL.sort((a,b)=>a.name.localeCompare(b.name));}catch(e){}}
@@ -1993,7 +2017,17 @@ document.querySelectorAll('.panel [data-close]').forEach(b=>b.onclick=()=>closeP
 document.addEventListener('pointerdown',e=>{ if(PANELS.some(id=>{const p=$(id);return p&&!p.hidden&&p.contains(e.target);})) return;
   if(e.target.closest&&e.target.closest('#bellbtn,#menubtn,#laybtn')) return; closePanels(); });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape') closePanels(); });
-$('homebtn').onclick=async()=>{closePanels();if(!PLACES_ALL.length)await loadPlacesList();renderHomeList('');$('homeq').value='';$('homesheet').classList.add('show');setTimeout(()=>$('homeq').focus(),100);};
+$('homebtn').onclick=async()=>{closePanels();if(!PLACES_ALL.length)await loadPlacesList();renderHomeList('');$('homeq').value='';
+  const id=SLOT_PICKING||ACTIVE; $('homet').textContent='📍 '+slotName(id); $('homed').textContent=t('sl_hint');
+  $('homen').value=String(slotNames()[id]||''); $('homen').placeholder=t('sl_n',SLOT_ORDER.indexOf(id)+1)+' — '+t('sl_name');
+  $('homesheet').classList.add('show');setTimeout(()=>$('homeq').focus(),100);};
+// 1.54.9: the pin's own name, as it is typed — on this phone only
+$('homen').addEventListener('input',e=>{ setSlotName(SLOT_PICKING||ACTIVE,e.target.value); paintSlots(); $('homet').textContent='📍 '+slotName(SLOT_PICKING||ACTIVE); });
+(function vvSync(){ const vv=window.visualViewport; if(!vv) return; const r=document.documentElement;
+  const f=()=>{ const kb=Math.max(0,Math.round(innerHeight-(vv.height+vv.offsetTop))); r.style.setProperty('--kb',kb+'px'); r.style.setProperty('--vvh',Math.round(vv.height)+'px');
+    const ae=document.activeElement; document.body.classList.toggle('kbd',!!ae&&/^(INPUT|TEXTAREA)$/.test(ae.tagName)&&(kb>60||vv.height<innerHeight*0.8||screen.height-vv.height>220)); };
+  vv.addEventListener('resize',f); vv.addEventListener('scroll',f); document.addEventListener('focusin',()=>setTimeout(f,60)); document.addEventListener('focusout',()=>setTimeout(f,60)); f(); })();
+$('homemap').onclick=()=>{ const id=SLOT_PICKING||ACTIVE; $('homesheet').classList.remove('show'); armPin(true,id); };
 $('homeq').addEventListener('input',e=>renderHomeList(e.target.value));
 $('homeclear').onclick=()=>{const slot=SLOT_PICKING||ACTIVE; SLOT_PICKING=null; SLOTS[slot]=null; useSlot(slot); $('homesheet').classList.remove('show');};
 document.addEventListener('pointerdown',e=>{if($('homesheet').classList.contains('show')&&!$('homesheet').contains(e.target)&&e.target!==$('homebtn'))$('homesheet').classList.remove('show');});
@@ -2101,7 +2135,7 @@ function paintOblEvents(){
       // and its tag when the kind is one target — the same tag as in the list and the card
       const c=n>1?'×'+n:'';
       const al=oblAlt(m), al2=al?al+(/\d$/.test(al)?' '+t('m_unit'):''):'', tid=en[k]===1&&m.tag?m.tag.id:'';
-      const gk=(m.type==='drones'&&m.jet)?'jetdrone':(GLYPH_BY_TYPE[m.type]||'missile');
+      const gk=((m.type==='drones'||asDrone(m))&&m.jet)?'jetdrone':asDrone(m)?'drone':(GLYPH_BY_TYPE[m.type]||'missile');
       if(tid) seg(`<text class="obtxt obtid" dominant-baseline="central">${esc(tid)}</text>`,tid.length*7.6);
       seg(`<g class="sil${m.type==='drones'&&m.jet?' jet':''}" style="--c:${KIND_COL(m)};transform:translate(${px(8*S)},0px) scale(calc(var(--k,1)*${(.72*S).toFixed(3)}))">${G[gk]||''}</g>`,Math.round(16*S),1);
       if(c) seg(`<text class="obtxt" dominant-baseline="central">${c}</text>`,c.length*9.5);
@@ -2205,7 +2239,7 @@ function buildMarker(m){
   const isMsl=/missile/.test(m.type)&&!m.status; if(isMsl) g.classList.add('msl');
   g.innerHTML=`<line class="ahead" x1="0" y1="0" x2="0" y2="0"/><polygon class="cone" points="0,0 0,0 0,0"/><circle class="halo" cx="0" cy="0" r="6"/>${isMsl?'<circle class="halo2" cx="0" cy="0" r="6"/><circle class="reach" cx="0" cy="0" r="0" style="display:none"/>':''}${isNew?`<circle class="spawn" cx="0" cy="0" r="${kx(10*KPX)}"/>`:''}
     <g class="body"><g class="rot">${glyph}</g></g>
-    <polygon class="hdg" points="0,-5.2 5.4,3.6 0,1.3 -5.4,3.6" style="display:none"/><text class="qm" x="0" y="0">?</text><rect class="dnb" x="0" y="0" width="0" height="0"/><text class="dn" x="0" y="0">↓</text><g class="cnt" style="display:none"><circle r="6.5"/><text y="3.2">2</text></g><text class="tgc" x="0" y="0"></text><text class="lbl" x="5" y="-4"></text><text class="lbl2" x="5" y="0"></text><circle class="hit" cx="0" cy="0" r="8"/>`;
+    <polygon class="hdg" points="0,-5.2 5.4,3.6 0,1.3 -5.4,3.6" style="display:none"/><text class="qm" x="0" y="0">?</text><text class="dn" x="0" y="0">↓</text><g class="cnt" style="display:none"><circle r="6.5"/><text y="3.2">2</text></g><text class="tgc" x="0" y="0"></text><text class="lbl" x="5" y="-4"></text><text class="lbl2" x="5" y="0"></text><circle class="hit" cx="0" cy="0" r="8"/>`;
   g.addEventListener('pointerenter',e=>{if(e.pointerType==='touch')return;showTip(m,e);}); g.addEventListener('pointermove',e=>{if(e.pointerType==='touch')return;moveTip(e);}); g.addEventListener('pointerleave',()=>{$('tip').hidden=true;});
   const trail=document.createElementNS('http://www.w3.org/2000/svg','line'); trail.setAttribute('class','trail');
   const hist=document.createElementNS('http://www.w3.org/2000/svg','g'); hist.setAttribute('class','trail hist');
@@ -2215,8 +2249,9 @@ const glyphKey=m=>m.status?m.status
   // Night mode: plain arrows, not silhouettes. A detailed shape needs more light to resolve than an arrow
   // does, and in the dark it resolves to a grey blob anyway. The type is still on the label and in the
   // panel; what the arrow has to carry is only "something is there, going that way".
-  :(MODE==='night'&&!IMMEDIATE.has(m.type)&&m.type!=='unknown')?'arrow'
-  :(m.type==='drones'&&m.jet)?'jetdrone'
+  :(MODE==='night'&&!IMMEDIATE.has(m.type)&&(m.type!=='unknown'||asDrone(m)))?'arrow'
+  :((m.type==='drones'||asDrone(m))&&m.jet)?'jetdrone'
+  :asDrone(m)?'drone'
   :(GLYPH_BY_TYPE[m.type]||'missile');
 // Which way a mark points.
 //
@@ -2229,7 +2264,7 @@ function orientOf(m){
   // A warning sign is a sign, not a silhouette: a tilted ⚠ reads as a broken icon, not as a course. It stays
   // upright, and the orange course ray beside it — drawn separately, from the same reported heading — is
   // what turns.
-  if(m.type==='unknown') return 0;
+  if(m.type==='unknown'&&!asDrone(m)) return 0;
   if(m.heading==null) return 0;
   const ev=m.evidence&&m.evidence.heading;
   if(!ev||!ev.confidence||ev.confidence==='none') return 0;
@@ -2290,7 +2325,7 @@ function tick(){
   const ids=new Set(live.map(m=>m.id));
   for(const [id,b] of built){ if(!ids.has(id)){b.g.remove();b.trail.remove();b.hist.remove();built.delete(id);} }
   const lblPos=[]; let totShahed=0,totJet=0,totMsl=0,totUnk=0,totStale=0,inboundCount=0, nearest=null, tracked=0, downed=0, homeThreats=0, homeNamedN=0, homeNearest=null;
-  const msl0=mslCtx();   // 1.54.8: what an unstated weapon is called on this paint
+  const msl0=mslCtx(); MSLX=msl0;   // 1.54.8: what an unstated weapon is called on this paint; 1.54.9: and drawn as
   for(const m of live){
     let b=built.get(m.id); if(!b){b=buildMarker(m);built.set(m.id,b);$('markers').appendChild(b.g);$('trails').appendChild(b.hist);$('trails').appendChild(b.trail);}
     // The tail: where this track was reported over the last few minutes, fading with age.
@@ -2345,7 +2380,8 @@ function tick(){
     b.g.dataset.tx=gx.toFixed(3); b.g.dataset.ty=gy.toFixed(3);
     b.g.setAttribute('transform',`translate(${gx.toFixed(3)} ${gy.toFixed(3)})`);
     // a later post can add the course that the first one lacked: swap the blind mark for a pointed one
-    {const gk=glyphKey(m); if(b.gk!==gk){b.gk=gk; b.g.querySelector('.rot').innerHTML=G[gk];}}
+    {const gk=glyphKey(m); if(b.gk!==gk){b.gk=gk; b.g.querySelector('.rot').innerHTML=G[gk];}
+     const ad=asDrone(m); b.g.classList.toggle('unknown',m.type==='unknown'&&!ad); b.g.classList.toggle('drones',m.type==='drones'||ad);}
     // The figure-of-eight loiter is gone. It was there to say "the exact point is not known", but an
     // animation reads as observed motion — a drone visibly flying a path it was never reported flying.
     // The uncertainty it was standing in for is said properly now: by the ring, by the confidence, and by
@@ -2365,15 +2401,11 @@ function tick(){
     // 1.52: a height an earlier report of the track gave, when the latest did not repeat it — with its age
     const altOld=!(m.alt&&m.alt.m)&&tgv&&tgv.alt&&tgv.alt.cur===false&&tgv.alt.at?Math.round(agoMin(tgv.alt.at)):null;
     b.g.classList.toggle('desc',dsc); b.g.classList.toggle('hasalt',!!(altM||spdK||dscAny));
-    {const dn=b.g.querySelector('.dn'); if(dn){ dn.setAttribute('y',kx(16*KPX));
+    {const dn=b.g.querySelector('.dn'); if(dn){ dn.setAttribute('y',kx(18*KPX));
       // the height and a reported descent are always shown when a post gave them — the arrow stays after the mark goes
       // stale (it was reported; the red highlight does not)
       const dtx=[altM?((dscAny?'↓':'')+altM+' '+t('m_unit')+(altOld!=null?` (${altOld}′)`:'')):(dscAny?'↓':''), spdK?t('tg_spd',spdK):''].filter(Boolean).join(' · ');
-      if(dn.textContent!==dtx){ dn.textContent=dtx; dn._w=0; }
-      // 1.54.6: its pill — the text's own width, measured once per text (in screen px: the font is sized in var(--k))
-      const bg=b.g.querySelector('.dnb'); if(bg&&dtx){ if(!(dn._w>0)){ try{ dn._w=dn.getComputedTextLength()/KPX; }catch(e){ dn._w=0; } if(!(dn._w>0)) dn._w=dtx.length*6.1; }
-        const w=dn._w+9; bg.setAttribute('x',kx(-w/2*KPX)); bg.setAttribute('y',kx(5.6*KPX)); bg.setAttribute('width',kx(w*KPX)); bg.setAttribute('height',kx(13.5*KPX));
-        bg.setAttribute('rx',kx(4*KPX)); } }}
+      if(dn.textContent!==dtx) dn.textContent=dtx; }}
     b.g.classList.toggle('lostc',contactLost(m));
     b.g.classList.toggle('inbound',info.inbound&&!m.stale); b.g.classList.toggle('old',age>ttl*0.65); b.g.classList.toggle('ended',!!m.endedBy); b.g.classList.toggle('stale',!!m.stale&&!m.endedBy&&!m.status); b.g.classList.toggle('s2',!!m.stale&&m.stale>=(m.slow?15:8)); b.g.classList.toggle('s3',!!m.stale&&m.stale>=(m.slow?20:11)); b.g.querySelector('.qm').setAttribute('y',kx(-12*KPX));
     const v=SPEED(m); const ah=b.g.querySelector('.ahead'); const cone=b.g.querySelector('.cone');
@@ -2390,7 +2422,7 @@ function tick(){
     b.g.querySelector('.halo').setAttribute('r',kx((/missile/.test(m.type)?17:13)*KPX));
     {const h2=b.g.querySelector('.halo2'); if(h2) h2.setAttribute('r',kx(17*KPX));} b.g.querySelector('.hit').setAttribute('r',kx(18*KPX));
     b.g.querySelector('.lbl').setAttribute('x',kx(14*KPX)); b.g.querySelector('.lbl').setAttribute('y',kx(-6*KPX)); b.g.querySelector('.lbl2').setAttribute('x',kx(14*KPX)); b.g.querySelector('.lbl2').setAttribute('y',kx(6*KPX));
-    const kind=(m.type==='drones'?(m.jet?t('k_jet'):t('k_shahed')):m.type==='unknown'?'⚠ '+(msl0?t('unk_mix'):t('unk_likely')):THREAT[m.type]?.[1]||m.type);
+    const kind=(m.type==='drones'?(m.jet?t('k_jet'):t('k_shahed')):m.type==='unknown'?(msl0?'⚠ '+t('unk_mix'):t('unk_likely')):THREAT[m.type]?.[1]||m.type);
     const name=m.status?(({down:t('mk_down'),impact:t('mk_impact'),lost:t('mk_lost'),clear:t('mk_clear'),damage:t('mk_damage'),fire:t('mk_fire')})[m.status]||statusName(m.status)+((m.cluster||1)>1?` ×${m.cluster}`:m.count>1?` ×${m.count}`:'')):kind+((m.csum||m.count||1)>1?` ×${m.csum||m.count}`:'');
     // 1.51: the target's tag at the head of its label — S-07: Heimdall's number for tonight, the letter where a post
     // said it came from (never worked out); set only when it changes
@@ -2402,7 +2434,7 @@ function tick(){
     const placeEn=m.place==='область'?'':pn(m.place);
     const descTxt=(m.alt&&m.alt.state==='descending'&&!m.status&&!m.endedBy&&!m.stale)?('↓ '+t('alt_desc')+' · '):'';
     b.g.querySelector('.lbl2').textContent=descTxt+(appr?t('lbl_appr',pn(m.target||m.place),m.heading!=null?t('lbl_from',dirName((m.heading+180)%360)):'',fmtT(m.ts)):m._gone?`${t('msl_gone')} · ${placeEn?t('msl_seen',placeEn,fmtT(m.ts)):t('msl_seen_np',fmtT(m.ts))}`:m._reach>0?`${t('msl_reach',Math.round(m._reach))} · ${placeEn?t('msl_seen',placeEn,fmtT(m.ts)):t('msl_seen_np',fmtT(m.ts))}`:m.stale&&!m.status&&!m.endedBy?t('lbl_stale',m.stale,placeEn,fmtT(m.ts)):m.status?`${placeEn} · ${fmtT(m.ts)}`:(hi.inbound?t('lbl_to',homeName(),Math.round(hi.dist)):hi.near&&!m.endedBy?t('lbl_from',Math.round(hi.dist),homeName(),fmtT(m.ts)):null)||(m.endedBy?t('lbl_ended',STATUS_W[m.endedBy.status]||statusName(m.endedBy.status),pn(m.endedBy.place),fmtT(m.endedBy.ts)):info.inbound?t('lbl_to',t('b_kyiv'),Math.round(info.dist)):(m.heading!=null?`${dirName(m.heading)} · ${m.history&&m.history.length?t('lbl_updated'):t('lbl_reported')} ${fmtT(m.ts)}${m.history&&m.history.length?' '+t('lbl_reports',m.history.length+1):''}`:`${m.history&&m.history.length?t('lbl_updated'):t('lbl_reported')} ${fmtT(m.ts)}`)));
-    if(m.status){ if(m.status!=='clear') downed++; } else if(!m.endedBy){ tracked++; const c=m.csum||m.count||1; if(m.stale) totStale+=c; else if(m.type==='drones'){ if(m.jet) totJet+=c; else totShahed+=c; } else if(m.type==='unknown') totUnk+=c; else totMsl+=c; if(info.inbound&&!m.stale){inboundCount++; if(!nearest||info.dist<nearest.dist) nearest={...info,m};} }
+    if(m.status){ if(m.status!=='clear') downed++; } else if(!m.endedBy){ tracked++; const c=m.csum||m.count||1; if(m.stale) totStale+=c; else if(m.type==='drones'||asDrone(m)){ if(m.jet) totJet+=c; else totShahed+=c; } else if(m.type==='unknown') totUnk+=c; else totMsl+=c; if(info.inbound&&!m.stale){inboundCount++; if(!nearest||info.dist<nearest.dist) nearest={...info,m};} }
     lblPos.push({b,m,sx:gx/KPX,sy:gy/KPX});
   }
   // Label de-collision (screen px). No text is written over other text. Each mark's label block (one or two
@@ -2425,7 +2457,7 @@ function tick(){
        // 1.53 (the owner: "nothing on top of anything"): the height under the glyph and the tag above it are the mark's
        // too — no other label is written over them
        const dn=g.querySelector('.dn'), tc=g.querySelector('.tgc');
-       if(drawn(dn)){ const w=dn.textContent.length*6.4+12; glyphs.push({x:p.sx-w/2,y:p.sy+4,w,h:17,p}); }   // 1.54.6: with its band
+       if(drawn(dn)){ const w=dn.textContent.length*7.4+6; glyphs.push({x:p.sx-w/2,y:p.sy+7,w,h:15,p}); }   // 1.54.9: the outlined height
        if(drawn(tc)){ const w=tc.textContent.length*6+6; glyphs.push({x:p.sx-w/2,y:p.sy-27,w,h:12,p}); } }}
    const size=p=>{ const t1=p.v1?p.b.g.querySelector('.lbl').textContent:'',t2=p.v2?p.b.g.querySelector('.lbl2').textContent:'';
      p.w=Math.max(t1.length*6.6,t2.length*6.2); p.h=(p.v1&&p.v2)?25:(p.v1||p.v2)?14:0; };
@@ -2590,7 +2622,7 @@ function tagLine(m){ const tg=m.tag; if(!tg||m.status||m.endedBy) return '';
 function openSheet(id){
   const m=MK.find(x=>x.id===id); if(!m) return; SELP=id; const sp=$('selpath'); if(sp) sp._sig=''; setTimeout(drawSelPath,0); setTimeout(()=>loadTrail(m),0); $('tip').hidden=true; const [x,y,x0,y0]=posOf(m,Date.now()); const info=inboundInfo(m,x,y);
   const th=THREAT[m.type]||THREAT.unknown; const appr=!!m.approach&&!m.status&&!m.endedBy; const placeEn=(m.place==='область'||relOf(m))?oblWhere(m):pn(m.place);
-  const kind=m.status?`${statusIco(m.status)} ${statusName(m.status)}`:`${m.type==='drones'&&m.jet?t('k_jet'):m.type==='drones'?t('k_shahed'):m.type==='unknown'?'⚠ '+t(mslCtx()?'th_unk_mix':'th_unk_dr'):th[1]}`;
+  const kind=m.status?`${statusIco(m.status)} ${statusName(m.status)}`:`${m.type==='drones'&&m.jet?t('k_jet'):m.type==='drones'?t('k_shahed'):m.type==='unknown'?(mslCtx()?'⚠ '+t('th_unk_mix'):'🛸 '+t('th_unk_dr')):th[1]}`;
   const ev=m.evidence||{}; const cor=corroboration(m); const closer=m.endedBy; const closed=m.closes?MK.find(o=>o.id===m.closes):null;
   const overall=ev.position?.confidence==='high'&&(m.status||ev.heading?.confidence==='high'||ev.heading?.confidence==='medium')?'high':ev.position?.confidence==='high'?'medium':'low';
   const src=`${esc(CH[m.channel]||'@'+m.channel)} · ${fmtT(m.ts)} (${t('tp_ago',Math.round(agoMin(m.ts)))})`;
@@ -3024,14 +3056,14 @@ let TS_TOP=null;   // the preventive warning on top of the strip right now ({ty,
 // nearest first. A distance between two reported points is a fact; nothing here projects where a target is going —
 // "heading for Obolon" is shown only when the post said so (homeInfo().inbound). A target reported for a whole
 // oblast has no point to measure from, and a weapon that outruns any radius gets no distance at all.
-const KIND_COL=m=>m.type==='drones'?(m.jet?'#ffb15c':'#ff8a3d'):/missile/.test(m.type)?'#ff5b52':(m.type==='guided_aerial_bombs'||/aircraft|mig31k/.test(m.type))?'#b07cff':'#a9a79f';
+const KIND_COL=m=>(m.type==='drones'||asDrone(m))?(m.jet?'#ffb15c':'#ff8a3d'):/missile/.test(m.type)?'#ff5b52':(m.type==='guided_aerial_bombs'||/aircraft|mig31k/.test(m.type))?'#b07cff':'#a9a79f';
 const kindOf=m=>m.type==='drones'?(m.jet?t('k_jet'):t('k_shahed')):m.type==='unknown'?unkKind():(THREAT[m.type]?.[1]||m.type);
 // 1.39: a silhouette as a small inline icon — the Stats tab, the Alerts tab, the map's places of interest
 const gIco=(k,col,cls)=>`<svg class="gico" viewBox="-14 -14 28 28" aria-hidden="true"><g class="sil${cls?' '+cls:''}" style="--c:${col}">${G[k]||''}</g></svg>`;
 // an official threat type as its silhouette (a type with none — air defence, "Kyiv", "clear" — gets no icon)
 const thrIco=(ty,col)=>{ const g=GLYPH_BY_TYPE[ty]; if(!g) return '';
   return gIco(g,col||(ty==='drones'?'#ff8a3d':/aircraft|mig31k|guided_aerial_bombs/.test(ty)?'#b07cff':'#ff5b52'),ty==='ballistic_missiles'?'bal':ty==='supersonic_missiles'?'sup':''); };
-function silSvg(m,col){ const k=glyphKey(m)==='arrow'?((m.type==='drones'&&m.jet)?'jetdrone':(GLYPH_BY_TYPE[m.type]||'missile')):glyphKey(m);
+function silSvg(m,col){ const k=glyphKey(m)==='arrow'?(((m.type==='drones'||asDrone(m))&&m.jet)?'jetdrone':asDrone(m)?'drone':(GLYPH_BY_TYPE[m.type]||'missile')):glyphKey(m);
   const cls='sil'+((m.type==='drones'&&m.jet)?' jet':'')+(m.type==='ballistic_missiles'?' bal':'')+(m.type==='supersonic_missiles'?' sup':'');
   return `<svg viewBox="-14 -14 28 28" aria-hidden="true"><g class="${cls}" style="--c:${col||KIND_COL(m)}">${G[k]||''}</g></svg>`; }
 const NEAR_MAX=350;     // km — the Near list: the reader's region, not the country
@@ -3045,7 +3077,7 @@ function nearRows(){
     out.push({m,d,hi,n,chs,imm:IMMEDIATE.has(m.type)&&d<=REGION_R,vague:m.place==='область'}); }
   out.sort((a,b)=>(b.imm-a.imm)||(a.vague-b.vague)||((b.hi.inbound&&!b.m.stale)-(a.hi.inbound&&!a.m.stale))||(a.d-b.d));
   return out; }
-const fromWhere=()=>HOME?t('mc_f_'+ACTIVE):t('mc_f_kyiv');
+const fromWhere=()=>HOME?t('mc_f_n',slotName(ACTIVE)):t('mc_f_kyiv');
 function rowSub(r){ const m=r.m, bits=[];
   if(r.hi.inbound) bits.push(t('mc_course',homeName()));
   else if(m.target&&!m.approach) bits.push(t('mc_course',tgtName(m)));
@@ -3055,7 +3087,7 @@ function rowSub(r){ const m=r.m, bits=[];
   return bits.join(' · '); }
 const rowPlace=m=>m.approach?'→ '+pn(m.target||m.place):(m.place==='область'||relOf(m))?oblWhere(m):pn(m.place);
 function nearHTML(rows){
-  let h=`<div class="nrh"><b>${esc(HOME?t('nr_from',homeName()):t('nr_kyiv'))}</b><button type="button" data-act="place">${esc(HOME?t('lt_change'):t('sl_home'))}</button></div>`;
+  let h=`<div class="nrh"><b>${esc(HOME?t('nr_from',homeName()):t('nr_kyiv'))}</b><button type="button" data-act="place">${esc(HOME?t('lt_change'):t('sl_setpin'))}</button></div>`;
   if(!rows.length) return h+`<div class="nrnote">${esc(t('nr_none'))}</div>`;
   const band=r=>r.imm?'imm':r.vague?'far':r.d<=10?'near':r.d<=30?'approach':r.d<=60?'observe':'far';
   const name={imm:t('nr_imm'),near:t('lt_z_near'),approach:t('lt_z_approach'),observe:t('lt_z_observe'),far:t('nr_far')};
@@ -3475,7 +3507,9 @@ function markerText(m){
   if(m.alt&&m.alt.state==='descending') L.push('↓ '+t('alt_desc'));
   if(m.alt&&m.alt.m) L.push(`~${m.alt.m} ${t('m_unit')}`);
   if(m.heading!=null&&!m.status) L.push(`${t('tp_heading')}: ${dirName(m.heading)}`);
-  if(HOME){const [x,y]=proj(m.lon,m.lat),[hx,hy]=proj(HOME.lon,HOME.lat);L.push(`${Math.round(Math.hypot(x-hx,y-hy))} km — ${homeName()}`);}
+  // 1.54.9, the owner: "when we share a post through the app, the location of our pin must NOT be shared — it can be
+  // sensitive". The text said "19 km — Вишеньки": how far the target was from the reader's own pin, and the pin's
+  // place. A shared text says what the post said, and nothing about who shares it.
   L.push(`(${CH[m.channel]||'@'+m.channel})`);
   L.push(t('share_foot'));
   L.push(location.origin+'/m');

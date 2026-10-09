@@ -119,6 +119,14 @@ last half hour nearby, or a clear choice (the only city district, the only raion
 none of those, nothing is drawn — a mark in the wrong village is worse than no mark. A destination nobody can tell
 apart gets no course drawn to it. "In the area of A - B" is an area, never a route.
 
+## A shared text says what the post said, and nothing about who shares it (1.54.9)
+
+"Поділитися" put "19 km — Вишеньки" in the text: how far the target was from the reader's own pin, and the pin's
+place. Sent to a friend it is harmless; posted in a chat it tells strangers where somebody lives, works or has their
+children. A shared text now carries the kind, the place the post named, the time, a stated height and course, the
+channel and the reminder — never a pin, its name or a distance to it. The pins themselves are numbered and named by
+their owner, and the name stays on the phone with them.
+
 ## A weapon nobody named is "probably a drone" — never "unknown", never "a drone" (1.54.8)
 
 A post that says where and not what ("Кулажинці", "лук'янівка") was shown as an unspecified threat. On a night of drones

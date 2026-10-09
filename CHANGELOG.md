@@ -2,6 +2,28 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.54.9 — 2026-10-10
+
+### Fixed
+- **Sharing a target no longer shares your pin** — the owner: "the location of our pin must NOT be shared, it can be
+  sensitive". The shared text said "19 km — Вишеньки": the distance to the reader's own pin and its place. It is gone;
+  the text says what the post said. The first push subscription no longer sends the pin's name either.
+- **The place search on a phone stays above the keyboard** — "the keyboard overlaps the suggestions". The sheet stands
+  on the keyboard and its list takes the room that is left (Tactical and Light).
+- The hover card of a target whose weapon was not stated said "type not specified" — it says "probably a drone" too.
+
+### Changed
+- **Four numbered pins you name yourself** — "pin one, two, three instead of home, work, kids — let the user rename
+  them". "Pin 1" to "Pin 4", or the name typed in the pin's sheet (kept on the phone only). Every pin can be found by
+  search or put on the map; places set before are kept.
+- **Unstated threats are drawn as Shaheds** — "instead of the triangles, Shahed icons by default; outside a ballistic or
+  cruise missile context these threats are treated as drones". The silhouette, colour, course and count of a drone,
+  labelled "probably a drone"; the red ⚠ "drone or missile" while missiles are reported. No countdown on a guess.
+- **The height is outlined text, not a filled pill** — "just make the characters more visible, with an outline".
+  Larger and heavier, sky blue (red while descending) on a dark outline; readable in day, night and light mode.
+- **The manual is rebuilt with every patch** — "the manual must be updated with every change". `scripts/build_manual.py`
+  writes `docs/manual.html` from the documentation, and a test fails when a document changed without it.
+
 ## 1.54.8 — 2026-10-10
 
 ### Changed

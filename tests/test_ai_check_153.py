@@ -295,7 +295,7 @@ def test_the_map_on_the_whole_screen():
 
 def test_nothing_is_written_over_a_target():
     page = _read("static/kyiv.html")
-    assert "if(drawn(dn)){ const w=dn.textContent.length*6.4+12; glyphs.push({x:p.sx-w/2,y:p.sy+4,w,h:17,p}); }" in page   # 1.54.6: the pill
+    assert "if(drawn(dn)){ const w=dn.textContent.length*7.4+6; glyphs.push({x:p.sx-w/2,y:p.sy+7,w,h:15,p}); }" in page   # 1.54.9: outlined
     # 1.54: the explosions layer is gone, and with it the explosions' names giving way
     assert "querySelectorAll('#impactsg .imp')" not in page
     assert "bx=placed.concat(glyphs.filter(q=>q.p))" in page

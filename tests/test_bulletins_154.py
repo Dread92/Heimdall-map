@@ -402,16 +402,16 @@ def test_the_badges_are_a_fifth_smaller_on_a_phone():
 
 
 # ---- 1.54.6: a stated height catches the eye ------------------------------------------------------------------------------
-def test_a_stated_height_is_a_pill_in_every_mode_and_nothing_without_one():
-    # white on blue under the mark, white on red when it descends — only when a height or a descent was stated
-    assert ".mk .dnb{display:none;fill:#1d6fe0}.mk.desc .dnb,.mk.hasalt .dnb{display:block}.mk.desc .dnb{fill:#d7263d}" in PAGE
-    assert "svg#map .mk.hasalt .dn,svg#map .mk.desc .dn{fill:#fff;stroke:none;font-weight:800}" in PAGE
-    assert '<rect class="dnb" x="0" y="0" width="0" height="0"/><text class="dn"' in PAGE
-    assert "b.g.classList.toggle('hasalt',!!(altM||spdK||dscAny));" in PAGE
+def test_a_stated_height_is_outlined_text_in_every_mode_and_nothing_without_one():
+    # 1.54.6 made it a pill; 1.54.9, the owner: "not a filled bullet — just make the characters more visible, with an
+    # outline". Larger, heavier, sky blue (red while it descends) on a dark outline — only when a height was stated
+    assert "dnb" not in PAGE
+    assert ("svg#map .mk.hasalt .dn,svg#map .mk.desc .dn{font:800 calc(var(--k,1)*12px) var(--mono);fill:#5cc8ff;stroke:#04070c;"
+            "stroke-width:calc(var(--k,1)*3.6px);stroke-linejoin:round;paint-order:stroke;letter-spacing:.02em}") in PAGE
+    assert "svg#map .mk.desc .dn{fill:#ff4d6a}" in PAGE and "b.g.classList.toggle('hasalt',!!(altM||spdK||dscAny));" in PAGE
     # the night keeps it dim enough for dark-adapted eyes, still readable; the day and the light version have their own
-    assert "body.m-night .mk .dnb{fill:#24467e}body.m-night .mk.desc .dnb{fill:#7a1d2a}" in PAGE
-    assert "body.m-day .mk .dnb{fill:#1557c8}body.m-day .mk.desc .dnb{fill:#c41230}" in PAGE
-    assert "body.lite svg#map .mk.hasalt .dn,body.lite svg#map .mk.desc .dn{fill:#000;stroke:none}body.lite .mk .dnb{fill:#fff}" in PAGE
-    # the card's height chip and a region-wide report's height wear the same colours
-    assert ".chip.alt{color:#fff;border-color:#1d6fe0;background:#1d6fe0}" in PAGE and 'class="chip alt"' in PAGE
-    assert "body.m-night .chip.alt{background:#24467e" in PAGE
+    assert "body.m-night svg#map .mk.hasalt .dn{fill:#8fb8ec;stroke:#000}body.m-night svg#map .mk.desc .dn{fill:#ff8c9c;stroke:#000}" in PAGE
+    assert "body.m-day svg#map .mk.hasalt .dn{fill:#0a4cc2;stroke:#fff}body.m-day svg#map .mk.desc .dn{fill:#c8102e;stroke:#fff}" in PAGE
+    assert "body.lite svg#map .mk.hasalt .dn,body.lite svg#map .mk.desc .dn{fill:#fff;stroke:#000}" in PAGE
+    # the card's height chip: coloured text in a coloured frame, not a filled block
+    assert ".chip.alt{color:#6cc4ff;border-color:#2a7fe0;font-weight:800}" in PAGE and 'class="chip alt"' in PAGE

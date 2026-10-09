@@ -63,11 +63,10 @@ def test_the_server_still_has_exactly_one_door_for_writing_a_home():
 
 
 def test_the_school_is_not_left_sitting_on_the_screen():
-    """The chips show the role, not the place. Somebody standing behind you on the metro reads "Kids", not
-    the name of the school."""
+    """The chips show the pin, not the place. Somebody standing behind you on the metro reads "Pin 3" — or the name
+    the owner chose (1.54.9) — not the name of the school."""
     body = _fn("paintSlots")
-    assert "t('sl_'+id)}</span>" in body.replace(" ", "").replace("${esc(", "").replace(")}", "}") or \
-           "esc(t('sl_'+id))" in body, "the chip prints the place name rather than the role"
+    assert '<span class="sl">${esc(slotName(id))}</span>' in body, "the chip prints the place name rather than the pin"
 
 
 # ── switching and dropping ─────────────────────────────────────────────────────────────────────────────
@@ -79,7 +78,7 @@ def test_switching_place_does_not_replay_old_alerts():
 
 def test_a_dropped_pin_carries_no_frozen_name():
     """Stored with t('...') baked in, its label stayed in whichever language was active when it was dropped."""
-    i = PAGE.index("setSlot('pin',{")
+    i = PAGE.index("setSlot(id,{lon,lat,")
     line = PAGE[i:PAGE.index("\n", i)]
     assert "name:" not in line and "dropped:true" in line.replace(" ", "")
 

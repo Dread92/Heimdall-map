@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.54** · last updated 2026-10-10 (1.54.8)
+**Documented version: 1.54** · last updated 2026-10-10 (1.54.9)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -59,7 +59,7 @@ hour and the last 24 hours from what it recorded (§7.11):
 | Page | Address | For |
 |---|---|---|
 | **Tactical** | `/m` (also `/`, `/k`, `/kyiv`) | The full map: every mark with its evidence, the feed, alerts, statistics, display modes, layers. |
-| **Light** | `/light` (also `/l`) | One place (Home / Work / Kids / Pin): its raion's official status, what is within 30 km, what is heading there. |
+| **Light** | `/light` (also `/l`) | One place (one of the four pins, named by their owner): its raion's official status, what is within 30 km, what is heading there. |
 | **Guide** | `/guide` | What to do, weapon by weapon and situation by situation — the official guidance, in three languages, offline (1.35, §10.5). |
 
 Both install as separate PWAs (manifest ids `/m` and `/light` — unchanged by the 1.29 rename, so Android offers
@@ -163,6 +163,8 @@ clear-sky/
 │   ├── upload-imagery.bat  puts imagery/sat-ua.mbtiles on the Fly volume (1.47)
 │   ├── set-esri-key.bat    one-time: the owner's Esri key for the closest zooms, into Fly's secrets (1.48)
 │   ├── set-openrouter-key.bat  one-time: the owner's OpenRouter key for the AI reader, into Fly's secrets (1.50)
+│   ├── build_manual.py     rebuilds docs/manual.html — the whole documentation as one page, with the system map (1.54.9)
+│   ├── manual/             its template (template.html) and the system map, drawn by hand (map-svg.html)
 │   ├── corpus.py           add / review / pull corpus cases
 │   ├── release.bat         ships a patch: checks all is committed, fly deploy, git push, shows the live version
 │   ├── telegram-login.bat  one-time Telegram sign-in for the API reader (runs telegram_login.py)
@@ -713,7 +715,14 @@ strategic-aviation / cruise warning in the strip, `TS_TOP`): **"probably a drone
 ("Probably a drone — type not stated", `th_unk_dr`), its note (`unk_note_dr`: no missile reported right now, so most
 likely a strike drone, a Shahed or a jet one), the Near list (`k_unk_dr`) and the counts (`lb_unk_dr`); **"drone or
 missile"** (`unk_mix`, `th_unk_mix`, `unk_note_mix`, `k_unk_mix`, `lb_unk_mix`) while missiles are reported. The ⚠ sign
-stays: the post did not say what it is. The Light page names it the same way (`lMsl`).
+stays: the post did not say what it is. The Light page names it the same way (`lMsl`). **1.54.9, drawn as a drone** (the owner: "instead of the triangles, Shahed icons by default — outside a ballistic or
+cruise missile context these threats are to be treated as drones"): `asDrone(m)` — an unstated mark while `MSLX` (the
+paint's missile context) is off — takes the drone's silhouette (`glyphKey`, `silSvg`, the oblast badges), colour
+(`KIND_COL`) and class, turns to a stated course (`orientOf`), is counted with the drones, and its label is "probably a
+drone" without the ⚠; the hover card and every other reader of `THREAT.unknown` (a getter) say "🛸 Probably a drone".
+No ETA is worked out for it (`speedBand` has none for an unstated type): a jet drone flies 2.4 times as fast, and a
+countdown on a guess could be late. While missiles are reported it is the red ⚠ "drone or missile" again. Light:
+`lDr(m)`.
 
 ### 7.4 Scope, chaining, staleness
 
@@ -974,11 +983,12 @@ in the AI's view of the map (`ai_map`, `ai_context` send no origin). It is not a
   `geo.parse_speed`) or, where they read none, the AI's for that report (`alt.s` / `spd.s` = `ai`); and `vs`, its
   vertical state (descending…), the rules' or the AI's. Height and descent are **always shown when given** (the
   owner's priority): at every zoom, still after the mark goes stale (the arrow; not the red highlight), and on the
-  chip of a target reported for a whole oblast ("↓2200", `oblAlt`). **1.54.6: it is a pill** — white on blue under the
-  mark (`.dnb`, a rect sized to the measured text, `dn._w`), white on red while it descends; the card's height chip
-  (`.chip.alt`) and a region-wide report's height (`.obalt`, light blue) match. A mark with nothing stated has no pill,
-  so the colour itself says "a height was stated". Night mode dims it (#24467e / #7a1d2a, pale text), the day mode
-  deepens it, the light version is black on white.
+  chip of a target reported for a whole oblast ("↓2200", `oblAlt`). **1.54.9: outlined, not a pill** (1.54.6 drew a
+  filled pill; the owner: "not a filled bullet — just make the characters more visible, with an outline"): 12 px, heavy,
+  sky blue (#5cc8ff; red #ff4d6a while it descends) on a dark outline (`paint-order: stroke`); the card's height chip is
+  coloured text in a coloured frame (`.chip.alt`, `.chip.desc`), a region-wide report's height light blue (`.obalt`).
+  A mark with nothing stated shows nothing. Night mode dims it (#8fb8ec / #ff8c9c on black), the day mode deepens it
+  on a white outline, the light version is white on black.
 - `targets` keeps each tag's letter, origin, source and words, first and last time and type (for the analytics:
   `targets` in `/api/analytics`, per night by letter, and how many letters the AI read); `target_reports` maps each
   report to its tag. Both kept 60 days.
@@ -1571,11 +1581,24 @@ Main parts:
 - `tick()` — marks: silhouettes per weapon (`G`, `GLYPH_BY_TYPE` from `static/glyphs.js`), turned only to a stated course (`orientOf`),
   uncertainty ring up to 25 km, 5-minute tail, labels (1.53.3: no off-screen edge indicators any more — the owner: the map has too much on it now; a target off the screen is in the Near list);
 - `threatStrip()` — the banner stack, coloured by `officialLevel()`; `idleLine()` when calm;
-- the four places (`SLOTS`: Home / Work / Kids / Pin — `localStorage` only), zones 10 / 30 / 60 km (their
-  labels sized in screen pixels, `--k`), the conditional ETA band (`etaBand`);
-- **the 📍 pin**: press and hold on open map (a ring fills while the finger stays; a drag only starts past
-  `HOLD_SLOP_PX` = 10 screen px; the browser's long-press menu is suppressed), or tap the empty Pin chip to arm the
-  map (`armPin`, banner with Cancel) and tap where it goes (`dropPin`);
+- **the four pins** (`SLOTS`, `localStorage` only — 1.54.9, the owner: "numbered pins instead of Home / Work / Kids;
+  let the user rename them"): "Pin 1" to "Pin 4" (`slotName`, `sl_n`), or the name their owner typed in the pin's
+  sheet (`slot_names`, `setSlotName` in `i18n.js`, 24 characters, on this phone only; the storage keeps its old slot
+  ids, so no place set before is lost). Each pin's sheet (a tap on an empty one, a long press on any): its name, a
+  search, or "📍 Put it on the map" (`armPin(true, id)`, then a tap). The active pin is drawn as a numbered pin
+  (`POI_G.pin`) with its name. Zones 10 / 30 / 60 km (their labels sized in screen pixels, `--k`), the conditional ETA
+  band (`etaBand`);
+- **a pin dropped on the map**: press and hold on open map (a ring fills while the finger stays; a drag only starts past
+  `HOLD_SLOP_PX` = 10 screen px; the browser's long-press menu is suppressed) — the fourth pin, as before; or a pin's
+  "on the map" (`PIN_FOR`), banner with Cancel, a tap where it goes (`dropPin`). A pin put on the map is named by its pin;
+- **the place search above the keyboard** (1.54.9, the owner: "on a phone the keyboard overlaps the suggestions"): the
+  page asks to be resized by the keyboard (`interactive-widget=resizes-content`, Android); where it is not (iPhone),
+  `vvSync` keeps the visual viewport in `--kb` / `--vvh`, the sheet stands on the keyboard, and while it is up
+  (`body.kbd`) the list takes the room that is left and scrolls. Light's picker fills the visual viewport the same way;
+- **a shared text never says where the reader is** (1.54.9, the owner: "the location of our pin must NOT be shared"):
+  `markerText` is what the post said — the kind, the place, the time, the height, the course, the channel — and no
+  more; until 1.54.8 it added "19 km — Вишеньки", the distance to the reader's own pin and its place. The first push
+  subscription sends the browser's coarse geolocation only, like every later one (`pushSync`) — no pin name, no raion;
 - **the heat layer** (1.34; Layers since 1.36, off at every opening — never remembered): where drones and
   unidentified targets were reported over 24 h / 7 days / 30 days (`GET /api/drone_heat`: the places the posts named,
   town and district level, the number of posts — shoot-downs and hits left out, never an oblast's centre or "Kyiv"
@@ -2058,5 +2081,9 @@ Every patch, in this order:
 5. Update **this file**: the header's *Documented version* and date, and every section the patch touches
    (routes → §12, config / env → §5, tables → §13, sources → §6–7, pages → §10, open items → §17).
    `tests/test_docs.py` enforces the version, routes, config keys, env vars and tables.
-6. Commit in the working folder (never `config.json`), then ship with `scripts\release.bat` (deploy + push).
-7. Post the patch note to users once it is live.
+6. **Rebuild the manual**: `python scripts/build_manual.py` (docs/manual.html, stamped with the documents' hash —
+   `tests/test_manual.py` fails until it is rebuilt). A new source, thread, table or route also goes on the system map
+   by hand (`scripts/manual/map-svg.html`; the test checks its channel counts and speed limits against the code). The
+   shared copies (the "Heimdall Technical Manual" page and its PDF, `--pdf FILE`) are published again from it.
+7. Commit in the working folder (never `config.json`), then ship with `scripts\release.bat` (deploy + push).
+8. Post the patch note to users once it is live.

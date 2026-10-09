@@ -72,8 +72,8 @@ def test_an_unstated_weapon_is_a_probable_drone_or_with_missiles_a_drone_or_a_mi
 
 def test_the_page_never_says_unknown_for_what_is_most_likely_a_drone():
     assert "function mslCtx(){ return (typeof TS_TOP!=='undefined'&&!!TS_TOP)||MK.some(m=>!m.status&&!m.endedBy&&MSL_TYPES.has(m.type)); }" in PAGE
-    assert "m.type==='unknown'?'⚠ '+(msl0?t('unk_mix'):t('unk_likely'))" in PAGE                      # the label on the map
-    assert "m.type==='unknown'?'⚠ '+t(mslCtx()?'th_unk_mix':'th_unk_dr')" in PAGE                     # the card's title
+    assert "m.type==='unknown'?(msl0?'⚠ '+t('unk_mix'):t('unk_likely'))" in PAGE                      # the label on the map
+    assert "m.type==='unknown'?(mslCtx()?'⚠ '+t('th_unk_mix'):'🛸 '+t('th_unk_dr'))" in PAGE           # the card's title
     assert "t('unk_note_dr')" in PAGE and "t('unk_note_mix')" in PAGE and "m.type==='unknown'?unkKind()" in PAGE   # note, Near
     assert "⚠ ${esc(t(mslCtx()?'lb_unk_mix':'lb_unk_dr'))}" in PAGE                                    # the counts
     assert "t('k_unknown'):THREAT" not in PAGE and "'⚠ '+t('th_unknown2')" not in PAGE
