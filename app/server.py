@@ -3649,6 +3649,7 @@ class EsriTiles:
         self.down = {"img": 0.0, "st": 0.0}
         self.refused = {"img": None, "st": None}
         self.no_prefs = set()                            # kinds whose style preferences Esri refused
+        self.way = {}                                    # kind → the way of asking that works (fetch)
 
     def cap(self):
         try:
@@ -3747,44 +3748,48 @@ class EsriTiles:
             return 404, b"", None, "no-store"
         h = hashlib.sha256(self.salt + (ip or "").encode()).hexdigest()[:16]    # in memory, for the hour, never stored
         base = tmpl.format(z=z, x=x, y=y, style=style) + ("?blankTile=false&" if kind == "img" else "?")
-        with_prefs = prefs and kind not in self.no_prefs
         svc = self.svc(kind)
-        for attempt in (0, 1):
+        # The ways of asking, in order: (the key in the address, the style preferences). 1.49.3: the Static Basemap Tiles
+        # answered "401 Token Invalid" to a key World Imagery takes, privileges granted — so a refusal is asked again
+        # without the preferences, then with the key in a header (Esri's other documented way); the way that works is
+        # remembered for the kind (`self.way`), and only when none does is the service paused.
+        ways = [(True, True), (True, False), (False, False)] if prefs else [(True, False)]
+        first = min(self.way.get(kind, 0), len(ways) - 1)
+        tried = []
+        for i in range(first, len(ways)):
+            in_q, with_prefs = ways[i]
             stop = self._count(h, svc)
             if stop:
                 return stop[0], b"", None, stop[1]
-            q = ""
-            if with_prefs:
-                q = (f"language={lang}&" if lang in ESRI_LANGS else "") + "worldview=unitedStatesOfAmerica&"
+            q = ((f"language={lang}&" if lang in ESRI_LANGS else "") + "worldview=unitedStatesOfAmerica&") if with_prefs else ""
+            url = (base + q + ("token=" + quote(key, safe="") if in_q else "")).rstrip("?&")
+            headers = {"User-Agent": f"Heimdall/{APP_VERSION}"}
+            if not in_q:
+                headers["Authorization"] = "Bearer " + key
             if not self.gate.acquire(timeout=10):
                 return 503, b"", None, "no-store"
             try:
-                req = urllib.request.Request(base + q + "token=" + quote(key, safe=""), headers={"User-Agent": f"Heimdall/{APP_VERSION}"})
-                with urllib.request.urlopen(req, timeout=10, context=_SSL_CTX) as r:
+                with urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=10, context=_SSL_CTX) as r:
                     body, ctype, cc = r.read(), r.headers.get("Content-Type") or "", r.headers.get("Cache-Control")
-                if attempt and prefs and kind not in self.no_prefs and ctype.startswith("image/"):
-                    log(f"esri tiles: {kind} works without the style preferences — asked without them from now on")
-                    self.no_prefs.add(kind)
+                if i != self.way.get(kind, 0) and ctype.startswith("image/"):
+                    how = ("without the style preferences" if in_q else "with the key in a header, without the style preferences")
+                    log(f"esri tiles: {kind} works {how} — asked that way from now on")
+                    self.way[kind] = i
+                    if not with_prefs:
+                        self.no_prefs.add(kind)
                 break
             except urllib.error.HTTPError as e:
                 # never e.url or str(e) of the request: the address carries the key — Esri's own message says why
-                if e.code in (401, 403, 498, 499):
-                    why = f"HTTP {e.code}" + self._why(e)
-                    if with_prefs and not attempt:
-                        # 1.49.3: the Static Basemap Tiles answered "401 Token Invalid" to a key World Imagery takes —
-                        # asked once more without the style preferences (language, worldview), the answer says whether
-                        # those are the cause or the key is
-                        log(f"esri tiles: {kind} refused the key with the style preferences ({why}) — asking without them")
-                        with_prefs = False
+                if e.code in (401, 403, 498, 499) or (e.code == 400 and with_prefs):
+                    tried.append(f"HTTP {e.code}" + self._why(e))
+                    if i + 1 < len(ways):
+                        log(f"esri tiles: {kind} refused ({tried[-1]}) — asking another way")
                         continue
-                    if attempt and prefs:
-                        why += " (also without language / worldview)"
+                    if e.code == 400:
+                        return 502, b"", None, "no-store"
+                    why = tried[0] + (" (also without language / worldview, and with the key in a header)" if prefs else "")
                     self._refused(svc, why)
                     return 503, b"", None, "no-store"
-                if e.code == 400 and with_prefs and not attempt:
-                    log(f"esri tiles: {kind} refused the style preferences — asking without them")
-                    with_prefs = False
-                    continue
                 return (404 if e.code == 404 else 502), b"", None, ("public, max-age=86400" if e.code == 404 else "no-store")
             except Exception as e:
                 log("esri tiles:", type(e).__name__)
@@ -3800,6 +3805,7 @@ class EsriTiles:
                 pass
             if code == 400 and with_prefs:
                 self.no_prefs.add(kind)
+                self.way[kind] = max(self.way.get(kind, 0), 1)
                 return 502, b"", None, "no-store"
             self._refused(svc, (f"error {code}" if code else "not an image") + self._why(body))
             return 503, b"", None, "no-store"

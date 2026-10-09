@@ -271,5 +271,22 @@ def test_a_key_refused_with_the_style_preferences_is_asked_once_without_them():
             b'{"error":{"code":401,"message":"Token Invalid."}}'))
     with mock.patch.object(server, "log", lambda *a: None), mock.patch.object(server.urllib.request, "urlopen", always):
         assert e2.fetch(*KYIV, kind="map", lang="en")[0] == 503
-    assert e2.stats()["refused"]["st"] == "HTTP 401: Token Invalid. (also without language / worldview)"
-    assert "map" not in e2.no_prefs and not e2.enabled("st") and e2.enabled("img")
+    assert e2.stats()["refused"]["st"] == "HTTP 401: Token Invalid. (also without language / worldview, and with the key in a header)"
+    assert "map" not in e2.no_prefs and not e2.enabled("st") and e2.enabled("img") and e2.n_month == 3
+
+
+def test_the_key_in_a_header_when_the_address_will_not_do():
+    e, seen = _esri(), []
+
+    def header_only(req, timeout=None, context=None):
+        seen.append((req.full_url, req.get_header("Authorization")))
+        if "token=" in req.full_url:
+            raise urllib.error.HTTPError(req.full_url, 401, "Unauthorized", {}, __import__("io").BytesIO(
+                b'{"error":{"code":401,"message":"Token Invalid."}}'))
+        return _Resp()
+    with mock.patch.object(server, "log", lambda *a: None), mock.patch.object(server.urllib.request, "urlopen", header_only):
+        assert e.fetch(*KYIV, kind="lbl", lang="uk")[0] == 200
+        assert e.fetch(*KYIV, kind="lbl", lang="uk")[0] == 200
+    assert len(seen) == 4 and e.way["lbl"] == 2 and e.enabled("st")
+    url, auth = seen[-1]
+    assert auth == "Bearer test-esri-key-0000" and "token" not in url and url.endswith("/12/1381/2395")

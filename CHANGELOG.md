@@ -2,6 +2,13 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.49.4 — 2026-10-09
+
+### Changed
+- The key's privileges for Esri's names and map are granted, yet the service answers "401 Token Invalid": after
+  asking without the language and worldview, the server now also asks with the key in a header (Esri's other
+  documented way) before giving up, and keeps whichever way works.
+
 ## 1.49.3 — 2026-10-09
 
 ### Changed
