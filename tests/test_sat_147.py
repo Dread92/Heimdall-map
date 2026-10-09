@@ -81,17 +81,17 @@ def test_the_page_draws_it_inside_ukraine_under_the_streets():
     assert '<g id="sat" clip-path="url(#uaclip)"></g>' in PAGE and '<g id="tiles" clip-path="url(#uaclip)"></g>' in PAGE
     assert PAGE.index('<g id="sat"') < PAGE.index('<g id="tiles"') < PAGE.index('<g id="oblastsg">')
     assert "const LAYERS={sat:true,tiles:false," in PAGE                        # 1.47.1: the default on every device
-    # 1.47.1: one picture or the other — zooming in no longer falls back to the OSM streets
-    assert "if(cb.checked&&cb.dataset.l==='sat')LAYERS.tiles=false; if(cb.checked&&cb.dataset.l==='tiles')LAYERS.sat=false;" in PAGE
-    assert "const want=LAYERS.tiles||(LAYERS.sat&&SAT_KNOWN&&!SAT_OK);" in PAGE   # no imagery on the server: the streets
+    # 1.47.1: one picture or the other — zooming in no longer falls back to the OSM streets (1.49: one of three radios)
+    assert "LAYERS.sat=rb.value==='sat'; LAYERS.tiles=rb.value==='map';" in PAGE
+    assert "const want=(LAYERS.tiles&&SAT_KNOWN&&!ESRI_OK)||(LAYERS.sat&&SAT_KNOWN&&!SAT_OK);" in PAGE   # no imagery: the streets
     assert "if(!localStorage.getItem('layers_v3')){LAYERS.sat=true;LAYERS.tiles=false;" in PAGE   # once, for the saved choices
-    assert '<label hidden><input type="checkbox" data-l="sat">' in PAGE         # offered once the server has the tiles
+    assert '<label data-b="sat" hidden><input type="radio" name="lbase" value="sat">' in PAGE   # offered once the server has the tiles
     assert "satAvail(S.config);" in PAGE and "const ok=!!c.sat," in PAGE
     # 1.48: to the file's own deepest zoom, under the file's own version (tests/test_sat_148.py)
     assert "placeTiles(g,Math.max(5,Math.min(SAT_MAX,tileZoom())),(z,x,y)=>`/tiles/sat/${z}/${x}/${y}.webp?v=${SAT_V}`,160,5);" in PAGE
     assert "ESA WorldCover 2021" in PAGE and "Copernicus Sentinel data (2021)" in PAGE   # CC BY: credited whenever drawn
-    assert "if(svg.classList.contains('satd')) p.push(SAT_ATTR);" in PAGE
-    for lang in ("Satellite imagery (Sentinel-2, 2021)", "Супутникові знімки (Sentinel-2, 2021)", "Images satellite (Sentinel-2, 2021)"):
+    assert "if(c.contains('satd')) p.push(SAT_ATTR);" in PAGE
+    for lang in ("l_sat:'Satellite'", "l_sat:'Супутник'", "l_map:'Plan'"):
         assert lang in I18N
 
 

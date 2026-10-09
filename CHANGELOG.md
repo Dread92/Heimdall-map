@@ -2,6 +2,28 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.49.0 — 2026-10-09
+
+### Added
+- **Background: Satellite, Map or Plain** (Layers). The satellite now has the **roads and names on it** from the
+  region view in (Esri's labels for imagery), and **Map** is a street map like any phone's (Esri, dark in the dark
+  modes), names in the reader's language and Crimea drawn as Ukraine. Plain is our own map with nothing under it.
+  Without the Esri key or past its monthly cap, Map falls back to the OSM streets.
+- **The main towns of every oblast**: raion centres and every town of 10,000 people or more (352, from GeoNames), so
+  a region zoomed out — Kharkiv, Poltava — shows Chuhuiv, Balakliia, Berestyn, Hadiach, Karlivka… and not four names.
+
+### Changed
+- **Zooming keeps up**: a pinch or the wheel now scales the picture already drawn and redraws once it rests — 60
+  frames a second on a slow phone instead of 20. The names of places hide during the movement; the marks stay.
+- **No more black flashes between zoom levels**: the previous picture stays under the new tiles until they arrive.
+- **Kyiv named without a place in it** ("над Києвом", "біля Києва", "on the outskirts of the right bank") is marked
+  as the city, like an oblast — not as a drone at the city centre. "Right bank" / "left bank" is said when posted.
+
+### Fixed
+- **The page could stop responding zoomed in very close** (1.48): dashed and animated rings and lines were drawn
+  dash by dash along their whole length. Zoomed in, they are now drawn solid and still.
+- **Drone and threat icons vanished at the closest zooms** (1.48): their size was rounded to zero.
+
 ## 1.48.0 — 2026-10-09
 
 ### Added

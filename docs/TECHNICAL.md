@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.48** · last updated 2026-10-09 (1.48.0)
+**Documented version: 1.49** · last updated 2026-10-09 (1.49.0)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -125,6 +125,7 @@ clear-sky/
 │   ├── light-map.json      raions of the 8 oblasts + nearby oblast outlines, rivers, roads, towns (built)
 │   ├── light-map-x.json    raions of the 11 oblasts farther out — fetched only for a place there (built, 1.43)
 │   ├── map-ua.json         rivers, main roads, airports and power plants of the whole country (built, 1.45)
+│   ├── towns-ua.json       raion centres and towns of 10,000+ of every oblast, for finding one's way (built, 1.49)
 │   ├── kyiv-districts.json the 10 city districts of Kyiv (OSM)
 │   ├── ukraine-map.json    oblast outlines in an affine lon/lat projection (Light page fallback lookup)
 │   ├── admin.html          private dashboard: usage, source health, channels, lead time (/admin, ADMIN_KEY)
@@ -142,6 +143,7 @@ clear-sky/
 │   ├── build_geo.py        rebuilds data/ua_regions.json and static/light-map.json (`--light`: the Light maps only)
 │   ├── build_places.py     rebuilds data/regional_places.json from GeoNames (1.43)
 │   ├── build_mapdata.py    rebuilds static/map-ua.json from Natural Earth (1.45)
+│   ├── build_towns.py      rebuilds static/towns-ua.json from GeoNames (1.49)
 │   ├── build_imagery.py    builds the satellite layer (imagery/sat-ua.mbtiles) from ESA WorldCover / Sentinel-2 (1.47)
 │   ├── upload-imagery.bat  puts imagery/sat-ua.mbtiles on the Fly volume (1.47)
 │   ├── set-esri-key.bat    one-time: the owner's Esri key for the closest zooms, into Fly's secrets (1.48)
@@ -319,6 +321,31 @@ WAL: a sync at each checkpoint, not at each commit).
 
 Not changed, already economical: the live line (one thread, one serialisation per combination of parts, deltas),
 the 304s on static files, Web Push's pooled connections.
+
+### 5.6 Zooming the map (1.49)
+
+The map is one SVG in kilometres; the view is its `viewBox`. Measured in Chromium with the CPU slowed 4× (a mid-range
+phone), a pinch of 200 frames: **every change of the viewBox restyled every element sized by `--k` and laid out every
+label again** — 50 ms a frame (20 fps), the main thread busy 100 % of the time (style 49 %, layout 28 %). A change
+of scale lays the SVG's text out again even when it is only a CSS transform of the SVG or of an element around it.
+So, while a pinch or the wheel goes on (`zoomAt(…, true)` → `fastVB`), the map drawn last is moved and scaled on the
+screen with a CSS transform (`svg#map`, `will-change:transform`, from its top-left corner), the names of places are
+hidden for that moment (`svg.zoomg :not(.mk)>text`; the marks and their labels stay), and 150 ms after the last
+movement the new view is drawn once (`applyVB()`). The view's arithmetic uses the map's box without the transform
+(`SR()`). Result: 16.7 ms a frame (60 fps) on the slowed phone and on a computer, the main thread busy 20 %; the
+redraw at rest costs one frame of ~70 ms. A one-finger drag still moves the viewBox (no change of scale: cheap).
+
+Tiles: the tiles of the zoom before stay under the new ones until all of these have loaded or failed (`tileSweep`,
+4 s at most), so a change of zoom never shows the black background between two pictures.
+
+**Zoomed in, nothing large is dashed or animated** (`svg.deep`, past ~90 px a km). Chrome draws a dashed line dash by
+dash along its whole length — the 50 km ring around Kyiv is 25,000 dashes at 1 km across — and an animated one again
+at every frame: 1.48 could stall a computer's page ("page not responding") at the closest zooms. There the rings,
+the zones, the occupied areas' outline, the region rings, the reach and course rays and the tracks are drawn solid
+and still, the occupied areas in a plain tint.
+
+**Lengths sized by the zoom keep their digits** (`kx()`, `KDIG`): with two decimals, at 1 km across a drone's
+`scale(0.0007)` was written `scale(0.00)` and the mark vanished; marks are placed to the metre.
 
 ## 6. Official alert data
 
@@ -594,6 +621,13 @@ apostrophe — `_ru_variants`). Kharkiv city's districts are named by hand in th
   oblast — `place == "область"`, drawn on the region (§7.4) — and a side of any other town stays at the town with low
   confidence. Either way `evidence.position` carries `rel` (degrees) and `ref`, and the pages write "north of
   Mykolaiv" (`oblWhere`, `rq` / `rq_of`). The offline translation reads "на півночі від X" as "north of X".
+- 1.49: **Kyiv named and no place in it is the city, not a point** (`_city_settle`): "над Києвом", "біля Києва", "на
+  околицях правого берега Києва" were drawn at the city's centre, "town in gazetteer, high confidence, ±5 km" — a
+  city 30 km across, and a resident read a drone over the centre that nobody had put there. Kyiv has its own outline,
+  so it is marked like an oblast (`place == "область"`, `oblast_uid` 31, low confidence; §7.4), with the bank when
+  the post names one (`evidence.position.bank`: "right" / "left" → "right bank · Kyiv"). A district, a street, a
+  landmark, a distance or a side keep their point; a course to Kyiv ("→ Київ") stays an approach. The pages say
+  "somewhere in the city" for it (`city_somewhere`, `city_noplace`).
 - 1.45: **raions.** "Шепетівський район", "у Самбірському районі", "в напрямку Самбірського району" are read as the
   raion (`_RAION_RX` → `RAION_KEYS`): one pseudo-place per raion of a tracked oblast ("Самбірський р-н"), at the
   raion's centre town (the core gazetteer's first, never a power plant; `_load_raions`), with **low** confidence: a
@@ -964,6 +998,27 @@ picture alone; a refused key (HTTP 401/403/498/499, or Esri's 200-with-a-JSON-er
 At most 12 requests to Esri at once. A large screen that would need more than 140 tiles at its zoom gets the zoom
 below (`placeTiles(…, zmin)`), for both layers.
 
+**The background: Satellite, Map or Plain (1.49).** Layers → Background is one choice of three (radio buttons;
+`LAYERS.sat` / `LAYERS.tiles`): **Satellite** — Sentinel-2, Esri World Imagery from zoom 14, and over them **Esri's
+roads and names** from zoom 10 (`#lbl`, `updateLbl`: "arcgis/imagery/labels"); **Map** — **Esri's street map** at every
+zoom (`#emap`, `updateMap`: "arcgis/streets", "arcgis/streets-night" in the standard and night modes), or without
+Esri (no key, or past the cap) the OSM streets zoomed in, as before; **Plain** — our own map, nothing under it. Both
+Esri layers come from the Static Basemap Tiles service: 512-pixel PNG tiles (asked one zoom below the 256-pixel grid
+for the same sharpness — a quarter of the tiles), with the reader's language (`language=en|uk|fr`) and the worldview
+that draws Crimea as Ukraine (`worldview=unitedStatesOfAmerica`); a style preference Esri refuses (HTTP 400) is
+dropped once and remembered (`EsriTiles.no_prefs`). Same proxy, key and caps as the imagery
+(`/tiles/esri/{img|lbl|map|mapn}/…`). Where Esri's names are drawn (`svg.lbld`, `svg.mapd`) our own town and village
+names step aside — the same names twice, a few pixels apart, could not be read. Credited "Powered by Esri · Esri,
+TomTom, Garmin, FAO, NOAA, USGS, © OpenStreetMap contributors, and the GIS User Community".
+
+**The towns of every oblast (1.49).** `TOWNS` (in the page) names every town of Kyiv oblast and the oblast and
+regional centres elsewhere; zoomed out over Kharkiv or Poltava oblast the map showed four names in a region the size
+of Belgium. `static/towns-ua.json` (`scripts/build_towns.py`, from GeoNames' Ukraine dumps, CC BY 4.0) adds the raion
+centres and every town of 10,000+ of every oblast that `TOWNS` does not name (352): Ukrainian names as
+`build_places.py` gives them, with the renamed ones (Хрустальний, not Красний Луч) and city sections GeoNames files
+as towns left out. Drawn in `#twng` (`loadTownsUA`): tier 2 (a centre, or 20,000+) up to 520 km of map (`svg.wide`),
+tier 1 up to 230 km (`veryfar`); `layoutTownLabels` ranks them after the regional centres.
+
 **Zoom to a kilometre (1.48).** `setView` / `zoomAt` stop at 1 km across (8 km before). Over a picture (`svg.tiled`)
 the oblast and raion names are light on a dark halo like the towns (`paint-order:stroke`), dark on a light halo in
 day mode — dark slate on darkened imagery could not be read.
@@ -1318,6 +1373,7 @@ All JSON unless stated. Public unless marked 🔒 (`ADMIN_KEY`).
 | `GET /api/stats?days=` | statistics; the Stats tab reads only `windows` (with `af`: launched / down by type, used, impacts, debris) and `af_days` (the Air Force summaries, each with its `post`) |
 | `GET /tiles/sat/{z}/{x}/{y}.webp` | the satellite layer's tiles (1.47, §10.1): WebP from `SAT_TILES`, cached a year (`immutable`); 404 where there is none |
 | `GET /tiles/esri/{z}/{x}/{y}.jpg` | the satellite layer's closest zooms (1.48, §10.1): Esri World Imagery asked with `ESRI_KEY`, zoom 14–18 over Ukraine only, nothing kept; 404 outside / no key, 429 past a cap, 503 key refused |
+| `GET /tiles/esri/{kind}/{z}/{x}/{y}.{jpg\|png}?lang=` | 1.49 (§10.1): `img` (the imagery again), `lbl` (roads and names over it, zoom 9–18), `map` / `mapn` (the street map, light / dark, zoom 4–18) — Esri's Static Basemap Tiles in the reader's language; same key, caps and answers |
 | `GET /api/places?oblast=` | gazetteer (names, coordinates, oblast; 1.46: built once an hour, gzipped): `oblast=14,31,…`, `all`, or (1.43) `scope` — the oblasts the map covers now; (1.45) `villages=scope`: the regional villages of those oblasts (hromada centres and places of 1,000+, `geo.villages`), for the map's villages layer, cached an hour |
 | `GET /api/drone_heat?days=1|7|30` | the heat layer: `points` `[lon, lat, posts, place, oblast]` — where drones and unidentified targets were reported (cached 10 min) |
 | `POST /api/push/subscribe`, `/api/push/unsubscribe`, `/api/push/test`; `GET /api/push/key` | Web Push; subscribe takes `{subscription, home, topics: ["bridges"], lang}` |

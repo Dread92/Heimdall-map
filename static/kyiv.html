@@ -388,6 +388,8 @@ body.m-day #heatleg{background:rgba(255,255,255,.96)}.ob.far{stroke:#1a2029;fill
 .ob.far.R{fill:rgba(229,72,77,.12)}.ob.far.Y{fill:rgba(245,185,64,.08)}
 .kozak{pointer-events:none}.kozak text{font:700 calc(var(--k,1)*9px) system-ui;fill:#ffd166;paint-order:stroke;stroke:#080b10;stroke-width:calc(var(--k,1)*3px);text-anchor:middle}.kozak .sub{fill:#c9d1de;font-weight:500}svg.close .kozak{display:none}
 .nblbl{fill:#4a5568;font:700 calc(var(--k,1)*10px) system-ui;text-transform:uppercase;letter-spacing:.3px;pointer-events:none}svg.close .nblbl{display:none}
+/* 1.49: the towns of every oblast — centres and 20,000+ from the region view in, the others closer, none for all Ukraine */
+.town.tw{fill:#a3adbf}.town.tw1{font-size:calc(var(--k,1)*10px)}svg.wide #twng,svg.veryfar .tw1{display:none}
 .town.rg{fill:#9aa5b8}svg.close .town.rg,svg.close .towndot.rg,svg.ua .town.rg,svg.ua .towndot.rg,svg.ua .town:not(.big):not(.uac),svg.ua .towndot:not(.big):not(.uac){display:none}
 .town.uac{fill:#aeb8c8;font-size:calc(var(--k,1)*10.5px)}.town.uac:not(.show),.towndot.uac:not(.show){display:none}svg:not(.far) .town.uac,svg:not(.far) .towndot.uac{display:none}
 .selo{fill:rgba(255,209,102,.07);stroke:#ffd166;stroke-width:2px;vector-effect:non-scaling-stroke;pointer-events:none;filter:drop-shadow(0 0 3px #ffd16688)}
@@ -405,7 +407,25 @@ body.m-day #heatleg{background:rgba(255,255,255,.96)}.ob.far{stroke:#1a2029;fill
 .town.big{font-size:calc(var(--k,1)*14px);fill:#fff}
 .town[data-hid]{display:none!important}
 #tiles{filter:invert(1) hue-rotate(180deg) brightness(.72) contrast(.95) saturate(.3)}#tiles image{opacity:.95}svg.no-tiles #tiles{display:none}
-#sat,#esri{filter:brightness(.62) saturate(.82) contrast(1.04)}svg.no-sat #sat,svg.no-sat #esri{display:none}
+#sat,#esri{filter:brightness(.62) saturate(.82) contrast(1.04)}svg.no-sat #sat,svg.no-sat #esri,svg.no-sat #lbl{display:none}
+/* 1.49: a pinch or the wheel moves and scales the map drawn last (a transform from its top-left corner) until it rests */
+svg#map{transform-origin:0 0;will-change:transform}
+/* …and while it is scaled, the names of places step out: a scale change of the picture makes the browser lay out
+   every SVG text again, at every frame (on a phone, most of the frame). The marks and their labels stay. */
+svg.zoomg :not(.mk)>text{display:none}
+/* 1.49: zoomed in past ~90 px a km (svg.deep), a dashed line is drawn dash by dash along its whole length — the 50 km ring
+   around Kyiv is 25,000 dashes at 1 km across — and an animated one again at every frame: the page stalled ("page not
+   responding", 1.48). There they are drawn solid and still. */
+svg.deep .ring,svg.deep .zone,svg.deep .ob.occ,svg.deep #oblevt .obring,svg.deep .mk .reach,svg.deep .mk .ahead,svg.deep .trail,svg.deep .trail line,svg.deep .brg,svg.deep .homemk .ring,svg.deep .imp .ir,svg.deep .mk .glyph{stroke-dasharray:none!important;animation:none!important}
+svg.deep .ob.occ{fill:rgba(26,32,42,.6)}
+/* 1.49: Esri's names over the imagery or on its map: our own town and village names step aside (the same names twice) */
+svg.lbld #towns,svg.mapd #towns,svg.lbld #minorg,svg.lbld #villg,svg.mapd #minorg,svg.mapd #villg{display:none}
+#lbl{filter:brightness(.9)}body.m-day #lbl{filter:none}body.m-night #lbl,body.m-night #emap{filter:brightness(.55) saturate(.5)}
+/* 1.49: Layers → Background, one of three */
+.layermenu label[hidden]{display:none}
+.lbase{padding:10px 16px 12px;border-bottom:1px solid var(--line)}.lbase .lbh{display:block;font:600 11px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);margin-bottom:8px}
+.lbopts{display:flex;gap:6px}.layermenu .lbopts label{flex:1 1 0;min-height:44px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;justify-content:center;gap:6px;text-align:center}
+.layermenu .lbopts input{width:18px;height:18px}.lbopts label:has(input:checked){border-color:var(--orange);background:rgba(255,138,61,.12)}
 /* 1.48: over a picture the oblast and raion names are light on a dark halo, as the towns are — dark slate on dark imagery could not be read */
 svg.tiled .oblbl,svg.tiled .rnlbl{fill:#dfe6ef;paint-order:stroke;stroke:rgba(5,8,12,.85);stroke-width:calc(var(--k,1)*3.2px);stroke-linejoin:round}svg.tiled .rnlbl{fill:#c9d2de;opacity:.92}
 svg.tiled .road,svg.tiled .roadlbl,svg.tiled .river,svg.tiled .rvlbl,svg.tiled .bridge{display:none}svg.tiled .nb:not(.R):not(.Y):not(.oR):not(.oY),svg.tiled .ob.far:not(.R):not(.Y){fill:none}svg.tiled .nb.R{fill:rgba(229,72,77,.3)}svg.tiled .nb.Y{fill:rgba(245,185,64,.22)}svg.tiled .nb.oR{fill:rgba(229,72,77,.18)}svg.tiled .nb.oY{fill:rgba(245,185,64,.13)}
@@ -417,7 +437,7 @@ svg.tiled .rn{fill:rgba(20,25,32,.25)}svg.tiled .rn.city{fill:rgba(24,31,42,.15)
 .town.minor{fill:#8f9bb0;font-weight:500;font-size:calc(var(--k,1)*10px)}
 .towndot{fill:#c9d1de;stroke:#080b10;stroke-width:1px;vector-effect:non-scaling-stroke}
 .towndot.minor{fill:#6f7b90}
-svg.far .minor:not(.town):not(.towndot){display:none}svg.vilfar .town:not(.big):not(.rg):not(.uac),svg.vilfar .towndot:not(.rg):not(.uac){display:none}.towndot[data-hid]{display:none!important}
+svg.far .minor:not(.town):not(.towndot){display:none}svg.vilfar .town:not(.big):not(.rg):not(.uac):not(.tw2),svg.vilfar .towndot:not(.rg):not(.uac):not(.tw2){display:none}.towndot[data-hid]{display:none!important}
 svg:not(.close) .district{display:none}
 @media (max-width:999px){svg:not(.close) .minor:not(.town):not(.towndot){display:none}svg.far .town.minor,svg.far .towndot.minor{display:none}svg:not(.vclose) .district{display:none}}
 /* raid declutter: outcome markers keep only their glyph until you zoom in; closed tracks keep no label at all */
@@ -425,7 +445,7 @@ svg:not(.close) .mk.st .lbl2{display:none}svg.far .mk.st .lbl{display:none}
 .mk.ended .lbl,.mk.ended .lbl2{display:none}
 .mk.nolbl .lbl,.mk.nolbl .lbl2,.mk.nolbl2 .lbl2{display:none!important}
 @media (max-width:999px){svg:not(.close) .mk.st .lbl{display:none}}
-svg.veryfar.no-minor .town:not(.big):not(.rg):not(.uac){display:none}svg.veryfar .rnlbl{display:none}svg.veryfar.no-minor .towndot:not(.rg):not(.uac){display:none}
+svg.veryfar.no-minor .town:not(.big):not(.rg):not(.uac):not(.tw2){display:none}svg.veryfar .rnlbl{display:none}svg.veryfar.no-minor .towndot:not(.rg):not(.uac):not(.tw2){display:none}
 .road{fill:none;stroke:#3b4757;stroke-width:1.2px;vector-effect:non-scaling-stroke;stroke-linejoin:round;stroke-linecap:round}
 .road.ring2{stroke:#4a5870;stroke-width:1.6px}
 .roadlbl{fill:#5f6b80;font:600 calc(var(--k,1)*9px) system-ui;paint-order:stroke;stroke:#080b10;stroke-width:calc(var(--k,1)*2.5px);pointer-events:none}
@@ -1010,11 +1030,11 @@ body.lite #mycard,body.lite .panel{background:#000;border-color:#666}body.lite .
   <button class="mi" id="supbtn" type="button" data-t="m_support">Support the project</button>
   <a class="mi" id="tgbtn" data-t="m_tg" target="_blank" rel="noopener" hidden>Community on Telegram</a>
   <button class="mi" id="aboutbtn" type="button" data-t="m_about">About · disclaimer</button>
-  <div class="mi bt" id="buildtag">v1.48</div>
+  <div class="mi bt" id="buildtag">v1.49</div>
 </div>
 <div class="panel" id="lay" hidden role="dialog" aria-labelledby="layh"><div class="pgrab"></div>
   <div class="ph"><b id="layh" data-t="m_layers">Map layers</b><button type="button" class="px" data-close="lay" data-t-aria="btn_close" aria-label="Close">✕</button></div>
-  <div class="layermenu" id="layerbox"><label hidden><input type="checkbox" data-l="sat"> <span data-t="l_sat">Satellite imagery (Sentinel-2, 2021)</span></label><label><input type="checkbox" data-l="tiles"> <span data-t="l_tiles">Streets &amp; buildings (OSM, zoomed in)</span></label><label><input type="checkbox" data-l="heat"> <span data-t="l_heat">Heat map: where drones were reported (not live)</span></label><label><input type="checkbox" data-l="himp"> <span data-t="l_himp">History: explosions ✸</span></label><label><input type="checkbox" data-l="hdown"> <span data-t="l_hdown">History: confirmed shot down ✕</span></label><label><input type="checkbox" data-l="trails"> <span data-t="l_trails">Tracks</span></label><label><input type="checkbox" data-l="cones"> <span data-t="l_cones">Course rays</span></label><label><input type="checkbox" data-l="rivers"> <span data-t="l_rivers">Rivers</span></label><label><input type="checkbox" data-l="roads"> <span data-t="l_roads">Roads</span></label><label><input type="checkbox" data-l="infra"> <span data-t="l_infra">Airports / plants</span></label><label><input type="checkbox" data-l="rings"> <span data-t="l_rings">Rings</span></label><label><input type="checkbox" data-l="minor"> <span data-t="l_minor">Villages &amp; small towns (off by default — clutters the phone)</span></label></div>
+  <div class="layermenu" id="layerbox"><div class="lbase" id="lbase" role="radiogroup"><span class="lbh" data-t="l_base">Background</span><div class="lbopts"><label data-b="sat" hidden><input type="radio" name="lbase" value="sat"> <span data-t="l_sat">Satellite</span></label><label data-b="map"><input type="radio" name="lbase" value="map"> <span data-t="l_map">Map</span></label><label data-b="none"><input type="radio" name="lbase" value="none"> <span data-t="l_plain">Plain</span></label></div></div><label><input type="checkbox" data-l="heat"> <span data-t="l_heat">Heat map: where drones were reported (not live)</span></label><label><input type="checkbox" data-l="himp"> <span data-t="l_himp">History: explosions ✸</span></label><label><input type="checkbox" data-l="hdown"> <span data-t="l_hdown">History: confirmed shot down ✕</span></label><label><input type="checkbox" data-l="trails"> <span data-t="l_trails">Tracks</span></label><label><input type="checkbox" data-l="cones"> <span data-t="l_cones">Course rays</span></label><label><input type="checkbox" data-l="rivers"> <span data-t="l_rivers">Rivers</span></label><label><input type="checkbox" data-l="roads"> <span data-t="l_roads">Roads</span></label><label><input type="checkbox" data-l="infra"> <span data-t="l_infra">Airports / plants</span></label><label><input type="checkbox" data-l="rings"> <span data-t="l_rings">Rings</span></label><label><input type="checkbox" data-l="minor"> <span data-t="l_minor">Villages &amp; small towns (off by default — clutters the phone)</span></label></div>
   <button class="mi" id="rpmenu" type="button" data-t="rp_open">Replay — the last 7 days</button>
   <button class="mi tg" id="zcity2" type="button"><span class="lb" data-t="m_city">Kyiv city map (10 districts) — toggle</span></button>
   <button class="mi tg" id="est" type="button" style="display:none!important"><span class="lb" data-t="m_est">Estimate motion along heading (EST)</span></button>
@@ -1028,6 +1048,8 @@ body.lite #mycard,body.lite .panel{background:#000;border-color:#666}body.lite .
     <g id="sat" clip-path="url(#uaclip)"></g>
     <g id="esri" clip-path="url(#uaclip)"></g>
     <g id="tiles" clip-path="url(#uaclip)"></g>
+    <g id="emap" clip-path="url(#uaclip)"></g>
+    <g id="lbl" clip-path="url(#uaclip)"></g>
     <g id="oblastsg"></g>
     <g id="neighbors"></g>
     <g id="obllbl"></g>
@@ -1366,7 +1388,8 @@ async function loadMap(){
     +`<polyline class="road ring2" points="${rp(RING)}"/>`
     +POIS.map(([ic,n,lo,la])=>{const [x,y]=proj(lo,la);return `<g class="poi ${ic}" transform="translate(${x.toFixed(2)} ${y.toFixed(2)})"><g class="pg">${POI_G[ic]}</g></g><text class="poilbl minor" x="${(x+2).toFixed(1)}" y="${(y+1.2).toFixed(1)}">${poiName(n)}</text>`;}).join('');
   $('towns').innerHTML=TOWNS.map(([n,lo,la,big])=>{const [x,y]=proj(lo,la);const rg=big===2,ua=big===3;return `<circle class="towndot${rg?' rg':''}${ua?' uac':''}" data-n="${n}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${big===1?1.6:.9}" style="r:calc(var(--k,1)*${big===1?4:2.5}px)"/><text class="town ${big===1?'big':''}${rg?' rg':''}${ua?' uac':''}" data-n="${n}" x="${(x+2).toFixed(1)}" y="${(y+1.5).toFixed(1)}">${townName(n)}</text>`;}).join('')
-    +'<g id="minorg"></g><g id="villg"></g>';
+    +'<g id="twng"></g><g id="minorg"></g><g id="villg"></g>';
+  loadTownsUA();
   if(LAYERS.minor) loadVillages();
   const ua=await uaP; if(ua) drawUA(ua);
 }
@@ -1390,6 +1413,13 @@ const OBL_CAP={'4':[28.47,49.23],'8':[25.33,50.75],'9':[35.05,48.46],'10':[28.66
 function drawRings(){ const g=$('ringc'); if(!g||!MAP) return; const c=OBL_CAP[(typeof MYOBL!=='undefined'&&MYOBL)?MYOBL.uid:'14'];
   const [x,y]=c?proj(c[0],c[1]):[0,0];
   g.innerHTML=[15,30,50].map(r=>`<circle class="ring" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r}"/><text class="ringlbl" x="${(x+r*0.72).toFixed(1)}" y="${(y-r*0.72).toFixed(1)}">${r} km</text>`).join(''); }
+// 1.49: the towns of every oblast (static/towns-ua.json, scripts/build_towns.py) — the raion centres and every town of
+// 10,000 people or more that TOWNS does not name. Zoomed out over Kharkiv or Poltava oblast the map showed four names
+// in a region the size of Belgium. Tier 2 (centres, 20,000+) from the region view in, tier 1 closer; where two names
+// meet, the collision pass keeps the bigger place (layoutTownLabels).
+async function loadTownsUA(){ try{ const d=await(await fetch('/static/towns-ua.json')).json(); const g=$('twng'); if(!g) return;
+  g.innerHTML=d.towns.map(([n,lo,la,,tr])=>{const [x,y]=proj(lo,la); return `<circle class="towndot tw tw${tr}" cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r=".8" style="r:calc(var(--k,1)*2.5px)"/><text class="town tw tw${tr}" x="${(x+1.6).toFixed(2)}" y="${(y+1.3).toFixed(2)}">${esc(pn(n))}</text>`;}).join('');
+  layoutTownLabels(); }catch(e){} }
 const minorLbl=p=>{const [x,y]=proj(p.lon,p.lat);const d=p.oblast_uid==='31'?' district':'';return `<circle class="towndot minor${d}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r=".7" style="r:calc(var(--k,1)*2px)"/><text class="town minor${d}" x="${(x+1.5).toFixed(1)}" y="${(y+1.2).toFixed(1)}">${esc(pn(p.name))}</text>`;};
 // 1.45: "villages and small towns" outside Kyiv oblast. The core gazetteer above has a hundred-odd places for Kyiv
 // oblast and a couple of dozen for any other, so the layer did nothing anywhere else. The regional gazetteer's
@@ -1416,25 +1446,50 @@ const TR={а:'a',б:'b',в:'v',г:'h',ґ:'g',д:'d',е:'e',є:'ie',ж:'zh',з:'z
 function translit(s){let out='';for(let i=0;i<s.length;i++){const c=s[i],l=c.toLowerCase();let t;if(l==='є'&&i===0)t='ye';else if(l==='ї'&&i===0)t='yi';else if(l==='й'&&i===0)t='y';else if(l==='ю'&&i===0)t='yu';else if(l==='я'&&i===0)t='ya';else t=TR[l]??c;if(c!==l&&t)t=t[0].toUpperCase()+t.slice(1);out+=t;}return out;}
 // pan/zoom
 const svg=$('map'); const VB={x:-75,y:-100,w:150,h:200};
-const ASPECT=()=>{const r=svg.getBoundingClientRect();return r.width?r.height/r.width:1.33;};
+// 1.49: zooming is a picture zoom while the fingers or the wheel move, and a redraw once they rest. Every change of the
+// viewBox lays out every label of the map again and restyles everything sized by --k: on a phone, 30–50 ms a frame
+// (docs/TECHNICAL.md §5.6). While a pinch or the wheel goes on, the map drawn last is only moved and scaled on the
+// screen (a CSS transform, done by the graphics chip — the names of places are hidden for that moment: any change of
+// scale, even a transform, makes the browser lay out every SVG text again); 150 ms after the last movement the new
+// view is drawn once (applyVB). VBC: the view last drawn, while it is being scaled.
+// SR(): the map's box on the screen without that transform — the one the view's arithmetic is about.
+let VBC=null, VBT=null, SVGR=null;
+const SR=()=>(VBC&&SVGR)?SVGR:(SVGR=svg.getBoundingClientRect());
+const ASPECT=()=>{const r=SR();return r.width?r.height/r.width:1.33;};
 let KPX=1;
-function applyVB(){svg.setAttribute('viewBox',`${VB.x} ${VB.y} ${VB.w} ${VB.h}`);if(typeof drawHome==='function'&&HOME){setTimeout(drawHome,0);if(typeof drawZones==='function')setTimeout(drawZones,0);}const r=svg.getBoundingClientRect();KPX=r.width?VB.w/r.width:1;if(typeof placeBrgLabels==='function')placeBrgLabels();svg.style.setProperty('--k',KPX);if(window.RP&&RP.on&&RP.frame)RP.frame();svg.classList.toggle('far',VB.w>90);svg.classList.toggle('close',VB.w<40);svg.classList.toggle('vclose',VB.w<22);svg.classList.toggle('veryfar',VB.w>230);svg.classList.toggle('vilfar',VB.w>300);svg.classList.toggle('ua',VB.w>900);if(typeof applySelOblast==='function'&&(VB.w<=300)!==applyVB._zin){applyVB._zin=VB.w<=300;applySelOblast();}{const kz=document.querySelector('.kozak'); if(kz){kz.querySelector('.kz').setAttribute('transform',`scale(${(2.2*KPX).toFixed(3)})`); const ts=kz.querySelectorAll('text'); ts[0].setAttribute('y',(14*KPX).toFixed(2)); ts[1].setAttribute('y',(25*KPX).toFixed(2));}}clearTimeout(applyVB._t);applyVB._t=setTimeout(()=>{applyVB._t=null;if(typeof LAYERS!=='undefined'&&LAYERS.heat&&typeof drawHeat==='function')drawHeat();if(typeof IMP_H!=='undefined'&&IMP_H)drawImpacts();if(typeof updateTiles==='function'){updateTiles();layoutTownLabels();}},120);}
+// 1.49: lengths sized by the zoom (KPX km a pixel) are written with the digits the zoom needs. With two decimals, at
+// 1 km across, a drone's scale(0.0007) was written scale(0.00) and the mark vanished.
+let KDIG=2; const kx=v=>v.toFixed(KDIG);
+function fastVB(){ const r=SR(); if(!r.width||!svg.viewBox||!svg.viewBox.baseVal){ applyVB(); return; }
+  if(!VBC){ const b=svg.viewBox.baseVal; VBC={x:b.x,y:b.y,w:b.width,h:b.height}; svg.classList.add('zoomg'); }
+  // screen = a·km + b, for the view drawn (0) and the view wanted (1); the transform takes one to the other
+  const m=v=>{ const a=Math.max(r.width/v.w,r.height/v.h); return [a,(r.width-v.w*a)/2-v.x*a,(r.height-v.h*a)/2-v.y*a]; };
+  const [a0,bx0,by0]=m(VBC),[a1,bx1,by1]=m(VB), k=a1/a0;
+  svg.style.transform=`translate(${(bx1-k*bx0).toFixed(2)}px,${(by1-k*by0).toFixed(2)}px) scale(${k.toPrecision(6)})`;
+  clearTimeout(VBT); VBT=setTimeout(()=>applyVB(),150); }
+function applyVB(fast){ if(fast){ fastVB(); return; }
+  if(VBC){ VBC=null; clearTimeout(VBT); VBT=null; svg.style.transform=''; svg.classList.remove('zoomg'); }
+  svg.setAttribute('viewBox',`${VB.x} ${VB.y} ${VB.w} ${VB.h}`);if(typeof drawHome==='function'&&HOME){setTimeout(drawHome,0);if(typeof drawZones==='function')setTimeout(drawZones,0);}const r=SR();KPX=r.width?VB.w/r.width:1;KDIG=Math.max(2,Math.ceil(-Math.log10(KPX||1))+3);if(typeof placeBrgLabels==='function')placeBrgLabels();svg.style.setProperty('--k',KPX);if(window.RP&&RP.on&&RP.frame)RP.frame();svg.classList.toggle('far',VB.w>90);svg.classList.toggle('close',VB.w<40);svg.classList.toggle('vclose',VB.w<22);svg.classList.toggle('veryfar',VB.w>230);svg.classList.toggle('vilfar',VB.w>300);svg.classList.toggle('ua',VB.w>900);svg.classList.toggle('wide',VB.w>520);svg.classList.toggle('deep',KPX<0.011);if(typeof applySelOblast==='function'&&(VB.w<=300)!==applyVB._zin){applyVB._zin=VB.w<=300;applySelOblast();}{const kz=document.querySelector('.kozak'); if(kz){kz.querySelector('.kz').setAttribute('transform',`scale(${kx(2.2*KPX)})`); const ts=kz.querySelectorAll('text'); ts[0].setAttribute('y',kx(14*KPX)); ts[1].setAttribute('y',kx(25*KPX));}}clearTimeout(applyVB._t);applyVB._t=setTimeout(()=>{applyVB._t=null;if(typeof LAYERS!=='undefined'&&LAYERS.heat&&typeof drawHeat==='function')drawHeat();if(typeof IMP_H!=='undefined'&&IMP_H)drawImpacts();if(typeof updateTiles==='function'){updateTiles();layoutTownLabels();}},120);}
 function setView(cx,cy,w){VB.w=Math.max(1,Math.min(1500,w));VB.h=VB.w*ASPECT();VB.x=cx-VB.w/2;VB.y=cy-VB.h/2;applyVB();}
-function zoomAt(f,cx,cy){const nw=Math.max(1,Math.min(1500,VB.w/f)),nh=nw*ASPECT();VB.x=cx-(cx-VB.x)*(nw/VB.w);VB.y=cy-(cy-VB.y)*(nh/VB.h);VB.w=nw;VB.h=nh;applyVB();}
-function toSvg(px,py){const r=svg.getBoundingClientRect();return [VB.x+(px-r.left)/r.width*VB.w, VB.y+(py-r.top)/r.height*VB.h];}
+function zoomAt(f,cx,cy,fast){const nw=Math.max(1,Math.min(1500,VB.w/f)),nh=nw*ASPECT();VB.x=cx-(cx-VB.x)*(nw/VB.w);VB.y=cy-(cy-VB.y)*(nh/VB.h);VB.w=nw;VB.h=nh;applyVB(fast);}
+function toSvg(px,py){const r=SR();return [VB.x+(px-r.left)/r.width*VB.w, VB.y+(py-r.top)/r.height*VB.h];}
 $('zin').onclick=()=>zoomAt(1.5,VB.x+VB.w/2,VB.y+VB.h/2); $('zout').onclick=()=>zoomAt(1/1.5,VB.x+VB.w/2,VB.y+VB.h/2);
 // 1.47.1: the satellite imagery and the OSM streets are one choice or the other — under the satellite, zooming in fell
 // back to the streets every time. The satellite is the default on every device (a phone included: its tiles are
 // ~7 KB); while the server has no imagery, choosing it draws the streets instead (updateOsm).
+// 1.49: Layers → Background: Satellite (LAYERS.sat), Map (LAYERS.tiles) or Plain (neither) — three radio buttons.
 const LAYERS={sat:true,tiles:false,himp:true,hdown:true,trails:false,cones:true,rivers:false,roads:true,infra:true,rings:true,minor:false,heat:false};
 try{Object.assign(LAYERS,JSON.parse(localStorage.getItem('layers')||'{}')); if(!localStorage.getItem('layers_v2')){LAYERS.minor=false;localStorage.setItem('layers_v2','1');localStorage.setItem('layers',JSON.stringify(LAYERS));}
   if(!localStorage.getItem('layers_v3')){LAYERS.sat=true;LAYERS.tiles=false;localStorage.setItem('layers_v3','1');localStorage.setItem('layers',JSON.stringify(LAYERS));}}catch(e){}
 LAYERS.heat=false;   // 1.33: the heat map is never remembered — every opening starts on the live picture
-function applyLayers(){for(const [l,on] of Object.entries(LAYERS)){svg.classList.toggle('no-'+l,!on);const cb=document.querySelector(`#layerbox input[data-l="${l}"]`);if(cb)cb.checked=on;}if(typeof updateTiles==='function')updateTiles();if(typeof drawHeat==='function')drawHeat();}
-document.querySelectorAll('#layerbox input').forEach(cb=>cb.onchange=()=>{LAYERS[cb.dataset.l]=cb.checked;if(cb.dataset.l==='minor'&&cb.checked)loadVillages();
-  if(cb.checked&&cb.dataset.l==='sat')LAYERS.tiles=false; if(cb.checked&&cb.dataset.l==='tiles')LAYERS.sat=false;   // one picture under the map
-  try{localStorage.setItem('layers',JSON.stringify(Object.assign({},LAYERS,{heat:false})))}catch(e){};   // 1.48: 1.47.1 had left this line inside the comment above
+function applyLayers(){for(const [l,on] of Object.entries(LAYERS)){svg.classList.toggle('no-'+l,!on);const cb=document.querySelector(`#layerbox input[data-l="${l}"]`);if(cb)cb.checked=on;}
+  {const b=LAYERS.sat?'sat':LAYERS.tiles?'map':'none'; const rb=document.querySelector(`#lbase input[value="${b}"]`); if(rb) rb.checked=true;}if(typeof updateTiles==='function')updateTiles();if(typeof drawHeat==='function')drawHeat();}
+const saveLayers=()=>{try{localStorage.setItem('layers',JSON.stringify(Object.assign({},LAYERS,{heat:false})))}catch(e){}};
+document.querySelectorAll('#layerbox input[data-l]').forEach(cb=>cb.onchange=()=>{LAYERS[cb.dataset.l]=cb.checked;if(cb.dataset.l==='minor'&&cb.checked)loadVillages();
+  saveLayers();   // 1.48: 1.47.1 had left this line inside a comment
   applyLayers();});
+document.querySelectorAll('#lbase input').forEach(rb=>rb.onchange=()=>{ if(!rb.checked) return;
+  LAYERS.sat=rb.value==='sat'; LAYERS.tiles=rb.value==='map'; saveLayers(); applyLayers(); });
 applyLayers();
 $('zkyiv').onclick=()=>{if(CITY)toggleCity(false); if(HOME){ const [hx,hy]=proj(HOME.lon,HOME.lat); setView(hx,hy,60); return; } const o=(MAP.oblasts||[]).find(x=>x.uid===MYOBL.uid); if(o&&MYOBL.uid!=='14') setView(o.cx,o.cy,260); else setView(0,0,110);};
 // Kyiv city map: a separate, simplified map — the 10 districts (OSM boundaries), the city outline, targets, nothing else
@@ -1480,7 +1535,7 @@ async function drawHeatNow(){ const g=$('heatg'), leg=$('heatleg'); if(!g) retur
   const v=await loadHeat(); if(!LAYERS.heat) return;
   const day=document.body.classList.contains('m-day'), stops=day?HEAT_DAY:HEAT_DARK;
   if(!v){ g.innerHTML=''; $('heatramp').innerHTML=''; $('heattop').innerHTML=`<div class="hle">${esc(t('hm_err'))}</div>`; return; }
-  const r=svg.getBoundingClientRect(), dpr=Math.min(2,window.devicePixelRatio||1);
+  const r=SR(), dpr=Math.min(2,window.devicePixelRatio||1);
   const W=Math.max(2,Math.min(1800,Math.round(r.width*dpr))), H=Math.max(2,Math.min(2600,Math.round(r.height*dpr)));
   const sx=W/VB.w, sy=H/VB.h, rad=Math.round(30*dpr), q=4;
   const pts=[]; for(const p of v.points||[]){ const [x,y]=proj(p[0],p[1]); const px=(x-VB.x)*sx, py=(y-VB.y)*sy;
@@ -1523,7 +1578,7 @@ const brgKm=k=>String(k).replace('.',LANG==='en'?'.':',');
 const brgLine=(id,e)=>{ const n=t('br_'+id); return e.lvl==='hit'?t('br_hit',n):e.lvl==='at'?t('br_at',n):t('br_near',n,brgKm(e.km)); };
 function brgLabel(){ const b=$('brgbtn'); if(!b) return; b.classList.toggle('on',BRG_ON); b.setAttribute('aria-pressed',BRG_ON?'true':'false'); b.title=t(BRG_ON?'m_brg_on':'m_brg'); }
 // the name sits a few screen pixels past the bridge's east end, at every zoom (it used to be 0.8 km off: a street away)
-function placeBrgLabels(){ for(const el of document.querySelectorAll('#bridgeg .brgl')){ el.setAttribute('x',(+el.dataset.x+8*KPX).toFixed(3)); el.setAttribute('y',(+el.dataset.y+4*KPX).toFixed(3)); } }
+function placeBrgLabels(){ for(const el of document.querySelectorAll('#bridgeg .brgl')){ el.setAttribute('x',kx(+el.dataset.x+8*KPX)); el.setAttribute('y',kx(+el.dataset.y+4*KPX)); } }
 function drawBridges(){ const B=(S&&S.bridges)||{}, g=$('bridgeg'); if(!g||!MAP) return;
   g.innerHTML=BRG.map(([id,...pts])=>{ const e=B[id]||{}, xy=pts.map(p=>proj(p[0],p[1])), east=xy.reduce((a,p)=>p[0]>a[0]?p:a);
     return `<polyline class="brg ${e.lvl||''}" points="${xy.map(p=>p[0].toFixed(2)+','+p[1].toFixed(2)).join(' ')}"/>`
@@ -1584,13 +1639,13 @@ wrap.addEventListener('pointermove',e=>{ if(!(e.pointerId in touches)) return;
   // A stylus (and a mouse) sends pointermove while merely HOVERING, with no button and no pressure. Panning on
   // those made the map drift on its own under an S Pen. Nothing moves unless something is actually pressed.
   if(e.buttons===0&&e.pointerType!=='touch'){ delete touches[e.pointerId]; lastDist=null; lastMid=null; return; }
-  const pts=Object.values(touches); const prev=touches[e.pointerId]; touches[e.pointerId]=[e.clientX,e.clientY]; const r=svg.getBoundingClientRect(); const k=VB.w/r.width;
+  const pts=Object.values(touches); const prev=touches[e.pointerId]; touches[e.pointerId]=[e.clientX,e.clientY]; const r=SR(); const k=VB.w/r.width;
   if(pts.length===1){
     if(!moved){ if(downXY&&Math.hypot(e.clientX-downXY[0],e.clientY-downXY[1])<=HOLD_SLOP_PX) return;   // still a press
       moved=true; clearTimeout(holdPin); holdPin=null; pinRing(false);
       if(downXY){ VB.x-=(e.clientX-downXY[0])*k; VB.y-=(e.clientY-downXY[1])*k; applyVB(); return; } }   // the drag so far, at once
     const dx=(e.clientX-prev[0])*k, dy=(e.clientY-prev[1])*k; VB.x-=dx;VB.y-=dy;applyVB(); }
-  else{ const [a,b]=Object.values(touches); const d=Math.hypot(a[0]-b[0],a[1]-b[1]); const mid=[(a[0]+b[0])/2,(a[1]+b[1])/2]; if(lastDist){const [cx,cy]=toSvg(mid[0],mid[1]); zoomAt(d/lastDist,cx,cy); if(lastMid){VB.x-=(mid[0]-lastMid[0])*k;VB.y-=(mid[1]-lastMid[1])*k;applyVB();}} lastDist=d;lastMid=mid;moved=true;clearTimeout(holdPin);holdPin=null;pinRing(false); }});
+  else{ const [a,b]=Object.values(touches); const d=Math.hypot(a[0]-b[0],a[1]-b[1]); const mid=[(a[0]+b[0])/2,(a[1]+b[1])/2]; if(lastDist){const [cx,cy]=toSvg(mid[0],mid[1]); zoomAt(d/lastDist,cx,cy,true); if(lastMid){VB.x-=(mid[0]-lastMid[0])*k;VB.y-=(mid[1]-lastMid[1])*k;applyVB(true);}} lastDist=d;lastMid=mid;moved=true;clearTimeout(holdPin);holdPin=null;pinRing(false); }});
 let holdPin=null;
 const endT=e=>{clearTimeout(holdPin);holdPin=null;pinRing(false);delete touches[e.pointerId]; if(Object.keys(touches).length<2){lastDist=null;lastMid=null;}};
 // tap on a marker: pointer capture sends pointerup to the wrapper, so hit-test here (≤10 px screen movement counts as a tap)
@@ -1603,7 +1658,7 @@ wrap.addEventListener('pointerup',e=>{const mk=downMk,xy=downXY,ob=downOb;downMk
     else openSheet(mk.dataset.id);}
   else if(ob&&tap&&VB.w>150) selectOblast(ob);});
 wrap.addEventListener('pointercancel',endT); wrap.addEventListener('pointerleave',endT); wrap.addEventListener('lostpointercapture',endT);
-wrap.addEventListener('wheel',e=>{e.preventDefault();const [cx,cy]=toSvg(e.clientX,e.clientY);zoomAt(e.deltaY<0?1.2:1/1.2,cx,cy);},{passive:false});
+wrap.addEventListener('wheel',e=>{e.preventDefault();const [cx,cy]=toSvg(e.clientX,e.clientY);zoomAt(e.deltaY<0?1.2:1/1.2,cx,cy,true);},{passive:false});
 window.addEventListener('resize',()=>{syncTop();setView(VB.x+VB.w/2,VB.y+VB.h/2,VB.w);});
 
 // ---- marker kinematics ----
@@ -1659,7 +1714,7 @@ function drawZones(){ const g=$('zones'); if(!g) return;
   const [x,y]=proj(HOME.lon,HOME.lat);
   g.innerHTML=ZONES.map(([r,k])=>
     `<circle class="zone z-${k}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r}" fill="none"/>`
-    +`<text class="zlbl" x="${x.toFixed(1)}" y="${(y-r-3*KPX).toFixed(2)}" text-anchor="middle">${r} km</text>`).join('');
+    +`<text class="zlbl" x="${x.toFixed(1)}" y="${kx(y-r-3*KPX)}" text-anchor="middle">${r} km</text>`).join('');
 }
 // The conditional ETA. Every word of that is load-bearing:
 //   - conditional, because it holds only if the target keeps the course the post reported;
@@ -1699,7 +1754,7 @@ function etaBand(m,dist){
   return {lo:Math.max(0,lo),hi:hi,off:off};
 }
 function drawHome(){ if(!MAP) return; if(!HOME){$('homeg').innerHTML='';return;} const [x,y]=proj(HOME.lon,HOME.lat);
-  $('homeg').innerHTML=`<g class="homemk"><circle class="ring" cx="${x}" cy="${y}" r="5" fill="none" style="stroke-width:1px;vector-effect:non-scaling-stroke"/><circle class="ring" cx="${x}" cy="${y}" r="10" fill="none" style="stroke-width:1px;vector-effect:non-scaling-stroke"/><g class="ico" transform="translate(${x} ${y})"><g class="pg">${POI_G.home}</g></g><text class="hl" x="${x}" y="${(y-8*KPX).toFixed(1)}" text-anchor="middle">${esc(homeName())}</text></g>`; }
+  $('homeg').innerHTML=`<g class="homemk"><circle class="ring" cx="${x}" cy="${y}" r="5" fill="none" style="stroke-width:1px;vector-effect:non-scaling-stroke"/><circle class="ring" cx="${x}" cy="${y}" r="10" fill="none" style="stroke-width:1px;vector-effect:non-scaling-stroke"/><g class="ico" transform="translate(${x} ${y})"><g class="pg">${POI_G.home}</g></g><text class="hl" x="${x}" y="${kx(y-8*KPX)}" text-anchor="middle">${esc(homeName())}</text></g>`; }
 function paintSlots(){ const el=$('slotrow'); if(!el) return;
   const html=SLOT_IDS.map(id=>{const p=SLOTS[id]; const on=id===ACTIVE&&p;
     // The role, not the place. Shorter, so the four fit one line on a phone — and the place a child is at does
@@ -1820,7 +1875,8 @@ const tgtName=m=>m.target==='\u043e\u0431\u043b\u0430\u0441\u0442\u044c'?(m.targ
 const relOf=m=>{const ps=(m.evidence||{}).position||{}; return ps.rel!=null&&!!ps.ref;};
 const oblWhere=m=>{const ps=(m.evidence||{}).position||{}, q=ps.quad, o=m.oblast_uid&&typeof oblFull==='function'?oblFull(m.oblast_uid):'';
   if(ps.rel!=null&&ps.ref) return t('rq_of',t('rq').split(',')[Math.round(ps.rel/45)%8],pn(ps.ref))+(o?' · '+o:'');
-  return q?(t('oq_'+q)||t('oblcentre'))+(o?' · '+o:''):o?o+' · '+t('obl_somewhere'):t('oblcentre');};
+  if(ps.bank) return t('bank_'+ps.bank)+(o?' · '+o:'');          // 1.49: "правий берег Києва" — the city, that side
+  return q?(t('oq_'+q)||t('oblcentre'))+(o?' · '+o:''):o?o+' · '+t(m.oblast_uid==='31'?'city_somewhere':'obl_somewhere'):t('oblcentre');};
 // The weapon silhouettes — G, GLYPH_BY_TYPE and why each looks the way it does — live in /static/glyphs.js,
 // shared with the Light page so the two can never draw the same weapon two different ways.
 
@@ -1859,7 +1915,7 @@ function paintOblEvents(){
         +(c?`<text class="obtxt" dominant-baseline="central" style="transform:translateX(${px(13)})">${c}</text>`:'')]; });
     const W=Math.max(10,x-7);
     const parts=items.map(([s0,h])=>`<g style="transform:translate(${px(s0-W/2)},0px)">${h}</g>`);
-    const full=kinds.map(k=>`${oblWord(ex[k])}${by[k]>1?' ×'+by[k]:''}`).join(', ')+' · '+t('obl_somewhere');
+    const full=kinds.map(k=>`${oblWord(ex[k])}${by[k]>1?' ×'+by[k]:''}`).join(', ')+' · '+t(uid==='31'?'city_somewhere':'obl_somewhere');
     const onlyLive=evs.every(m=>!m.status);
     // near the top of the region: its centre is a busy place, and a label sitting exactly on it starts to
     // look like a pin again, which is the whole thing being fixed
@@ -1877,8 +1933,8 @@ const oblWord=m=>m.status?(STATUS_W[m.status]||statusName(m.status)):kindOf(m);
 function oblEventSheet(uid){
   const evs=(OBLEVT[uid]||[]).slice().sort((a,b)=>a.ts<b.ts?1:-1); if(!evs.length) return;
   $('sheetbody').innerHTML=`<div class="type">${evs[0].status?oblIco(evs[0]):silSvg(evs[0]).replace('<svg ','<svg style="width:22px;height:22px;vertical-align:-6px" ')} ${esc(evs[0].status?statusName(evs[0].status):kindOf(evs[0]))} — ${esc(oblFull(uid))}</div>`
-    +`<div class="kv1 muted" style="margin-bottom:8px">${esc(t('obl_noplace'))}</div>`
-    +evs.map(m=>`<div class="card plain"><div class="title">${esc(m.status?statusName(m.status):kindOf(m))}${m.count>1?' ×'+m.count:''} · ${fmtT(m.ts)}${!m.status&&(m.evidence||{}).position&&(m.evidence.position.quad||m.evidence.position.rel!=null)?' · '+esc(oblWhere(m)):''}</div>`
+    +`<div class="kv1 muted" style="margin-bottom:8px">${esc(t(uid==='31'?'city_noplace':'obl_noplace'))}</div>`
+    +evs.map(m=>`<div class="card plain"><div class="title">${esc(m.status?statusName(m.status):kindOf(m))}${m.count>1?' ×'+m.count:''} · ${fmtT(m.ts)}${!m.status&&(m.evidence||{}).position&&(m.evidence.position.quad||m.evidence.position.rel!=null||m.evidence.position.bank)?' · '+esc(oblWhere(m)):''}</div>`
       +`<div class="q" style="margin-top:4px">${esc(ptxt(m).slice(0,220))}</div>`
       +`<div class="kv1 muted">${esc(CH[m.channel]||m.channel)}</div></div>`).join('');
   $('tip').hidden=true; $('sheet').classList.add('show');
@@ -1914,7 +1970,7 @@ function buildMarker(m){
   const gk=glyphKey(m), glyph=G[gk];
   const isNew=!seenMk.has(m.id); seenMk.add(m.id);
   const isMsl=/missile/.test(m.type)&&!m.status; if(isMsl) g.classList.add('msl');
-  g.innerHTML=`<line class="ahead" x1="0" y1="0" x2="0" y2="0"/><polygon class="cone" points="0,0 0,0 0,0"/><circle class="halo" cx="0" cy="0" r="6"/>${isMsl?'<circle class="halo2" cx="0" cy="0" r="6"/><circle class="reach" cx="0" cy="0" r="0" style="display:none"/>':''}${isNew?`<circle class="spawn" cx="0" cy="0" r="${(10*KPX).toFixed(1)}"/>`:''}
+  g.innerHTML=`<line class="ahead" x1="0" y1="0" x2="0" y2="0"/><polygon class="cone" points="0,0 0,0 0,0"/><circle class="halo" cx="0" cy="0" r="6"/>${isMsl?'<circle class="halo2" cx="0" cy="0" r="6"/><circle class="reach" cx="0" cy="0" r="0" style="display:none"/>':''}${isNew?`<circle class="spawn" cx="0" cy="0" r="${kx(10*KPX)}"/>`:''}
     <g class="body"><g class="rot">${glyph}</g></g>
     <polygon class="hdg" points="0,-5.2 5.4,3.6 0,1.3 -5.4,3.6" style="display:none"/><text class="qm" x="0" y="0">?</text><text class="dn" x="0" y="0">↓</text><g class="cnt" style="display:none"><circle r="6.5"/><text y="3.2">2</text></g><text class="lbl" x="5" y="-4"></text><text class="lbl2" x="5" y="0"></text><circle class="hit" cx="0" cy="0" r="8"/>`;
   g.addEventListener('pointerenter',e=>{if(e.pointerType==='touch')return;showTip(m,e);}); g.addEventListener('pointermove',e=>{if(e.pointerType==='touch')return;moveTip(e);}); g.addEventListener('pointerleave',()=>{$('tip').hidden=true;});
@@ -2046,9 +2102,9 @@ function tick(){
     }
     // Missiles used to be drawn half as big again as a drone and sat on top of whole districts. A mark says where,
     // not how dangerous — that is what the colour, the label and the alert are for.
-    const gs=(m.status?1.05:m.type==='drones'?1.05:/missile/.test(m.type)?0.95:1.0)*KPX; const nTot=m.csum||m.count||1; const cb=b.g.querySelector('.cnt'); if(nTot>1&&!m.status){cb.style.display='';cb.setAttribute('transform',`translate(${(8*KPX).toFixed(2)} ${(-8*KPX).toFixed(2)}) scale(${KPX.toFixed(3)})`);cb.querySelector('text').textContent=nTot;}else cb.style.display='none';
-    b.g.dataset.tx=x.toFixed(2); b.g.dataset.ty=y.toFixed(2);
-    b.g.setAttribute('transform',`translate(${x.toFixed(2)} ${y.toFixed(2)})`);
+    const gs=(m.status?1.05:m.type==='drones'?1.05:/missile/.test(m.type)?0.95:1.0)*KPX; const nTot=m.csum||m.count||1; const cb=b.g.querySelector('.cnt'); if(nTot>1&&!m.status){cb.style.display='';cb.setAttribute('transform',`translate(${kx(8*KPX)} ${kx(-8*KPX)}) scale(${kx(KPX)})`);cb.querySelector('text').textContent=nTot;}else cb.style.display='none';
+    b.g.dataset.tx=x.toFixed(3); b.g.dataset.ty=y.toFixed(3);
+    b.g.setAttribute('transform',`translate(${x.toFixed(3)} ${y.toFixed(3)})`);
     // a later post can add the course that the first one lacked: swap the blind mark for a pointed one
     {const gk=glyphKey(m); if(b.gk!==gk){b.gk=gk; b.g.querySelector('.rot').innerHTML=G[gk];}}
     // The figure-of-eight loiter is gone. It was there to say "the exact point is not known", but an
@@ -2056,17 +2112,17 @@ function tick(){
     // The uncertainty it was standing in for is said properly now: by the ring, by the confidence, and by
     // the mark simply sitting where the post put it.
     b.g.querySelector('.rot').setAttribute('transform',
-      `rotate(${orientOf(m)}) scale(${(gs*(m.stale&&!m.status&&!m.endedBy?0.8:1)).toFixed(2)})`);
+      `rotate(${orientOf(m)}) scale(${kx(gs*(m.stale&&!m.status&&!m.endedBy?0.8:1))})`);
     const appr=!!m.approach&&!m.status&&!m.endedBy; b.g.classList.toggle('appr',appr);
-    const hdg=b.g.querySelector('.hdg'); if(!m.status&&!m.endedBy&&m.heading!=null&&!appr){hdg.style.display='';hdg.setAttribute('transform',`rotate(${m.heading}) translate(0 ${(-19*KPX).toFixed(2)}) scale(${(1.55*KPX).toFixed(2)})`);}else hdg.style.display='none';
+    const hdg=b.g.querySelector('.hdg'); if(!m.status&&!m.endedBy&&m.heading!=null&&!appr){hdg.style.display='';hdg.setAttribute('transform',`rotate(${m.heading}) translate(0 ${kx(-19*KPX)}) scale(${kx(1.55*KPX)})`);}else hdg.style.display='none';
     paintReach(b,m);          // how far a fast target could have travelled since it was last reported
     const dsc=!!(m.alt&&m.alt.state==='descending')&&!m.status&&!m.endedBy&&!m.stale;
     const altM=(m.alt&&m.alt.m&&!m.status&&!m.endedBy)?m.alt.m:null;
     b.g.classList.toggle('desc',dsc); b.g.classList.toggle('hasalt',!!altM);
-    {const dn=b.g.querySelector('.dn'); if(dn){ dn.setAttribute('y',(16*KPX).toFixed(2));
+    {const dn=b.g.querySelector('.dn'); if(dn){ dn.setAttribute('y',kx(16*KPX));
       dn.textContent=altM?((dsc?'↓':'')+altM+' '+t('m_unit')):(dsc?'↓':''); }}
     b.g.classList.toggle('lostc',contactLost(m));
-    b.g.classList.toggle('inbound',info.inbound&&!m.stale); b.g.classList.toggle('old',age>ttl*0.65); b.g.classList.toggle('ended',!!m.endedBy); b.g.classList.toggle('stale',!!m.stale&&!m.endedBy&&!m.status); b.g.classList.toggle('s2',!!m.stale&&m.stale>=(m.slow?15:8)); b.g.classList.toggle('s3',!!m.stale&&m.stale>=(m.slow?20:11)); b.g.querySelector('.qm').setAttribute('y',(-12*KPX).toFixed(2));
+    b.g.classList.toggle('inbound',info.inbound&&!m.stale); b.g.classList.toggle('old',age>ttl*0.65); b.g.classList.toggle('ended',!!m.endedBy); b.g.classList.toggle('stale',!!m.stale&&!m.endedBy&&!m.status); b.g.classList.toggle('s2',!!m.stale&&m.stale>=(m.slow?15:8)); b.g.classList.toggle('s3',!!m.stale&&m.stale>=(m.slow?20:11)); b.g.querySelector('.qm').setAttribute('y',kx(-12*KPX));
     const v=SPEED(m); const ah=b.g.querySelector('.ahead'); const cone=b.g.querySelector('.cone');
     if(!m.status&&!m.endedBy&&v&&m.heading!=null&&!appr){ // reported heading: 12-min ray + ±20° uncertainty cone
       const L=Math.min(v*6,20);const a=m.heading*Math.PI/180;ah.setAttribute('x2',(L*Math.sin(a)).toFixed(1));ah.setAttribute('y2',(-L*Math.cos(a)).toFixed(1));ah.style.display='';
@@ -2078,9 +2134,9 @@ function tick(){
       const L=8, a=(m.heading==null?0:m.heading)*Math.PI/180, bx=m.heading==null?x:x-L*Math.sin(a), by=m.heading==null?y:y+L*Math.cos(a);
       b.trail.setAttribute('x1',bx.toFixed(2));b.trail.setAttribute('y1',by.toFixed(2));b.trail.setAttribute('x2',x.toFixed(2));b.trail.setAttribute('y2',y.toFixed(2));b.trail.setAttribute('class','trail appr'+(info.inbound?' inbound':''));}
     else{b.trail.setAttribute('x1',x0.toFixed(2));b.trail.setAttribute('y1',y0.toFixed(2));b.trail.setAttribute('x2',x.toFixed(2));b.trail.setAttribute('y2',y.toFixed(2));b.trail.setAttribute('class','trail'+(info.inbound?' inbound':''));}
-    b.g.querySelector('.halo').setAttribute('r',((/missile/.test(m.type)?17:13)*KPX).toFixed(2));
-    {const h2=b.g.querySelector('.halo2'); if(h2) h2.setAttribute('r',(17*KPX).toFixed(2));} b.g.querySelector('.hit').setAttribute('r',(18*KPX).toFixed(2));
-    b.g.querySelector('.lbl').setAttribute('x',(14*KPX).toFixed(2)); b.g.querySelector('.lbl').setAttribute('y',(-6*KPX).toFixed(2)); b.g.querySelector('.lbl2').setAttribute('x',(14*KPX).toFixed(2)); b.g.querySelector('.lbl2').setAttribute('y',(6*KPX).toFixed(2));
+    b.g.querySelector('.halo').setAttribute('r',kx((/missile/.test(m.type)?17:13)*KPX));
+    {const h2=b.g.querySelector('.halo2'); if(h2) h2.setAttribute('r',kx(17*KPX));} b.g.querySelector('.hit').setAttribute('r',kx(18*KPX));
+    b.g.querySelector('.lbl').setAttribute('x',kx(14*KPX)); b.g.querySelector('.lbl').setAttribute('y',kx(-6*KPX)); b.g.querySelector('.lbl2').setAttribute('x',kx(14*KPX)); b.g.querySelector('.lbl2').setAttribute('y',kx(6*KPX));
     const kind=(m.type==='drones'?(m.jet?t('k_jet'):t('k_shahed')):m.type==='unknown'?(m.likely==='drones'?'⚠ '+t('unk_likely'):t('k_unknown')):THREAT[m.type]?.[1]||m.type);
     const name=m.status?(({down:t('mk_down'),impact:t('mk_impact'),lost:t('mk_lost'),clear:t('mk_clear'),damage:t('mk_damage'),fire:t('mk_fire')})[m.status]||statusName(m.status)+((m.cluster||1)>1?` ×${m.cluster}`:m.count>1?` ×${m.count}`:'')):kind+((m.csum||m.count||1)>1?` ×${m.csum||m.count}`:'');
     b.g.querySelector('.lbl').textContent=name;
@@ -2127,9 +2183,9 @@ function tick(){
      if(!f&&p.pri>=3){ g.classList.add('nolbl'); continue; }
      if(!f){ let best=null; for(const [side,dy] of CAND){ const r=boxAt(p,side,dy), n=hits(r,p); if(!best||n<best.n) best={side,dy,r,n}; } f=best; }
      placed.push(f.r);
-     const {side,dy}=f, x=(side*14*KPX).toFixed(2), an=side>0?'start':'end';
+     const {side,dy}=f, x=kx(side*14*KPX), an=side>0?'start':'end';
      l1.setAttribute('x',x); l2.setAttribute('x',x); l1.setAttribute('text-anchor',an); l2.setAttribute('text-anchor',an);
-     l1.setAttribute('y',(((p.v2?-6:4)+dy)*KPX).toFixed(2)); l2.setAttribute('y',(((p.v1?6:4)+dy)*KPX).toFixed(2)); }
+     l1.setAttribute('y',kx(((p.v2?-6:4)+dy)*KPX)); l2.setAttribute('y',kx(((p.v1?6:4)+dy)*KPX)); }
    // the boxes, relative to the map's top-left corner, for the town names
    const ox=VB.x/KPX, oy=VB.y/KPX, bx=placed.map(q=>({x:q.x-ox,y:q.y-oy,w:q.w,h:q.h}));
    const sig=bx.map(q=>[q.x,q.y,q.w].map(Math.round).join(',')).join(';');
@@ -2149,7 +2205,7 @@ function tick(){
     const dkm=Math.round(info.dist);
     const short=name.replace(t('th_kab'),t('e_kab')).replace(t('th_cruise'),t('e_cruise')).replace(t('th_bal'),t('e_bal')); const txt=info.inbound?`${short} ${t('lb_tokyiv')} ${dkm}km`:`${short} ${dkm}km ${dirName((Math.atan2(x,-y)*180/Math.PI+360)%360)}`;
     const anchor=side==='R'?'end':(side==='L'?'start':'middle'); const o=12*KPX; const tx=side==='R'?ex-o:side==='L'?ex+o:ex; const ty=side==='T'?ey+o+4*KPX:side==='B'?ey-o:ey+4*KPX;
-    return `<g class="edge ${info.inbound?'inbound':''}"><polygon class="arrow" points="0,-3 6,0 0,3" transform="translate(${ex.toFixed(1)} ${ey.toFixed(1)}) rotate(${ang.toFixed(0)}) scale(${(1.6*KPX).toFixed(2)})"/><text class="etxt" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anchor}">${esc(txt)}</text></g>`;
+    return `<g class="edge ${info.inbound?'inbound':''}"><polygon class="arrow" points="0,-3 6,0 0,3" transform="translate(${ex.toFixed(1)} ${ey.toFixed(1)}) rotate(${ang.toFixed(0)}) scale(${kx(1.6*KPX)})"/><text class="etxt" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anchor}">${esc(txt)}</text></g>`;
   }).join('');
   const parts=[]; if(tracked){ const tot=[totShahed?`<b>${totShahed}</b> ${t('lb_shahed')}`:'',totJet?`<b>${totJet}</b> ${t('lb_jet')}`:'',totMsl?`<b>${totMsl}</b> ${t('lb_msl')}`:'',totUnk?`<b>${totUnk}</b> ⚠`:'',totStale?`<b>${totStale}</b> ?`:''].filter(Boolean).join(' · '); parts.push(tot||`<b>${tracked}</b> ${t('lb_targets')}`); } if(inboundCount) parts.push(`<b class="lvr">${inboundCount} ${t('lb_tokyiv')}</b>`); if(HOME&&homeNamedN) parts.push(`<b class="lvp">${homeNamedN} → ${esc(homeName())}</b>`);
   else if(HOME&&homeThreats) parts.push(`<b class="lvr">${homeThreats} ${t('lb_nearhome',esc(homeName()))}</b>`); if(ESTIMATE) parts.push('EST'); 
@@ -2177,7 +2233,7 @@ function tick(){
 // was reported any more, so a thin leader line runs back to the true point: the position stays honest, the glyph
 // just steps aside. Live targets keep their place first; history gives way.
 function declutter(){
-  const r=svg.getBoundingClientRect(); if(!r.width) return;
+  const r=SR(); if(!r.width) return;
   const k=VB.w/r.width;                                   // km per screen px
   const items=[];
   for(const [id,b] of built){ const tr=b.g.dataset.tx; if(tr===undefined) continue;
@@ -2207,14 +2263,14 @@ function declutter(){
     place(it,dx,dy);
   }
   function place(it,dx,dy){
-    it.g.setAttribute('transform',`translate(${(it.x+dx).toFixed(2)} ${(it.y+dy).toFixed(2)})`);
+    it.g.setAttribute('transform',`translate(${kx(it.x+dx)} ${kx(it.y+dy)})`);
     let ld=it.g.querySelector('.leader');
     if(dx||dy){
       if(!ld){ ld=document.createElementNS('http://www.w3.org/2000/svg','line'); ld.setAttribute('class','leader'); it.g.insertBefore(ld,it.g.firstChild); }
-      ld.setAttribute('x1',(-dx).toFixed(2)); ld.setAttribute('y1',(-dy).toFixed(2)); ld.setAttribute('x2','0'); ld.setAttribute('y2','0');
+      ld.setAttribute('x1',kx(-dx)); ld.setAttribute('y1',kx(-dy)); ld.setAttribute('x2','0'); ld.setAttribute('y2','0');
       let dot=it.g.querySelector('.anchor');
       if(!dot){ dot=document.createElementNS('http://www.w3.org/2000/svg','circle'); dot.setAttribute('class','anchor'); it.g.insertBefore(dot,it.g.firstChild); }
-      dot.setAttribute('cx',(-dx).toFixed(2)); dot.setAttribute('cy',(-dy).toFixed(2)); dot.setAttribute('r',(1.6*k).toFixed(2));
+      dot.setAttribute('cx',kx(-dx)); dot.setAttribute('cy',kx(-dy)); dot.setAttribute('r',kx(1.6*k));
     } else if(ld){ ld.remove(); const d=it.g.querySelector('.anchor'); if(d) d.remove(); }
   }
 }
@@ -2363,26 +2419,34 @@ function cossack(){
   const wave=(y0,h)=>[0,1,2].map(ph=>{const a=[0,-.6,0,.6].map(v=>v*Math.cos(ph*2)); return `M9 ${y0} Q11.5 ${y0-.7+a[1]} 14 ${y0+a[2]} T19 ${y0+a[3]} L19 ${y0+h+a[3]} Q16.5 ${y0+h+.7+a[2]} 14 ${y0+h+a[2]} T9 ${y0+h} Z`;});
   const wv=(y0,h)=>{const f=wave(y0,h);return `<path fill="${y0<-20?'#0057b7':'#ffd700'}" d="${f[0]}"><animate attributeName="d" values="${f[0]};${f[1]};${f[2]};${f[0]}" dur="1.6s" repeatCount="indefinite"/></path>`;};
   const flag=`<rect x="8.4" y="-22" width=".8" height="22" fill="#cfd6e0"/>`+wv(-21.5,3)+wv(-18.5,3);
-  return `<g class="kozak" transform="translate(${o.cx} ${o.cy})"><g class="kz" transform="scale(${(2.2*KPX).toFixed(3)})"><g><animateTransform attributeName="transform" type="translate" values="0 0;0 -1.2;0 0" dur="1.1s" repeatCount="indefinite"/>${px}</g>${flag}</g>
-    <text class="sub" y="${(14*KPX).toFixed(2)}">${t('cz_1')}</text><text y="${(25*KPX).toFixed(2)}">${t('cz_2')}</text></g>`;
+  return `<g class="kozak" transform="translate(${o.cx} ${o.cy})"><g class="kz" transform="scale(${kx(2.2*KPX)})"><g><animateTransform attributeName="transform" type="translate" values="0 0;0 -1.2;0 0" dur="1.1s" repeatCount="indefinite"/>${px}</g>${flag}</g>
+    <text class="sub" y="${kx(14*KPX)}">${t('cz_1')}</text><text y="${kx(25*KPX)}">${t('cz_2')}</text></g>`;
 }
-// ---- street tiles (CARTO dark, no labels — OSM data) under the map when zoomed in ≤ 150 km wide ----
-// Each 256-px Mercator tile is placed by its own lon/lat corners in the km projection, so it lines up exactly
-// with the raions and markers (the residual inside one tile is metres).
+// ---- the background under the map: satellite, map, or none (1.49) ----
+// Each Mercator tile is placed by its own lon/lat corners in the km projection, so it lines up exactly with the raions
+// and markers (the residual inside one tile is metres).
+// 1.45.1: the OSM streets only once zoomed in to 150 km. 1.47: the map is "tiled" (outlines over the picture, our own
+// roads and rivers hidden) while a picture is drawn. 1.49: Layers → Background is one choice of three —
+//   Satellite: Sentinel-2 (ours), Esri World Imagery from zoom 14, and over it Esri's roads and names from zoom 10;
+//   Map: Esri's street map (dark in the standard and night modes), at every zoom — or, without Esri (no key, or past
+//        the month's cap: state.config.esri), the OSM streets zoomed in, as before;
+//   Plain: our own map, nothing under it.
+// Where Esri's names are drawn, our own town and village names step aside (the same names twice, a few pixels apart).
 const TILE_URL=(z,x,y)=>`https://tile.openstreetmap.org/${z}/${x}/${y}.png`;   // OSM standard tiles, darkened with a CSS filter
-// 1.45.1: 1.45 laid the tiles under the whole country on a computer; zoomed out, the map was unreadable. Back to
-// the one rule for every device: tiles only once zoomed in to 150 km.
-// 1.47: both tile layers — the OSM streets (zoomed in) and the satellite imagery — go through updateTiles(); the map
-// is "tiled" (outlines over the picture, our own roads and rivers hidden) while either is drawn.
-function updateTiles(){ updateOsm(); updateSat(); updateEsri();
-  svg.classList.toggle('tiled',svg.classList.contains('osmd')||svg.classList.contains('satd')); attribSync(); }
-function attribSync(){ const a=$('attrib'); if(!a) return; const p=[];
-  if(svg.classList.contains('osmd')) p.push('\u00a9 OpenStreetMap contributors');
-  if(svg.classList.contains('satd')) p.push(SAT_ATTR);
-  if(svg.classList.contains('esrid')) p.push(ESRI_ATTR);
-  a.hidden=!p.length; a.classList.toggle('long',p.length>1); if(p.length) a.textContent=p.join(' \u00b7 '); }
+function updateTiles(){ updateOsm(); updateSat(); updateEsri(); updateMap(); updateLbl();
+  const c=svg.classList; c.toggle('tiled',c.contains('osmd')||c.contains('satd')||c.contains('mapd')); attribSync(); }
+var ESRI_SRC='Esri, TomTom, Garmin, FAO, NOAA, USGS, © OpenStreetMap contributors, and the GIS User Community';
+function attribSync(){ const a=$('attrib'); if(!a) return; const p=[], e=[], c=svg.classList;
+  if(c.contains('osmd')) p.push('© OpenStreetMap contributors');
+  if(c.contains('satd')) p.push(SAT_ATTR);
+  if(c.contains('esrid')) e.push(ESRI_IMG);
+  if(c.contains('lbld')||c.contains('mapd')) e.push(ESRI_SRC);
+  if(e.length) p.push('Powered by Esri · '+e.join(' · '));
+  a.hidden=!p.length; a.classList.toggle('long',p.length>1||e.length>1); if(p.length) a.textContent=p.join(' · '); }
 // The tiles of zoom z over the view, each placed by its own corners in the km projection; at most `max` of them —
 // 1.48: more than that (a large screen), one zoom out, down to zmin, rather than nothing.
+// 1.49: the tiles of the zoom before stay under the new ones until all of those have come (4 s at most): zooming no
+// longer shows the black background between two pictures. Those out of the view go at once.
 function placeTiles(g,z,url,max,zmin){
   const n=2**z; const lon2x=lon=>(lon+180)/360*n; const lat2y=lat=>{const f=lat*Math.PI/180;return (1-Math.log(Math.tan(f)+1/Math.cos(f))/Math.PI)/2*n;};
   const y2lat=y=>Math.atan(Math.sinh(Math.PI*(1-2*y/n)))*180/Math.PI; const x2lon=x=>x/n*360-180;
@@ -2390,18 +2454,29 @@ function placeTiles(g,z,url,max,zmin){
   const x0=Math.max(0,Math.floor(lon2x(lonA))),x1=Math.min(n-1,Math.floor(lon2x(lonB))),y0=Math.max(0,Math.floor(lat2y(latA))),y1=Math.min(n-1,Math.floor(lat2y(latB)));
   if((x1-x0+1)*(y1-y0+1)>max){ if(zmin!=null&&z>zmin) return placeTiles(g,z-1,url,max,zmin); g.innerHTML='';return;}
   const want=new Set(); const have={}; g.querySelectorAll('image').forEach(im=>have[im.dataset.k]=im);
-  for(let x=x0;x<=x1;x++)for(let y=y0;y<=y1;y++){ const k=`${z}/${x}/${y}`; want.add(k); if(have[k]) continue;
+  for(let x=x0;x<=x1;x++)for(let y=y0;y<=y1;y++){ const k=`${z}/${x}/${y}`; want.add(k); if(have[k]){ have[k].classList.remove('old'); continue; }
     const [px,py]=proj(x2lon(x),y2lat(y)),[qx,qy]=proj(x2lon(x+1),y2lat(y+1));
-    const im=document.createElementNS('http://www.w3.org/2000/svg','image'); im.dataset.k=k; im.setAttribute('href',url(z,x,y));
-    im.setAttribute('x',px.toFixed(3));im.setAttribute('y',py.toFixed(3));im.setAttribute('width',(qx-px).toFixed(3));im.setAttribute('height',(qy-py).toFixed(3));im.setAttribute('preserveAspectRatio','none'); g.appendChild(im);}
-  for(const [k,im] of Object.entries(have)) if(!want.has(k)) im.remove();
+    const im=document.createElementNS('http://www.w3.org/2000/svg','image'); im.dataset.k=k; im.dataset.z=z;
+    im.addEventListener('load',tileDone); im.addEventListener('error',tileDone); im.setAttribute('href',url(z,x,y));
+    im.setAttribute('x',px.toFixed(4));im.setAttribute('y',py.toFixed(4));im.setAttribute('width',(qx-px).toFixed(4));im.setAttribute('height',(qy-py).toFixed(4));im.setAttribute('preserveAspectRatio','none'); g.appendChild(im);}
+  const vx1=VB.x+VB.w, vy1=VB.y+VB.h;
+  for(const [k,im] of Object.entries(have)) if(!want.has(k)){
+    const x=+im.getAttribute('x'), y=+im.getAttribute('y'), inView=x<vx1&&x+(+im.getAttribute('width'))>VB.x&&y<vy1&&y+(+im.getAttribute('height'))>VB.y;
+    if(inView&&+im.dataset.z!==z) im.classList.add('old'); else im.remove(); }
+  g.dataset.z=z; tileSweep(g);
 }
-const tileZoom=()=>{ const r=svg.getBoundingClientRect(); const kmpx=VB.w/Math.max(1,r.width);            // km per screen px
+function tileDone(e){ const im=e.target; im.dataset.ok='1'; if(im.parentNode) tileSweep(im.parentNode); }
+function tileSweep(g){ const olds=g.querySelectorAll('image.old'); if(!olds.length) return;
+  for(const im of g.querySelectorAll(`image[data-z="${g.dataset.z}"]`)) if(!im.dataset.ok){
+    clearTimeout(g._sw); g._sw=setTimeout(()=>g.querySelectorAll('image.old').forEach(i=>i.remove()),4000); return; }
+  clearTimeout(g._sw); olds.forEach(i=>i.remove()); }
+const tileZoom=()=>{ const r=SR(); const kmpx=VB.w/Math.max(1,r.width);            // km per screen px
   return Math.round(Math.log2(99.7/kmpx*(0.637/Math.cos(C[1]*Math.PI/180))))+(devicePixelRatio>1.5?1:0); };
+function LITE_ON(){ return typeof LITE!=='undefined'&&LITE; }   // hoisted: applyLayers() runs before this part
 function updateOsm(){
-  // the streets, or — the satellite chosen but the server without imagery — the streets in its place
-  const want=LAYERS.tiles||(LAYERS.sat&&SAT_KNOWN&&!SAT_OK);
-  const g=$('tiles'); const on=want&&VB.w<=150&&MAP&&!CITY&&!(typeof LITE!=='undefined'&&LITE); svg.classList.toggle('osmd',!!on);
+  // the streets: the Map without Esri — or the satellite chosen and the server without imagery
+  const want=(LAYERS.tiles&&SAT_KNOWN&&!ESRI_OK)||(LAYERS.sat&&SAT_KNOWN&&!SAT_OK);
+  const g=$('tiles'); const on=want&&VB.w<=150&&MAP&&!CITY&&!LITE_ON(); svg.classList.toggle('osmd',!!on);
   if(!on){g.innerHTML='';return;}
   placeTiles(g,Math.max(8,Math.min(18,tileZoom())),TILE_URL,120);
 }
@@ -2414,18 +2489,18 @@ function updateOsm(){
 // (state.config.sat, sat_v, sat_z): the tiles are kept a year under their address, so the address carries the file's
 // own version — never a number in this page, which could run ahead of the file on the volume.
 // var, not const/let: applyLayers() draws the tiles before this part of the script has run
-var SAT_V='1', SAT_MAX=12, SAT_ATTR='\u00a9 ESA WorldCover 2021 \u00b7 contains modified Copernicus Sentinel data (2021)', SAT_OK=false, SAT_KNOWN=false;
+var SAT_V='1', SAT_MAX=12, SAT_ATTR='© ESA WorldCover 2021 · contains modified Copernicus Sentinel data (2021)', SAT_OK=false, SAT_KNOWN=false;
 // ---- 1.48: closer than 10 m — Esri World Imagery (Maxar and others) from zoom 14, asked of Esri by this server ----
 // (the key stays there, and the month's tiles are capped under the free tier: state.config.esri goes false past it,
 // and the Sentinel picture stays under it). Part of the satellite layer, not a layer of its own.
-var ESRI_OK=false, ESRI_ATTR='Powered by Esri \u00b7 Esri, Maxar, Earthstar Geographics, and the GIS User Community';
+var ESRI_OK=false, ESRI_IMG='Esri, Maxar, Earthstar Geographics, and the GIS User Community';
 function satAvail(c){ c=c||{}; const ok=!!c.sat, v=String(c.sat_v||'1'), z=Math.max(5,Math.min(16,+c.sat_z||12)), e=!!c.esri;
   if(SAT_KNOWN&&ok===SAT_OK&&v===SAT_V&&z===SAT_MAX&&e===ESRI_OK) return;
   if(v!==SAT_V){ const g=$('sat'); if(g) g.innerHTML=''; }      // a new file on the volume: its tiles, not the kept ones
   SAT_KNOWN=true; SAT_OK=ok; SAT_V=v; SAT_MAX=z; ESRI_OK=e;
-  const cb=document.querySelector('#layerbox input[data-l="sat"]'); if(cb) cb.closest('label').hidden=!ok; updateTiles(); }
+  const lb=document.querySelector('#lbase label[data-b="sat"]'); if(lb) lb.hidden=!ok; updateTiles(); }
 function updateSat(){
-  const g=$('sat'); if(!g) return; const on=SAT_OK&&LAYERS.sat&&MAP&&!CITY&&!(typeof LITE!=='undefined'&&LITE); svg.classList.toggle('satd',!!on);
+  const g=$('sat'); if(!g) return; const on=SAT_OK&&LAYERS.sat&&MAP&&!CITY&&!LITE_ON(); svg.classList.toggle('satd',!!on);
   if(!on){g.innerHTML='';return;}
   placeTiles(g,Math.max(5,Math.min(SAT_MAX,tileZoom())),(z,x,y)=>`/tiles/sat/${z}/${x}/${y}.webp?v=${SAT_V}`,160,5);
 }
@@ -2436,13 +2511,28 @@ function updateEsri(){
   if(!on){g.innerHTML='';return;}
   placeTiles(g,Math.max(14,Math.min(18,z)),(z,x,y)=>`/tiles/esri/${z}/${x}/${y}.jpg`,140,14);
 }
+// ---- 1.49: the roads and names over the imagery, and the street map — Esri's 512-pixel tiles (one zoom below the
+// 256-pixel grid for the same sharpness: a quarter of the tiles), named in the reader's language ----
+function updateLbl(){
+  const g=$('lbl'); if(!g) return; const z=ESRI_OK&&svg.classList.contains('satd')?tileZoom()-1:0; const on=z>=9;
+  svg.classList.toggle('lbld',!!on);
+  if(!on){g.innerHTML='';return;}
+  if(g.dataset.src!==LANG){ g.innerHTML=''; g.dataset.src=LANG; }
+  placeTiles(g,Math.min(18,z),(z,x,y)=>`/tiles/esri/lbl/${z}/${x}/${y}.png?lang=${LANG}`,60,9);
+}
+function updateMap(){
+  const g=$('emap'); if(!g) return; const on=LAYERS.tiles&&ESRI_OK&&MAP&&!CITY&&!LITE_ON(); svg.classList.toggle('mapd',!!on);
+  if(!on){g.innerHTML='';return;}
+  const kind=MODE==='day'?'map':'mapn'; if(g.dataset.src!==kind+LANG){ g.innerHTML=''; g.dataset.src=kind+LANG; }
+  placeTiles(g,Math.max(4,Math.min(18,tileZoom()-1)),(z,x,y)=>`/tiles/esri/${kind}/${z}/${x}/${y}.png?lang=${LANG}`,60,4);
+}
 // ---- place-label collision pass: bigger places win, an overlapping smaller label is hidden until you zoom in ----
 function layoutTownLabels(){
-  const r=svg.getBoundingClientRect(); if(!r.width) return; const k=VB.w/r.width; const els=[...svg.querySelectorAll('text.town')];
+  const r=SR(); if(!r.width) return; const k=VB.w/r.width; const els=[...svg.querySelectorAll('text.town')];
   els.forEach(e=>e.removeAttribute('data-hid')); svg.querySelectorAll('.towndot[data-hid]').forEach(e=>e.removeAttribute('data-hid'));
   // 1.45: off-screen first, then the (slow) style test — with the regional villages there are ~2,000 names
   const items=[]; for(const e of els){ const x=(+e.getAttribute('x')-VB.x)/k,y=(+e.getAttribute('y')-VB.y)/k; if(x<-200||y<-50||x>r.width+50||y>r.height+50) continue;
-    if(getComputedStyle(e).display==='none') continue; const pr=e.classList.contains('big')?0:e.classList.contains('rg')?2:e.classList.contains('district')?4:e.classList.contains('minor')?3:1;
+    if(getComputedStyle(e).display==='none') continue; const pr=e.classList.contains('big')?0:e.classList.contains('rg')||e.classList.contains('tw2')?2:e.classList.contains('district')?4:e.classList.contains('minor')||e.classList.contains('tw1')?3:1;
     const fs=pr===0?14:pr===3||pr===4?10:11;
     items.push({e,pr,x,y:y-fs,w:e.textContent.length*fs*0.58+4,h:fs+2}); }
   // a threat label wins over a town name: the town under it is hidden, never written over
@@ -2504,11 +2594,11 @@ function packImpacts(cl){
 function drawImpacts(){
   const g=$('impactsg'); if(!IMP_H){g.innerHTML='';return;}
   const now=Date.now();
-  g.innerHTML=packImpacts(clusterImpacts(liveImpacts())).map(({m,n,ids,places})=>{const [x,y]=proj(m.lon,m.lat); const h=(now-Date.parse(m.ts))/36e5; const dn=m.status==='down'; const fire=m.status==='fire'; const dmg=m.status==='damage'; const cls=h>48?'d2':h>24?'d1':''; const IZ=impScale(); const s=((fire?0.95:dmg?1.0:dn?1.1:1.35)*KPX*IZ).toFixed(2); const more=places.size-1;
+  g.innerHTML=packImpacts(clusterImpacts(liveImpacts())).map(({m,n,ids,places})=>{const [x,y]=proj(m.lon,m.lat); const h=(now-Date.parse(m.ts))/36e5; const dn=m.status==='down'; const fire=m.status==='fire'; const dmg=m.status==='damage'; const cls=h>48?'d2':h>24?'d1':''; const IZ=impScale(); const s=kx((fire?0.95:dmg?1.0:dn?1.1:1.35)*KPX*IZ); const more=places.size-1;
     // a fire is a small flame, drawn quietly: it is a consequence someone reported, not a strike of its own
     // damage on the ground: a struck building, not a target. Never the green tick, never the red starburst.
     const glyph=dmg?`<path class="ig" d="M-6 6 L-6-2 L0-6.5 L6-2 L6 6 Z"/><path d="M-1.5-4 L0.8-0.8 L-1.2 0.4 L1.6 4.4" stroke="#1a0c0c" stroke-width="1.5" fill="none" stroke-linecap="round"/>`:fire?`<path class="ig" d="M0-8 C3-4.5 5.5-2.5 5.5 1.2 C5.5 4.6 3 7 0 7 C-3 7 -5.5 4.6 -5.5 1.2 C-5.5 -1.4 -4 -2.6 -2.6 -4.6 C-2.2 -2.4 -1.2 -1.4 0 -1 C0.6 -3.2 0.4 -5.6 0-8 Z"/>`:dn?`<circle class="ig" r="6"/><path d="M-3.5-3.5 L3.5 3.5 M3.5-3.5 L-3.5 3.5" stroke="#080b10" stroke-width="1.8" fill="none"/>`:`<path class="ig" d="M0-8 L2-2 L8 0 L2 2 L0 8 L-2 2 L-8 0 L-2-2 Z M0-4.5 L4.5 0 L0 4.5 L-4.5 0 Z" transform="rotate(45)"/><path class="ig" d="M0-8 L2-2 L8 0 L2 2 L0 8 L-2 2 L-8 0 L-2-2 Z"/>`;
-    return `<g class="imp ${cls} ${dmg?'dmg':fire?'fire':dn?'dn':'im'} ${(!dn&&!fire&&!dmg&&h<1.5)?'fresh':''}${n>1?' grp':''}" data-id="${esc(m.id)}" data-ids="${esc(ids.join('~'))}" data-tx="${x.toFixed(2)}" data-ty="${y.toFixed(2)}" transform="translate(${x.toFixed(2)} ${y.toFixed(2)})"><circle class="ir" r="${((n>1?11:9)*KPX*IZ).toFixed(2)}"/>${(!dn&&!fire&&!dmg&&h<1.5)?`<circle class="sw" r="${(11*KPX*IZ).toFixed(2)}"/>`:''}<g transform="scale(${s})">${glyph}</g><text class="it" x="${(11*KPX*IZ).toFixed(2)}" y="${(4*KPX).toFixed(2)}">${esc(m.place==='область'?'':pn(m.place))}${more>0?` +${more}`:``}${n>1?` ×${n}`:''} ${fmtD(m.ts)}</text>${n>1?`<g class="icnt" transform="translate(${(8*KPX*IZ).toFixed(2)} ${(-8*KPX*IZ).toFixed(2)}) scale(${(KPX*Math.max(IZ,.8)).toFixed(3)})"><circle r="6.5"/><text y="3.2">${n}</text></g>`:''}</g>`;}).join('');
+    return `<g class="imp ${cls} ${dmg?'dmg':fire?'fire':dn?'dn':'im'} ${(!dn&&!fire&&!dmg&&h<1.5)?'fresh':''}${n>1?' grp':''}" data-id="${esc(m.id)}" data-ids="${esc(ids.join('~'))}" data-tx="${x.toFixed(2)}" data-ty="${y.toFixed(2)}" transform="translate(${x.toFixed(2)} ${y.toFixed(2)})"><circle class="ir" r="${kx((n>1?11:9)*KPX*IZ)}"/>${(!dn&&!fire&&!dmg&&h<1.5)?`<circle class="sw" r="${kx(11*KPX*IZ)}"/>`:''}<g transform="scale(${s})">${glyph}</g><text class="it" x="${kx(11*KPX*IZ)}" y="${kx(4*KPX)}">${esc(m.place==='область'?'':pn(m.place))}${more>0?` +${more}`:``}${n>1?` ×${n}`:''} ${fmtD(m.ts)}</text>${n>1?`<g class="icnt" transform="translate(${kx(8*KPX*IZ)} ${kx(-8*KPX*IZ)}) scale(${kx(KPX*Math.max(IZ,.8))})"><circle r="6.5"/><text y="3.2">${n}</text></g>`:''}</g>`;}).join('');
   $('imph').textContent=IMP_H?IMP_H+'h':''; $('impbtn').classList.toggle('on',!!IMP_H);
 }
 function fmtD(ts){const d=new Date(ts);const tm=d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',timeZone:TZ});const today=new Date().toLocaleDateString('en-GB',{timeZone:TZ})===d.toLocaleDateString('en-GB',{timeZone:TZ});return today?tm:d.toLocaleDateString(LOCALE(),{day:'2-digit',month:'short',timeZone:TZ})+' '+tm;}
@@ -3055,7 +3145,7 @@ function renderStats(){ if(!STATS) return; const el=$('stats'); if(!el) return; 
 // =====================================================================================
 // ---------------------------------------------------------------------------------------------------
 // The contacts (CONTACT) and the footer (footerHTML, shareApp) are in static/i18n.js since 1.39, shared with Light.
-const APP_VERSION='1.48';
+const APP_VERSION='1.49';
 const DONATE=CONTACT.ngo;
 const ls=(k,v)=>{try{return v===undefined?localStorage.getItem(k):(localStorage.setItem(k,v),v);}catch(e){return null;}};
 

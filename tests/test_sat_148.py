@@ -177,11 +177,11 @@ def test_the_page_draws_esri_over_sentinel_from_zoom_14_and_zooms_to_a_kilometre
     assert "placeTiles(g,Math.max(14,Math.min(18,z)),(z,x,y)=>`/tiles/esri/${z}/${x}/${y}.jpg`,140,14);" in PAGE
     assert "if(zmin!=null&&z>zmin) return placeTiles(g,z-1,url,max,zmin);" in PAGE     # a large screen: one zoom out, not nothing
     assert "Powered by Esri" in PAGE and "Esri, Maxar, Earthstar Geographics, and the GIS User Community" in PAGE
-    assert "if(svg.classList.contains('esrid')) p.push(ESRI_ATTR);" in PAGE
-    assert "a.classList.toggle('long',p.length>1);" in PAGE and ".attrib.long{max-width:calc(100vw - 72px);bottom:34px}" in PAGE
+    assert "if(c.contains('esrid')) e.push(ESRI_IMG);" in PAGE and "if(e.length) p.push('Powered by Esri · '+e.join(' · '));" in PAGE
+    assert "a.classList.toggle('long',p.length>1||e.length>1);" in PAGE and ".attrib.long{max-width:calc(100vw - 72px);bottom:34px}" in PAGE
     assert "function setView(cx,cy,w){VB.w=Math.max(1,Math.min(1500,w));" in PAGE
-    assert "function zoomAt(f,cx,cy){const nw=Math.max(1,Math.min(1500,VB.w/f))" in PAGE
-    assert "#sat,#esri{filter:" in PAGE and "svg.no-sat #sat,svg.no-sat #esri{display:none}" in PAGE
+    assert "function zoomAt(f,cx,cy,fast){const nw=Math.max(1,Math.min(1500,VB.w/f))" in PAGE
+    assert "#sat,#esri{filter:" in PAGE and "svg.no-sat #sat,svg.no-sat #esri,svg.no-sat #lbl{display:none}" in PAGE
     assert "token" not in PAGE.split("function updateEsri", 1)[1][:600]      # the page never holds the key
 
 
@@ -192,10 +192,11 @@ def test_oblast_names_read_over_the_pictures():
 
 def test_the_layer_choice_is_saved_again():
     # 1.47.1 had put the save inside the end of a comment: no layer choice was remembered
-    i = PAGE.index("document.querySelectorAll('#layerbox input').forEach(cb=>cb.onchange=")
+    assert "const saveLayers=()=>{try{localStorage.setItem('layers'," in PAGE
+    i = PAGE.index("document.querySelectorAll('#layerbox input[data-l]').forEach(cb=>cb.onchange=")
     body = PAGE[i:PAGE.index("applyLayers();});", i)]
-    line = next(ln for ln in body.split("\n") if "localStorage.setItem('layers'" in ln)
-    assert line.lstrip().startswith("try{localStorage.setItem('layers'")
+    line = next(ln for ln in body.split("\n") if "saveLayers()" in ln)
+    assert line.lstrip().startswith("saveLayers();")
 
 
 def test_the_key_is_set_by_the_owner_and_the_count_is_on_the_dashboard():

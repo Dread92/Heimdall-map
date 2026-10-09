@@ -42,7 +42,8 @@ The upload goes next to the old file before replacing it, so the volume needs ~0
 `fly volumes extend <volume id> -s 2 -a kyiv-air-watch-gb` (once; $0.15 per GB a month).
 
 **The closest zooms (1.48, optional)**: Esri World Imagery from zoom 14. Create an account on ArcGIS Location
-Platform (location.arcgis.com), an API key with the *Basemaps* privilege and **no referrer restriction** (the server
+Platform (location.arcgis.com), an API key with the *Basemaps* privileges (both: basemap styles and static basemap
+tiles — 1.49's streets use the second) and **no referrer restriction** (the server
 asks Esri, not the browser), then double-click **`scripts/set-esri-key.bat`** and paste it. 2 M tiles a month are
 free, then $0.15 per 1,000; the server stops at `esri_monthly_tiles` (1.8 M) and a tenth of it a day. The month's
 count is on the dashboard. Without the key the satellite layer is Sentinel alone, enlarged when zoomed in.

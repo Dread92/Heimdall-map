@@ -2161,7 +2161,7 @@ def parse_for_channel(channel, text, near=None):
         hc = _OBL_CENTRE.get(home)
         ms = [m for m in ms if m.get("lon") is None or m.get("oblast_uid") in named or not hc
               or _km((m["lon"], m["lat"]), hc) <= 300]
-    return [_rel_settle(_raion_settle(_settle(m))) for m in ms]
+    return [_city_settle(_rel_settle(_raion_settle(_settle(m)))) for m in ms]
 
 
 # 1.45.1: "БпЛА на півночі від Миколаєва, курс на захід" (the Air Force) is north OF the city, at a distance the post
@@ -2217,6 +2217,33 @@ def _rel_settle(m):
         ev["position"] = pos
         m["evidence"] = ev
         break
+    return m
+
+
+# 1.49: "Київ" alone — "над Києвом", "біля Києва", "на околицях правого берега Києва" — says the city, not where in it.
+# A city 30 km across was drawn as a point at its centre, "town in gazetteer, high confidence, ±5 km": a resident read
+# a drone over the centre that nobody had put there. Kyiv has its own outline on the map, so the city is marked, not a
+# point — as an oblast is — with the bank when the post names one. A district, a street, a landmark, a distance and
+# a side ("20 км на північ від Києва") keep their point; a course to Kyiv ("→ Київ") stays an approach.
+_BANK_RX = re.compile(r"\b(прав|лів)\w*\s+берег\w*", re.I)
+
+
+def _city_settle(m):
+    if m.get("place") != "Київ" or m.get("approach"):
+        return m
+    ev = dict(m.get("evidence") or {})
+    pos = dict(ev.get("position") or {})
+    if pos.get("rel") is not None:
+        return m
+    m["place"] = "область"
+    m["oblast_uid"] = "31"
+    pos.update(place="oblast", confidence="low",
+               method="Kyiv named and no place in it: the city is marked, not a point at its centre")
+    b = _BANK_RX.search(ev.get("segment") or "")
+    if b:
+        pos["bank"] = "right" if b.group(1).lower() == "прав" else "left"
+    ev["position"] = pos
+    m["evidence"] = ev
     return m
 
 

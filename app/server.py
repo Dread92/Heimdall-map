@@ -402,7 +402,7 @@ def build_id():
 
 # The version the front end shows in its footer, kept here too so /api/version can answer "what is actually
 # running" without anybody reading it off a screenshot. tests/test_version.py pins the two to each other.
-APP_VERSION = "1.48"
+APP_VERSION = "1.49"
 APP_NAME = "Heimdall"
 BUILD = None    # filled at startup
 
@@ -3598,19 +3598,38 @@ SAT = SatTiles(SAT_PATH)
 
 # 1.48: closer than Sentinel's 10 m — Esri World Imagery (ArcGIS Location Platform), zoom 14 and closer, Ukraine only
 ESRI_URL = "https://ibasemaps-api.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+# 1.49: the streets — over the imagery (roads and names) and as a map of their own — from Esri's Static Basemap Tiles
+# service: 512-pixel PNG tiles (a quarter of the tiles for the same screen), names in the reader's language
+ESRI_STATIC = ("https://static-map-tiles-api.arcgis.com/arcgis/rest/services/static-basemap-tiles-service/v1/"
+               "{style}/static/tile/{z}/{y}/{x}")
 ESRI_BBOX = (22.0, 44.2, 40.4, 52.5)       # lon, lat — the tiles asked for must touch it
+# kind → (address, style, zoom from, zoom to, style preferences: names in the reader's language, Crimea as Ukraine)
+ESRI_KINDS = {
+    "img": (ESRI_URL, None, 14, 18, False),                          # World Imagery, 256-px JPEG
+    "lbl": (ESRI_STATIC, "arcgis/imagery/labels", 9, 18, True),      # roads and names over the imagery
+    "map": (ESRI_STATIC, "arcgis/streets", 4, 18, True),             # the street map (day mode)
+    "mapn": (ESRI_STATIC, "arcgis/streets-night", 4, 18, True),      # the street map, dark (standard and night modes)
+}
+ESRI_LANGS = ("en", "uk", "fr")
 
 
 class EsriTiles:
-    """The closest zooms of the satellite layer (1.48): a street, a building — what 10 m Sentinel pixels cannot show.
+    """The satellite layer's closest zooms (1.48) and the streets (1.49), from Esri (ArcGIS Location Platform).
+
+    1.48: World Imagery for zoom 14–18 — a street, a building — what 10 m Sentinel pixels cannot show. 1.49: the roads
+    and names drawn over the imagery from zoom 9 (`lbl`, "arcgis/imagery/labels"), and the "Map" background, a street
+    map like any phone's (`map` / `mapn`, "arcgis/streets" and "-night"), both from the Static Basemap Tiles service,
+    asked in the reader's language and with the worldview that draws Crimea as Ukraine (`worldview`; refused by Esri →
+    asked again without, once, and remembered).
+
     The key is the owner's (ESRI_KEY, a Fly secret set with scripts/set-esri-key.bat) and stays on this server: the
     page asks /tiles/esri/…, this server asks Esri. Nothing is kept here — Esri's terms forbid storing its tiles; the
     browser keeps what Esri's own cache headers let it.
 
-    Every tile is paid for past the free tier, so they are counted and capped: `esri_monthly_tiles` a month (under the
-    2 M free tiles), never more than a tenth of them in one day (one busy night cannot spend the month), PER_IP_HOUR
-    for one reader. Past a cap the page is told (state.config.esri) and shows the Sentinel picture alone. Only tiles
-    over Ukraine, zoom ZMIN–ZMAX, are ever asked for."""
+    Every tile is paid for past the free tier, so they are counted and capped, all kinds together:
+    `esri_monthly_tiles` a month (under the 2 M free tiles), never more than a tenth of them in one day (one busy night
+    cannot spend the month), PER_IP_HOUR for one reader. Past a cap the page is told (state.config.esri) and shows the
+    Sentinel picture alone, or the OSM streets for the map. Only tiles over Ukraine are ever asked for."""
     ATTRIBUTION = "Powered by Esri · Esri, Maxar, Earthstar Geographics, and the GIS User Community"
     ZMIN, ZMAX = 14, 18
     PER_IP_HOUR = 3000
@@ -3626,6 +3645,7 @@ class EsriTiles:
         self.salt = os.urandom(16)
         self.down_until = 0.0
         self.refused = None
+        self.no_prefs = set()                            # kinds whose style preferences Esri refused
 
     def cap(self):
         try:
@@ -3685,49 +3705,71 @@ class EsriTiles:
         w, s, e, nn = ESRI_BBOX
         return lon1 > w and lon0 < e and lat1 > s and lat0 < nn
 
-    def fetch(self, z, x, y, ip=""):
-        """(HTTP status, body, content type, cache header) for the page."""
-        if not (self.ZMIN <= z <= self.ZMAX and 0 <= x < (1 << z) and 0 <= y < (1 << z)) or not self.over_ukraine(z, x, y):
-            return 404, b"", None, "public, max-age=86400"
-        key = self.cfg.get("esri_key")
-        if not key or not self.cap():
-            return 404, b"", None, "no-store"
-        h = hashlib.sha256(self.salt + (ip or "").encode()).hexdigest()[:16]    # in memory, for the hour, never stored
+    def _count(self, h):
+        """One more tile asked of Esri — or the reason it is not asked: (status, cache header), else None."""
         with self.lock:
             self._roll()
             if self._spent():
-                return 429, b"", None, "no-store"
+                return 429, "no-store"
             if time.monotonic() < self.down_until:
-                return 503, b"", None, "no-store"
+                return 503, "no-store"
             hr = int(time.time() // 3600)
             if hr != self.hour:
                 self.hour, self.by_ip = hr, {}
             if self.by_ip.get(h, 0) >= self.PER_IP_HOUR:
-                return 429, b"", None, "no-store"
+                return 429, "no-store"
             self.by_ip[h] = self.by_ip.get(h, 0) + 1
             self.n_month += 1
             self.n_day += 1
             self.unsaved += 1
             if self.unsaved >= self.SAVE_EVERY:
                 self._save()
-        if not self.gate.acquire(timeout=10):
-            return 503, b"", None, "no-store"
-        try:
-            url = ESRI_URL.format(z=z, x=x, y=y) + "?blankTile=false&token=" + quote(key, safe="")
-            req = urllib.request.Request(url, headers={"User-Agent": f"Heimdall/{APP_VERSION}"})
-            with urllib.request.urlopen(req, timeout=10, context=_SSL_CTX) as r:
-                body, ctype, cc = r.read(), r.headers.get("Content-Type") or "", r.headers.get("Cache-Control")
-        except urllib.error.HTTPError as e:
-            # never e.url or str(e) of the request: the address carries the key
-            if e.code in (401, 403, 498, 499):
-                self._refused(f"HTTP {e.code}")
+        return None
+
+    def fetch(self, z, x, y, ip="", kind="img", lang=None):
+        """(HTTP status, body, content type, cache header) for the page."""
+        spec = ESRI_KINDS.get(kind)
+        if not spec:
+            return 404, b"", None, "public, max-age=86400"
+        tmpl, style, zmin, zmax, prefs = spec
+        if not (zmin <= z <= zmax and 0 <= x < (1 << z) and 0 <= y < (1 << z)) or not self.over_ukraine(z, x, y):
+            return 404, b"", None, "public, max-age=86400"
+        key = self.cfg.get("esri_key")
+        if not key or not self.cap():
+            return 404, b"", None, "no-store"
+        h = hashlib.sha256(self.salt + (ip or "").encode()).hexdigest()[:16]    # in memory, for the hour, never stored
+        base = tmpl.format(z=z, x=x, y=y, style=style) + ("?blankTile=false&" if kind == "img" else "?")
+        with_prefs = prefs and kind not in self.no_prefs
+        for attempt in (0, 1):
+            stop = self._count(h)
+            if stop:
+                return stop[0], b"", None, stop[1]
+            q = ""
+            if with_prefs:
+                q = (f"language={lang}&" if lang in ESRI_LANGS else "") + "worldview=unitedStatesOfAmerica&"
+            if not self.gate.acquire(timeout=10):
                 return 503, b"", None, "no-store"
-            return (404 if e.code == 404 else 502), b"", None, ("public, max-age=86400" if e.code == 404 else "no-store")
-        except Exception as e:
-            log("esri tiles:", type(e).__name__)
-            return 502, b"", None, "no-store"
-        finally:
-            self.gate.release()
+            try:
+                req = urllib.request.Request(base + q + "token=" + quote(key, safe=""), headers={"User-Agent": f"Heimdall/{APP_VERSION}"})
+                with urllib.request.urlopen(req, timeout=10, context=_SSL_CTX) as r:
+                    body, ctype, cc = r.read(), r.headers.get("Content-Type") or "", r.headers.get("Cache-Control")
+                break
+            except urllib.error.HTTPError as e:
+                # never e.url or str(e) of the request: the address carries the key
+                if e.code in (401, 403, 498, 499):
+                    self._refused(f"HTTP {e.code}")
+                    return 503, b"", None, "no-store"
+                if e.code == 400 and with_prefs and not attempt:
+                    log(f"esri tiles: {kind} refused the style preferences — asked without them from now on")
+                    self.no_prefs.add(kind)
+                    with_prefs = False
+                    continue
+                return (404 if e.code == 404 else 502), b"", None, ("public, max-age=86400" if e.code == 404 else "no-store")
+            except Exception as e:
+                log("esri tiles:", type(e).__name__)
+                return 502, b"", None, "no-store"
+            finally:
+                self.gate.release()
         if not ctype.startswith("image/"):
             # a refused key comes back as 200 and a JSON error
             code = None
@@ -3735,6 +3777,9 @@ class EsriTiles:
                 code = (json.loads(body).get("error") or {}).get("code")
             except Exception:
                 pass
+            if code == 400 and with_prefs:
+                self.no_prefs.add(kind)
+                return 502, b"", None, "no-store"
             self._refused(f"error {code}" if code else "not an image")
             return 503, b"", None, "no-store"
         # the reader's browser keeps it as long as Esri says; no shared cache does
@@ -5857,7 +5902,7 @@ class Handler(BaseHTTPRequestHandler):
             if u.path.startswith("/tiles/sat/"):
                 return self._sat_tile(u.path)
             if u.path.startswith("/tiles/esri/"):
-                return self._esri_tile(u.path)
+                return self._esri_tile(u.path, (q.get("lang") or [""])[0])
             if u.path == "/favicon.ico":
                 return self._file("heimdall-64.png", "image/png")
             self._json({"error": "not found"}, 404)
@@ -6071,13 +6116,20 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(data)
 
     _ESRI_RX = re.compile(r"/tiles/esri/(\d{1,2})/(\d{1,7})/(\d{1,7})\.jpg")
+    # 1.49: /tiles/esri/{kind}/{z}/{x}/{y}.{jpg|png}?lang= — the imagery (img), the roads and names over it (lbl), the map
+    _ESRI_KIND_RX = re.compile(r"/tiles/esri/(img|lbl|map|mapn)/(\d{1,2})/(\d{1,7})/(\d{1,7})\.(?:jpg|png)")
 
-    def _esri_tile(self, path):
-        """1.48: one tile of the closest zooms, asked of Esri with the owner's key (EsriTiles). Past a cap, or with no
-        key, the page gets an empty answer and shows the Sentinel picture under it."""
-        m = self._ESRI_RX.fullmatch(path)
-        code, data, ctype, cc = (self.state.esri.fetch(*map(int, m.groups()), ip=self._peer_ip()) if m
-                                 else (404, b"", None, "public, max-age=86400"))
+    def _esri_tile(self, path, lang=""):
+        """1.48: one tile of the closest zooms, asked of Esri with the owner's key (EsriTiles); 1.49: or of the roads and
+        names over the imagery, or of the street map. Past a cap, or with no key, the page gets an empty answer and
+        shows the Sentinel picture under it (the OSM streets for the map)."""
+        m, k = self._ESRI_RX.fullmatch(path), self._ESRI_KIND_RX.fullmatch(path)
+        if m:
+            code, data, ctype, cc = self.state.esri.fetch(*map(int, m.groups()), ip=self._peer_ip())
+        elif k:
+            code, data, ctype, cc = self.state.esri.fetch(*map(int, k.groups()[1:]), ip=self._peer_ip(), kind=k.group(1), lang=lang)
+        else:
+            code, data, ctype, cc = 404, b"", None, "public, max-age=86400"
         self.send_response(code)
         if ctype:
             self.send_header("Content-Type", ctype)

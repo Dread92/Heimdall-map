@@ -116,8 +116,8 @@ function frame(){
       const last=j===tr.p.length-1, h=last&&tr.h!=null&&tr.ty!=='unknown'?tr.h:0;      // a course only where a post stated one
       const gk=glyphKey({type:tr.ty,jet:!!tr.jet,heading:h}); const rot=e.g.querySelector('.rot');
       if(e.gk!==gk){ e.gk=gk; rot.innerHTML=G[gk]; }
-      rot.setAttribute('transform',`rotate(${h}) scale(${((tr.ty==='drones'?1.05:/missile/.test(tr.ty)?0.95:1.0)*KPX).toFixed(2)})`);
-      const lb=e.g.querySelector('.rpl'); lb.setAttribute('x',(9*KPX).toFixed(2)); lb.setAttribute('y',(-7*KPX).toFixed(2));
+      rot.setAttribute('transform',`rotate(${h}) scale(${kx((tr.ty==='drones'?1.05:/missile/.test(tr.ty)?0.95:1.0)*KPX)})`);
+      const lb=e.g.querySelector('.rpl'); lb.setAttribute('x',kx(9*KPX)); lb.setAttribute('y',kx(-7*KPX));
       lb.textContent=(head[3]&&head[3]!=='область'?(tr.ap?'→ ':'')+pn(head[3]):'')+((tr.n||1)>1?` ×${tr.n}`:'');
       // the trail: each reported position of the last half-hour, joined in the order they were reported
       const from=T-TRAIL_MIN*60; let pts=tr.p.slice(0,j+1).filter(p=>p[0]>=from);
@@ -126,7 +126,7 @@ function frame(){
         if(Math.hypot(bx-ax,by-ay)>Math.max(12,(b[0]-a[0])/60*(/missile/.test(tr.ty)?15:4)+8)){ pts=pts.slice(q); break; } }
       const xy=pts.map(p=>proj(p[1],p[2]).map(v=>v.toFixed(2)).join(','));
       e.g.querySelector('.rptr').setAttribute('points',xy.length>1?xy.join(' '):'');
-      e.g.querySelector('.rpds').innerHTML=pts.slice(0,-1).map(p=>{const [px,py]=proj(p[1],p[2]); return `<circle class="rpdot" cx="${px.toFixed(2)}" cy="${py.toFixed(2)}" r="${(1.6*KPX).toFixed(2)}"/>`;}).join('');
+      e.g.querySelector('.rpds').innerHTML=pts.slice(0,-1).map(p=>{const [px,py]=proj(p[1],p[2]); return `<circle class="rpdot" cx="${px.toFixed(2)}" cy="${py.toFixed(2)}" r="${kx(1.6*KPX)}"/>`;}).join('');
     }
   });
   for(const [i,e] of RP.els) if(!live.has(i)){ e.g.remove(); RP.els.delete(i); }

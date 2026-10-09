@@ -28,7 +28,7 @@ def test_the_tile_credit_sits_in_a_bottom_corner():
 
 
 def test_the_crimea_cossack_is_drawn_above_the_raion_outlines_in_one_path_per_colour():
-    body = PAGE[PAGE.index("function cossack(){"):PAGE.index("// ---- street tiles")]
+    body = PAGE[PAGE.index("function cossack(){"):PAGE.index("// ---- the background under the map")]
     assert "<rect x=\"${x-6}\"" not in body                     # no longer 200 separate squares
     i = PAGE.index("$('obllbl').innerHTML=")
     assert "cossack()" in PAGE[i:PAGE.index("\n", PAGE.index("\n", i) + 1)]

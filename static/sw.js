@@ -9,7 +9,7 @@ const GUIDE = ['/guide', '/static/glyphs.js', '/static/heimdall-64.png'];
 const SHELL = ['/static/i18n.js', '/static/live.js', '/static/heimdall-192.png', '/static/logo-64.png'];
 // kept when they are first fetched through the worker (never downloaded ahead: a Light reader on 2G does not need
 // the full map) — the page itself from its next opening on
-const KEEP = GUIDE.concat(SHELL, ['/m', '/light', '/static/kyiv-map.json', '/static/map-ua.json', '/static/ukraine-map.json', '/static/light-map.json', '/static/kyiv-districts.json', '/manifest.json', '/light.webmanifest']);
+const KEEP = GUIDE.concat(SHELL, ['/m', '/light', '/static/kyiv-map.json', '/static/map-ua.json', '/static/ukraine-map.json', '/static/light-map.json', '/static/kyiv-districts.json', '/static/towns-ua.json', '/manifest.json', '/light.webmanifest']);
 // the addresses that are the same page
 const ALIAS = { '/': '/m', '/k': '/m', '/kyiv': '/m', '/l': '/light' };
 self.addEventListener('install', e => {

@@ -246,7 +246,8 @@ Villages and city districts of the regional trackers' oblasts: [GeoNames](https:
 Rivers and roads outside Kyiv oblast: [Natural Earth](https://www.naturalearthdata.com/) (public domain).
 Satellite imagery: [ESA WorldCover](https://esa-worldcover.org) 2021 Sentinel-2 composite (CC BY 4.0), contains
 modified Copernicus Sentinel data (2021); closest zooms: Esri World Imagery (Powered by Esri · Esri, Maxar,
-Earthstar Geographics, and the GIS User Community).
+Earthstar Geographics, and the GIS User Community). Streets and names (1.49): Esri (Esri, TomTom, Garmin, FAO, NOAA,
+USGS, © OpenStreetMap contributors, and the GIS User Community). Towns of every oblast: GeoNames (CC BY 4.0).
 What each one gives and how it is parsed: [docs/TECHNICAL.md §6–7](docs/TECHNICAL.md#6-official-alert-data).
 
 Map data: raion and oblast boundaries from [geoBoundaries](https://www.geoboundaries.org/) (CC BY

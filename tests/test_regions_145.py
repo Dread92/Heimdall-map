@@ -109,7 +109,7 @@ def test_a_target_reported_for_a_whole_oblast_marks_the_region_not_a_point():
     assert "const px=v=>`calc(var(--k,1)*${v.toFixed(1)}px)`;" in chip          # its size in screen pixels at every zoom
     # the Near list keeps it, without a distance, as "Chernihiv oblast · somewhere in the oblast"
     assert "vague:m.place==='область'" in PAGE and "km=(r.imm||r.vague)?'—'" in PAGE
-    assert "o?o+' · '+t('obl_somewhere')" in PAGE
+    assert "o?o+' · '+t(m.oblast_uid==='31'?'city_somewhere':'obl_somewhere')" in PAGE   # 1.49: Kyiv city, "in the city"
     # a push never says "within 15 km of you" for it, and the Light radar does not draw it
     assert 'elif m.get("place") != "область" and d <= radius + HOME_CELL_KM / 2:' in SRV
     assert "if(m.place==='\\u043e\\u0431\\u043b\\u0430\\u0441\\u0442\\u044c'&&!IMMEDIATE.has(m.type)) continue;" in LIGHT
@@ -195,7 +195,7 @@ def test_the_villages_layer_shows_names_at_an_oblasts_width():
     # 1.45.1: they appeared only below 90 km of map (40 on a phone) — on an oblast's view the layer did nothing
     # with the layer on, the small towns and villages stay up to 300 km of map (an oblast's view is 260)
     assert "svg.veryfar.no-minor .town:not(.big)" in PAGE and "svg.classList.toggle('vilfar',VB.w>300);" in PAGE
-    assert "svg.vilfar .town:not(.big):not(.rg):not(.uac),svg.vilfar .towndot:not(.rg):not(.uac){display:none}" in PAGE
+    assert "svg.vilfar .town:not(.big):not(.rg):not(.uac):not(.tw2),svg.vilfar .towndot:not(.rg):not(.uac):not(.tw2){display:none}" in PAGE   # 1.49: and the main towns
     assert "svg.far .town.minor,svg.far .towndot.minor{display:none}" in PAGE          # a phone: up to 90 km
     assert ".towndot[data-hid]{display:none!important}" in PAGE                         # no nameless dots
     v = geo.villages({"27"})
