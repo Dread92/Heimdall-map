@@ -2,6 +2,13 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.49.3 — 2026-10-09
+
+### Changed
+- Esri's names-and-map service answered "401 Token Invalid" to a key the imagery takes: it is now asked once more
+  without the language and worldview preferences. If that works, they are left out from then on (the names come in
+  Esri's default language); if not, the dashboard says the key itself is refused for that service.
+
 ## 1.49.2 — 2026-10-09
 
 ### Fixed

@@ -247,3 +247,29 @@ def test_a_failed_tile_never_takes_the_older_picture_away():
     assert "for(const im of g.querySelectorAll(`image[data-z=\"${g.dataset.z}\"]:not(.old)`)) if(im.dataset.ok!=='1') return;" in PAGE
     assert "g._sw" not in PAGE                                              # no timer clearing them into black
     assert "if(ST_MISS<3&&!allFailed) return;" in PAGE and "ST_DOWN=Date.now()+120000;" in PAGE
+
+def test_a_key_refused_with_the_style_preferences_is_asked_once_without_them():
+    # 1.49.3: "HTTP 401: Token Invalid" from the Static Basemap Tiles, for a key World Imagery takes
+    e, seen, logged = _esri(), [], []
+
+    def only_without_prefs(req, timeout=None, context=None):
+        seen.append(req.full_url)
+        if "worldview" in req.full_url:
+            raise urllib.error.HTTPError(req.full_url, 401, "Unauthorized", {}, __import__("io").BytesIO(
+                b'{"error":{"code":401,"message":"Token Invalid."}}'))
+        return _Resp()
+    with mock.patch.object(server, "log", lambda *a: logged.append(" ".join(map(str, a)))), \
+            mock.patch.object(server.urllib.request, "urlopen", only_without_prefs):
+        assert e.fetch(*KYIV, kind="lbl", lang="uk")[0] == 200
+        assert e.fetch(*KYIV, kind="lbl", lang="uk")[0] == 200
+    assert len(seen) == 3 and "worldview" not in seen[2] and "lbl" in e.no_prefs and e.enabled("st")
+    # refused without them too: it is the key, and the dashboard says so
+    e2 = _esri()
+
+    def always(req, timeout=None, context=None):
+        raise urllib.error.HTTPError(req.full_url, 401, "Unauthorized", {}, __import__("io").BytesIO(
+            b'{"error":{"code":401,"message":"Token Invalid."}}'))
+    with mock.patch.object(server, "log", lambda *a: None), mock.patch.object(server.urllib.request, "urlopen", always):
+        assert e2.fetch(*KYIV, kind="map", lang="en")[0] == 503
+    assert e2.stats()["refused"]["st"] == "HTTP 401: Token Invalid. (also without language / worldview)"
+    assert "map" not in e2.no_prefs and not e2.enabled("st") and e2.enabled("img")

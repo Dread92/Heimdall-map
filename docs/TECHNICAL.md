@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.49** · last updated 2026-10-09 (1.49.2)
+**Documented version: 1.49** · last updated 2026-10-09 (1.49.3)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -1005,8 +1005,10 @@ zoom (`#emap`, `updateMap`: "arcgis/streets", "arcgis/streets-night" in the stan
 Esri (no key, or past the cap) the OSM streets zoomed in, as before; **Plain** — our own map, nothing under it. Both
 Esri layers come from the Static Basemap Tiles service: 512-pixel PNG tiles (asked one zoom below the 256-pixel grid
 for the same sharpness — a quarter of the tiles), with the reader's language (`language=en|uk|fr`) and the worldview
-that draws Crimea as Ukraine (`worldview=unitedStatesOfAmerica`); a style preference Esri refuses (HTTP 400) is
-dropped once and remembered (`EsriTiles.no_prefs`). Same proxy, key and caps as the imagery
+that draws Crimea as Ukraine (`worldview=unitedStatesOfAmerica`); a request refused with them (HTTP 400, or — 1.49.3 —
+401/403, as the static tiles answered "401 Token Invalid" to a key World Imagery took) is asked once more without
+them: if that works they are dropped and remembered (`EsriTiles.no_prefs`), if not the refusal is the key's and the
+dashboard says "(also without language / worldview)". Same proxy, key and caps as the imagery
 (`/tiles/esri/{img|lbl|map|mapn}/…`). 1.49.2: the two services are **refused and paused apart** (`EsriTiles.down`,
 `refused`: "img" for World Imagery, "st" for the Static Basemap Tiles) — in 1.49 a key without the static tiles'
 privilege (`premium:user:staticbasemaptiles`) paused the imagery too and the satellite went back to Sentinel's 10 m;

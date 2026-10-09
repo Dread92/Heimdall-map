@@ -3762,15 +3762,27 @@ class EsriTiles:
                 req = urllib.request.Request(base + q + "token=" + quote(key, safe=""), headers={"User-Agent": f"Heimdall/{APP_VERSION}"})
                 with urllib.request.urlopen(req, timeout=10, context=_SSL_CTX) as r:
                     body, ctype, cc = r.read(), r.headers.get("Content-Type") or "", r.headers.get("Cache-Control")
+                if attempt and prefs and kind not in self.no_prefs and ctype.startswith("image/"):
+                    log(f"esri tiles: {kind} works without the style preferences — asked without them from now on")
+                    self.no_prefs.add(kind)
                 break
             except urllib.error.HTTPError as e:
                 # never e.url or str(e) of the request: the address carries the key — Esri's own message says why
                 if e.code in (401, 403, 498, 499):
-                    self._refused(svc, f"HTTP {e.code}" + self._why(e))
+                    why = f"HTTP {e.code}" + self._why(e)
+                    if with_prefs and not attempt:
+                        # 1.49.3: the Static Basemap Tiles answered "401 Token Invalid" to a key World Imagery takes —
+                        # asked once more without the style preferences (language, worldview), the answer says whether
+                        # those are the cause or the key is
+                        log(f"esri tiles: {kind} refused the key with the style preferences ({why}) — asking without them")
+                        with_prefs = False
+                        continue
+                    if attempt and prefs:
+                        why += " (also without language / worldview)"
+                    self._refused(svc, why)
                     return 503, b"", None, "no-store"
                 if e.code == 400 and with_prefs and not attempt:
-                    log(f"esri tiles: {kind} refused the style preferences — asked without them from now on")
-                    self.no_prefs.add(kind)
+                    log(f"esri tiles: {kind} refused the style preferences — asking without them")
                     with_prefs = False
                     continue
                 return (404 if e.code == 404 else 502), b"", None, ("public, max-age=86400" if e.code == 404 else "no-store")
