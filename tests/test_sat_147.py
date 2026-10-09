@@ -83,7 +83,7 @@ def test_the_page_draws_it_inside_ukraine_under_the_streets():
     assert "const LAYERS={sat:true,tiles:false," in PAGE                        # 1.47.1: the default on every device
     # 1.47.1: one picture or the other — zooming in no longer falls back to the OSM streets (1.49: one of three radios)
     assert "LAYERS.sat=rb.value==='sat'; LAYERS.tiles=rb.value==='map';" in PAGE
-    assert "const want=(LAYERS.tiles&&SAT_KNOWN&&!ESRI_OK)||(LAYERS.sat&&SAT_KNOWN&&!SAT_OK);" in PAGE   # no imagery: the streets
+    assert "const want=(LAYERS.tiles&&SAT_KNOWN&&!stOK())||(LAYERS.sat&&SAT_KNOWN&&!SAT_OK);" in PAGE   # no imagery: the streets
     assert "if(!localStorage.getItem('layers_v3')){LAYERS.sat=true;LAYERS.tiles=false;" in PAGE   # once, for the saved choices
     assert '<label data-b="sat" hidden><input type="radio" name="lbase" value="sat">' in PAGE   # offered once the server has the tiles
     assert "satAvail(S.config);" in PAGE and "const ok=!!c.sat," in PAGE

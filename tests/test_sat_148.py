@@ -109,16 +109,17 @@ def test_a_refused_key_pauses_and_is_never_written_to_the_log():
     with mock.patch.object(server, "log", lambda *a: logged.append(" ".join(map(str, a)))):
         with mock.patch.object(server.urllib.request, "urlopen", lambda req, timeout=None, context=None: _Resp(err, "application/json")):
             assert e.fetch(*KYIV)[0] == 503
-        assert not e.enabled() and e.stats()["refused"] == "error 498" and e.stats()["paused"]
+        st = e.stats()
+        assert not e.enabled() and st["refused"]["img"] == "error 498: Invalid token." and st["paused"]["img"]   # Esri's own words
         with mock.patch.object(server.urllib.request, "urlopen", side_effect=AssertionError("asked again")):
             assert e.fetch(*KYIV)[0] == 503                                  # paused: not asked again on every tile
-        e.down_until = 0
+        e.down["img"] = 0
 
         def http_err(req, timeout=None, context=None):
             raise urllib.error.HTTPError(req.full_url, 403, "Forbidden", {}, None)
         with mock.patch.object(server.urllib.request, "urlopen", http_err):
             assert e.fetch(*KYIV)[0] == 503
-    assert logged and not any("test-esri-key" in m or "token" in m for m in logged)
+    assert logged and not any("test-esri-key" in m or "token=" in m for m in logged)   # Esri's words, never the address
 
 
 def test_the_route_and_the_page_flag():

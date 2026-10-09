@@ -123,7 +123,7 @@ def test_the_streets_over_the_imagery_and_the_map_with_esri_and_osm_without():
     assert "placeTiles(g,Math.min(18,z),(z,x,y)=>`/tiles/esri/lbl/${z}/${x}/${y}.png?lang=${LANG}`,60,9);" in PAGE
     assert "const kind=MODE==='day'?'map':'mapn';" in PAGE
     assert "placeTiles(g,Math.max(4,Math.min(18,tileZoom()-1)),(z,x,y)=>`/tiles/esri/${kind}/${z}/${x}/${y}.png?lang=${LANG}`,60,4);" in PAGE
-    assert "const on=LAYERS.tiles&&ESRI_OK&&MAP&&!CITY&&!LITE_ON();" in PAGE
+    assert "const on=LAYERS.tiles&&stOK()&&MAP&&!CITY&&!LITE_ON();" in PAGE
     # our own names step aside where Esri's are drawn
     assert "svg.lbld #towns,svg.mapd #towns,svg.lbld #minorg,svg.lbld #villg,svg.mapd #minorg,svg.mapd #villg{display:none}" in PAGE
     assert "var ESRI_SRC='Esri, TomTom, Garmin, FAO, NOAA, USGS, © OpenStreetMap contributors, and the GIS User Community';" in PAGE
@@ -145,9 +145,7 @@ def test_a_pinch_or_the_wheel_scales_the_last_picture_and_draws_once_at_rest():
 
 
 def test_tiles_of_the_zoom_before_stay_until_the_new_ones_have_come():
-    assert "if(inView&&+im.dataset.z!==z) im.classList.add('old'); else im.remove(); }" in PAGE
     assert "im.addEventListener('load',tileDone); im.addEventListener('error',tileDone);" in PAGE
-    assert "g._sw=setTimeout(()=>g.querySelectorAll('image.old').forEach(i=>i.remove()),4000); return; }" in PAGE
 
 
 def test_lengths_sized_by_the_zoom_keep_their_digits():
@@ -219,3 +217,33 @@ def test_kyiv_without_a_place_in_it_is_the_city_not_a_point_at_its_centre():
     assert "if(ps.bank) return t('bank_'+ps.bank)+(o?' · '+o:'');" in PAGE
     for s in ("bank_right:'right bank'", "bank_left:'лівий берег'", "city_somewhere:'quelque part dans la ville'"):
         assert s in I18N
+
+def test_a_refusal_of_the_names_and_map_leaves_the_imagery_alone():
+    # 1.49: a key without the Static Basemap Tiles privilege paused World Imagery too — the satellite went blurry
+    e, logged = _esri(), []
+
+    def by_service(req, timeout=None, context=None):
+        if "static-map-tiles" in req.full_url:
+            raise urllib.error.HTTPError(req.full_url, 403, "Forbidden", {}, __import__("io").BytesIO(
+                b'{"error":{"code":403,"message":"You do not have permissions to access this resource or perform this operation."}}'))
+        return _Resp(b"\xff\xd8 img", "image/jpeg")
+    with mock.patch.object(server, "log", lambda *a: logged.append(" ".join(map(str, a)))), \
+            mock.patch.object(server.urllib.request, "urlopen", by_service):
+        assert e.fetch(*KYIV, kind="lbl", lang="uk")[0] == 503
+        assert e.fetch(16, 38324, 22098)[0] == 200                         # the imagery goes on
+    assert e.enabled("img") and not e.enabled("st")
+    st = e.stats()
+    assert st["refused"]["st"].startswith("HTTP 403: You do not have permissions") and st["paused"] == {"img": False, "st": True}
+    assert any("Static Basemap Tiles" in m for m in logged) and not any("test-esri-key" in m for m in logged)
+    c = server.State(server.Store(":memory:"), {"esri_key": "k"}).snapshot()["config"]
+    assert c["esri"] is True and c["esri_st"] is True
+    page = PAGE
+    assert "st=c.esri_st===undefined?e:!!c.esri_st;" in page and "function stOK(){ return ESRI_ST&&Date.now()>=ST_DOWN; }" in page
+    assert "const want=(LAYERS.tiles&&SAT_KNOWN&&!stOK())||" in page                 # the Map falls back to the OSM streets
+
+
+def test_a_failed_tile_never_takes_the_older_picture_away():
+    assert "if(inView&&+im.dataset.z!==z&&im.dataset.ok==='1') im.classList.add('old'); else im.remove(); }" in PAGE
+    assert "for(const im of g.querySelectorAll(`image[data-z=\"${g.dataset.z}\"]:not(.old)`)) if(im.dataset.ok!=='1') return;" in PAGE
+    assert "g._sw" not in PAGE                                              # no timer clearing them into black
+    assert "if(ST_MISS<3&&!allFailed) return;" in PAGE and "ST_DOWN=Date.now()+120000;" in PAGE

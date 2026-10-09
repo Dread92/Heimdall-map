@@ -2,6 +2,17 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.49.2 — 2026-10-09
+
+### Fixed
+- **The satellite went blurry again after 1.49**: when Esri refused the key for the new names-and-map service, the
+  close-zoom imagery was paused with it. The two are now refused and paused apart, and the dashboard and the log say
+  which and why, in Esri's own words.
+- **A blank map** in Map mode when Esri's tiles failed: the page now falls back to the OSM streets (and to our own
+  names over the imagery) as soon as a view's Esri tiles all fail.
+- **The picture vanishing for a moment** (a restart of the server, a refused tile): a tile that fails no longer takes
+  the previous picture away; it stays until the new tiles have actually arrived.
+
 ## 1.49.1 — 2026-10-09
 
 ### Changed

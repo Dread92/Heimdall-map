@@ -3508,7 +3508,8 @@ class State:
                 "notice": self.notice_now(), "nuke": self.nuke, "bridges": bridges, "scope": sorted(SCOPE_UIDS, key=int),
                 "favourites": self.cfg.get("favourites") or [], "config": {"demo": bool(self.cfg.get("demo")), "canonical": canonical_host(self.cfg),
                 "has_token": bool(self.cfg.get("alerts_in_ua_token")), "channels": self.cfg.get("telegram_channels"),
-                "sat": SAT.available(), "sat_v": sv, "sat_z": sz, "esri": self.esri.enabled()}}
+                "sat": SAT.available(), "sat_v": sv, "sat_z": sz, "esri": self.esri.enabled("img"),
+                "esri_st": self.esri.enabled("st")}}
 
 
 # ---------------------------------------------------------------------------
@@ -3643,8 +3644,10 @@ class EsriTiles:
         self.n_month = self.n_day = self.unsaved = 0
         self.hour, self.by_ip = None, {}
         self.salt = os.urandom(16)
-        self.down_until = 0.0
-        self.refused = None
+        # 1.49.2: the two services are refused, and paused, apart — "img" (World Imagery) and "st" (the Static Basemap
+        # Tiles: the names and the map). In 1.49 a key without the static tiles' privilege paused the imagery too.
+        self.down = {"img": 0.0, "st": 0.0}
+        self.refused = {"img": None, "st": None}
         self.no_prefs = set()                            # kinds whose style preferences Esri refused
 
     def cap(self):
@@ -3682,19 +3685,24 @@ class EsriTiles:
         cap = self.cap()
         return self.n_month >= cap or self.n_day >= max(1, cap // 10)
 
-    def enabled(self):
+    @staticmethod
+    def svc(kind):
+        return "img" if kind == "img" else "st"
+
+    def enabled(self, svc="img"):
         if not self.cfg.get("esri_key") or not self.cap():
             return False
         with self.lock:
             self._roll()
-            return not self._spent() and time.monotonic() >= self.down_until
+            return not self._spent() and time.monotonic() >= self.down[svc]
 
     def stats(self):
         with self.lock:
             self._roll()
+            now = time.monotonic()
             return {"key": bool(self.cfg.get("esri_key")), "month": self.month, "tiles_month": self.n_month,
                     "tiles_today": self.n_day, "cap_month": self.cap(), "cap_day": self.cap() // 10,
-                    "paused": time.monotonic() < self.down_until, "refused": self.refused}
+                    "paused": {k: now < v for k, v in self.down.items()}, "refused": dict(self.refused)}
 
     @staticmethod
     def over_ukraine(z, x, y):
@@ -3705,13 +3713,13 @@ class EsriTiles:
         w, s, e, nn = ESRI_BBOX
         return lon1 > w and lon0 < e and lat1 > s and lat0 < nn
 
-    def _count(self, h):
+    def _count(self, h, svc="img"):
         """One more tile asked of Esri — or the reason it is not asked: (status, cache header), else None."""
         with self.lock:
             self._roll()
             if self._spent():
                 return 429, "no-store"
-            if time.monotonic() < self.down_until:
+            if time.monotonic() < self.down[svc]:
                 return 503, "no-store"
             hr = int(time.time() // 3600)
             if hr != self.hour:
@@ -3740,8 +3748,9 @@ class EsriTiles:
         h = hashlib.sha256(self.salt + (ip or "").encode()).hexdigest()[:16]    # in memory, for the hour, never stored
         base = tmpl.format(z=z, x=x, y=y, style=style) + ("?blankTile=false&" if kind == "img" else "?")
         with_prefs = prefs and kind not in self.no_prefs
+        svc = self.svc(kind)
         for attempt in (0, 1):
-            stop = self._count(h)
+            stop = self._count(h, svc)
             if stop:
                 return stop[0], b"", None, stop[1]
             q = ""
@@ -3755,9 +3764,9 @@ class EsriTiles:
                     body, ctype, cc = r.read(), r.headers.get("Content-Type") or "", r.headers.get("Cache-Control")
                 break
             except urllib.error.HTTPError as e:
-                # never e.url or str(e) of the request: the address carries the key
+                # never e.url or str(e) of the request: the address carries the key — Esri's own message says why
                 if e.code in (401, 403, 498, 499):
-                    self._refused(f"HTTP {e.code}")
+                    self._refused(svc, f"HTTP {e.code}" + self._why(e))
                     return 503, b"", None, "no-store"
                 if e.code == 400 and with_prefs and not attempt:
                     log(f"esri tiles: {kind} refused the style preferences — asked without them from now on")
@@ -3780,17 +3789,29 @@ class EsriTiles:
             if code == 400 and with_prefs:
                 self.no_prefs.add(kind)
                 return 502, b"", None, "no-store"
-            self._refused(f"error {code}" if code else "not an image")
+            self._refused(svc, (f"error {code}" if code else "not an image") + self._why(body))
             return 503, b"", None, "no-store"
         # the reader's browser keeps it as long as Esri says; no shared cache does
         cc = cc if cc and "no-store" not in cc else "max-age=86400"
         return 200, body, ctype, ", ".join(["private"] + [p.strip() for p in cc.split(",") if p.strip() not in ("", "public", "private")])
 
-    def _refused(self, why):
-        """Esri refused the key (wrong, expired, out of credits): ask again in 5 minutes, not on every tile."""
-        log("esri tiles refused:", why, "— paused 5 min")
+    @staticmethod
+    def _why(src):
+        """Esri's own words for a refusal ("You do not have permissions…"), from its JSON — never the address."""
+        try:
+            body = src.read() if hasattr(src, "read") else src
+            msg = (json.loads(body or b"{}").get("error") or {}).get("message") or ""
+        except Exception:
+            return ""
+        return (": " + re.sub(r"\s+", " ", str(msg))[:140]) if msg else ""
+
+    def _refused(self, svc, why):
+        """Esri refused the key for one service (wrong, expired, a privilege missing, out of credits): that service is
+        asked again in 5 minutes, not on every tile; the other goes on."""
+        name = "World Imagery" if svc == "img" else "Static Basemap Tiles (names, map)"
+        log(f"esri tiles refused ({name}):", why, "— paused 5 min")
         with self.lock:
-            self.refused, self.down_until = why, time.monotonic() + 300
+            self.refused[svc], self.down[svc] = why, time.monotonic() + 300
 
 
 class Notifier:

@@ -2462,23 +2462,37 @@ function placeTiles(g,z,url,max,zmin){
     const im=document.createElementNS('http://www.w3.org/2000/svg','image'); im.dataset.k=k; im.dataset.z=z;
     im.addEventListener('load',tileDone); im.addEventListener('error',tileDone); im.setAttribute('href',url(z,x,y));
     im.setAttribute('x',px.toFixed(4));im.setAttribute('y',py.toFixed(4));im.setAttribute('width',(qx-px).toFixed(4));im.setAttribute('height',(qy-py).toFixed(4));im.setAttribute('preserveAspectRatio','none'); g.appendChild(im);}
+  // 1.49.2: only a picture that came is kept (one that failed draws nothing), and it stays until every new tile has
+  // come: a new tile that fails (a restart of the server, Esri refusing) leaves the older picture there, never black
   const vx1=VB.x+VB.w, vy1=VB.y+VB.h;
   for(const [k,im] of Object.entries(have)) if(!want.has(k)){
     const x=+im.getAttribute('x'), y=+im.getAttribute('y'), inView=x<vx1&&x+(+im.getAttribute('width'))>VB.x&&y<vy1&&y+(+im.getAttribute('height'))>VB.y;
-    if(inView&&+im.dataset.z!==z) im.classList.add('old'); else im.remove(); }
+    if(inView&&+im.dataset.z!==z&&im.dataset.ok==='1') im.classList.add('old'); else im.remove(); }
+  const olds=[...g.querySelectorAll('image.old')];
+  if(olds.length>150) olds.sort((a,b)=>Math.abs(+b.dataset.z-z)-Math.abs(+a.dataset.z-z)).slice(0,olds.length-150).forEach(i=>i.remove());
   g.dataset.z=z; tileSweep(g);
 }
-function tileDone(e){ const im=e.target; im.dataset.ok='1'; if(im.parentNode) tileSweep(im.parentNode); }
+function tileDone(e){ const im=e.target, g=im.parentNode, ok=e.type==='load'; im.dataset.ok=ok?'1':'0';
+  if(g&&(g.id==='emap'||g.id==='lbl')) esriSeen(ok,g);
+  if(g) tileSweep(g); }
 function tileSweep(g){ const olds=g.querySelectorAll('image.old'); if(!olds.length) return;
-  for(const im of g.querySelectorAll(`image[data-z="${g.dataset.z}"]`)) if(!im.dataset.ok){
-    clearTimeout(g._sw); g._sw=setTimeout(()=>g.querySelectorAll('image.old').forEach(i=>i.remove()),4000); return; }
-  clearTimeout(g._sw); olds.forEach(i=>i.remove()); }
+  for(const im of g.querySelectorAll(`image[data-z="${g.dataset.z}"]:not(.old)`)) if(im.dataset.ok!=='1') return;   // waiting, or failed
+  olds.forEach(i=>i.remove()); }
+// 1.49.2: Esri's names and map failing on this page (the server paused them, the key refused, the network): when every
+// tile of the view has failed, or three in a row, the page does without them for two minutes — the OSM streets for the
+// Map, our own names over the imagery — instead of a blank map waiting for the server's next word.
+var ST_MISS=0, ST_DOWN=0;
+function esriSeen(ok,g){ if(ok){ ST_MISS=0; return; } ST_MISS++; if(Date.now()<ST_DOWN) return;
+  const cur=g?[...g.querySelectorAll('image:not(.old)')]:[]; const allFailed=cur.length&&cur.every(i=>i.dataset.ok==='0');
+  if(ST_MISS<3&&!allFailed) return;
+  ST_DOWN=Date.now()+120000; ST_MISS=0; updateTiles(); setTimeout(updateTiles,120500); }
+function stOK(){ return ESRI_ST&&Date.now()>=ST_DOWN; }
 const tileZoom=()=>{ const r=SR(); const kmpx=VB.w/Math.max(1,r.width);            // km per screen px
   return Math.round(Math.log2(99.7/kmpx*(0.637/Math.cos(C[1]*Math.PI/180))))+(devicePixelRatio>1.5?1:0); };
 function LITE_ON(){ return typeof LITE!=='undefined'&&LITE; }   // hoisted: applyLayers() runs before this part
 function updateOsm(){
   // the streets: the Map without Esri — or the satellite chosen and the server without imagery
-  const want=(LAYERS.tiles&&SAT_KNOWN&&!ESRI_OK)||(LAYERS.sat&&SAT_KNOWN&&!SAT_OK);
+  const want=(LAYERS.tiles&&SAT_KNOWN&&!stOK())||(LAYERS.sat&&SAT_KNOWN&&!SAT_OK);
   const g=$('tiles'); const on=want&&VB.w<=150&&MAP&&!CITY&&!LITE_ON(); svg.classList.toggle('osmd',!!on);
   if(!on){g.innerHTML='';return;}
   placeTiles(g,Math.max(8,Math.min(18,tileZoom())),TILE_URL,120);
@@ -2496,11 +2510,13 @@ var SAT_V='1', SAT_MAX=12, SAT_ATTR='© ESA WorldCover 2021 · contains modified
 // ---- 1.48: closer than 10 m — Esri World Imagery (Maxar and others) from zoom 14, asked of Esri by this server ----
 // (the key stays there, and the month's tiles are capped under the free tier: state.config.esri goes false past it,
 // and the Sentinel picture stays under it). Part of the satellite layer, not a layer of its own.
-var ESRI_OK=false, ESRI_IMG='Esri, Maxar, Earthstar Geographics, and the GIS User Community';
-function satAvail(c){ c=c||{}; const ok=!!c.sat, v=String(c.sat_v||'1'), z=Math.max(5,Math.min(16,+c.sat_z||12)), e=!!c.esri;
-  if(SAT_KNOWN&&ok===SAT_OK&&v===SAT_V&&z===SAT_MAX&&e===ESRI_OK) return;
+// 1.49.2: the imagery (ESRI_OK, state.config.esri) and the names and map (ESRI_ST, esri_st) are told apart: Esri can
+// refuse one service and not the other
+var ESRI_OK=false, ESRI_ST=false, ESRI_IMG='Esri, Maxar, Earthstar Geographics, and the GIS User Community';
+function satAvail(c){ c=c||{}; const ok=!!c.sat, v=String(c.sat_v||'1'), z=Math.max(5,Math.min(16,+c.sat_z||12)), e=!!c.esri, st=c.esri_st===undefined?e:!!c.esri_st;
+  if(SAT_KNOWN&&ok===SAT_OK&&v===SAT_V&&z===SAT_MAX&&e===ESRI_OK&&st===ESRI_ST) return;
   if(v!==SAT_V){ const g=$('sat'); if(g) g.innerHTML=''; }      // a new file on the volume: its tiles, not the kept ones
-  SAT_KNOWN=true; SAT_OK=ok; SAT_V=v; SAT_MAX=z; ESRI_OK=e;
+  SAT_KNOWN=true; SAT_OK=ok; SAT_V=v; SAT_MAX=z; ESRI_OK=e; ESRI_ST=st;
   const lb=document.querySelector('#lbase label[data-b="sat"]'); if(lb) lb.hidden=!ok; updateTiles(); }
 function updateSat(){
   const g=$('sat'); if(!g) return; const on=SAT_OK&&LAYERS.sat&&MAP&&!CITY&&!LITE_ON(); svg.classList.toggle('satd',!!on);
@@ -2517,14 +2533,14 @@ function updateEsri(){
 // ---- 1.49: the roads and names over the imagery, and the street map — Esri's 512-pixel tiles (one zoom below the
 // 256-pixel grid for the same sharpness: a quarter of the tiles), named in the reader's language ----
 function updateLbl(){
-  const g=$('lbl'); if(!g) return; const z=ESRI_OK&&svg.classList.contains('satd')?tileZoom()-1:0; const on=z>=9;
+  const g=$('lbl'); if(!g) return; const z=stOK()&&svg.classList.contains('satd')?tileZoom()-1:0; const on=z>=9;
   svg.classList.toggle('lbld',!!on);
   if(!on){g.innerHTML='';return;}
   if(g.dataset.src!==LANG){ g.innerHTML=''; g.dataset.src=LANG; }
   placeTiles(g,Math.min(18,z),(z,x,y)=>`/tiles/esri/lbl/${z}/${x}/${y}.png?lang=${LANG}`,60,9);
 }
 function updateMap(){
-  const g=$('emap'); if(!g) return; const on=LAYERS.tiles&&ESRI_OK&&MAP&&!CITY&&!LITE_ON(); svg.classList.toggle('mapd',!!on);
+  const g=$('emap'); if(!g) return; const on=LAYERS.tiles&&stOK()&&MAP&&!CITY&&!LITE_ON(); svg.classList.toggle('mapd',!!on);
   if(!on){g.innerHTML='';return;}
   const kind=MODE==='day'?'map':'mapn'; if(g.dataset.src!==kind+LANG){ g.innerHTML=''; g.dataset.src=kind+LANG; }
   placeTiles(g,Math.max(4,Math.min(18,tileZoom()-1)),(z,x,y)=>`/tiles/esri/${kind}/${z}/${x}/${y}.png?lang=${LANG}`,60,4);

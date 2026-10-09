@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.49** · last updated 2026-10-09 (1.49.1)
+**Documented version: 1.49** · last updated 2026-10-09 (1.49.2)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -1007,7 +1007,14 @@ Esri layers come from the Static Basemap Tiles service: 512-pixel PNG tiles (ask
 for the same sharpness — a quarter of the tiles), with the reader's language (`language=en|uk|fr`) and the worldview
 that draws Crimea as Ukraine (`worldview=unitedStatesOfAmerica`); a style preference Esri refuses (HTTP 400) is
 dropped once and remembered (`EsriTiles.no_prefs`). Same proxy, key and caps as the imagery
-(`/tiles/esri/{img|lbl|map|mapn}/…`). Where Esri's names are drawn (`svg.lbld`, `svg.mapd`) our own town and village
+(`/tiles/esri/{img|lbl|map|mapn}/…`). 1.49.2: the two services are **refused and paused apart** (`EsriTiles.down`,
+`refused`: "img" for World Imagery, "st" for the Static Basemap Tiles) — in 1.49 a key without the static tiles'
+privilege (`premium:user:staticbasemaptiles`) paused the imagery too and the satellite went back to Sentinel's 10 m;
+the page is told each (`state.config.esri`, `esri_st`), and the log and the dashboard give Esri's own reason
+("HTTP 403: You do not have permissions…"). On the page, when every Esri name or map tile of the view fails, or three
+in a row, it does without them for two minutes (`esriSeen`, `stOK()`): the Map falls back to the OSM streets and our
+own names come back over the imagery. A tile that fails never takes the older picture away (`tileSweep` waits for
+every new tile to have **loaded**; a server restart or a refusal leaves the previous zoom's picture in place). Where Esri's names are drawn (`svg.lbld`, `svg.mapd`) our own town and village
 names step aside — the same names twice, a few pixels apart, could not be read. Credited "Powered by Esri · Esri,
 TomTom, Garmin, FAO, NOAA, USGS, © OpenStreetMap contributors, and the GIS User Community".
 
