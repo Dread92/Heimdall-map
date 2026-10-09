@@ -2467,19 +2467,13 @@ function moveTip(e){const w=$('mapwrap').getBoundingClientRect(); const tip=$('t
   if(y+th>w.height-8) y=e.clientY-w.top-th-14;
   tip.style.left=Math.max(4,Math.min(x,w.width-tw-4))+'px';
   tip.style.top=Math.max(4,Math.min(y,Math.max(4,w.height-th-4)))+'px';}
-// 1.51: the target's tag in its card — the number, where a post said it came from (the words, the channel), and who
-// read it: the rules, or the AI (a chip says so); the height and speed the AI quoted, when the rules read none
-function tagOrigin(tg){ if(tg.os==='region') return t('tg_inf_'+tg.o,tg.ou?oblFull(tg.ou):'');   // 1.52: inferred, said so
-  return tg.o?t('tg_o_'+tg.o):t('tg_nofrom'); }
+// 1.51: the target's tag in its card — 1.53.2: its number only (where it came from is never shown: the owner, "it gets
+// it wrong almost all the time"), and the height and speed the AI quoted, when the rules read none
 function tagLine(m){ const tg=m.tag; if(!tg||m.status||m.endedBy) return '';
-  // the post's words, unless they are just what the line already says ("з півдня" — "з півдня")
-  const same=tg.oq&&tg.oq.toLowerCase().replace(/\s+/g,' ').trim()===tagOrigin(tg).toLowerCase();
-  const said=tg.o&&tg.oq?` <span style="color:var(--muted)">${esc(same?'— '+(CH[tg.oc]||(tg.oc?'@'+tg.oc:'')):t('tg_said',tg.oq,CH[tg.oc]||(tg.oc?'@'+tg.oc:'')))}</span>`:'';
-  const ai=tg.os==='ai'?` <span class="chip ai" title="${esc(t('tg_ai'))}">${esc(t('tg_ai_chip'))}</span>`:'';
   const tel=[tg.vs&&tg.vs.s==='ai'?`${esc(t(tg.vs.v==='descending'?'alt_desc_l':tg.vs.v==='climbing'?'alt_climb':tg.vs.v==='low'?'alt_low':'alt_high'))} <span style="color:var(--muted)">«${esc(tg.vs.q||'')}»</span> <span class="chip ai">${esc(t('tg_ai_chip'))}</span>`:'',
     tg.alt&&tg.alt.s==='ai'&&!(m.alt&&m.alt.m)?`${t('tg_alt_l',tg.alt.m)} <span style="color:var(--muted)">«${esc(tg.alt.q||'')}»</span> <span class="chip ai">${esc(t('tg_ai_chip'))}</span>`:'',
     tg.spd?`${t('tg_spd_l',tg.spd.kmh)} <span style="color:var(--muted)">«${esc(tg.spd.q||'')}»</span>${tg.spd.s==='ai'?` <span class="chip ai">${esc(t('tg_ai_chip'))}</span>`:''}`:''].filter(Boolean);
-  return `<div class="kv1 tagl"><b class="tagid">${esc(tg.id)}</b><span>${esc(tagOrigin(tg))}${said}${ai}</span></div>${tel.map(x=>`<div class="kv1" style="font-size:12.5px">${x}</div>`).join('')}`; }
+  return `<div class="kv1 tagl"><b class="tagid">${esc(tg.id)}</b><span style="color:var(--muted)">${esc(t('tg_num'))}</span></div>${tel.map(x=>`<div class="kv1" style="font-size:12.5px">${x}</div>`).join('')}`; }
 function openSheet(id){
   const m=MK.find(x=>x.id===id); if(!m) return; SELP=id; const sp=$('selpath'); if(sp) sp._sig=''; setTimeout(drawSelPath,0); setTimeout(()=>loadTrail(m),0); $('tip').hidden=true; const [x,y,x0,y0]=posOf(m,Date.now()); const info=inboundInfo(m,x,y);
   const th=THREAT[m.type]||THREAT.unknown; const appr=!!m.approach&&!m.status&&!m.endedBy; const placeEn=(m.place==='область'||relOf(m))?oblWhere(m):pn(m.place);

@@ -56,7 +56,7 @@ def _answer(content, tin=9000, tout=400, cost=0.0011, finish="stop"):
 def _reader(store=None, map_fn=None):
     return A.AIReader({"openrouter_key": "sk-or-test"}, store or server.Store(":memory:"), geo,
                       rules_fn=lambda ch, t, near: geo.parse_for_channel(ch, t, near or None), oblast_names=OBL,
-                      map_fn=map_fn or (lambda uids: ({"14": ["S-07 · drone · heading to Бортничі · @kyiv_airdef 22:10"]}, ["S-07"])))
+                      map_fn=map_fn or (lambda uids: ({"14": ["#07 · drone · heading to Бортничі · @kyiv_airdef 22:10"]}, ["#07"])))
 
 
 def _post(pid, minutes, text):
@@ -92,7 +92,7 @@ def test_one_call_reads_the_posts_grouped_by_oblast_and_keeps_only_what_the_post
         ans = {"findings": [
             {"post": p("kyiv_airdef"), "finding": "missed", "why": "a tracker's target", "target": A._t(
                 place_id=c["Бортничі"], place_quote="на Бортничі", relation="heading_to", vertical="descending",
-                vertical_quote="знижується", same_as="S-07")},
+                vertical_quote="знижується", same_as="#07")},
             {"post": p("trevoga_kartaa_noviny"), "finding": "not_sky", "why": "an alert message", "target": A._t()},
             {"post": p("monitor_ukr"), "finding": "missed", "why": "height", "target": A._t(
                 kind="jet_drone", kind_quote="реактив", place_id=c["Коростень"], place_quote="над Коростенем", relation="at",
@@ -111,7 +111,7 @@ def test_one_call_reads_the_posts_grouped_by_oblast_and_keeps_only_what_the_post
     sysm, msg = body["messages"][0]["content"], body["messages"][-1]["content"]
     assert sysm == A.SYSTEM_CHECK and A.RULES_READ in sysm and len(body["messages"]) == 4
     assert "=== OBLAST o31 · м. Київ ===" in msg and "=== OBLAST o10 · Житомирська область ===" in msg
-    assert "- S-07 · drone · heading to Бортничі · @kyiv_airdef 22:10" in msg
+    assert "- #07 · drone · heading to Бортничі · @kyiv_airdef 22:10" in msg
     assert "RULES: set aside — nothing drawn" in msg and "RULES: jet drone · at Коростень · 3000 m · 400 km/h" in msg
     rows = {x["post_id"]: x for x in store.ai_reads(20, diff=False)}
     assert len(rows) == 5 and len({x["chk"] for x in rows.values()}) == 1
@@ -170,7 +170,7 @@ def test_the_worked_example_is_borne_out_by_its_own_posts():
         if f["finding"] == "not_sky":
             continue
         cs = [(cid, rest.split(" | ")[0], rest) for cid, rest in cands]
-        ts, dropped = A.validate(A.wire({"targets": [f["target"]]}), posts[f["post"]], cs, ("S-07", "?-04"))
+        ts, dropped = A.validate(A.wire({"targets": [f["target"]]}), posts[f["post"]], cs, ("#07", "#04"))
         assert ts and dropped == 0, f
     assert {n["oblast"] for n in ans["notes"]} == {"o14", "o5", "o10"}
 
@@ -213,12 +213,12 @@ def test_the_night_in_full_for_any_ai_to_read():
     st, night = _night_state()
     d = st.night_summary(night)
     (t,) = d["targets"]["list"]
-    assert t["id"] == "N-07" and t["origin"] == "belarus" and t["reports"] == 4 and t["minutes"] == 60
+    assert t["id"] == "#07" and t["letter"] == "N" and t["origin"] == "belarus" and t["reports"] == 4 and t["minutes"] == 60
     assert [p["place"] for p in t["path"]] == ["Ріпки", "Чернігів", "Козелець", "Вишгород"] and t["path_km"] > 100
-    assert t["heights_m"] == [1800, 1200] and d["targets"]["entry_places_by_letter"] == {"N": {"Ріпки": 1}}
+    assert t["heights_m"] == [1800, 1200] and d["targets"]["entry_places"] == {"Ріпки": 1}
     assert d["ai"]["checks"] == 1 and d["ai"]["cost_usd"] == 0.0015 and d["ai"]["notes"][0]["note"].startswith("One Shahed")
     txt = server.State.night_text(d)
-    assert "N-07 drones · origin belarus «з Білорусі»" in txt and "Ріпки" in txt and "Вишгород" in txt
+    assert "#07 drones · origin as a post said: belarus «з Білорусі»" in txt and "Ріпки" in txt and "Вишгород" in txt
     assert "not a count of drones" in txt and "AI CHECKS: 1" in txt
     assert json.dumps(d, ensure_ascii=False)                                  # the download is plain JSON
     an = st._an_ai([night])
@@ -246,7 +246,7 @@ def test_the_report_is_written_after_the_hour_once_and_on_demand():
     st.ai = AI()
     row = rp.write(night)
     assert row["text"].startswith("1. The night") and st.store.ai_report(night)["cost"] == 0.004
-    assert asked[0][0] == A.REPORT_SYSTEM and "N-07" in asked[0][1] and "never invent a number" in A.REPORT_SYSTEM
+    assert asked[0][0] == A.REPORT_SYSTEM and "#07" in asked[0][1] and "never invent a number" in A.REPORT_SYSTEM
     st.ai = None
     assert "AI reader is off" in rp.write(night)["error"]
     assert night in st.store.ai_report_nights()
@@ -347,3 +347,17 @@ def test_a_check_cut_off_keeps_what_came_complete():
     (ck,) = store.ai_checks(5)
     assert ck["error"] is None and ck["uncertain"].startswith("answer cut off at 12000 tokens") and not r.q
     assert r.last_error is None
+
+
+# ---- 1.53.2 ----------------------------------------------------------------------------------------------------------
+def test_a_tag_is_its_number_and_no_direction_is_shown():
+    page, replay = _read("static/kyiv.html"), _read("static/replay.js")
+    assert server.tag_id(82) == "#82" and server.tag_id(7) == "#07"
+    st = server.State(server.Store(":memory:"), {})
+    tg = server.Telegram(st, {})
+    tg.ingest("kpszsu", [("kpszsu/15321", ago(3), "Шахед з Брянщини на Чернігів"), ("kpszsu/15322", ago(2), "Шахед над Козельцем")], "tg:k")
+    tags = [m["tag"] for m in st.markers() if m.get("tag")]
+    assert tags and all(t["id"].startswith("#") and t["id"][1:].isdigit() for t in tags)
+    assert "tagOrigin" not in page and "t('tg_num')" in page and "tr.tg" in replay
+    lines, _ = st.ai_map(["25", "14"])
+    assert not any(" from " in x for ls in lines.values() for x in ls)        # the AI is not told it either

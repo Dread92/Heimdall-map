@@ -1951,6 +1951,13 @@ TAG_KEEP_DAYS = 60
 TAG_REGION = {"25": ("n", "belarus"), "24": ("s", "se")}
 
 
+def tag_id(n):
+    """1.53.2, the owner: "remove the direction altogether for now — it gets it wrong almost all the time" (a drone
+    from Belarus over Chernihiv oblast shown "E-82": its track had taken "з брянської" from another post). A tag is its
+    number for the night, "#82"; where it came from is kept (the record, the analytics) but never shown on the map."""
+    return f"#{n:02d}"
+
+
 def tag_night(ts):
     """The night a time belongs to, from 12:00 Kyiv time one day to 12:00 the next, named by the date it starts on — as
     the replay names its nights, and so that tonight is already in the dashboard's charts."""
@@ -2108,7 +2115,7 @@ class TargetTags:
                 row = {"prefix": r[0]} if r else {}
             except Exception:
                 row = {}
-        return f"{row.get('prefix') or '?'}-{key[1]:02d}"
+        return tag_id(key[1])
 
     def _write(self, sql, args):
         self._write_many(sql, [args])
@@ -2623,7 +2630,7 @@ class State:
             # 1.51: descending / climbing / low / high — with the height, what matters most to the people under it
             vs = {"v": m["alt"]["state"], "s": "rules"} if (m.get("alt") or {}).get("state") else (
                 dict(facts["vs"], s="ai") if facts.get("vs") else None)
-            m["tag"] = {"id": f"{prefix}-{key[1]:02d}", "n": key[1], "p": prefix, "night": key[0],
+            m["tag"] = {"id": tag_id(key[1]), "n": key[1], "p": prefix, "night": key[0],
                         "o": o and o["o"], "os": src, "oq": o and o.get("q"), "oc": o and o.get("ch"), "ot": o and o.get("ts"),
                         "ou": o and o.get("uid"),
                         "alt": alt, "spd": spd, "vs": vs}
@@ -2658,7 +2665,7 @@ class State:
             if u not in want or m.get("status") or m.get("endedBy") or len(out.get(u, [])) >= 14:
                 continue
             tg = m.get("tag") or {}
-            line = ai_reader.parser_lines([dict(m, origin={"o": tg["o"]} if tg.get("o") else m.get("origin"))])[0]
+            line = ai_reader.parser_lines([dict(m, origin=None)])[0]       # 1.53.2: no origin (tag_id)
             t = parse_iso(m["ts"])
             hm = t.astimezone(kyiv_tz()).strftime("%H:%M") if t else "?"
             out.setdefault(u, []).append(f"{tg.get('id') or '—'} · {line}{' · AI' if m.get('ai') else ''} · @{m.get('channel')} {hm}")
@@ -2695,7 +2702,7 @@ class State:
         out.sort(key=lambda m: m["ts"], reverse=True)
         lines, tags = [], []
         for m in out[:10]:
-            line = ai_reader.parser_lines([dict(m, origin={"o": m["tag"]["o"]} if m["tag"].get("o") else m.get("origin"))])[0]
+            line = ai_reader.parser_lines([dict(m, origin=None)])[0]       # 1.53.2: no origin (tag_id)
             t = parse_iso(m["ts"])
             hm = t.astimezone(kyiv_tz()).strftime("%H:%M") if t else "?"
             lines.append(f"{m['tag']['id']} · {line} · @{m.get('channel')} {hm}")
@@ -3759,15 +3766,12 @@ class State:
             f_ts = min([f_ts] + [x["ts"] for x in p if x["ts"]]) if f_ts else (p[0]["ts"] if p else None)
             l_ts = max([l_ts] + [x["ts"] for x in p if x["ts"]]) if l_ts else (p[-1]["ts"] if p else None)
             a, b = parse_iso(f_ts), parse_iso(l_ts)
-            targets.append({"id": f"{prefix or '?'}-{n:02d}", "type": typ, "origin": origin, "origin_by": osrc, "origin_quote": oq,
+            targets.append({"id": tag_id(n), "letter": prefix or "?", "type": typ, "origin": origin, "origin_by": osrc, "origin_quote": oq,
                             "first": loc(f_ts), "last": loc(l_ts), "minutes": round((b - a).total_seconds() / 60) if a and b else None,
                             "reports": reps.get(n, 0), "path_km": round(km), "oblasts": list(dict.fromkeys(x["oblast"] for x in p if x["oblast"])),
                             "heights_m": alts, "path": [{k: x[k] for k in ("t", "place", "alt")} for x in p]})
-        by_letter = collections.Counter(t["id"].split("-")[0] for t in targets)
-        entry = {}
-        for t in targets:
-            if t["path"]:
-                entry.setdefault(t["id"].split("-")[0], collections.Counter())[t["path"][0]["place"]] += 1
+        by_letter = collections.Counter(t["letter"] for t in targets)
+        entry = collections.Counter(t["path"][0]["place"] for t in targets if t["path"])
         heights = [h for t in targets for h in t["heights_m"]]
         bands = {f"{lo}-{hi if hi < 99999 else ''}".rstrip("-") + " m": sum(1 for h in heights if lo <= h < hi) for lo, hi in self.NIGHT_ALT_BANDS}
         # 3. the reports, by hour and oblast; region-wide ones; outcomes
@@ -3826,7 +3830,9 @@ class State:
             "official_alerts": alerts_out,
             "targets": {"tags": len(targets), "by_letter": dict(by_letter), "by_origin": dict(collections.Counter(t["origin"] or "not said" for t in targets)),
                         "origin_read_by": dict(collections.Counter(t["origin_by"] or "-" for t in targets)),
-                        "entry_places_by_letter": {k: dict(v.most_common(8)) for k, v in entry.items()},
+                        "origin_note": "as a post said; a track takes the first origin any of its reports stated, often "
+                                       "another target's — no longer shown on the map (1.53.2)",
+                        "entry_places": dict(entry.most_common(15)),
                         "heights": {"reports_with_height": len(heights), "median_m": sorted(heights)[len(heights) // 2] if heights else None,
                                     "bands": bands},
                         "list": targets},
@@ -3850,15 +3856,16 @@ class State:
         L += [f"- {a['oblast']}: {a['minutes']} min · {a['alerts']} · {a['first']} · {a['last_end']} · {a['raions_under_alert']}"
               for a in d["official_alerts"]] or ["- none"]
         t = d["targets"]
-        L += ["", f"TARGET TAGS: {t['tags']} — by letter {t['by_letter']} — origin {t['by_origin']} (read by {t['origin_read_by']})",
-              f"Entry places (first place of each tag) by letter: {t['entry_places_by_letter']}",
+        L += ["", f"TARGET TAGS: {t['tags']} — origins as posts said, often wrong ({t['origin_note']}): {t['by_origin']} "
+              f"(read by {t['origin_read_by']})",
+              f"Entry places (the first place of each tag): {t['entry_places']}",
               f"Heights: {t['heights']['reports_with_height']} reports, median {t['heights']['median_m']} m, bands {t['heights']['bands']}"]
         for x in t["list"]:
             path = x["path"]
             if compact and len(path) > 6:
                 path = path[:3] + [{"t": "…", "place": f"({len(x['path']) - 5} more)", "alt": None}] + path[-2:]
             ps = " → ".join(f"{p['place']} {p['t']}" + (f" ({p['alt']} m)" if p.get("alt") else "") for p in path)
-            L.append(f"- {x['id']} {x['type']} · origin {x['origin'] or 'not said'}" + (f" «{x['origin_quote']}»" if x.get("origin_quote") else "")
+            L.append(f"- {x['id']} {x['type']} · origin as a post said: {x['origin'] or 'not said'}" + (f" «{x['origin_quote']}»" if x.get("origin_quote") else "")
                      + f" · {x['first']}–{x['last']} ({x['minutes']} min, {x['reports']} reports, {x['path_km']} km) · {', '.join(x['oblasts'])}"
                      + (f" · {ps}" if ps else ""))
         r = d["reports"]

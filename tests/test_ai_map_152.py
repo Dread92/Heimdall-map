@@ -115,7 +115,7 @@ def test_a_target_only_the_ai_found_is_on_the_map_marked_and_the_switch_takes_it
              [_t(kind="unknown", place="Коростень", place_quote="Повз околиці Коростеня", relation="near", toward="Житомир")])
     m = _marks(st)["eRadarrua/901#ai0"]
     assert m["ai"] and m["place"] == "Коростень" and m["target"] == "Житомир" and m["heading"] is not None
-    assert m["evidence"]["position"]["method"].startswith("read by the AI reader") and m["tag"]["id"].endswith("-01")
+    assert m["evidence"]["position"]["method"].startswith("read by the AI reader") and m["tag"]["id"] == "#01"
     st.store.kv_set("ai_live", "0")
     assert "eRadarrua/901#ai0" not in _marks(st)
 
@@ -186,7 +186,7 @@ def test_the_first_oblast_says_probably_and_a_stated_origin_wins():
     tg.ingest("kpszsu", [("kpszsu/912", ago(2), "БпЛА з півдня на Ніжин")], "tg:k")
     ms = _marks(st)
     a = ms["chernihiv_nebo/910#0"]["tag"]
-    assert a["p"] == "n" and a["os"] == "region" and a["o"] == "belarus" and a["ou"] == "25" and a["id"].startswith("n-")
+    assert a["p"] == "n" and a["os"] == "region" and a["o"] == "belarus" and a["ou"] == "25" and a["id"].startswith("#")     # 1.53.2: kept, never shown
     assert ms["kpszsu/911#0"]["tag"]["p"] == "s" and ms["kpszsu/911#0"]["tag"]["o"] == "se"
     assert ms["kpszsu/912#0"]["tag"]["p"] == "S" and ms["kpszsu/912#0"]["tag"]["os"] == "rules"      # Nizhyn is Chernihiv oblast
     assert server.TAG_REGION == {"25": ("n", "belarus"), "24": ("s", "se")}
@@ -223,7 +223,7 @@ def test_the_page():
     assert "aiOnly=anyLive&&evs.every(m=>m.status||m.ai)" in PAGE and 'class="obtxt obai"' in PAGE     # "AI" first on the chip
     assert "#selpath .selp{fill:none;stroke:#ff3b3f;" in PAGE and "SELP=id;" in PAGE and "closeSheet(){ SELP=null;" in PAGE
     assert "body.m-day .mk .lbl .tid,body.m-day .mk .tgc{fill:#7a4b00;stroke:#fff}" in PAGE      # the tag in daylight
-    assert "if(tg.os==='region') return t('tg_inf_'+tg.o,tg.ou?oblFull(tg.ou):'');" in PAGE
+    assert "tagOrigin" not in PAGE                                     # 1.53.2: where it came from is not shown
     for k in ("tg_inf_belarus", "tg_inf_se", "ai_placed"):
         assert I18N.count(f"{k}:'") == 3, k
     assert "k_missile:" in ADMIN and "t.toward?tr('ai_toward',aiPlace(t.toward)):''" in ADMIN

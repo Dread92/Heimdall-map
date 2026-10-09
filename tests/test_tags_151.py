@@ -91,8 +91,8 @@ def test_a_track_keeps_its_tag_and_the_letter_its_first_report_stated():
     tg.ingest("kpszsu", [("kpszsu/9", ago(2), "2 реактиви з території Білорусі на Овруч")], "tg:kpszsu")
     tg.ingest("kpszsu", [("kpszsu/10", ago(1), "3 реактиви на Чернігівщині")], "tg:kpszsu")
     t = _tags(st)
-    assert t["kyiv_airdef/2#0"]["id"] == "S-01" and t["kyiv_airdef/2#0"]["os"] == "rules" and t["kyiv_airdef/2#0"]["oq"] == "з півдня"
-    assert t["kpszsu/9#0"]["id"] == "N-02" and t["kpszsu/9#0"]["o"] == "belarus"
+    assert t["kyiv_airdef/2#0"]["id"] == "#01" and t["kyiv_airdef/2#0"]["os"] == "rules" and t["kyiv_airdef/2#0"]["oq"] == "з півдня"
+    assert t["kpszsu/9#0"]["id"] == "#02" and t["kpszsu/9#0"]["o"] == "belarus"
     # 1.52, the owner's rule: a number only when we are sure which target it is — never for one reported for a whole oblast
     assert t["kpszsu/10#0"] is None
     assert _tags(st) == t                                           # recomputed: the same tags
@@ -110,7 +110,7 @@ def test_the_tag_is_found_by_any_report_so_it_survives_the_window_and_a_restart(
     again = server.TargetTags(store)                                                     # a restart
     assert again.assign({"id": "a/4#0", "ts": ago(1), "reports": ["a/3#0", "a/4#0"]}) == k1
     assert again.assign({"id": "c/1#0", "ts": ago(1), "reports": ["c/1#0"]})[1] == other[1] + 1
-    assert again.find(["a/1#0"]) == f"?-{k1[1]:02d}" and again.find(["zz/1#0"]) is None
+    assert again.find(["a/1#0"]) == f"#{k1[1]:02d}" and again.find(["zz/1#0"]) is None
 
 
 # ---- the AI's facts: only with the switch on, only its own target's, only what the rules did not read ---------------
@@ -136,11 +136,11 @@ def test_the_ai_fills_the_letter_the_rules_did_not_read_and_the_switch_takes_it_
     _with_ai(st2, "kpszsu/6", [_ait(kind="shahed", place="Бровари", relation="heading_to", origin="belarus",
                                     origin_quote="від кордону", altitude_m=1500, altitude_quote="висота 1500")])
     t = _tags(st2)["kpszsu/6#0"]
-    assert t["id"] == "N-01" and t["os"] == "ai" and t["o"] == "belarus"
+    assert t["id"] == "#01" and t["os"] == "ai" and t["o"] == "belarus"
     assert {k: t["alt"][k] for k in ("m", "q", "s", "cur")} == {"m": 1500, "q": "висота 1500", "s": "ai", "cur": True}
     st2.store.kv_set("ai_live", "0")                               # the kill switch
     t = _tags(st2)["kpszsu/6#0"]
-    assert t["id"] == "?-01" and t["os"] is None and t["alt"] is None
+    assert t["id"] == "#01" and t["os"] is None and t["alt"] is None
 
 
 def test_the_rules_reading_wins_and_another_targets_facts_are_never_borrowed():
@@ -219,7 +219,7 @@ def test_the_replay_shows_the_tags_the_live_map_gave():
     tg.ingest("kpszsu", [("kpszsu/1", ago(9), "Шахед з півдня на Обухів"), ("kpszsu/3", ago(7), "Шахед над Броварами")], "tg:kpszsu")
     st.markers()
     tracks = st._replay_tracks(NOW - timedelta(hours=1), NOW, [])
-    assert sorted(t["tg"] for t in tracks) == ["?-02", "S-01"]
+    assert sorted(t["tg"] for t in tracks) == ["#01", "#02"]
 
 
 # ---- the pages -----------------------------------------------------------------------------------------------------
@@ -267,7 +267,7 @@ def test_the_ai_is_given_the_targets_on_the_map_near_the_post_never_the_posts_ow
     # the Obukhiv report and the Brovary one are one track to the rules (S-01, "from the south"); the Zhytomyr group is
     # reported for its whole oblast — no tag, so not on the map's list
     lines, tags = st.ai_context({"post_id": "kpszsu/9104", "channel": "kpszsu"}, cands)
-    assert tags == ["S-01"] and lines[0].startswith("S-01 · drone · heading to Бровари · from s · @kpszsu ")
+    assert tags == ["#01"] and lines[0].startswith("#01 · drone · heading to Бровари · @kpszsu ")      # 1.53.2: no origin
     lines, tags = st.ai_context({"post_id": "kpszsu/9103", "channel": "kpszsu"}, cands)
     assert tags == []                                               # its own mark is not "on the map" for it
 

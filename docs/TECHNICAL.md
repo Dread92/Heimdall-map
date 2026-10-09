@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.53** · last updated 2026-10-09 (1.53.1)
+**Documented version: 1.53** · last updated 2026-10-09 (1.53.2)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -874,9 +874,13 @@ on unless switched off.
 
 ### 7.8 Target tags (1.51)
 
-Every target in the air carries `tag` in `/api/markers`: `{id: "S-07", n, p, night, o, os, oq, oc, ot, alt, spd}` —
-Heimdall's own number for the night and a letter for where a post **said** it came from. It is not an official or
-military designation (SAFETY.md).
+Every target in the air carries `tag` in `/api/markers`: `{id: "#07", n, p, night, o, os, oq, oc, ot, alt, spd}` —
+Heimdall's own number for the night. **1.53.2, the owner: "remove the direction altogether for now — it gets it wrong
+almost all the time"** (a drone from Belarus over Chernihiv oblast was "E-82": its track had taken "з брянської" from
+another post's report). `tag_id` is the number alone ("#07"); the letter and the origin below are still worked out and
+kept (`p`, `o`…, `targets`, the night's record, the CSV) but shown nowhere — not on the map, the card, the replay, nor
+in the AI's view of the map (`ai_map`, `ai_context` send no origin). It is not an official or military designation
+(SAFETY.md).
 
 - **The number** (`TargetTags`): counted per night, from 12:00 to 12:00 Kyiv time (the replay's nights), the night
   named by the date it starts on (`tag_night`, as the replay names its nights — tonight is in the charts at once). `_chain` carries every report of a track

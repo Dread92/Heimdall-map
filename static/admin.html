@@ -352,7 +352,7 @@ const T={
   an_c_dirs:'Main directions of the attack',an_src_dirs:'As the summaries name them — dates mentioned.',an_c_models:'Models named',
   an_c_kyiv:'Hours under official alert per day — Kyiv',an_src_kyiv:'Official air-raid alerts. The oblast counts while any of its raions is under alert.',
   an_c_starts:'When alerts start in Kyiv city — weekday × hour',an_src_starts:'Starts of official air-raid alerts, Kyiv time.',
-  an_c_tags:'Targets tagged per night, by where a post said they came from',an_src_tags:'Heimdall’s tags (S-07…), the night starting at 12:00 on that date. A tag is one target or one group as the channels reported it — not a count of drones.',
+  an_c_tags:'Targets tagged per night',an_src_tags:'Heimdall’s tags (#07…), the night starting at 12:00 on that date; where they came from is no longer shown (too often wrong) — it stays in the CSV, as the posts said it. A tag is one target or one group as the channels reported it — not a count of drones.',
   an_tg_N:'N — north / Belarus',an_tg_E:'E — east / Russia',an_tg_S:'S — south / sea / Crimea',an_tg_W:'W — west',an_tg_q:'? — not said',an_tg_ai:'letter read by the AI',an_tg_none:'No target tagged in this period yet (tags start with 1.51).',
   an_c_reports:'Channel reports over Kyiv city and oblast',an_src_reports:'Marks placed from channel posts, per 24 h from 18:00 (named by the morning date).',
   an_c_hours:'Reports by hour (Kyiv time)',an_src_hours:'Marks placed from channel posts over Kyiv city and oblast.',an_c_heads:'Courses stated for drones',an_src_heads:'Only the courses a post stated — none is guessed.',
@@ -409,7 +409,7 @@ const T={
   an_n_asked:'Asked — the report appears here within a minute or two.',an_n_err:'Not written: {0}',an_n_meta:'written {0} · {1} · ${2}',
   an_n_stats:'{0} tags · {1} reports · {2} oblasts under alert · {3} AI checks (${4})',an_n_loading:'Loading the night…',
   an_c_ai:'The AI’s checks per night — what they found',an_src_ai:'Every 10 minutes one call reads the new posts against what the rules drew. A finding is a post where the rules missed or misread something — the list of what to fix in them.',
-  an_ai_none:'No check in this range yet.',an_ai_checks:'checks',an_ai_posts:'posts read',an_ai_cost:'cost',an_tg_paths:'followed over 2 places or more',
+  an_ai_none:'No check in this range yet.',an_ai_checks:'checks',an_ai_posts:'posts read',an_ai_cost:'cost',an_tg_paths:'followed over 2 places or more',an_tg_single:'reported at one place',an_tg_total:'tags',
   ai_fmt_schema:'answers in a strict JSON schema',ai_fmt_prompt:'answers by the prompt alone (the provider refused the schema)',
   dirs:'N,NE,E,SE,S,SW,W,NW',
   h_img:'Satellite imagery',img_sat:'Sentinel-2 tiles: version {0}, to zoom {1}',img_nosat:'no Sentinel-2 tiles on the volume — scripts/upload-imagery.bat',img_esri:'Esri close zoom: {0} tiles this month (cap {1}) · {2} today (cap {3})',img_noesri:'Esri close zoom off — no ESRI_KEY (scripts/set-esri-key.bat)',img_ref_img:'Esri refused the key for the imagery — {0} — asked again in 5 min',img_ref_st:'Esri refused the key for the names and the map (Static Basemap Tiles) — {0} — asked again in 5 min; the key needs that privilege too',img_ref:'Esri refused the key ({0}) — asked again in 5 min',
@@ -480,7 +480,7 @@ const T={
   an_c_dirs:'Основні напрямки удару',an_src_dirs:'Як їх називають зведення — кількість дат.',an_c_models:'Названі моделі',
   an_c_kyiv:'Годин під офіційною тривогою за добу — Київ',an_src_kyiv:'Офіційні повітряні тривоги. Область рахується, поки під тривогою будь-який її район.',
   an_c_starts:'Коли починаються тривоги в Києві — день тижня × година',an_src_starts:'Початки офіційних повітряних тривог, час київський.',
-  an_c_tags:'Цілі з номером за ніч — звідки, за дописом, вони летіли',an_src_tags:'Номери Heimdall (S-07…), ніч, що починається о 12:00 цієї дати. Номер — це одна ціль чи одна група, як про неї повідомили канали, а не кількість дронів.',
+  an_c_tags:'Цілі з номером за ніч',an_src_tags:'Номери Heimdall (#07…); звідки летіли, більше не показано (надто часто неправильно) — це лишається в CSV, як сказано в дописах, ніч, що починається о 12:00 цієї дати. Номер — це одна ціль чи одна група, як про неї повідомили канали, а не кількість дронів.',
   an_tg_N:'N — північ / Білорусь',an_tg_E:'E — схід / Росія',an_tg_S:'S — південь / море / Крим',an_tg_W:'W — захід',an_tg_q:'? — не сказано',an_tg_ai:'літеру прочитав ШІ',an_tg_none:'За цей період ще немає цілей з номером (номери — з версії 1.51).',
   an_c_reports:'Повідомлення каналів над Києвом і областю',an_src_reports:'Позначки з дописів каналів, за 24 год від 18:00 (названо датою ранку).',
   an_c_hours:'Повідомлення за годинами (за Києвом)',an_src_hours:'Позначки з дописів каналів над Києвом і областю.',an_c_heads:'Курси БпЛА, зазначені в дописах',an_src_heads:'Лише курси, які зазначив допис — жоден не вигадано.',
@@ -537,7 +537,7 @@ const T={
   an_n_asked:'Запит надіслано — звіт з’явиться тут за хвилину-дві.',an_n_err:'Не написано: {0}',an_n_meta:'написано {0} · {1} · ${2}',
   an_n_stats:'номерів: {0} · повідомлень: {1} · областей під тривогою: {2} · перевірок ШІ: {3} (${4})',an_n_loading:'Завантаження ночі…',
   an_c_ai:'Перевірки ШІ за ніч — що вони знайшли',an_src_ai:'Раз на 10 хвилин один запит читає нові дописи поруч із тим, що намалювали правила. Знахідка — допис, де правила щось пропустили або прочитали не так: список того, що в них виправити.',
-  an_ai_none:'У цьому діапазоні перевірок ще немає.',an_ai_checks:'перевірок',an_ai_posts:'прочитано дописів',an_ai_cost:'вартість',an_tg_paths:'відстежено щонайменше у 2 місцях',
+  an_ai_none:'У цьому діапазоні перевірок ще немає.',an_ai_checks:'перевірок',an_ai_posts:'прочитано дописів',an_ai_cost:'вартість',an_tg_paths:'відстежено щонайменше у 2 місцях',an_tg_single:'повідомлено в одному місці',an_tg_total:'номерів',
   ai_fmt_schema:'відповідає за суворою JSON-схемою',ai_fmt_prompt:'відповідає лише за промптом (провайдер не прийняв схему)',
   dirs:'пн,пн-сх,сх,пд-сх,пд,пд-зх,зх,пн-зх',
   h_img:'Супутникові знімки',img_sat:'Тайли Sentinel-2: версія {0}, до зуму {1}',img_nosat:'тайлів Sentinel-2 на томі немає — scripts/upload-imagery.bat',img_esri:'Esri, близький зум — тайлів цього місяця: {0} (ліміт {1}) · сьогодні: {2} (ліміт {3})',img_noesri:'Esri вимкнено — немає ESRI_KEY (scripts/set-esri-key.bat)',img_ref_img:'Esri відхилив ключ для знімків — {0} — повтор за 5 хв',img_ref_st:'Esri відхилив ключ для назв і карти (Static Basemap Tiles) — {0} — повтор за 5 хв; ключу потрібен і цей дозвіл',img_ref:'Esri відхилив ключ ({0}) — повтор за 5 хв',
@@ -1121,8 +1121,9 @@ function drawAnalytics(){
     o.other=Object.entries(r).filter(([k])=>!['date','drones','jet','cruise_missiles','ballistic_missiles','unspecified_missiles','banderol_missiles','down','impact'].includes(k)).reduce((s,[,v])=>s+v,0); return o; });
   const repChart=bars(dates,REP.map(([k,c])=>({n:tr('an_r_'+k),c,v:repRows.map(o=>o[k])})),{h:170});
   // 1.51: the targets tagged each night, by the letter of where a post said they came from (fixed order, never by rank)
-  const TGS=[['N',C[0]],['E',C[1]],['S',C[2]],['W',C[3]],['?',C[4]]], TG=A.targets||[];
-  const tgChart=TG.some(r=>r.total)?bars(dates,TGS.map(([k,c])=>({n:tr('an_tg_'+(k==='?'?'q':k)),c,v:TG.map(r=>r[k]||0)})),{h:170,extra:i=>[`${escA(tr('an_tg_ai'))}: <b>${TG[i]?TG[i].ai:0}</b>`,`${escA(tr('an_tg_paths'))}: <b>${TG[i]?TG[i].paths||0:0}</b>`]}):`<div class="ans">${escA(tr('an_tg_none'))}</div>`;
+  // 1.53.2: no letters (where they came from is no longer shown) — the tags, and those followed over 2 places or more
+  const TGS=[['paths',C[0]],['single',C[1]]], TG=A.targets||[];
+  const tgChart=TG.some(r=>r.total)?bars(dates,TGS.map(([k,c])=>({n:tr('an_tg_'+k),c,v:TG.map(r=>k==='paths'?(r.paths||0):Math.max(0,(r.total||0)-(r.paths||0)))})),{h:170,extra:i=>[`${escA(tr('an_tg_total'))}: <b>${TG[i]?TG[i].total:0}</b>`]}):`<div class="ans">${escA(tr('an_tg_none'))}</div>`;
   const dirs=tr('an_dirs').split(',');
   const hoursChart=bars(Array.from({length:24},(_,i)=>i),[{n:tr('an_s_reports'),c:C[0],v:A.hours}],{w:CHW>700?430:CHW,h:200,ticks:CHW>700?6:4,label:i=>`${i}:00–${i+1}:00`,axl:i=>i+':00'});
   // 1.53: what the AI's checks found, night by night (fixed order of the kinds, never by rank)
@@ -1141,7 +1142,7 @@ function drawAnalytics(){
     ${card('c8',tr('an_c_kyiv'),tr('an_src_kyiv'),legend([[tr('an_s_city'),C[0],'ln'],[tr('an_s_obl'),C[1],'ln']])+kyivChart,'kyiv')}
     ${card('c9',tr('an_c_starts'),tr('an_src_starts'),heat(A.starts))}
     ${card('c10',tr('an_c_reports'),tr('an_src_reports'),legend(REP.map(([k,c])=>[tr('an_r_'+k),c]))+repChart,'reports')}
-    ${card('c13',tr('an_c_tags'),tr('an_src_tags'),legend(TGS.map(([k,c])=>[tr('an_tg_'+(k==='?'?'q':k)),c]))+tgChart,'targets')}
+    ${card('c13',tr('an_c_tags'),tr('an_src_tags'),legend(TGS.map(([k,c])=>[tr('an_tg_'+k),c]))+tgChart,'targets')}
     ${card('c14',tr('an_c_ai'),tr('an_src_ai'),legend(FK.map((k,i)=>[tr('f_'+k),C[i]]))+aiChart,'ai')}
     <div class="an2">${card('c11',tr('an_c_hours'),tr('an_src_hours'),hoursChart)}${card('c12',tr('an_c_heads'),tr('an_src_heads'),hbars(dirs.map((d,i)=>[d,A.headings[i]]),C[0]))}</div>
     ${drawMore(A)}`;

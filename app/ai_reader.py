@@ -6,7 +6,7 @@ one this server offered it from its gazetteer) and compared with the rules' read
 two disagree: posts the rules missed, places or weapons they read differently — so the rules can be fixed
 (deterministic, free, instant). 1.51: with the dashboard's switch on (`ai_live`, the kill switch), the facts it
 quoted that the rules did not read — where a target comes from, its height, its speed — fill the TARGET TAGS
-(N-07 ×2 · 2200 m), marked as read by the AI. docs/TECHNICAL.md §7.7, docs/SAFETY.md.
+(#07 ×2 · 2200 m), marked as read by the AI. docs/TECHNICAL.md §7.7, docs/SAFETY.md.
 
 The prompt is a component, not a sentence: fixed rules taken from docs/SAFETY.md (SYSTEM), worked examples (EXAMPLES),
 the post's context assembled per post (the channel, its previous posts, the CANDIDATE places), and a strict output
@@ -76,7 +76,7 @@ Rules:
 11. Height, vertical state and speed matter most to the people under a target: give them whenever the post states them, and only for the target they are written for (the same line or paragraph; a height on a line of its own after several targets belongs to the target just above it). Altitude in metres ("висота 2200", "на 1,5 км" = 1500); vertical: "знижується", "спускається", "пікірує", "скидає висоту" = descending; "набирає висоту" = climbing; "низько", "на малій висоті" = low; "високо", "на великій висоті" = high; speed ("швидкість 180 км/год" = 180).
 12. Nothing about aerial targets — an official alert message ("Повітряна тривога", "Відбій", "жовтий рівень", "Дронова загроза" with a district: that is an alert, not a target), news, a fundraiser, an advert, the Air Force's morning totals: targets [].
 13. PREVIOUS POSTS are context only. "Далі на X" continues the last target named there; but never copy a fact from them into this post's entry unless this post states it.
-14. ON THE MAP NOW lists the targets other posts placed, by their tag (S-01, ?-04…). If one of this post's targets is one of them — the same weapon reported again near the same place, or "Далі на X" continuing it — put its tag in same_as; otherwise "". Such a target is still listed: same_as says which it is.
+14. ON THE MAP NOW lists the targets other posts placed, by their tag (#01, #04…). If one of this post's targets is one of them — the same weapon reported again near the same place, or "Далі на X" continuing it — put its tag in same_as; otherwise "". Such a target is still listed: same_as says which it is.
 15. The PARSER READING may be wrong or miss targets. Never copy it; read the post yourself. Where it missed a target the post names, add it; where it misread one, your reading — by the post's words — is the one to give.
 16. Unsure? Say so in "uncertain" in one short English sentence ("" when sure), and still give only what is stated.
 
@@ -169,9 +169,9 @@ EXAMPLES = [
       "uncertain": None}),
     (channel_block("kyiv_airdef", "м. Київ", ["м. Київ"]), ["[21:02] Дрон над Троєщиною"], "Збито ціль над Оболонню",
      "c1 | Оболонь | м. Київ\nc2 | Троєщина | м. Київ\no31 | м. Київ", ["unknown · at Оболонь · shot down"],
-     ["?-04 · drone · at Троєщина · @kyiv_airdef 21:02"],
+     ["#04 · drone · at Троєщина · @kyiv_airdef 21:02"],
      {"targets": [_t(kind="unknown", status="shot_down", status_quote="Збито", place_id="c1",
-                     place_quote="над Оболонню", relation="at", same_as="?-04")], "uncertain": None}),
+                     place_quote="над Оболонню", relation="at", same_as="#04")], "uncertain": None}),
     (channel_block("kpszsu", None, ["Миколаївська область"]), [], "БпЛА на півночі від Миколаєва, курс на захід.",
      "c1 | Миколаїв | Миколаївська область\no17 | Миколаївська область", ["drone · in Миколаївська область"], [],
      {"targets": [_t(kind="drone", kind_quote="БпЛА", place_id="c1", place_quote="на півночі від Миколаєва",
@@ -199,9 +199,9 @@ EXAMPLES = [
       "uncertain": "The weapon is the Shahed of the previous post, but this post does not name it."}),
     # the parser read nothing: the post names a place for a target in a tracker's loose words — it is given
     (channel_block("kyiv_airdef", "м. Київ", ["м. Київ"]), ["[22:10] Шахед курсом на Бортничі"], "Ціль заходить на Бортничі, низько, знижується",
-     "c1 | Бортничі | м. Київ\no31 | м. Київ", [], ["S-07 · Shahed · heading to Бортничі · @kyiv_airdef 22:10"],
+     "c1 | Бортничі | м. Київ\no31 | м. Київ", [], ["#07 · Shahed · heading to Бортничі · @kyiv_airdef 22:10"],
      {"targets": [_t(kind="unknown", place_id="c1", place_quote="на Бортничі", relation="heading_to",
-                     vertical="descending", vertical_quote="знижується", same_as="S-07")], "uncertain": None}),
+                     vertical="descending", vertical_quote="знижується", same_as="#07")], "uncertain": None}),
     # 1.52: where it is and where it is going, both; the channel's emoji is the weapon
     (channel_block("kpszsu"), [], "🏍 Реактивний БпЛА на Житомирщині в напрямку Коростеня",
      "c1 | Коростень | Житомирська область\no10 | Житомирська область", ["drone · heading to Коростень"], [],
@@ -743,14 +743,14 @@ def _p(label, hm, ch, text, rules, names, home=None, near=()):
 # one worked check, given as an earlier turn: what to report, and what not to
 CHECK_EXAMPLE = (
     check_text([
-        ("o14", "Київська область", ["S-07 · drone · heading to Бортничі · @kyiv_airdef 22:10"], [
+        ("o14", "Київська область", ["#07 · drone · heading to Бортничі · @kyiv_airdef 22:10"], [
             _p("p1", "22:12", "kyiv_airdef", "Ціль заходить на Бортничі, низько, знижується", [], ["c1", "o31"], "м. Київ", ["м. Київ"]),
             _p("p2", "22:13", "trevoga_kartaa_noviny", "🚨Повітряна тривога · жовтий рівень🟡\nБучанський р-н\nДронова загроза",
                ["drone · in oblast 14"], ["o14"]),
             _p("p3", "22:14", "kpszsu", "2 шахеди з півночі на Бровари", ["drone ×2 · heading to Бровари · from n"], ["c2", "o14"]),
             _p("p4", "22:15", "eRadarrua", "🛵 Наливайківка\n\n🛵 2 повз Бородянку на Ворзель",
                ["drone · at Наливайківка", "drone ×2 · at Бородянка"], ["c3", "c4", "c5", "o14"], None, ["Київська область"])]),
-        ("o5", "Рівненська область", ["?-04 · drone · heading to Сарни · @rivne_radar 22:05"], [
+        ("o5", "Рівненська область", ["#04 · drone · heading to Сарни · @rivne_radar 22:05"], [
             _p("p5", "22:17", "rivne_radar", "Тепер на Висоцьк", None, ["c6", "c7"], "Рівненська область", ["Рівненська область"])]),
         ("o10", "Житомирська область", [], [
             _p("p6", "22:11", "kpszsu", "🏍 Реактивний БпЛА на Житомирщині в напрямку Коростеня", ["jet drone · heading to Коростень"], ["c8", "o10"]),
@@ -762,19 +762,19 @@ CHECK_EXAMPLE = (
     {"findings": [
         {"post": "p1", "finding": "missed", "why": "a tracker's target heading to Bortnychi, descending",
          "target": _t(kind="unknown", place_id="c1", place_quote="на Бортничі", relation="heading_to",
-                      vertical="descending", vertical_quote="знижується", same_as="S-07")},
+                      vertical="descending", vertical_quote="знижується", same_as="#07")},
         {"post": "p2", "finding": "not_sky", "why": "an official alert message, not a target", "target": _t()},
         {"post": "p4", "finding": "facts", "why": "the course to Vorzel", "target": _t(
             kind="shahed", kind_quote="🛵", count=2, count_quote="2 повз", place_id="c4", place_quote="повз Бородянку",
             relation="near", toward_id="c5", toward_quote="на Ворзель")},
         {"post": "p5", "finding": "missed", "why": "the tracker's next point (its own oblast's Vysotsk), set aside by the server",
-         "target": _t(kind="unknown", place_id="c6", place_quote="на Висоцьк", relation="heading_to", same_as="?-04")},
+         "target": _t(kind="unknown", place_id="c6", place_quote="на Висоцьк", relation="heading_to", same_as="#04")},
         {"post": "p7", "finding": "facts", "why": "height and speed", "target": _t(
             kind="jet_drone", kind_quote="реактив", count=1, count_quote="1 реактив", place_id="c8", place_quote="над Коростенем",
             relation="at", speed_kmh=400, speed_quote="швидкість 400 км/год", altitude_m=3000, altitude_quote="висота 3 км")}],
      "notes": [
-        {"oblast": "o14", "note": "Two Shaheds from the north toward Brovary, two passing Borodianka toward Vorzel, and S-07 descending onto Bortnychi; the yellow-level message for Bucha raion is an alert, not a target."},
-        {"oblast": "o5", "note": "?-04, heading for Sarny, now goes on toward Vysotsk."},
+        {"oblast": "o14", "note": "Two Shaheds from the north toward Brovary, two passing Borodianka toward Vorzel, and #07 descending onto Bortnychi; the yellow-level message for Bucha raion is an alert, not a target."},
+        {"oblast": "o5", "note": "#04, heading for Sarny, now goes on toward Vysotsk."},
         {"oblast": "o10", "note": "One jet drone came in toward Korosten and is now over it at 3 km, 400 km/h."}],
      "uncertain": ""})
 
@@ -831,7 +831,7 @@ REPORT_SYSTEM = """You are the analyst of Heimdall, an unofficial air-threat map
 
 Write the night's report for the owner, in English, plain text with short headed sections:
 1. The night in brief — when it started and ended, the waves, the oblasts most concerned, the few figures that matter.
-2. Routes — where targets came in from (by tag letter and entry places), where they went, the longest paths; Kyiv city and oblast in particular.
+2. Routes — where targets were first reported (entry places), where they went, the longest paths; Kyiv city and oblast in particular. The origins the posts stated are often wrong (a track takes the first one any of its reports gave): use one only where several posts agree.
 3. Heights and speeds — what was reported, and the descents.
 4. Against the Air Force — what its summary says beside what the channels reported, where both exist.
 5. Patterns — what this night shows about how the attack unfolded: timing, routes, mixes of weapons, repeats; only what the record supports.

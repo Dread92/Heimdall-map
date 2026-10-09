@@ -641,6 +641,11 @@ channel's report of the same target at the same time takes the same number.
 
 ## A target's tag is a number, not a designation (1.51)
 
+1.53.2: the tag is the number alone — "#07". Where a target came from is no longer shown anywhere a reader sees: read
+from the posts, it was wrong too often (a track takes the first origin any of its reports stated, often another
+target's), and a wrong "from the east" over a drone coming from Belarus is worse than nothing. What follows describes
+the letter as it is still kept, unseen, for the record.
+
 "S-07 ×2" is Heimdall's own count of the targets the channels reported tonight, and a letter for where a post **said**
 it came from — N north or Belarus, E east or Russia, S south, the sea or Crimea, W west, ? not said. The letter is
 not worked out from a position, with one exception the owner made (1.52): a target first reported in Chernihiv oblast

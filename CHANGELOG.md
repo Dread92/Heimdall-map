@@ -2,6 +2,15 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.53.2 — 2026-10-09
+
+### Changed
+- **No more direction on the tags**: a target's tag is its number alone — "#82". The letter for where it came from was
+  wrong too often (a drone coming from Belarus over Chernihiv oblast showed "E-82": its track had taken "з брянської"
+  from another post), so it is shown nowhere: not on the map, the card, the replay, nor in what the AI is told about the
+  map. It is still kept for the record (the night's record says it is what the posts said, often wrong).
+- Analytics: the tags per night, as followed over two places or more / reported at one place.
+
 ## 1.53.1 — 2026-10-09
 
 ### Changed
