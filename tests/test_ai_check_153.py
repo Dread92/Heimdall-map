@@ -126,7 +126,7 @@ def test_one_call_reads_the_posts_grouped_by_oblast_and_keeps_only_what_the_post
     (ck,) = store.ai_checks(5)
     assert ck["posts"] == 5 and ck["cost"] == 0.0011 and ck["tok_in"] == 9000 and ck["prompt_v"] == A.CHECK_VERSION
     assert ck["notes"] == [{"oblast": "o10", "note": "One jet drone over Korosten at 3 km."}]
-    assert ck["findings"] == {"facts": 2} and set(ck["oblasts"]) >= {"31", "10"}
+    assert ck["findings"] == {"facts": 2, "returned": 6} and set(ck["oblasts"]) >= {"31", "10"}    # 1.53.4: what it gave
     assert store.ai_check_counts(NOW.strftime("%Y-%m"))["checks_month"] == 1
 
 
@@ -136,7 +136,7 @@ def test_a_failed_check_is_kept_and_its_posts_are_read_at_the_next_one():
     with mock.patch.object(A.urllib.request, "urlopen", lambda *a, **k: _answer('{"findings": [', tout=6000, finish="length")):
         r.check(ITEMS[:2])
     (ck,) = store.ai_checks(5)
-    assert ck["error"] == f"cut off at {A.MAX_OUT_CHECK} tokens" and len(r.q) == 2 and not store.ai_reads(5, diff=False)
+    assert ck["error"] == f'cut off at {A.MAX_OUT_CHECK} tokens — began: {{"findings": [' and len(r.q) == 2      # 1.53.4 and not store.ai_reads(5, diff=False)
 
 
 def test_on_the_clock_and_the_dashboards_switches():
@@ -367,3 +367,23 @@ def test_no_arrows_along_the_edge_of_the_map():
     page = _read("static/kyiv.html")
     assert "edges.push(" not in page and "class=\"edge " not in page and ".edge .arrow" not in page
     assert "if($('edges').innerHTML) $('edges').innerHTML='';" in page
+
+
+# ---- 1.53.4: what the first real checks showed (9 Oct, 18:40–19:41) ---------------------------------------------------
+def test_a_finding_is_flat_and_short():
+    assert len(A.FIND["required"]) == 18 and "origin" not in A.FIND["properties"] and "speed_kmh" not in A.FIND["properties"]
+    assert A.CHECK_SCHEMA["properties"]["findings"]["items"] is A.FIND
+    f = A.wire_check(A.CHECK_EXAMPLE[1])["findings"][0]
+    assert "target" not in f and f["place_id"] == "c1" and A.find_target(f)["same_as"] == ""
+    (t,), _ = A.validate({"targets": [A.find_target(f)]}, "Ціль заходить на Бортничі, низько, знижується",
+                         [("c1", "Бортничі", "Бортничі | м. Київ")])
+    assert t["place"] == "Бортничі" and t["vertical"] == "descending"
+
+
+def test_the_rules_errors_the_first_checks_found():
+    rd = lambda ch, t, near=None: [m["place"] for m in geo.parse_for_channel(ch, t, near)]   # noqa: E731
+    assert rd("chyste_nebo", "На Лозовик") == []                        # Lozovyk by Kyiv is not Lozova in Kharkiv oblast
+    assert rd("kyiv_airdef", "Шахед над Лозовою") == ["Лозова"] and rd("kyiv_airdef", "Шахед над Оболонню") == ["Оболонь"]
+    assert rd("kyiv_airdef", "Ціль на Бориспіль") == ["→ Бориспіль"] and rd("kyiv_airdef", "Шахед над Броварами") == ["Бровари"]
+    with mock.patch.dict(geo.CHANNEL_HOME, {"trevoga_kartaa_noviny": "10"}):
+        assert rd("trevoga_kartaa_noviny", "🟢 Відбій повітряної тривоги\n• Коростенський р-н\n• Житомирський р-н", ["10"]) == []

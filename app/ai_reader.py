@@ -669,12 +669,27 @@ CHECK_SCHEMA = {
         "notes": {"type": "array", "items": {
             "type": "object", "additionalProperties": False,
             "properties": {"oblast": _S, "note": _S}, "required": ["oblast", "note"]}},
-        "findings": {"type": "array", "items": {
-            "type": "object", "additionalProperties": False,
-            "properties": {"post": _S, "finding": {"type": "string", "enum": FINDINGS}, "target": TARGET, "why": _S},
-            "required": ["post", "finding", "target", "why"]}},
+        "findings": {"type": "array", "items": None},     # FIND, below
         "uncertain": _S},
     "required": ["notes", "findings", "uncertain"]}
+# 1.53.4: a finding is flat and carries only what the map uses — the dashboard (9 Oct) showed 10 checks in 12 cut off at
+# 6,000 tokens: a finding in the one-post schema (27 fields, quotes in Cyrillic) cost 600–1,000 tokens. No origin (no
+# longer shown), course, side, distance, speed or tag link: 18 fields, a third of the length.
+FIND_KEYS = ("kind", "kind_quote", "count", "count_quote", "status", "status_quote", "place_id", "place_quote", "relation",
+             "toward_id", "toward_quote", "altitude_m", "altitude_quote", "vertical", "vertical_quote")
+FIND = {"type": "object", "additionalProperties": False,
+        "properties": {"post": _S, "finding": {"type": "string", "enum": FINDINGS},
+                       **{k: TARGET["properties"][k] for k in FIND_KEYS}, "why": _S}}
+FIND["required"] = list(FIND["properties"])
+CHECK_SCHEMA["properties"]["findings"]["items"] = FIND
+
+
+def find_target(f):
+    """A flat finding as a target in the one-post shape (what `validate` reads): the fields it does not carry, unstated."""
+    t = {k: ("" if k in TEXTS else 0 if k in INTS else "none") for k in TARGET["properties"]}
+    t.update(kind="unknown", status="in_flight", relation="none")
+    t.update({k: f[k] for k in FIND_KEYS if k in f})
+    return t
 
 # the reading rules are the same as for one post (1 to 12 of SYSTEM): one text, two prompts
 RULES_READ = SYSTEM[SYSTEM.index("1. Never infer."):SYSTEM.index("13. PREVIOUS POSTS")].rstrip()
@@ -690,12 +705,12 @@ The check:
    - "missed": a target the post names that no RULES line of that post has — give the whole target;
    - "place": a RULES line put the target at the wrong place — the target at the right place;
    - "weapon": the right place, the wrong weapon; "outcome": shot down, impact or lost read wrongly or not at all;
-   - "facts": the right place, but a stated origin, height, vertical state, speed, count or destination is missing from the RULES line — the target at the rules' place, with them;
+   - "facts": the right place, but a stated height, vertical state, count or destination is missing from the RULES line — the target at the rules' place, with them;
    - "not_sky": the rules drew a target from a post that reports none (an official alert message, news, an advert, a fundraiser) — a target of kind "unknown" with no place.
    "why": a few English words. A post the rules read right gets no finding. Be brief: report only what changes what a reader would understand — a target missed or misplaced, a wrong weapon or outcome, a height, descent, origin or destination left out — at most one finding per target, never a count of one or a quote the rules already have.
 15. A channel's earlier posts in the check are the context of its later ones ("Далі на X" continues the last target that channel named). Never carry a fact from one post into another post's finding.
-16. same_as: the tag of the target ON THE MAP NOW that this one is (the same weapon reported again near the same place, or continued); otherwise "".
-17. NOTES: for each oblast block with targets, one or two English sentences on what its posts show together — how many targets, of what kind, where they come in from and where they head, waves, heights, and what the map misses or overstates. Only what the posts and the map show: no forecast, no advice. "oblast" is the block's id (o14).
+16. A finding carries only its own fields — no origin, course, side or speed — and every text field is as short as the post allows: the quote, nothing more.
+17. NOTES: for each oblast block with targets, one English sentence on what its posts show together — how many targets, of what kind, where they come in from and where they head, waves, heights, and what the map misses or overstates. Only what the posts and the map show: no forecast, no advice. "oblast" is the block's id (o14).
 18. Unsure about something? Say it in "uncertain" ("" when sure).
 
 Answer with the JSON object only — no other text, no code fence."""
@@ -769,7 +784,7 @@ CHECK_EXAMPLE = (
             relation="near", toward_id="c5", toward_quote="на Ворзель")},
         {"post": "p5", "finding": "missed", "why": "the tracker's next point (its own oblast's Vysotsk), set aside by the server",
          "target": _t(kind="unknown", place_id="c6", place_quote="на Висоцьк", relation="heading_to", same_as="#04")},
-        {"post": "p7", "finding": "facts", "why": "height and speed", "target": _t(
+        {"post": "p7", "finding": "facts", "why": "height", "target": _t(
             kind="jet_drone", kind_quote="реактив", count=1, count_quote="1 реактив", place_id="c8", place_quote="над Коростенем",
             relation="at", speed_kmh=400, speed_quote="швидкість 400 км/год", altitude_m=3000, altitude_quote="висота 3 км")}],
      "notes": [
@@ -780,10 +795,10 @@ CHECK_EXAMPLE = (
 
 
 def wire_check(ans):
-    """A check's answer as the model writes it (no field is nullable on the wire)."""
+    """A check's answer as the model writes it (no field is nullable on the wire; 1.53.4: findings flat, FIND)."""
     one = wire({"targets": [f["target"] for f in ans["findings"]]})["targets"]
     return {"notes": [{"oblast": n["oblast"], "note": n["note"]} for n in ans.get("notes") or []],
-            "findings": [{"post": f["post"], "finding": f["finding"], "target": t, "why": f.get("why") or ""}
+            "findings": [{"post": f["post"], "finding": f["finding"], **{k: t[k] for k in FIND_KEYS}, "why": f.get("why") or ""}
                          for f, t in zip(ans["findings"], one)],
             "uncertain": ans.get("uncertain") or ""}
 
@@ -1111,7 +1126,7 @@ class AIReader(threading.Thread):
                     else:
                         dropped += 1               # nothing drawn: nothing to set aside
                     continue
-                ts, d = validate({"targets": [f.get("target")]}, x["full"], x["gc"], tags)
+                ts, d = validate({"targets": [find_target(f) if "target" not in f else f["target"]]}, x["full"], x["gc"], tags)
                 dropped += d
                 if not ts:
                     continue
@@ -1136,6 +1151,7 @@ class AIReader(threading.Thread):
             except Exception as e:
                 self.log("ai reader: not saved:", type(e).__name__)
         ok = {f"o{u}" for u in uids}
+        found["returned"] = len(out.get("findings") or [])     # 1.53.4: what it gave, before the checks against the posts
         row["findings"] = found
         row["notes"] = [{"oblast": str(n_.get("oblast")), "note": str(n_.get("note") or "").strip()[:600]}
                         for n_ in out.get("notes") or [] if isinstance(n_, dict) and str(n_.get("oblast")) in ok
@@ -1290,13 +1306,16 @@ class AIReader(threading.Thread):
             cut = ((data.get("choices") or [{}])[0].get("finish_reason") == "length"
                    or (usage.get("completion_tokens") or 0) >= mx)
             err = f"cut off at {mx} tokens" if cut else "not JSON"
+            raw = (((data.get("choices") or [{}])[0].get("message") or {}).get("content"))
             part = salvage_check((((data.get("choices") or [{}])[0].get("message") or {}).get("content"))) if cut and kind == "check" else None
             if part:
                 self.last_error = None
                 return {"out": part, "cost": cost, "tok_in": usage.get("prompt_tokens"), "tok_out": usage.get("completion_tokens"),
                         "model": data.get("model") or self.model(), "way": way, "partial": err}
             self.last_error = err
-            return {"error": err, "cost": cost, "tok_in": usage.get("prompt_tokens"), "tok_out": usage.get("completion_tokens")}
+            # 1.53.4: how the answer began, for the dashboard — to see why it ran so long
+            head = (" — began: " + raw[:300].replace("\n", " ")) if kind == "check" and isinstance(raw, str) and raw else ""
+            return {"error": err + head, "cost": cost, "tok_in": usage.get("prompt_tokens"), "tok_out": usage.get("completion_tokens")}
         self.last_error = None
         return {"out": out, "cost": cost, "tok_in": usage.get("prompt_tokens"), "tok_out": usage.get("completion_tokens"),
                 "model": data.get("model") or self.model(), "way": way}

@@ -2,6 +2,18 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.53.4 — 2026-10-09
+
+### Fixed
+- **The AI's checks were cut off 10 times in 12** (the dashboard, 18:40–19:41): each finding was written out in full,
+  27 fields with their quotes. A finding now carries only what the map uses (18 fields: no origin, course or speed); a
+  check records how many findings it gave, and one that still fails shows how its answer began.
+- What the checks found in the rules:
+  - "🟢 Відбій повітряної тривоги • Коростенський р-н • Житомирський р-н" — an all-clear — was drawn as two targets
+    from a channel with an oblast of its own: an alert message now places nothing from any channel.
+  - "На Лозовик" (a Kyiv tracker) was drawn at Lozova in Kharkiv oblast: a place name now matches only in its own
+    declined forms ("Лозовою", "Оболонню", "Бориспіль"), not as the start of another word.
+
 ## 1.53.3 — 2026-10-09
 
 ### Changed

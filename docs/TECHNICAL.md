@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.53** · last updated 2026-10-09 (1.53.3)
+**Documented version: 1.53** · last updated 2026-10-09 (1.53.4)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -983,7 +983,11 @@ map shows there now** (`State.ai_map`: every target in the air, tagged or for th
 channel, text (700 characters at most), `RULES:` (`parser_lines` of the rules' marks — or "set aside") and `NAMES:` (its
 candidate ids; one numbering for the whole check). At most 30 posts a call (1.53.1: 60 made answers past 6,000 tokens
 on a busy night); more → several, by oblast. An answer may be 12,000 tokens; the notes come first in it, and of an answer
-cut off at the length what came complete is kept (`salvage_check`; the check says what was lost, `uncertain`). The prompt
+cut off at the length what came complete is kept (`salvage_check`; the check says what was lost, `uncertain`).
+1.53.4: the first real checks (9 Oct, 18:40–19:41) were cut off 10 times in 12 at 6,000 tokens — a finding in the
+one-post schema cost 600–1,000 tokens. A finding is now flat (`FIND`, 18 fields: no origin, course, side, distance, speed
+or tag link; `find_target` gives `validate` the one-post shape), each check records how many findings it was given
+(`findings.returned`), and a check that still fails says how its answer began (`error`). The prompt
 (`SYSTEM_CHECK`, version 5) reuses the reading rules 1–12 of the one-post prompt (`RULES_READ`) and asks only for
 **findings** — where a post's words show the rules wrong or incomplete: `missed` (a target no rules line has), `place`,
 `weapon`, `outcome`, `not_sky` (the rules drew a target from a post that reports none), `facts` (the right place, a

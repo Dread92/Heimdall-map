@@ -409,6 +409,11 @@ _VERB_TAILS = frozenset(("ну", "неш", "немо", "нуть", "нем", "н
 _ADJ_ENDS = frozenset(("ий", "ій", "ого", "ому", "им", "ім", "ої", "ою", "у", "а", "е", "є", "і", "ая", "ое", "ой", "ую"))
 
 
+# 1.53.4: what may follow a stem in a declined place name — vowels, then at most -м, -х, -й, -в, -ми or -ві:
+# -а -у -і -и -ою -ої -ій -ам -ах -ами -ів -ям -ях -ові -ую -ой; never a consonant of a different word ("Лозовик")
+_CASE_END = re.compile(r"^[аеєиіїоуюяыэ]{0,2}(?:[мхйв]|ми|ві)?$")
+
+
 def _plausible(token, name, base):
     """Is this matched word a form of that place's name, or merely something that starts like it?
 
@@ -423,10 +428,18 @@ def _plausible(token, name, base):
     if token[len(base):] in _VERB_TAILS:
         return False                     # 1.45: "якщо що маякну" (I'll let you know) is not Маяки
     n = _norm(name)
-    if not n.startswith(base) or len(base) >= len(n) - 1:
-        # an alternation, an explicit alias, or a stem that gave up at most one letter: the stem is evidence
-        # enough, and the ending is free to inflect ("Бровари" → "Броварах")
-        return True
+    if not n.startswith(base):
+        return True                      # an alternation or an explicit alias: trusted as written
+    if len(base) >= len(n) - 1:
+        # a stem that gave up at most one letter: the stem is evidence enough, and the ending is free to inflect
+        # ("Бровари" → "Броварах") — 1.53.4: as long as what follows is an ending. "На Лозовик" (a Kyiv tracker, the
+        # village of Lozovyk) was drawn at Lozova in Kharkiv oblast: "-ик" declines nothing
+        tail = token[len(base):]
+        if tail[:1] == "ь":
+            tail = tail[1:]                  # Бориспіль, Гостомель
+        elif tail[:1] and tail[:1] == base[-1:]:
+            tail = tail[1:]                  # a doubled consonant: Оболонь → Оболонню
+        return bool(_CASE_END.match(tail))
     # 1.45: a name that declines like an adjective — "Кропивницький" → "Кропивницького", "Кам'янське" → "Кам'янського"
     if n[len(base):] in _ADJ_ENDS and token[len(base):] in _ADJ_ENDS:
         return True
@@ -2476,6 +2489,12 @@ def _split_next(text):
 def _parse_for_channel(channel, text, near=None):
     if channel == "eRadarrua" and "◦" in text:
         return []          # per-oblast group-count summary: counts only, no positions (see parse_eradar_summary)
+    # 1.53.4: an official alert message — "🟢 Відбій повітряної тривоги • Коростенський р-н • Житомирський р-н" — places
+    # nothing, from a channel with an oblast of its own too (its raion lines were read as two targets, as a tracker's
+    # bare place names are): the same rule as parse_post's
+    nt = _norm(text)
+    if ALERT_MSG_RX.search(nt) and not MOVE_RX.search(nt):
+        return []
     # A notice that is plainly not about the sky — a press release, a metro timetable — places nothing, whichever
     # channel posted it and whichever parser would read it. (The softer news signs are left to the tagger: a live
     # tracker's short post can say "поранені" and still be a live report.)
