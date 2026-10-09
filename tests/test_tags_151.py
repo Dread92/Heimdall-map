@@ -280,4 +280,4 @@ def test_a_region_wide_target_is_outlined_and_says_somewhere_in_the_oblast():
     assert "tid=en[k]===1&&m.tag?m.tag.id:''" in chip                                   # its tag, when it is one report
     assert "#oblevt .obring.live{fill:none;stroke:#f4f1e8;" in PAGE                   # never the alerts' amber or red
     assert '<g class="obglow" clip-path="url(#obclip${uid})">' in chip and "e.classList.toggle('hot',hot.has(e.dataset.o))" in chip
-    assert "@media (prefers-reduced-motion:reduce){#oblevt .obglow{animation:none}}" in PAGE
+    assert "#oblevt .obglow{pointer-events:none}" in PAGE and "obbreath" not in PAGE        # 1.54.3: the glow is still

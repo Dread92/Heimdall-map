@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.54** · last updated 2026-10-09 (1.54.2)
+**Documented version: 1.54** · last updated 2026-10-09 (1.54.3)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -348,6 +348,15 @@ hidden for that moment (`svg.zoomg :not(.mk)>text`; the marks and their labels s
 movement the new view is drawn once (`applyVB()`). The view's arithmetic uses the map's box without the transform
 (`SR()`). Result: 16.7 ms a frame (60 fps) on the slowed phone and on a computer, the main thread busy 20 %; the
 redraw at rest costs one frame of ~70 ms. A one-finger drag still moves the viewBox (no change of scale: cheap).
+
+**1.54.3, the owner: "sometimes the map flickers when I zoom in or out"** — black patches over the map, the left column
+blank. The scaled map is one GPU picture only while nothing inside it moves; every mark's halo, a blinking glyph, a
+marching course ray made the browser draw the whole map again at every frame, at the scaled size — and a long wheel zoom
+scaled it to many times the screen, more than the GPU keeps. Now, while the gesture lasts, every animation inside the
+map is paused (`svg.zoomg *{animation-play-state:paused}`), and a scale past 3× or below ⅓ is drawn again at its own size
+at once (`fastVB` → `applyVB()`), so the scaled picture never grows past three screens. The glow of an oblast with a
+target somewhere in it no longer breathes (a large clipped area repainted 60 times a second for nothing a reader
+needs).
 
 Tiles: the tiles of the zoom before stay under the new ones until all of these have loaded or failed (`tileSweep`,
 4 s at most), so a change of zoom never shows the black background between two pictures.
@@ -1487,7 +1496,9 @@ Main parts:
   town and district level, the number of posts — shoot-downs and hits left out, never an oblast's centre or "Kyiv"
   alone), drawn as a density whose spread keeps its size on the screen, so it is layered by zoom (out: the
   corridors across the region; in: the villages and the Kyiv districts); the most-named places in view written on it
-  and listed in its legend; under every mark. 1.40: **the colour is the number of reports** — pale yellow, orange,
+  and listed in its legend; under every mark. (1.54.3: Layers also has **Path of a tapped target** — the red dots of
+  §7.8's night path, on by default, `LAYERS.selpath`, `svg.no-selpath #selpath`; the explosions layer's two switches
+  went with it in 1.54.) 1.40: **the colour is the number of reports** — pale yellow, orange,
   red for the most (it was violet). `heatGrid()` adds each place's count around it on a grid a quarter of the
   screen's pixels (a smooth bump of 30 px); a spot's colour is √(its sum ÷ the scale), the scale being the busiest
   place of the period or the busiest spot in view if that is more — so a quiet corner never turns red because it is

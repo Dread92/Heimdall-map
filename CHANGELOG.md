@@ -2,6 +2,22 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.54.3 — 2026-10-09
+
+### Added
+- **Layers → "Path of a tapped target (red dots)"** — the owner: the path joining a target's reports "should be a
+  checkable option". On by default, remembered on the phone.
+
+### Fixed
+- **The map flickered when zooming in or out** — black patches, at times the left column blank. While a pinch or the
+  wheel lasts the map is one picture the GPU scales, but every mark's halo and blinking glyph redrew all of it at every
+  frame, at the scaled size — many screens' worth after a long wheel zoom. During the gesture nothing in the map moves
+  now, and past 3× it is redrawn at its own size. The glow of an oblast with a target somewhere in it no longer breathes.
+
+### Removed
+- Layers → "History: explosions" and "History: confirmed shot down": they belonged to the explosions layer removed in
+  1.54.0.
+
 ## 1.54.2 — 2026-10-09
 
 ### Changed

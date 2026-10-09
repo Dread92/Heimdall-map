@@ -265,7 +265,7 @@ body.lite .imp .ig{fill:#fff;filter:none;animation:none}body.lite .imp.fresh .sw
 .grow .gc{grid-column:1/-1;font:500 10.5px var(--mono);color:var(--muted);margin-top:1px}
 .glist::-webkit-scrollbar{width:4px}.glist::-webkit-scrollbar-thumb{background:var(--line)}
 body.lite .imp .icnt circle{fill:#fff}
-.imp.dn .ig{fill:#39d98a}.imp.dn .ir{stroke:#39d98a}.imp.dn .it{fill:#b8f0d3}svg.no-himp .imp.im,svg.no-hdown .imp.dn{display:none}
+.imp.dn .ig{fill:#39d98a}.imp.dn .ir{stroke:#39d98a}.imp.dn .it{fill:#b8f0d3}svg.no-selpath #selpath{display:none}
 /* a fire is a consequence, not a strike: amber, smaller, no glow, no shockwave, never counted as an explosion */
 .imp.fire .ig{fill:#ff9a3c;stroke:#2a1a08;stroke-width:calc(var(--k,1)*.6px);filter:none}
 .imp.fire .ir{stroke:#ff9a3c;opacity:.3}.imp.fire .it{fill:#ffd2a1}.imp.fire{opacity:.85}
@@ -457,6 +457,11 @@ svg#map{transform-origin:0 0;will-change:transform}
 /* …and while it is scaled, the names of places step out: a scale change of the picture makes the browser lay out
    every SVG text again, at every frame (on a phone, most of the frame). The marks and their labels stay. */
 svg.zoomg :not(.mk)>text{display:none}
+/* 1.54.3, the owner: "sometimes the map flickers when I zoom in or out". During a pinch or the wheel the map is one
+   picture scaled by the GPU (fastVB) — until something inside it moves: every mark's halo, a blinking glyph, a marching
+   course redrew the whole picture each frame at the scaled size, the GPU ran out of room and parts of the page went
+   black. While the gesture lasts nothing inside the map moves, and the scaling is re-based past 3× (fastVB). */
+svg.zoomg *,svg.zoomg *::before,svg.zoomg *::after{animation-play-state:paused!important}
 /* 1.49: zoomed in past ~90 px a km (svg.deep), a dashed line is drawn dash by dash along its whole length — the 50 km ring
    around Kyiv is 25,000 dashes at 1 km across — and an animated one again at every frame: the page stalled ("page not
    responding", 1.48). There they are drawn solid and still. */
@@ -520,17 +525,15 @@ svg.city .town.district{fill:#aeb8c8;font-weight:500}
    it (the weapon in its colour, ×count, a height), and the oblast's border glows softly from the inside: "somewhere in
    here". The glow stays along the border, so the middle of the oblast stays clear for the targets placed in it. */
 #oblevt .obring.live{fill:none;stroke:#f4f1e8;stroke-width:1.4px;stroke-opacity:.75;stroke-dasharray:none;animation:none}
-#oblevt .obglow{animation:obbreath 2.6s ease-in-out infinite;pointer-events:none}
+#oblevt .obglow{pointer-events:none}   /* 1.54.3: still — breathing, it repainted the whole map 60 times a second */
 #oblevt .obglow path{fill:none;stroke:#f4f1e8;stroke-linejoin:round;vector-effect:non-scaling-stroke}
 #oblevt .obglow .g1{stroke-width:26px;stroke-opacity:.05}#oblevt .obglow .g2{stroke-width:13px;stroke-opacity:.08}#oblevt .obglow .g3{stroke-width:6px;stroke-opacity:.13}
-@keyframes obbreath{0%,100%{opacity:1}50%{opacity:.55}}
 #oblevt .obbg{fill:#0b0e14;fill-opacity:.94;stroke:var(--c,#f4f1e8);stroke-width:1.6px;vector-effect:non-scaling-stroke}
 #oblevt .oblevtchip.live .obtxt{fill:#f4f1e8;font-size:calc(var(--k,1)*12.5px);stroke-width:0}
 #oblevt .oblevtchip.live .obtxt.obnm{font:800 calc(var(--k,1)*11.5px) system-ui;letter-spacing:.5px}
 #oblevt .obtxt.obwhere{fill:#e8e6df;font:600 calc(var(--k,1)*10.5px) system-ui;letter-spacing:.2px;stroke-width:calc(var(--k,1)*3px)}svg.veryfar #oblevt .obwhere{display:none}
 body:not(.rp) #obllbl .oblbl.hot{fill:#f4f1e8;paint-order:stroke;stroke:#0b0e14;stroke-width:calc(var(--k,1)*3px)}
 svg:not(.close) #obllbl .oblbl.faro.hot{display:inline}
-@media (prefers-reduced-motion:reduce){#oblevt .obglow{animation:none}}
 @keyframes obpulse{0%,100%{stroke-opacity:.8;fill-opacity:.05}50%{stroke-opacity:.28;fill-opacity:.015}}
 body.lite #oblevt .obring{fill:none;stroke:#fff;animation:none}body.lite #oblevt .obtxt{fill:#fff;stroke:#000}body.lite #oblevt .obglow{display:none}body.lite #oblevt .obbg{fill:#000;stroke:#fff}
 .mk .jetfx{display:none}.mk.jet .jetfx{display:block}.mk .flame{fill:#ffb347;opacity:.9;animation:flick .18s steps(2) infinite}.mk .flame2{fill:#fff4d6;animation:flick .12s steps(2) infinite alternate}
@@ -1136,7 +1139,7 @@ body.lite #mycard,body.lite .panel{background:#000;border-color:#666}body.lite .
 </div>
 <div class="panel" id="lay" hidden role="dialog" aria-labelledby="layh"><div class="pgrab"></div>
   <div class="ph"><b id="layh" data-t="m_layers">Map layers</b><button type="button" class="px" data-close="lay" data-t-aria="btn_close" aria-label="Close">✕</button></div>
-  <div class="layermenu" id="layerbox"><div class="lbase" id="lbase" role="radiogroup"><span class="lbh" data-t="l_base">Background</span><div class="lbopts"><label data-b="sat" hidden><input type="radio" name="lbase" value="sat"> <span data-t="l_sat">Satellite</span></label><label data-b="map"><input type="radio" name="lbase" value="map"> <span data-t="l_map">Map</span></label><label data-b="none"><input type="radio" name="lbase" value="none"> <span data-t="l_plain">Plain</span></label></div></div><label><input type="checkbox" data-l="heat"> <span data-t="l_heat">Heat map: where drones were reported (not live)</span></label><label><input type="checkbox" data-l="himp"> <span data-t="l_himp">History: explosions ✸</span></label><label><input type="checkbox" data-l="hdown"> <span data-t="l_hdown">History: confirmed shot down ✕</span></label><label><input type="checkbox" data-l="trails"> <span data-t="l_trails">Tracks</span></label><label><input type="checkbox" data-l="cones"> <span data-t="l_cones">Course rays</span></label><label><input type="checkbox" data-l="rivers"> <span data-t="l_rivers">Rivers</span></label><label><input type="checkbox" data-l="roads"> <span data-t="l_roads">Roads</span></label><label><input type="checkbox" data-l="infra"> <span data-t="l_infra">Airports / plants</span></label><label><input type="checkbox" data-l="rings"> <span data-t="l_rings">Rings</span></label><label><input type="checkbox" data-l="towns"> <span data-t="l_towns">Main towns of every oblast</span></label><label><input type="checkbox" data-l="minor"> <span data-t="l_minor">Villages &amp; small towns (off by default — clutters the phone)</span></label></div>
+  <div class="layermenu" id="layerbox"><div class="lbase" id="lbase" role="radiogroup"><span class="lbh" data-t="l_base">Background</span><div class="lbopts"><label data-b="sat" hidden><input type="radio" name="lbase" value="sat"> <span data-t="l_sat">Satellite</span></label><label data-b="map"><input type="radio" name="lbase" value="map"> <span data-t="l_map">Map</span></label><label data-b="none"><input type="radio" name="lbase" value="none"> <span data-t="l_plain">Plain</span></label></div></div><label><input type="checkbox" data-l="heat"> <span data-t="l_heat">Heat map: where drones were reported (not live)</span></label><label><input type="checkbox" data-l="trails"> <span data-t="l_trails">Tracks</span></label><label><input type="checkbox" data-l="selpath"> <span data-t="l_selpath">Path of a tapped target (red dots)</span></label><label><input type="checkbox" data-l="cones"> <span data-t="l_cones">Course rays</span></label><label><input type="checkbox" data-l="rivers"> <span data-t="l_rivers">Rivers</span></label><label><input type="checkbox" data-l="roads"> <span data-t="l_roads">Roads</span></label><label><input type="checkbox" data-l="infra"> <span data-t="l_infra">Airports / plants</span></label><label><input type="checkbox" data-l="rings"> <span data-t="l_rings">Rings</span></label><label><input type="checkbox" data-l="towns"> <span data-t="l_towns">Main towns of every oblast</span></label><label><input type="checkbox" data-l="minor"> <span data-t="l_minor">Villages &amp; small towns (off by default — clutters the phone)</span></label></div>
   <button class="mi" id="rpmenu" type="button" data-t="rp_open">Replay — the last 7 days</button>
   <button class="mi tg" id="zcity2" type="button"><span class="lb" data-t="m_city">Kyiv city map (10 districts) — toggle</span></button>
   <button class="mi tg" id="est" type="button" style="display:none!important"><span class="lb" data-t="m_est">Estimate motion along heading (EST)</span></button>
@@ -1570,6 +1573,9 @@ function fastVB(){ const r=SR(); if(!r.width||!svg.viewBox||!svg.viewBox.baseVal
   // screen = a·km + b, for the view drawn (0) and the view wanted (1); the transform takes one to the other
   const m=v=>{ const a=Math.max(r.width/v.w,r.height/v.h); return [a,(r.width-v.w*a)/2-v.x*a,(r.height-v.h*a)/2-v.y*a]; };
   const [a0,bx0,by0]=m(VBC),[a1,bx1,by1]=m(VB), k=a1/a0;
+  // 1.54.3: a picture scaled past 3× (or below a third) is drawn again at its own size — a long wheel zoom grew the scaled
+  // layer to many times the screen, more than the GPU keeps, and the page flickered black
+  if(k>3||k<0.34){ clearTimeout(VBT); VBT=null; applyVB(); return; }
   svg.style.transform=`translate(${(bx1-k*bx0).toFixed(2)}px,${(by1-k*by0).toFixed(2)}px) scale(${k.toPrecision(6)})`;
   clearTimeout(VBT); VBT=setTimeout(()=>applyVB(),150); }
 function applyVB(fast){ if(fast){ fastVB(); return; }
@@ -1584,7 +1590,8 @@ $('zin').onclick=()=>zoomAt(1.5,VB.x+VB.w/2,VB.y+VB.h/2); $('zout').onclick=()=>
 // ~7 KB); while the server has no imagery, choosing it draws the streets instead (updateOsm).
 // 1.49: Layers → Background: Satellite (LAYERS.sat), Map (LAYERS.tiles) or Plain (neither) — three radio buttons.
 // 1.49.1: the towns of every oblast are a layer of their own — on a computer by default, off on a phone (unreadable there)
-const LAYERS={sat:true,tiles:false,himp:true,hdown:true,trails:false,cones:true,rivers:false,roads:true,infra:true,rings:true,towns:window.innerWidth>=1000,minor:false,heat:false};
+// 1.54.3: `selpath` — the red dots joining a tapped target's reports (1.52), now a switch of its own (the owner)
+const LAYERS={sat:true,tiles:false,trails:false,selpath:true,cones:true,rivers:false,roads:true,infra:true,rings:true,towns:window.innerWidth>=1000,minor:false,heat:false};
 try{Object.assign(LAYERS,JSON.parse(localStorage.getItem('layers')||'{}')); if(!localStorage.getItem('layers_v2')){LAYERS.minor=false;localStorage.setItem('layers_v2','1');localStorage.setItem('layers',JSON.stringify(LAYERS));}
   if(!localStorage.getItem('layers_v3')){LAYERS.sat=true;LAYERS.tiles=false;localStorage.setItem('layers_v3','1');localStorage.setItem('layers',JSON.stringify(LAYERS));}}catch(e){}
 LAYERS.heat=false;   // 1.33: the heat map is never remembered — every opening starts on the live picture

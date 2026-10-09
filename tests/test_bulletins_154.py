@@ -285,7 +285,7 @@ def test_the_dashboard():
 def test_a_whole_oblast_target_reads_as_an_area():
     chip = PAGE[PAGE.index("function paintOblEvents(){"):PAGE.index("function oblEventSheet")]
     assert "<clipPath id=\"obclip${uid}\">" in chip and '<path class="g1" d="${o.path}"/>' in chip
-    assert "#oblevt .obglow .g1{stroke-width:26px;stroke-opacity:.05}" in PAGE and "@keyframes obbreath" in PAGE
+    assert "#oblevt .obglow .g1{stroke-width:26px;stroke-opacity:.05}" in PAGE and "@keyframes obbreath" not in PAGE   # 1.54.3: still
     assert "body:not(.rp) #obllbl .oblbl.hot{fill:#f4f1e8;" in PAGE and 'data-o="${o.uid}" x="${o.cx}"' in PAGE
     assert "g.innerHTML=drawn.map(d=>d[0]).join('')+drawn.map(d=>d[1]).join('');" in chip          # outlines under badges
     assert "function fitOblChips()" in PAGE and "tx.getComputedTextLength()/k" in PAGE and "function layoutOblChips()" in PAGE
@@ -344,3 +344,19 @@ def test_zhytomyrska_is_the_oblast_unless_the_post_says_metro():
     assert rd("chyste_nebo", "Житомирською трасою на Київ")[0][0] == "Житомирська траса"
     assert geo._gender_ok("житомирською", "Житомирське") is False and geo._gender_ok("кам'янського", "Кам'янське")
     assert geo._gender_ok("українкою", "Українка") and not geo._gender_ok("житомирське", "Житомирська")
+
+
+# ---- 1.54.3 ----------------------------------------------------------------------------------------------------------
+def test_nothing_in_the_map_moves_while_it_is_scaled_and_it_is_never_scaled_past_3x():
+    assert "svg.zoomg *,svg.zoomg *::before,svg.zoomg *::after{animation-play-state:paused!important}" in PAGE
+    fn = PAGE[PAGE.index("function fastVB(){"):PAGE.index("function applyVB(fast)")]
+    assert "if(k>3||k<0.34){ clearTimeout(VBT); VBT=null; applyVB(); return; }" in fn
+    assert fn.index("if(k>3||k<0.34)") < fn.index("svg.style.transform=")
+    assert "#oblevt .obglow{pointer-events:none}" in PAGE and "obbreath" not in PAGE
+
+
+def test_the_tapped_targets_path_is_a_layer_and_the_explosions_switches_are_gone():
+    assert '<input type="checkbox" data-l="selpath"> <span data-t="l_selpath">' in PAGE and "svg.no-selpath #selpath{display:none}" in PAGE
+    assert "const LAYERS={sat:true,tiles:false,trails:false,selpath:true," in PAGE
+    assert 'data-l="himp"' not in PAGE and 'data-l="hdown"' not in PAGE and "himp:" not in PAGE
+    assert I18N.count("l_selpath:'") == 3
