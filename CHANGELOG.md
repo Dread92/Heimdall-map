@@ -2,6 +2,15 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.54.6 — 2026-10-09
+
+### Changed
+- **A stated height catches the eye** — the owner: "altitude is critical data… more visible, eye-catching, not super
+  flashy, and only when the height was stated; the dark mode must stay readable". The height under a mark is now a
+  small pill, white on blue (white on red while it descends), instead of pale blue text; the card's height chip and
+  the height in an oblast badge match. Marks with no stated height have none. Night mode keeps it dim (dark blue,
+  pale text), the day mode a deeper blue, the light version black on white.
+
 ## 1.54.5 — 2026-10-09
 
 ### Changed

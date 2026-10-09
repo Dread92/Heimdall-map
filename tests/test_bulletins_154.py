@@ -399,3 +399,19 @@ def test_the_badges_are_a_fifth_smaller_on_a_phone():
     assert "+'|'+LANG+'|'+OBS();" in PAGE                                   # a phone turned on its side redraws them
     assert "@media (max-width:999px){svg #oblevt .oblevtchip.live .obtxt{font-size:calc(var(--k,1)*10.5px)}" in PAGE
     assert "const k=KPX||1, S=OBS(), GAP=6*S, PAD=Math.round(20*S);" in PAGE
+
+
+# ---- 1.54.6: a stated height catches the eye ------------------------------------------------------------------------------
+def test_a_stated_height_is_a_pill_in_every_mode_and_nothing_without_one():
+    # white on blue under the mark, white on red when it descends — only when a height or a descent was stated
+    assert ".mk .dnb{display:none;fill:#1d6fe0}.mk.desc .dnb,.mk.hasalt .dnb{display:block}.mk.desc .dnb{fill:#d7263d}" in PAGE
+    assert "svg#map .mk.hasalt .dn,svg#map .mk.desc .dn{fill:#fff;stroke:none;font-weight:800}" in PAGE
+    assert '<rect class="dnb" x="0" y="0" width="0" height="0"/><text class="dn"' in PAGE
+    assert "b.g.classList.toggle('hasalt',!!(altM||spdK||dscAny));" in PAGE
+    # the night keeps it dim enough for dark-adapted eyes, still readable; the day and the light version have their own
+    assert "body.m-night .mk .dnb{fill:#24467e}body.m-night .mk.desc .dnb{fill:#7a1d2a}" in PAGE
+    assert "body.m-day .mk .dnb{fill:#1557c8}body.m-day .mk.desc .dnb{fill:#c41230}" in PAGE
+    assert "body.lite svg#map .mk.hasalt .dn,body.lite svg#map .mk.desc .dn{fill:#000;stroke:none}body.lite .mk .dnb{fill:#fff}" in PAGE
+    # the card's height chip and a region-wide report's height wear the same colours
+    assert ".chip.alt{color:#fff;border-color:#1d6fe0;background:#1d6fe0}" in PAGE and 'class="chip alt"' in PAGE
+    assert "body.m-night .chip.alt{background:#24467e" in PAGE

@@ -265,7 +265,7 @@ def test_a_descent_is_in_the_tag_when_the_rules_read_it_and_never_from_the_ai():
 
 def test_height_and_descent_are_shown_whenever_given():
     assert "svg.veryfar .mk .dn{display:none}" not in PAGE                   # at every zoom
-    assert "dn.textContent=[altM?((dscAny?'↓':'')+altM+' '+t('m_unit')+(altOld!=null?` (${altOld}′)`:'')):(dscAny?'↓':'')" in PAGE   # also once stale
+    assert "const dtx=[altM?((dscAny?'↓':'')+altM+' '+t('m_unit')+(altOld!=null?` (${altOld}′)`:'')):(dscAny?'↓':'')" in PAGE   # also once stale
     assert "tv0.vs&&tv0.vs.v==='descending'" in PAGE
     assert "function oblAlt(m)" in PAGE and "if(al2) seg(`<text class=\"obtxt obalt\"" in PAGE   # region-wide reports too
 

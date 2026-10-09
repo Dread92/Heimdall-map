@@ -662,15 +662,20 @@ body.lite .leader{stroke:#fff;stroke-opacity:.6}body.lite .anchor{fill:#fff}
 .mk .dn{display:none;font:800 calc(var(--k,1)*10px) var(--mono);fill:#ff2d55;paint-order:stroke;stroke:#080b10;stroke-width:calc(var(--k,1)*3px);text-anchor:middle}
 .mk.desc .dn,.mk.hasalt .dn{display:block}
 .mk.hasalt:not(.desc) .dn{fill:#cfe0ff}
+/* 1.54.6, the owner: the height is critical — "a more visible colour, eye-catching… only when the height was stated".
+   A stated height (and speed) is written white on a small blue pill under the mark — red when it is coming down;
+   nothing is shown when no post gave one. Blue is the height's colour everywhere: the card's chip, an oblast's badge. */
+.mk .dnb{display:none;fill:#1d6fe0}.mk.desc .dnb,.mk.hasalt .dnb{display:block}.mk.desc .dnb{fill:#d7263d}
+svg#map .mk.hasalt .dn,svg#map .mk.desc .dn{fill:#fff;stroke:none;font-weight:800}
 /* 1.51: the target's tag (S-07) at the head of its label; the telemetry under the glyph in italics when the AI read it */
 .mk .lbl .tid{fill:#ffd500}svg.wide .mk .lbl .tid{display:none}
 /* the tag alone, above the glyph, where the zoom hides the full label (never zoomed out to the whole country) */
-#oblevt .obtxt.obalt{fill:#cfe0ff}#oblevt .oblevtchip.live .obtxt.obalt{fill:#cfd6e2;font:700 calc(var(--k,1)*11.5px) var(--mono)}#oblevt .obtxt.obtid{fill:#ffd500;font:800 calc(var(--k,1)*11.5px) var(--mono)}
+#oblevt .obtxt.obalt{fill:#cfe0ff}#oblevt .oblevtchip.live .obtxt.obalt{fill:#7cc4ff;font:800 calc(var(--k,1)*11.5px) var(--mono)}#oblevt .obtxt.obtid{fill:#ffd500;font:800 calc(var(--k,1)*11.5px) var(--mono)}
 .mk .tgc{display:none;font:700 calc(var(--k,1)*9px) var(--mono);fill:#ffd500;paint-order:stroke;stroke:#080b10;stroke-width:calc(var(--k,1)*2.5px);text-anchor:middle}
 svg:not(.close):not(.wide) .mk:not(.inbound):not(.tohome):not(.st):not(.desc):not(.appr):not(.ended) .tgc,svg:not(.wide) .mk.nolbl:not(.ended) .tgc{display:block}
 .tagid{font:800 12.5px var(--mono);color:#ffd500;letter-spacing:.03em}
 .kv1.tagl{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:baseline}   /* 1.53: was .tgl — the buttons' class: a 44 px box round the line */
-.chip.desc{color:#ffb3c5;border-color:#7a2a3a;background:rgba(255,45,85,.12)}
+.chip.desc{color:#fff;border-color:#d7263d;background:#d7263d}.chip.alt{color:#fff;border-color:#1d6fe0;background:#1d6fe0}
 /* ---------- display modes ----------
    Three, and they are for three different problems, which is why none of them is a brightness slider.
 
@@ -797,9 +802,10 @@ body.m-day #selpath .selpt{fill:#8c0f09;stroke:#fff}
 /* 1.52: the tag, the height and an oblast-wide target in daylight — the night's yellow and cyan vanish on a light map */
 body.m-day .mk .lbl .tid,body.m-day .mk .tgc{fill:#7a4b00;stroke:#fff}body.m-day .tagid{color:#7a4b00}
 body.m-day .mk .dn,body.m-day .mk.hasalt:not(.desc) .dn{fill:#0b3d91;stroke:#fff}body.m-day .mk.desc .dn{fill:#b0001e;stroke:#fff}
-body.m-day #oblevt .obring.live,body.m-day #oblevt .obglow path{stroke:#1d2533}body.m-day #oblevt .obbg{fill:#fff;stroke:var(--c,#1d2533)}body.m-day:not(.rp) #obllbl .oblbl.hot{fill:#0b0e14;stroke:#fff}body.m-day #oblevt .oblevtchip.live .obtxt.obalt{fill:#1d2533}
+body.m-day svg#map .mk.hasalt .dn{fill:#fff;stroke:none}body.m-day .mk .dnb{fill:#1557c8}body.m-day .mk.desc .dnb{fill:#c41230}
+body.m-day #oblevt .obring.live,body.m-day #oblevt .obglow path{stroke:#1d2533}body.m-day #oblevt .obbg{fill:#fff;stroke:var(--c,#1d2533)}body.m-day:not(.rp) #obllbl .oblbl.hot{fill:#0b0e14;stroke:#fff}body.m-day #oblevt .oblevtchip.live .obtxt.obalt{fill:#1557c8}
 body.m-day #oblevt .oblevtchip.live .obtxt{fill:#14171c;stroke:#fff;stroke-width:0}body.m-day #oblevt .obtxt.obwhere{fill:#14171c;stroke:#fff}
-body.m-night .mk .lbl .tid,body.m-night .mk .tgc{fill:#a8923e}body.m-night #oblevt .obglow path,body.m-night #oblevt .obring.live{stroke:#a39b86}body.m-night:not(.rp) #obllbl .oblbl.hot{fill:#c9c2ad}body.m-night .tagid{color:#a8923e}
+body.m-night .mk .lbl .tid,body.m-night .mk .tgc{fill:#a8923e}body.m-night svg#map .mk.hasalt .dn{fill:#dce8ff}body.m-night svg#map .mk.desc .dn{fill:#ffd6dc}body.m-night .mk .dnb{fill:#24467e}body.m-night .mk.desc .dnb{fill:#7a1d2a}body.m-night .chip.alt{background:#24467e;border-color:#24467e;color:#dce8ff}body.m-night .chip.desc{background:#7a1d2a;border-color:#7a1d2a;color:#ffd6dc}body.m-night #oblevt .oblevtchip.live .obtxt.obalt{fill:#9fbbe8}body.m-night #oblevt .obglow path,body.m-night #oblevt .obring.live{stroke:#a39b86}body.m-night:not(.rp) #obllbl .oblbl.hot{fill:#c9c2ad}body.m-night .tagid{color:#a8923e}
 body.m-day .imp .it{fill:#8c0f09;stroke:#fff}
 body.m-day .zlbl{stroke-width:calc(var(--k,1)*1.6px)}
 body.m-day .roadlbl,body.m-day .rvlbl{fill:#3f4753;stroke:#fff}
@@ -844,7 +850,7 @@ body.lite .rn{fill:#000;stroke:#777}body.lite .rn.R{fill:#fff;fill-opacity:.45}b
 body.lite .ob{stroke:#8a8a8a}body.lite .oblbl,body.lite .nblbl,body.lite .rnlbl{fill:#9a9a9a}
 body.lite .mk .glyph{fill:#fff!important;stroke:#000}body.lite .mk.stale .glyph{fill:#8a8a8a!important}
 body.lite .mk .halo,body.lite .mk .ahead,body.lite .mk .cone,body.lite .mk .trail{stroke:#fff;fill:none}
-body.lite .mk .hdg{fill:#fff}body.lite .mk.desc .glyph{fill:#fff!important}body.lite .mk .dn{fill:#fff}
+body.lite .mk .hdg{fill:#fff}body.lite .mk.desc .glyph{fill:#fff!important}body.lite .mk .dn{fill:#fff}body.lite svg#map .mk.hasalt .dn,body.lite svg#map .mk.desc .dn{fill:#000;stroke:none}body.lite .mk .dnb{fill:#fff}
 body.lite .band.R,body.lite .band.A{background:#fff;border-left-color:#fff}body.lite .band.R .big,body.lite .band.A .big{color:#000}
 body.lite .band.R .small,body.lite .band.A .small,body.lite .band.R .dur,body.lite .band.A .dur{color:#222}
 body.lite .band.Y,body.lite .band.P{background:#2a2a2a;border-left-color:#fff}body.lite .band.Y .big,body.lite .band.P .big{color:#fff}
@@ -2181,7 +2187,7 @@ function buildMarker(m){
   const isMsl=/missile/.test(m.type)&&!m.status; if(isMsl) g.classList.add('msl');
   g.innerHTML=`<line class="ahead" x1="0" y1="0" x2="0" y2="0"/><polygon class="cone" points="0,0 0,0 0,0"/><circle class="halo" cx="0" cy="0" r="6"/>${isMsl?'<circle class="halo2" cx="0" cy="0" r="6"/><circle class="reach" cx="0" cy="0" r="0" style="display:none"/>':''}${isNew?`<circle class="spawn" cx="0" cy="0" r="${kx(10*KPX)}"/>`:''}
     <g class="body"><g class="rot">${glyph}</g></g>
-    <polygon class="hdg" points="0,-5.2 5.4,3.6 0,1.3 -5.4,3.6" style="display:none"/><text class="qm" x="0" y="0">?</text><text class="dn" x="0" y="0">↓</text><g class="cnt" style="display:none"><circle r="6.5"/><text y="3.2">2</text></g><text class="tgc" x="0" y="0"></text><text class="lbl" x="5" y="-4"></text><text class="lbl2" x="5" y="0"></text><circle class="hit" cx="0" cy="0" r="8"/>`;
+    <polygon class="hdg" points="0,-5.2 5.4,3.6 0,1.3 -5.4,3.6" style="display:none"/><text class="qm" x="0" y="0">?</text><rect class="dnb" x="0" y="0" width="0" height="0"/><text class="dn" x="0" y="0">↓</text><g class="cnt" style="display:none"><circle r="6.5"/><text y="3.2">2</text></g><text class="tgc" x="0" y="0"></text><text class="lbl" x="5" y="-4"></text><text class="lbl2" x="5" y="0"></text><circle class="hit" cx="0" cy="0" r="8"/>`;
   g.addEventListener('pointerenter',e=>{if(e.pointerType==='touch')return;showTip(m,e);}); g.addEventListener('pointermove',e=>{if(e.pointerType==='touch')return;moveTip(e);}); g.addEventListener('pointerleave',()=>{$('tip').hidden=true;});
   const trail=document.createElementNS('http://www.w3.org/2000/svg','line'); trail.setAttribute('class','trail');
   const hist=document.createElementNS('http://www.w3.org/2000/svg','g'); hist.setAttribute('class','trail hist');
@@ -2343,7 +2349,12 @@ function tick(){
     {const dn=b.g.querySelector('.dn'); if(dn){ dn.setAttribute('y',kx(16*KPX));
       // the height and a reported descent are always shown when a post gave them — the arrow stays after the mark goes
       // stale (it was reported; the red highlight does not)
-      dn.textContent=[altM?((dscAny?'↓':'')+altM+' '+t('m_unit')+(altOld!=null?` (${altOld}′)`:'')):(dscAny?'↓':''), spdK?t('tg_spd',spdK):''].filter(Boolean).join(' · '); }}
+      const dtx=[altM?((dscAny?'↓':'')+altM+' '+t('m_unit')+(altOld!=null?` (${altOld}′)`:'')):(dscAny?'↓':''), spdK?t('tg_spd',spdK):''].filter(Boolean).join(' · ');
+      if(dn.textContent!==dtx){ dn.textContent=dtx; dn._w=0; }
+      // 1.54.6: its pill — the text's own width, measured once per text (in screen px: the font is sized in var(--k))
+      const bg=b.g.querySelector('.dnb'); if(bg&&dtx){ if(!(dn._w>0)){ try{ dn._w=dn.getComputedTextLength()/KPX; }catch(e){ dn._w=0; } if(!(dn._w>0)) dn._w=dtx.length*6.1; }
+        const w=dn._w+9; bg.setAttribute('x',kx(-w/2*KPX)); bg.setAttribute('y',kx(5.6*KPX)); bg.setAttribute('width',kx(w*KPX)); bg.setAttribute('height',kx(13.5*KPX));
+        bg.setAttribute('rx',kx(4*KPX)); } }}
     b.g.classList.toggle('lostc',contactLost(m));
     b.g.classList.toggle('inbound',info.inbound&&!m.stale); b.g.classList.toggle('old',age>ttl*0.65); b.g.classList.toggle('ended',!!m.endedBy); b.g.classList.toggle('stale',!!m.stale&&!m.endedBy&&!m.status); b.g.classList.toggle('s2',!!m.stale&&m.stale>=(m.slow?15:8)); b.g.classList.toggle('s3',!!m.stale&&m.stale>=(m.slow?20:11)); b.g.querySelector('.qm').setAttribute('y',kx(-12*KPX));
     const v=SPEED(m); const ah=b.g.querySelector('.ahead'); const cone=b.g.querySelector('.cone');
@@ -2395,7 +2406,7 @@ function tick(){
        // 1.53 (the owner: "nothing on top of anything"): the height under the glyph and the tag above it are the mark's
        // too — no other label is written over them
        const dn=g.querySelector('.dn'), tc=g.querySelector('.tgc');
-       if(drawn(dn)){ const w=dn.textContent.length*6.4+6; glyphs.push({x:p.sx-w/2,y:p.sy+6,w,h:14,p}); }
+       if(drawn(dn)){ const w=dn.textContent.length*6.4+12; glyphs.push({x:p.sx-w/2,y:p.sy+4,w,h:17,p}); }   // 1.54.6: with its band
        if(drawn(tc)){ const w=tc.textContent.length*6+6; glyphs.push({x:p.sx-w/2,y:p.sy-27,w,h:12,p}); } }}
    const size=p=>{ const t1=p.v1?p.b.g.querySelector('.lbl').textContent:'',t2=p.v2?p.b.g.querySelector('.lbl2').textContent:'';
      p.w=Math.max(t1.length*6.6,t2.length*6.2); p.h=(p.v1&&p.v2)?25:(p.v1||p.v2)?14:0; };
@@ -2576,7 +2587,7 @@ function openSheet(id){
   const mk=(!m.status&&!m.endedBy)?mslKind(m):null;
   const alt=m.alt&&!m.status?m.alt:null;
   const ALTL={descending:t('alt_desc_l'),climbing:t('alt_climb'),low:t('alt_low'),high:t('alt_high')};
-  const altChip=alt&&alt.state==='descending'?` <span class="chip desc">↓ ${esc(t('alt_desc'))}</span>`:alt&&alt.m?` <span class="chip">~${alt.m} ${t('m_unit')}</span>`:alt&&alt.state?` <span class="chip">${esc(ALTL[alt.state]||alt.state)}</span>`:'';
+  const altChip=alt&&alt.state==='descending'?` <span class="chip desc">↓ ${esc(t('alt_desc'))}</span>`:alt&&alt.m?` <span class="chip alt">~${alt.m} ${t('m_unit')}</span>`:alt&&alt.state?` <span class="chip">${esc(ALTL[alt.state]||alt.state)}</span>`:'';
   $('sheetbody').innerHTML=`<div class="type">${kind}${m.count?` <span class="chip">×${m.count}</span>`:''}${altChip}${m.status?'':phaseChip(m)}${info.inbound&&!m.stale&&!closer?` <span class="chip red">${t('lb_tokyiv')}</span>`:''}<span class="chip ${CONF[overall][0]}" style="margin-left:auto">${cf(overall)}</span></div>
     <div class="kv1 muted">${src} · <a href="https://t.me/${esc(m.id.split('#')[0])}" target="_blank" rel="noopener">${t('sh_post')}</a></div>
     ${tagLine(m)}

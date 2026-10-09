@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.54** · last updated 2026-10-09 (1.54.5)
+**Documented version: 1.54** · last updated 2026-10-09 (1.54.6)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -929,7 +929,11 @@ in the AI's view of the map (`ai_map`, `ai_context` send no origin). It is not a
   `geo.parse_speed`) or, where they read none, the AI's for that report (`alt.s` / `spd.s` = `ai`); and `vs`, its
   vertical state (descending…), the rules' or the AI's. Height and descent are **always shown when given** (the
   owner's priority): at every zoom, still after the mark goes stale (the arrow; not the red highlight), and on the
-  chip of a target reported for a whole oblast ("↓2200", `oblAlt`).
+  chip of a target reported for a whole oblast ("↓2200", `oblAlt`). **1.54.6: it is a pill** — white on blue under the
+  mark (`.dnb`, a rect sized to the measured text, `dn._w`), white on red while it descends; the card's height chip
+  (`.chip.alt`) and a region-wide report's height (`.obalt`, light blue) match. A mark with nothing stated has no pill,
+  so the colour itself says "a height was stated". Night mode dims it (#24467e / #7a1d2a, pale text), the day mode
+  deepens it, the light version is black on white.
 - `targets` keeps each tag's letter, origin, source and words, first and last time and type (for the analytics:
   `targets` in `/api/analytics`, per night by letter, and how many letters the AI read); `target_reports` maps each
   report to its tag. Both kept 60 days.
