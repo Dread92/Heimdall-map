@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.50** · last updated 2026-10-09 (1.50.0)
+**Documented version: 1.50** · last updated 2026-10-09 (1.50.1)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -782,7 +782,7 @@ new post of a channel **on the map** — never one on trial or off — that the 
 300 characters or shorter (a tracker's line the rules did not understand, "Ціль на Бровари"; a long one is news).
 Not the Air Force's summaries, not a retraction. The post as the reader sees it (`_clean_post`).
 
-**What is sent** (`OPENROUTER_URL`, one request a post, `temperature` 0): the post's public text, the channel's
+**What is sent** (`OPENROUTER_URL`, one request a post): the post's public text, the channel's
 name and its oblast, the channel's previous posts of the last 40 minutes (at most 3, `Store.ai_previous`, context
 only), and the **candidate places** — the gazetteer's places the post's words match (`geo._find_places`, the regional
 villages of the oblasts in play) and those oblasts, at most 30, each with an id (`c1`…, `o<uid>`). Never anything
@@ -799,7 +799,10 @@ is replaced before anything is sent or stored (`mask`).
 3. the post's context, assembled per post (`user_message`);
 4. a strict JSON schema (`SCHEMA`: `targets` with `kind`, `count`, `status`, `place_id`, `relation`, `side`,
    `distance_km`, `from_side`, `heading`, `altitude_m`, each fact with its `*_quote`; `uncertain`) —
-   `response_format: json_schema, strict`, and `provider.require_parameters` so that no provider ignores it.
+   `response_format: json_schema, strict`, and `provider.require_parameters` so that no provider ignores it. The
+   request carries no other model parameter (1.50.1): with `require_parameters`, one the model does not take — the
+   `temperature` claude-haiku-5.5 does not — leaves no provider at all (OpenRouter's "HTTP 404: No endpoints found
+   that can handle the requested parameters"). A model set in `ai_reader_model` must take `response_format`.
 
 The fixed part comes first and the post last, so a provider can reuse the unchanged beginning (prompt caching; for
 Anthropic's models its end is marked `cache_control`).
@@ -817,7 +820,7 @@ the city to both (`_city_settle`).
 
 **Cost and limits.** The month's spend is OpenRouter's own figure for each call (`usage.cost`), kept in
 `kv` `ai_usd:YYYY-MM`; at `ai_reader_monthly_usd` (10) it stops until the 1st; at most 400 posts an hour; a refused
-key or no credit (401 / 402 / 403) pauses it 10 minutes, "too many requests" (429) one minute; a post that arrives
+key, no credit, or a model or parameter no provider serves (401 / 402 / 403 / 404) pauses it 10 minutes, "too many requests" (429) one minute; a post that arrives
 meanwhile is not read (counted in `skipped`). With the default model (`anthropic/claude-haiku-5.5`, $0.10 / $0.50
 per million tokens) a post costs ~$0.0003–0.0005: the $10 cap is ~25,000 posts a month.
 

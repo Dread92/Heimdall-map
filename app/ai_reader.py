@@ -438,7 +438,9 @@ class AIReader(threading.Thread):
 
     def call(self, msgs):
         """{"out": dict, "cost", "tok_in", "tok_out"} or {"error": "..."} — the one request to OpenRouter."""
-        body = {"model": self.model(), "temperature": 0, "max_tokens": 1200, "messages": msgs,
+        # 1.50.1: only parameters every model that takes a JSON schema accepts. With require_parameters, one the model
+        # does not take (claude-haiku-5.5 takes no `temperature`) leaves no provider at all: "HTTP 404: No endpoints".
+        body = {"model": self.model(), "max_tokens": 1200, "messages": msgs,
                 "response_format": {"type": "json_schema", "json_schema": {"name": "heimdall_reading", "strict": True,
                                                                              "schema": SCHEMA}},
                 "provider": {"require_parameters": True}, "usage": {"include": True}}
@@ -455,7 +457,7 @@ class AIReader(threading.Thread):
             except Exception:
                 pass
             err = f"HTTP {e.code}" + (f": {msg[:140]}" if msg else "")
-            if e.code in (401, 402, 403):
+            if e.code in (401, 402, 403, 404):          # the key, the credit, or a model / parameter nobody serves
                 self.down_until = time.time() + 600
             elif e.code == 429:
                 self.down_until = time.time() + 60

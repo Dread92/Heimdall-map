@@ -2,6 +2,15 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.50.1 — 2026-10-09
+
+### Fixed
+- **The AI reader read nothing**: every call came back "HTTP 404: No endpoints found that can handle the requested
+  parameters". It asked for `temperature` 0, which claude-haiku-5.5 does not take, and it also asks OpenRouter to use
+  only providers that honour every parameter (so that the JSON format is never ignored) — so no provider was left.
+  The request now carries only the model, the messages, the length and the JSON schema. A 404 also pauses it 10
+  minutes, like a refused key, instead of failing on every post.
+
 ## 1.50.0 — 2026-10-09
 
 ### Added

@@ -246,7 +246,10 @@ def test_one_request_with_the_post_and_nothing_about_anybody():
     assert req.full_url == A.OPENROUTER_URL == "https://openrouter.ai/api/v1/chat/completions"
     assert req.get_header("Authorization") == "Bearer sk-or-test-0000"
     body = json.loads(req.data.decode())
-    assert body["model"] == "anthropic/claude-haiku-5.5" and body["temperature"] == 0
+    assert body["model"] == "anthropic/claude-haiku-5.5" and body["max_tokens"] == 1200
+    # 1.50.1: nothing the model may not take — with require_parameters, a `temperature` claude-haiku-5.5 does not take
+    # left OpenRouter no provider at all ("HTTP 404: No endpoints found that can handle the requested parameters")
+    assert set(body) == {"model", "max_tokens", "messages", "response_format", "provider", "usage"}
     assert body["response_format"]["type"] == "json_schema" and body["response_format"]["json_schema"]["strict"] is True
     assert body["response_format"]["json_schema"]["schema"] == A.SCHEMA
     assert body["provider"] == {"require_parameters": True} and body["usage"] == {"include": True}
@@ -281,7 +284,7 @@ def _http(code, msg):
 
 
 def test_a_refused_key_or_no_credit_pauses_it_and_is_shown():
-    for code, pause in ((401, 600), (402, 600), (429, 60)):
+    for code, pause in ((401, 600), (402, 600), (404, 600), (429, 60)):
         r = _reader()
         with mock.patch.object(A.urllib.request, "urlopen", side_effect=_http(code, "No credits")):
             assert r.read(POST) == "error"
