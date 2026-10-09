@@ -291,11 +291,12 @@ def test_height_and_descent_are_shown_whenever_given():
 
 
 # ---- 1.51: a target "somewhere in the oblast" says so, and is not drawn in the alert's colours ------------------------
-def test_a_region_wide_target_is_cyan_hatched_blinking_and_says_somewhere_in_the_oblast():
+def test_a_region_wide_target_is_outlined_and_says_somewhere_in_the_oblast():
     chip = PAGE[PAGE.index("function paintOblEvents(){"):PAGE.index("function oblEventSheet")]
-    assert "if(anyLive){ const s0=x; x+=where.length*6.1+7; items.push([s0,`<text class=\"obtxt obwhere\"" in chip
-    # 1.52.1: no hatching over an oblast with a target placed in it (test_trail_1521)
-    assert "${anyLive&&!placed.has(uid)?`<path class=\"obhatch\" d=\"${o.path}\"/>`:''}" in chip and '<pattern id="obhp"' in chip
+    # 1.53.1, the owner: "still unreadable — and not this cyan": a white dashed outline, a compact chip under the
+    # oblast's name, "somewhere in the oblast" under it from the regional view in; no hatching
+    assert "<text class=\"obtxt obwhere\" text-anchor=\"middle\"" in chip and "svg.veryfar #oblevt .obwhere{display:none}" in PAGE
+    assert "obhatch" not in PAGE and "obhp" not in PAGE and "3fe0ff" not in PAGE
     assert "tid=en[k]===1&&m.tag?m.tag.id:''" in chip                                   # its tag, when it is one report
-    assert "#oblevt .obring.live{fill:none;stroke:#3fe0ff;" in PAGE                   # cyan: never the alerts' amber or red
-    assert "@media (prefers-reduced-motion:reduce){#oblevt .obring.live,#oblevt .obhatch,#oblevt .oblevtchip.live{animation:none}}" in PAGE
+    assert "#oblevt .obring.live{fill:none;stroke:#f4f1e8;" in PAGE                   # never the alerts' amber or red
+    assert "@media (prefers-reduced-motion:reduce){#oblevt .obring.live{animation:none}}" in PAGE

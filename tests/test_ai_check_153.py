@@ -331,3 +331,19 @@ def test_a_short_card_and_a_map_that_opens_at_once():
     assert "if (u.pathname.startsWith('/tiles/sat/')) { e.respondWith(tile(e.request)" in sw and "const TILES_MAX = 5000;" in sw
     assert "/api/" not in sw.split("const FAST")[1].split("self.addEventListener('push'")[0].replace("(/api/…)", "")
     assert "sw.postMessage({warm:urls}); localStorage.setItem('satwarm',SAT_V);" in page and "c.saveData" in page
+
+
+# ---- 1.53.1 ----------------------------------------------------------------------------------------------------------
+def test_a_check_cut_off_keeps_what_came_complete():
+    full = json.dumps(A.wire_check(A.CHECK_EXAMPLE[1]), ensure_ascii=False)
+    assert list(json.loads(full)) == ["notes", "findings", "uncertain"]          # the notes first: a cut spares them
+    part = A.salvage_check(full[:int(len(full) * 0.7)])
+    assert len(part["notes"]) == 3 and 0 < len(part["findings"]) < len(A.CHECK_EXAMPLE[1]["findings"])
+    assert A.salvage_check('{"notes": [') is None and A.MAX_CHECK_POSTS == 30 and A.MAX_OUT_CHECK == 12000
+    store = server.Store(":memory:")
+    r = _reader(store)
+    with mock.patch.object(A.urllib.request, "urlopen", lambda *a, **k: _answer(full[:int(len(full) * 0.7)], tout=12000, finish="length")):
+        r.check(ITEMS[:2])
+    (ck,) = store.ai_checks(5)
+    assert ck["error"] is None and ck["uncertain"].startswith("answer cut off at 12000 tokens") and not r.q
+    assert r.last_error is None

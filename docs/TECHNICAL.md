@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.53** · last updated 2026-10-09 (1.53.0)
+**Documented version: 1.53** · last updated 2026-10-09 (1.53.1)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -707,9 +707,11 @@ reading (`tag_feed_text`); the stored and shown text is never changed.
 windows; nothing draws it there. The Tactical map puts it on the region with the outcomes of 1.38 (`OBLEVT`,
 `paintOblEvents`): a dashed outline (1.51: for targets in the air, cyan — never the alerts' amber or red — over a hatching
 that says "an area", blinking, and a chip with the tag, the weapon, the count, a stated height and the words "somewhere
-in the oblast"; still under `prefers-reduced-motion`. 1.52.1, the owner: the hatching hid the targets once they were
-placed — it is drawn only on the whole-region view (`svg.veryfar`), in lines a few screen pixels apart (`#obhp` scaled by
-`KPX`), and never over an oblast with a target placed in it; the outline and the chip stay) and a chip with the weapon's silhouette and the
+in the oblast"; still under `prefers-reduced-motion`. 1.52.1: the hatching only on the whole-region view. 1.53.1, the
+owner: "still unreadable — and not this cyan": a **white** dashed outline (dark in daylight) slowly fading in and out, no
+hatching, and a compact chip — the weapon, the count, a height, "AI" when only the AI read it — right under the oblast's
+own name; "somewhere in the oblast" is written under the chip from the regional view in (`svg.veryfar` hides it), and in
+words on a tap) and a chip with the weapon's silhouette and the
 count, the posts one tap away (`oblEventSheet`). The Near list keeps it without a distance, as "Chernihiv oblast ·
 somewhere in the oblast" (`oblWhere`, `nearRows` `vague`); it never raises the level. A push never says "within N km
 of you" for it (`proximity_watch`) — only a ballistic warning, which covers the region anyway, is still sent, naming
@@ -975,7 +977,9 @@ week. **The check** (`ai_reader_mode` "check", the default): every `ai_check_min
 of the places they name, else the channel's own; `=== OBLAST o14 · Київська область ===`), each block with **what the
 map shows there now** (`State.ai_map`: every target in the air, tagged or for the whole oblast), each post with its time,
 channel, text (700 characters at most), `RULES:` (`parser_lines` of the rules' marks — or "set aside") and `NAMES:` (its
-candidate ids; one numbering for the whole check). At most 60 posts a call; more → several, by oblast. The prompt
+candidate ids; one numbering for the whole check). At most 30 posts a call (1.53.1: 60 made answers past 6,000 tokens
+on a busy night); more → several, by oblast. An answer may be 12,000 tokens; the notes come first in it, and of an answer
+cut off at the length what came complete is kept (`salvage_check`; the check says what was lost, `uncertain`). The prompt
 (`SYSTEM_CHECK`, version 5) reuses the reading rules 1–12 of the one-post prompt (`RULES_READ`) and asks only for
 **findings** — where a post's words show the rules wrong or incomplete: `missed` (a target no rules line has), `place`,
 `weapon`, `outcome`, `not_sky` (the rules drew a target from a post that reports none), `facts` (the right place, a

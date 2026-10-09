@@ -2,6 +2,19 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.53.1 — 2026-10-09
+
+### Changed
+- **A target reported for a whole oblast, readable at last**: no cyan, no hatching — a white dashed outline of the
+  oblast (dark in daylight), fading slowly in and out, and a small chip right under the oblast's name: the weapon, the
+  count, a height ("AI" first when only the AI read it). "Somewhere in the oblast" is written under it once zoomed in to
+  a region, and in words on a tap.
+
+### Fixed
+- **"The last call failed: cut off at 6000 tokens"**: a busy check (60 posts) had more to say than its answer could
+  hold. A check now reads at most 30 posts (more → several calls), may answer twice as long, gives its notes first, and
+  keeps what came complete of an answer that is still cut off.
+
 ## 1.53.0 — 2026-10-09
 
 ### Added

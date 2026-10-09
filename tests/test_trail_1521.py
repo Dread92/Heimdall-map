@@ -62,10 +62,7 @@ def test_the_route_and_the_page():
 
 
 def test_the_hatching_stays_off_the_targets():
-    assert "svg:not(.veryfar) #oblevt .obhatch{display:none}" in PAGE
-    assert "${anyLive&&!placed.has(uid)?`<path class=\"obhatch\"" in PAGE
-    assert 'patternTransform="rotate(45) scale(${kx(KPX*1.4)})"' in PAGE
-    assert "hp.setAttribute('patternTransform',`rotate(45) scale(${kx(KPX*1.4)})`)" in PAGE
+    assert "obhatch" not in PAGE            # 1.53.1: no hatching at all (test_tags_151)
 
 
 def test_an_answer_cut_off_says_so_and_is_allowed_twice_the_length():

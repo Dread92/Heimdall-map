@@ -487,21 +487,20 @@ svg.city .town.district{fill:#aeb8c8;font-weight:500}
 #oblevt .obtxt{fill:#ff9ea2;font:800 calc(var(--k,1)*13px) system-ui;letter-spacing:.5px;paint-order:stroke;stroke:#0b0e14;stroke-width:calc(var(--k,1)*3px);cursor:pointer}
 #oblevt .hit{fill:transparent;cursor:pointer}
 /* 1.51: targets in the air somewhere in the oblast — cyan, hatched, blinking: never the alert's amber or red */
-#oblevt .obring.live{fill:none;stroke:#3fe0ff;stroke-width:2px;stroke-dasharray:9 5;animation:obblink 1.3s ease-in-out infinite}
-#oblevt .obhatch{fill:url(#obhp);fill-opacity:.1;stroke:none;pointer-events:none;animation:obhblink 1.3s ease-in-out infinite}
+/* 1.53.1, the owner: not cyan, and readable — white dashed outline, a small dark chip, no hatching */
+#oblevt .obring.live{fill:none;stroke:#f4f1e8;stroke-width:1.6px;stroke-dasharray:7 5;animation:obblink 1.8s ease-in-out infinite}
 /* 1.52.1 (the owner: the hatching hid the drones once they were placed) — fine lines a few pixels apart at every zoom,
    only on the whole-region view, never over an oblast that has a target placed in it: the dashed outline and the
    chip say "somewhere in the oblast" there */
-svg:not(.veryfar) #oblevt .obhatch{display:none}
-#oblevt .obbg{fill:#07131a;fill-opacity:.88;stroke:#3fe0ff;stroke-width:1.2px;vector-effect:non-scaling-stroke}
-#oblevt .oblevtchip.live{animation:obchip 1.3s ease-in-out infinite}
-#oblevt .obtxt.obwhere{fill:#bff4ff;font:700 calc(var(--k,1)*10.5px) system-ui;letter-spacing:.2px}
-@keyframes obblink{0%,100%{stroke-opacity:1}50%{stroke-opacity:.3}}
-@keyframes obhblink{0%,100%{fill-opacity:.12}50%{fill-opacity:.03}}
-@keyframes obchip{0%,100%{opacity:1}50%{opacity:.55}}
-@media (prefers-reduced-motion:reduce){#oblevt .obring.live,#oblevt .obhatch,#oblevt .oblevtchip.live{animation:none}}
+
+#oblevt .obbg{fill:#0b0e14;fill-opacity:.92;stroke:#f4f1e8;stroke-opacity:.85;stroke-width:1px;vector-effect:non-scaling-stroke}
+#oblevt .oblevtchip.live .obtxt{fill:#f4f1e8}
+#oblevt .obtxt.obwhere{fill:#e8e6df;font:600 calc(var(--k,1)*10px) system-ui;letter-spacing:.2px}svg.veryfar #oblevt .obwhere{display:none}
+#oblevt .oblevtchip.live .obtxt.obai{fill:#9fb3ff;font:800 calc(var(--k,1)*10.5px) var(--mono)}
+@keyframes obblink{0%,100%{stroke-opacity:.95}50%{stroke-opacity:.35}}
+@media (prefers-reduced-motion:reduce){#oblevt .obring.live{animation:none}}
 @keyframes obpulse{0%,100%{stroke-opacity:.8;fill-opacity:.05}50%{stroke-opacity:.28;fill-opacity:.015}}
-body.lite #oblevt .obring{fill:none;stroke:#fff;animation:none}body.lite #oblevt .obtxt{fill:#fff;stroke:#000}body.lite #oblevt .obhatch{display:none}
+body.lite #oblevt .obring{fill:none;stroke:#fff;animation:none}body.lite #oblevt .obtxt{fill:#fff;stroke:#000}
 .mk .jetfx{display:none}.mk.jet .jetfx{display:block}.mk .flame{fill:#ffb347;opacity:.9;animation:flick .18s steps(2) infinite}.mk .flame2{fill:#fff4d6;animation:flick .12s steps(2) infinite alternate}
 @keyframes flick{0%{transform:scaleY(1)}100%{transform:scaleY(.6)}}.mk .flame,.mk .flame2{transform-origin:0 9px;transform-box:view-box}
 .mk .hdg{fill:#ff8a3d;stroke:#080b10;stroke-width:.6px;vector-effect:non-scaling-stroke}.mk.jet .hdg{fill:#ffb15c}.mk.inbound .hdg{fill:#ff4d57}.mk.tohome .hdg{fill:#ff2d55}.mk.ballistic_missiles .hdg,.mk.supersonic_missiles .hdg,.mk.cruise_missiles .hdg,.mk.banderol_missiles .hdg,.mk.unspecified_missiles .hdg{fill:#ff5a5a}.mk.guided_aerial_bombs .hdg{fill:#c78bff}
@@ -768,7 +767,8 @@ body.m-day #selpath .selpt{fill:#8c0f09;stroke:#fff}.mk .lbl .aitag{fill:#9fb3ff
 /* 1.52: the tag, the height and an oblast-wide target in daylight — the night's yellow and cyan vanish on a light map */
 body.m-day .mk .lbl .tid,body.m-day .mk .tgc{fill:#7a4b00;stroke:#fff}body.m-day .tagid{color:#7a4b00}
 body.m-day .mk .dn,body.m-day .mk.hasalt:not(.desc) .dn{fill:#0b3d91;stroke:#fff}body.m-day .mk.desc .dn{fill:#b0001e;stroke:#fff}
-body.m-day #oblevt .obring.live{stroke:#006b85}body.m-day #oblevt .obhatch{fill-opacity:.2}
+body.m-day #oblevt .obring.live{stroke:#1d2533}body.m-day #oblevt .obbg{fill:#fff;stroke:#1d2533}
+body.m-day #oblevt .oblevtchip.live .obtxt{fill:#14171c;stroke:#fff}body.m-day #oblevt .obtxt.obwhere{fill:#14171c;stroke:#fff}
 body.m-night .mk .lbl .tid,body.m-night .mk .tgc{fill:#a8923e}body.m-night .tagid{color:#a8923e}
 body.m-day .imp .it{fill:#8c0f09;stroke:#fff}
 body.m-day .zlbl{stroke-width:calc(var(--k,1)*1.6px)}
@@ -1532,7 +1532,7 @@ function fastVB(){ const r=SR(); if(!r.width||!svg.viewBox||!svg.viewBox.baseVal
   clearTimeout(VBT); VBT=setTimeout(()=>applyVB(),150); }
 function applyVB(fast){ if(fast){ fastVB(); return; }
   if(VBC){ VBC=null; clearTimeout(VBT); VBT=null; svg.style.transform=''; svg.classList.remove('zoomg'); }
-  svg.setAttribute('viewBox',`${VB.x} ${VB.y} ${VB.w} ${VB.h}`);if(typeof drawHome==='function'&&HOME){setTimeout(drawHome,0);if(typeof drawZones==='function')setTimeout(drawZones,0);}const r=SR();KPX=r.width?VB.w/r.width:1;KDIG=Math.max(2,Math.ceil(-Math.log10(KPX||1))+3);if(typeof placeBrgLabels==='function')placeBrgLabels();svg.style.setProperty('--k',KPX);{const hp=document.getElementById('obhp'); if(hp) hp.setAttribute('patternTransform',`rotate(45) scale(${kx(KPX*1.4)})`);}if(window.RP&&RP.on&&RP.frame)RP.frame();svg.classList.toggle('far',VB.w>90);svg.classList.toggle('close',VB.w<40);svg.classList.toggle('vclose',VB.w<22);svg.classList.toggle('veryfar',VB.w>230);svg.classList.toggle('vilfar',VB.w>300);svg.classList.toggle('ua',VB.w>900);svg.classList.toggle('wide',VB.w>520);svg.classList.toggle('deep',KPX<0.011);if(typeof applySelOblast==='function'&&(VB.w<=300)!==applyVB._zin){applyVB._zin=VB.w<=300;applySelOblast();}{const kz=document.querySelector('.kozak'); if(kz){kz.querySelector('.kz').setAttribute('transform',`scale(${kx(2.2*KPX)})`); const ts=kz.querySelectorAll('text'); ts[0].setAttribute('y',kx(14*KPX)); ts[1].setAttribute('y',kx(25*KPX));}}clearTimeout(applyVB._t);applyVB._t=setTimeout(()=>{applyVB._t=null;if(typeof LAYERS!=='undefined'&&LAYERS.heat&&typeof drawHeat==='function')drawHeat();if(typeof IMP_H!=='undefined'&&IMP_H)drawImpacts();if(typeof updateTiles==='function'){updateTiles();layoutTownLabels();}},120);}
+  svg.setAttribute('viewBox',`${VB.x} ${VB.y} ${VB.w} ${VB.h}`);if(typeof drawHome==='function'&&HOME){setTimeout(drawHome,0);if(typeof drawZones==='function')setTimeout(drawZones,0);}const r=SR();KPX=r.width?VB.w/r.width:1;KDIG=Math.max(2,Math.ceil(-Math.log10(KPX||1))+3);if(typeof placeBrgLabels==='function')placeBrgLabels();svg.style.setProperty('--k',KPX);if(window.RP&&RP.on&&RP.frame)RP.frame();svg.classList.toggle('far',VB.w>90);svg.classList.toggle('close',VB.w<40);svg.classList.toggle('vclose',VB.w<22);svg.classList.toggle('veryfar',VB.w>230);svg.classList.toggle('vilfar',VB.w>300);svg.classList.toggle('ua',VB.w>900);svg.classList.toggle('wide',VB.w>520);svg.classList.toggle('deep',KPX<0.011);if(typeof applySelOblast==='function'&&(VB.w<=300)!==applyVB._zin){applyVB._zin=VB.w<=300;applySelOblast();}{const kz=document.querySelector('.kozak'); if(kz){kz.querySelector('.kz').setAttribute('transform',`scale(${kx(2.2*KPX)})`); const ts=kz.querySelectorAll('text'); ts[0].setAttribute('y',kx(14*KPX)); ts[1].setAttribute('y',kx(25*KPX));}}clearTimeout(applyVB._t);applyVB._t=setTimeout(()=>{applyVB._t=null;if(typeof LAYERS!=='undefined'&&LAYERS.heat&&typeof drawHeat==='function')drawHeat();if(typeof IMP_H!=='undefined'&&IMP_H)drawImpacts();if(typeof updateTiles==='function'){updateTiles();layoutTownLabels();}},120);}
 function setView(cx,cy,w){VB.w=Math.max(1,Math.min(1500,w));VB.h=VB.w*ASPECT();VB.x=cx-VB.w/2;VB.y=cy-VB.h/2;applyVB();}
 function zoomAt(f,cx,cy,fast){const nw=Math.max(1,Math.min(1500,VB.w/f)),nh=nw*ASPECT();VB.x=cx-(cx-VB.x)*(nw/VB.w);VB.y=cy-(cy-VB.y)*(nh/VB.h);VB.w=nw;VB.h=nh;applyVB(fast);}
 function toSvg(px,py){const r=SR();return [VB.x+(px-r.left)/r.width*VB.w, VB.y+(py-r.top)/r.height*VB.h];}
@@ -1987,27 +1987,29 @@ function paintOblEvents(){
         +`<g class="sil${m.type==='drones'&&m.jet?' jet':''}" style="--c:${KIND_COL(m)};transform:translate(${px(tw+6)},0px) scale(calc(var(--k,1)*.55))">${G[gk]||''}</g>`
         +(c?`<text class="obtxt" dominant-baseline="central" style="transform:translateX(${px(tw+13)})">${c}</text>`:'')
         +(al2?`<text class="obtxt obalt" dominant-baseline="central" style="transform:translateX(${px(tw+13+c.length*8+6)})">${esc(al2)}</text>`:'')]; });
-    // 1.51: a target in the air reported for the whole oblast says so on the chip — "somewhere in the oblast" —
-    // instead of a lone glyph and a number nobody could read as an area
-    // 1.52: only the AI reader found it — the chip says so ("AI · somewhere in the oblast")
+    // 1.53.1, the owner: "still unreadable — and not this cyan". The chip is the weapon, the count and a height, no
+    // more: the dashed white outline of the oblast says "an area"; "somewhere in the oblast" is written under the chip
+    // only from the regional view in, and the words are one tap away. 1.52: only the AI reader found it — "AI" first.
     const anyLive=evs.some(m=>!m.status), aiOnly=anyLive&&evs.every(m=>m.status||m.ai);
-    const where=(aiOnly?t('tg_ai_chip')+' · ':'')+t(uid==='31'?'city_somewhere':'obl_somewhere');
-    if(anyLive){ const s0=x; x+=where.length*6.1+7; items.push([s0,`<text class="obtxt obwhere" dominant-baseline="central">${esc(where)}</text>`]); }
+    const where=t(uid==='31'?'city_somewhere':'obl_somewhere');
+    if(aiOnly){ items.forEach(it=>{ it[0]+=22; }); x+=22; items.unshift([0,`<text class="obtxt obai" dominant-baseline="central">${esc(t('tg_ai_chip'))}</text>`]); }
     const W=Math.max(10,x-7);
     const parts=items.map(([s0,h])=>`<g style="transform:translate(${px(s0-W/2)},0px)">${h}</g>`);
-    const full=kinds.map(k=>`${oblWord(ex[k])}${by[k]>1?' ×'+by[k]:''}`).join(', ')+' · '+where;
+    const full=kinds.map(k=>`${oblWord(ex[k])}${by[k]>1?' ×'+by[k]:''}`).join(', ')+(anyLive?' · '+(aiOnly?t('tg_ai_chip')+' · ':'')+where:'');
     const onlyLive=!evs.some(m=>m.status);
-    // near the top of the region: its centre is a busy place, and a label sitting exactly on it starts to
-    // look like a pin again, which is the whole thing being fixed
-    let y=o.cy; try{const pe=document.querySelector(`#oblastsg .ob[data-o="${uid}"]`); if(pe){const bb=pe.getBBox(); y=bb.y+bb.height*0.17;}}catch(e){}
-    // 1.51: a region with a target in the air is cyan and hatched, and blinks — the alert's own amber and red were
-    // the colours it used to be drawn in, and it disappeared into them; hatching says "an area", not a point
-    return `<path class="obring${anyLive?' live':''}" d="${o.path}"/>${anyLive&&!placed.has(uid)?`<path class="obhatch" d="${o.path}"/>`:''}`
-      +`<g class="oblevtchip${anyLive?' live':''}" data-o="${uid}" transform="translate(${o.cx.toFixed(1)} ${y.toFixed(1)})"><title>${esc(full)}</title>`
-      +(anyLive?`<rect class="obbg" x="-.5" y="-.5" width="1" height="1" style="transform:scale(calc(var(--k,1)*${(W+16).toFixed(0)}),calc(var(--k,1)*22))"/>`:'')
-      +parts.join('')+`<rect class="hit" x="-.5" y="-.5" width="1" height="1" style="transform:scale(calc(var(--k,1)*${(W+10).toFixed(0)}),calc(var(--k,1)*20))"/></g>`;
-  }).join('')+`<defs><pattern id="obhp" patternUnits="userSpaceOnUse" width="7" height="7" patternTransform="rotate(45) scale(${kx(KPX*1.4)})"><rect width="1.2" height="7" fill="#3fe0ff"/></pattern></defs>`;
+    // 1.53.1: right under the oblast's own name ("KHARKIV", then the chip) — read as one thing, and never written over
+    // the name; an oblast drawn without a name (Kyiv's) near the top of the region, off its busy centre
+    const named=!['14','31','30','29'].includes(uid);
+    let y=o.cy-8, dy=17; if(!named){ dy=0; try{const pe=document.querySelector(`#oblastsg .ob[data-o="${uid}"]`); if(pe){const bb=pe.getBBox(); y=bb.y+bb.height*0.17;}}catch(e){} }
+    // 1.53.1: no hatching, no cyan — a white dashed outline, slowly fading in and out; never the alerts' amber or red
+    return `<path class="obring${anyLive?' live':''}" d="${o.path}"/>`
+      +`<g class="oblevtchip${anyLive?' live':''}" data-o="${uid}" transform="translate(${o.cx.toFixed(1)} ${y.toFixed(1)})"><title>${esc(full)}</title><g style="transform:translateY(${px(dy)})">`
+      +(anyLive?`<rect class="obbg" x="-.5" y="-.5" width="1" height="1" style="transform:scale(calc(var(--k,1)*${(W+14).toFixed(0)}),calc(var(--k,1)*20))"/>`:'')
+      +parts.join('')+(anyLive?`<text class="obtxt obwhere" text-anchor="middle" dominant-baseline="central" style="transform:translateY(${px(17)})">${esc((aiOnly?t('tg_ai_chip')+' · ':'')+where)}</text>`:'')
+      +`<rect class="hit" x="-.5" y="-.5" width="1" height="1" style="transform:scale(calc(var(--k,1)*${(W+10).toFixed(0)}),calc(var(--k,1)*20))"/></g></g>`;
+  }).join('');
   g.querySelectorAll('.oblevtchip').forEach(el=>el.addEventListener('click',()=>oblEventSheet(el.dataset.o)));
+  if(typeof layoutTownLabels==='function') setTimeout(layoutTownLabels,0);     // 1.53.1: no town name under a chip
 }
 // A whole-oblast entry's kind: its outcome, or — for a target still in the air — its weapon.
 const oblKey=m=>m.status||('t:'+(m.type==='drones'&&m.jet?'jet':m.type));
@@ -2767,6 +2769,8 @@ function layoutTownLabels(){
     items.push({e,pr,x,y:y-fs,w:e.textContent.length*fs*0.58+4,h:fs+2}); }
   // a threat label wins over a town name: the town under it is hidden, never written over
   items.sort((a,b)=>a.pr-b.pr); const placed=[...LBLBOX.boxes];
+  // 1.53.1: and under the chip of a target reported for a whole oblast
+  document.querySelectorAll('#oblevt .obbg').forEach(e=>{ const b=e.getBoundingClientRect(); if(b.width) placed.push({x:b.left-r.left,y:b.top-r.top,w:b.width,h:b.height}); });
   // 1.45.1: a village whose name has no room loses its dot too — a field of nameless dots says nothing
   for(const it of items){ if(placed.some(q=>it.x<q.x+q.w&&q.x<it.x+it.w&&it.y<q.y+q.h&&q.y<it.y+it.h)){it.e.setAttribute('data-hid','1');
       if(it.pr>=3||it.e.classList.contains('tw')){const d=it.e.previousElementSibling; if(d&&d.classList.contains('towndot')) d.setAttribute('data-hid','1');} continue;} placed.push(it); }

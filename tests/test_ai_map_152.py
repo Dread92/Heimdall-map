@@ -220,7 +220,7 @@ def test_the_page():
     assert "${m.ai?' ai':''}" in PAGE and ".mk.ai .halo{stroke-dasharray:3 3}" in PAGE and "t('ai_placed')" in PAGE
     assert '<g id="selpath"></g>' in PAGE and "function drawSelPath()" in PAGE and "if(SELP) drawSelPath();" in PAGE
     assert "const ct=(m.ai?t('tg_ai_chip')+(tg?' ':''):'')+(tg?tg.id:'');" in PAGE          # zoomed out: "AI ?-03"
-    assert "aiOnly=anyLive&&evs.every(m=>m.status||m.ai)" in PAGE                            # "AI · somewhere in the oblast"
+    assert "aiOnly=anyLive&&evs.every(m=>m.status||m.ai)" in PAGE and 'class="obtxt obai"' in PAGE     # "AI" first on the chip
     assert "#selpath .selp{fill:none;stroke:#ff3b3f;" in PAGE and "SELP=id;" in PAGE and "closeSheet(){ SELP=null;" in PAGE
     assert "body.m-day .mk .lbl .tid,body.m-day .mk .tgc{fill:#7a4b00;stroke:#fff}" in PAGE      # the tag in daylight
     assert "if(tg.os==='region') return t('tg_inf_'+tg.o,tg.ou?oblFull(tg.ou):'');" in PAGE

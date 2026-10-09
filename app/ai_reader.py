@@ -658,21 +658,23 @@ def _why(e):
 # check is the second opinion, ten minutes late at most.
 CHECK_VERSION = "5"
 FINDINGS = ["missed", "place", "weapon", "outcome", "not_sky", "facts"]
-MAX_CHECK_POSTS = 60          # posts in one call; more in the window → several calls, by oblast
-MAX_OUT_CHECK = 6000
+# 1.53.1: 60 posts made answers past 6,000 tokens on a busy night ("cut off at 6000 tokens", 9 Oct): 30 a call, room
+# for 12,000, the notes first, and what came complete of an answer cut off is kept (salvage_check)
+MAX_CHECK_POSTS = 30          # posts in one call; more in the window → several calls, by oblast
+MAX_OUT_CHECK = 12000
 CHECK_TEXT = 700              # characters of a post sent (a long post is news; its first lines are what matter)
 CHECK_SCHEMA = {
     "type": "object", "additionalProperties": False,
     "properties": {
+        "notes": {"type": "array", "items": {
+            "type": "object", "additionalProperties": False,
+            "properties": {"oblast": _S, "note": _S}, "required": ["oblast", "note"]}},
         "findings": {"type": "array", "items": {
             "type": "object", "additionalProperties": False,
             "properties": {"post": _S, "finding": {"type": "string", "enum": FINDINGS}, "target": TARGET, "why": _S},
             "required": ["post", "finding", "target", "why"]}},
-        "notes": {"type": "array", "items": {
-            "type": "object", "additionalProperties": False,
-            "properties": {"oblast": _S, "note": _S}, "required": ["oblast", "note"]}},
         "uncertain": _S},
-    "required": ["findings", "notes", "uncertain"]}
+    "required": ["notes", "findings", "uncertain"]}
 
 # the reading rules are the same as for one post (1 to 12 of SYSTEM): one text, two prompts
 RULES_READ = SYSTEM[SYSTEM.index("1. Never infer."):SYSTEM.index("13. PREVIOUS POSTS")].rstrip()
@@ -690,7 +692,7 @@ The check:
    - "weapon": the right place, the wrong weapon; "outcome": shot down, impact or lost read wrongly or not at all;
    - "facts": the right place, but a stated origin, height, vertical state, speed, count or destination is missing from the RULES line — the target at the rules' place, with them;
    - "not_sky": the rules drew a target from a post that reports none (an official alert message, news, an advert, a fundraiser) — a target of kind "unknown" with no place.
-   "why": a few English words. A post the rules read right gets no finding.
+   "why": a few English words. A post the rules read right gets no finding. Be brief: report only what changes what a reader would understand — a target missed or misplaced, a wrong weapon or outcome, a height, descent, origin or destination left out — at most one finding per target, never a count of one or a quote the rules already have.
 15. A channel's earlier posts in the check are the context of its later ones ("Далі на X" continues the last target that channel named). Never carry a fact from one post into another post's finding.
 16. same_as: the tag of the target ON THE MAP NOW that this one is (the same weapon reported again near the same place, or continued); otherwise "".
 17. NOTES: for each oblast block with targets, one or two English sentences on what its posts show together — how many targets, of what kind, where they come in from and where they head, waves, heights, and what the map misses or overstates. Only what the posts and the map show: no forecast, no advice. "oblast" is the block's id (o14).
@@ -780,10 +782,36 @@ CHECK_EXAMPLE = (
 def wire_check(ans):
     """A check's answer as the model writes it (no field is nullable on the wire)."""
     one = wire({"targets": [f["target"] for f in ans["findings"]]})["targets"]
-    return {"findings": [{"post": f["post"], "finding": f["finding"], "target": t, "why": f.get("why") or ""}
+    return {"notes": [{"oblast": n["oblast"], "note": n["note"]} for n in ans.get("notes") or []],
+            "findings": [{"post": f["post"], "finding": f["finding"], "target": t, "why": f.get("why") or ""}
                          for f, t in zip(ans["findings"], one)],
-            "notes": [{"oblast": n["oblast"], "note": n["note"]} for n in ans.get("notes") or []],
             "uncertain": ans.get("uncertain") or ""}
+
+
+def salvage_check(content):
+    """1.53.1: the notes and findings that came complete in a check's answer cut off at the length allowed — the ones
+    after the cut are lost, the rest is good. None when nothing came complete."""
+    if not isinstance(content, str):
+        return None
+    dec, out = json.JSONDecoder(), {"notes": [], "findings": [], "uncertain": ""}
+    for key in ("notes", "findings"):
+        i = content.find(f'"{key}"')
+        j = content.find("[", i) if i >= 0 else -1
+        if j < 0:
+            continue
+        k = j + 1
+        while True:
+            while k < len(content) and content[k] in " \n\r\t,":
+                k += 1
+            if k >= len(content) or content[k] == "]":
+                break
+            try:
+                obj, k = dec.raw_decode(content, k)
+            except ValueError:
+                break
+            if isinstance(obj, dict):
+                out[key].append(obj)
+    return out if out["findings"] or out["notes"] else None
 
 
 def check_messages(text, cache=False):
@@ -1113,6 +1141,8 @@ class AIReader(threading.Thread):
                         for n_ in out.get("notes") or [] if isinstance(n_, dict) and str(n_.get("oblast")) in ok
                         and str(n_.get("note") or "").strip()]
         row["uncertain"] = str(out.get("uncertain") or "")[:400] or None
+        if res.get("partial"):                 # 1.53.1: what came complete was kept; say what was lost
+            row["uncertain"] = f"answer {res['partial']}: the findings after the cut are lost" + (f" — {row['uncertain']}" if row["uncertain"] else "")
         self._save_check(row)
         return "ok"
 
@@ -1260,6 +1290,11 @@ class AIReader(threading.Thread):
             cut = ((data.get("choices") or [{}])[0].get("finish_reason") == "length"
                    or (usage.get("completion_tokens") or 0) >= mx)
             err = f"cut off at {mx} tokens" if cut else "not JSON"
+            part = salvage_check((((data.get("choices") or [{}])[0].get("message") or {}).get("content"))) if cut and kind == "check" else None
+            if part:
+                self.last_error = None
+                return {"out": part, "cost": cost, "tok_in": usage.get("prompt_tokens"), "tok_out": usage.get("completion_tokens"),
+                        "model": data.get("model") or self.model(), "way": way, "partial": err}
             self.last_error = err
             return {"error": err, "cost": cost, "tok_in": usage.get("prompt_tokens"), "tok_out": usage.get("completion_tokens")}
         self.last_error = None
