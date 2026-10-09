@@ -2,6 +2,12 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.54.5 — 2026-10-09
+
+### Changed
+- **The oblast and Kyiv city badges are a fifth smaller on a phone** — the owner: "nice but too big on phone". 19 px
+  high instead of 24, the text and the weapon's silhouette to match; a computer keeps them as they were.
+
 ## 1.54.4 — 2026-10-09
 
 ### Fixed

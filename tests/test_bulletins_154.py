@@ -391,3 +391,11 @@ def test_the_tapped_path_leaves_out_a_line_a_drone_could_not_have_flown():
     assert "return d>(jet?120:80)||d>(jet?9:3.5)*dt+15; };" in fn and "dr=m.type==='drones'||m.type==='unknown'" in fn
     assert "out.filter(r=>r.length>1)" in fn and "runs(pts.slice(Math.max(k,0)),'selp')" in fn
     assert "a drone's reach" in DOC
+
+
+# ---- 1.54.5 ----------------------------------------------------------------------------------------------------------
+def test_the_badges_are_a_fifth_smaller_on_a_phone():
+    assert "const OBS=()=>window.innerWidth<1000?0.8:1;" in PAGE and "H=Math.round(24*S), PAD=Math.round(20*S)" in PAGE
+    assert "+'|'+LANG+'|'+OBS();" in PAGE                                   # a phone turned on its side redraws them
+    assert "@media (max-width:999px){svg #oblevt .oblevtchip.live .obtxt{font-size:calc(var(--k,1)*10.5px)}" in PAGE
+    assert "const k=KPX||1, S=OBS(), GAP=6*S, PAD=Math.round(20*S);" in PAGE

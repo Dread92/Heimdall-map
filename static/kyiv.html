@@ -532,6 +532,7 @@ svg.city .town.district{fill:#aeb8c8;font-weight:500}
 #oblevt .oblevtchip.live .obtxt{fill:#f4f1e8;font-size:calc(var(--k,1)*12.5px);stroke-width:0}
 #oblevt .oblevtchip.live .obtxt.obnm{font:800 calc(var(--k,1)*11.5px) system-ui;letter-spacing:.5px}
 #oblevt .obtxt.obwhere{fill:#e8e6df;font:600 calc(var(--k,1)*10.5px) system-ui;letter-spacing:.2px;stroke-width:calc(var(--k,1)*3px)}svg.veryfar #oblevt .obwhere{display:none}
+@media (max-width:999px){svg #oblevt .oblevtchip.live .obtxt{font-size:calc(var(--k,1)*10.5px)}svg #oblevt .oblevtchip.live .obtxt.obnm,svg #oblevt .oblevtchip.live .obtxt.obalt{font-size:calc(var(--k,1)*9.5px)}svg #oblevt .obtxt.obwhere{font-size:calc(var(--k,1)*9px)}}
 body:not(.rp) #obllbl .oblbl.hot{fill:#f4f1e8;paint-order:stroke;stroke:#0b0e14;stroke-width:calc(var(--k,1)*3px)}
 svg:not(.close) #obllbl .oblbl.faro.hot{display:inline}
 @keyframes obpulse{0%,100%{stroke-opacity:.8;fill-opacity:.05}50%{stroke-opacity:.28;fill-opacity:.015}}
@@ -2033,6 +2034,8 @@ function oblAlt(m){ if(m.status) return ''; const tg=m.tag||{}; const a=(m.alt&&
   const d=(m.alt&&m.alt.state==='descending')||(tg.vs&&tg.vs.v==='descending'); return (d?'↓':'')+(a?String(a):''); }
 // the oblasts drawn without a name on the map: Kyiv oblast (around the city), the city, Sevastopol, Crimea
 const OBL_UNNAMED=new Set(['14','31','30','29']);
+// 1.54.5, the owner: the badges "are nice but too big on a phone" — a fifth smaller there (their text in the CSS too)
+const OBS=()=>window.innerWidth<1000?0.8:1;
 function paintOblEvents(){
   const g=$('oblevt'); if(!g||!MAP) return;
   const uids=Object.keys(OBLEVT);
@@ -2043,7 +2046,7 @@ function paintOblEvents(){
   // tick() runs several times a second. Rebuilding this layer every frame replaced the nodes between a
   // press and its release, so a tap on the count never became a click and the panel never opened — and it
   // was redrawing oblast outlines for nothing. Only redraw when what it says has actually changed.
-  const sig=uids.map(u=>u+':'+OBLEVT[u].map(m=>oblKey(m)+(m.count||1)+oblAlt(m)+(m.tag?m.tag.id:'')).sort().join('')).sort().join('|')+'|'+LANG;
+  const sig=uids.map(u=>u+':'+OBLEVT[u].map(m=>oblKey(m)+(m.count||1)+oblAlt(m)+(m.tag?m.tag.id:'')).sort().join('')).sort().join('|')+'|'+LANG+'|'+OBS();
   if(g._sig===sig) return;
   g._sig=sig;
   // 1.54: every outline first, then every badge — another oblast's glowing border never runs across a badge
@@ -2065,7 +2068,7 @@ function paintOblEvents(){
     const named=!OBL_UNNAMED.has(uid);
     // 1.54: the badge is a row of pieces — a name, a glyph, a count, a height — measured once drawn (fitOblChips), so a
     // phone's own font never runs one piece into the next; `w` is only the first guess, `f` a glyph's fixed width
-    const segs=[], seg=(h,w,f)=>segs.push({h,w,f});
+    const segs=[], seg=(h,w,f)=>segs.push({h,w,f}), S=OBS();
     // 1.54: an oblast drawn without a name on the map (Kyiv's) carries it in the badge
     if(anyLive&&!named){ const nm=(uid==='14'?t('ob_kyiv'):oblName(uid)).toUpperCase(); seg(`<text class="obtxt obnm" dominant-baseline="central">${esc(nm)}</text>`,nm.length*9); }
     kinds.forEach(k=>{ const m=ex[k], n=by[k];
@@ -2076,27 +2079,27 @@ function paintOblEvents(){
       const al=oblAlt(m), al2=al?al+(/\d$/.test(al)?' '+t('m_unit'):''):'', tid=en[k]===1&&m.tag?m.tag.id:'';
       const gk=(m.type==='drones'&&m.jet)?'jetdrone':(GLYPH_BY_TYPE[m.type]||'missile');
       if(tid) seg(`<text class="obtxt obtid" dominant-baseline="central">${esc(tid)}</text>`,tid.length*7.6);
-      seg(`<g class="sil${m.type==='drones'&&m.jet?' jet':''}" style="--c:${KIND_COL(m)};transform:translate(${px(8)},0px) scale(calc(var(--k,1)*.72))">${G[gk]||''}</g>`,16,1);
+      seg(`<g class="sil${m.type==='drones'&&m.jet?' jet':''}" style="--c:${KIND_COL(m)};transform:translate(${px(8*S)},0px) scale(calc(var(--k,1)*${(.72*S).toFixed(3)}))">${G[gk]||''}</g>`,Math.round(16*S),1);
       if(c) seg(`<text class="obtxt" dominant-baseline="central">${c}</text>`,c.length*9.5);
       if(al2) seg(`<text class="obtxt obalt" dominant-baseline="central">${esc(al2)}</text>`,al2.length*7.4); });
     const where=t(uid==='31'?'city_somewhere':'obl_somewhere');
-    const GAP=6, H=24, W=Math.max(16,segs.reduce((a,q)=>a+q.w,0)+GAP*(segs.length-1));
+    const GAP=6*S, H=Math.round(24*S), PAD=Math.round(20*S), W=Math.max(16,segs.reduce((a,q)=>a+q.w,0)+GAP*(segs.length-1));
     let x=-W/2; const parts=segs.map(q=>{ const h=`<g class="obseg"${q.f?` data-w="${q.w}"`:''} style="transform:translate(${px(x)},0px)">${q.h}</g>`; x+=q.w+GAP; return h; });
     const full=kinds.map(k=>`${oblWord(ex[k])}${by[k]>1?' ×'+by[k]:''}`).join(', ')+(anyLive?' · '+where:'');
     // the badge's colour: the weapon's, when every target in the air there is the same kind
     const cols=[...new Set(evs.filter(m=>!m.status).map(KIND_COL))], col=cols.length===1?cols[0]:'#f4f1e8';
     // 1.53.1: right under the oblast's own name ("KHARKIV", then the badge) — read as one thing, and never written over
     // the name; an oblast drawn without a name (Kyiv's) near the top of the region, off its busy centre
-    let y=o.cy-8, dy=21; if(!named){ dy=0; try{const pe=document.querySelector(`#oblastsg .ob[data-o="${uid}"]`); if(pe){const bb=pe.getBBox(); y=bb.y+bb.height*0.17;}}catch(e){} }
+    let y=o.cy-8, dy=Math.round(21*S); if(!named){ dy=0; try{const pe=document.querySelector(`#oblastsg .ob[data-o="${uid}"]`); if(pe){const bb=pe.getBBox(); y=bb.y+bb.height*0.17;}}catch(e){} }
     // 1.54: the border glows from the inside — strokes clipped to the oblast, so only their inner half shows — and a
     // thin solid line on the border itself. Outcomes alone keep the red dashed outline.
     const ring=anyLive?`<clipPath id="obclip${uid}"><path d="${o.path}"/></clipPath><g class="obglow" clip-path="url(#obclip${uid})">`
         +`<path class="g1" d="${o.path}"/><path class="g2" d="${o.path}"/><path class="g3" d="${o.path}"/></g><path class="obring live" d="${o.path}"/>`
       :`<path class="obring" d="${o.path}"/>`;
     return [ring,`<g class="oblevtchip${anyLive?' live':''}" data-o="${uid}" transform="translate(${o.cx.toFixed(1)} ${y.toFixed(1)})"><title>${esc(full)}</title><g style="--c:${col};transform:translateY(calc(var(--k,1)*(${dy}px + var(--sh,0px))))">`
-      +(anyLive?`<rect class="obbg" x="-.5" y="-.5" width="1" height="1" rx="${(H/2/(W+20)).toFixed(4)}" ry=".5" data-h="${H}" style="transform:scale(calc(var(--k,1)*${(W+20).toFixed(0)}),calc(var(--k,1)*${H}))"/>`:'')
-      +parts.join('')+(anyLive?`<text class="obtxt obwhere" text-anchor="middle" dominant-baseline="central" style="transform:translateY(${px(H/2+11)})">${esc(where)}</text>`:'')
-      +`<rect class="hit" x="-.5" y="-.5" width="1" height="1" data-h="${H+4}" style="transform:scale(calc(var(--k,1)*${(W+20).toFixed(0)}),calc(var(--k,1)*${H+4}))"/></g></g>`];
+      +(anyLive?`<rect class="obbg" x="-.5" y="-.5" width="1" height="1" rx="${(H/2/(W+PAD)).toFixed(4)}" ry=".5" data-h="${H}" style="transform:scale(calc(var(--k,1)*${(W+PAD).toFixed(0)}),calc(var(--k,1)*${H}))"/>`:'')
+      +parts.join('')+(anyLive?`<text class="obtxt obwhere" text-anchor="middle" dominant-baseline="central" style="transform:translateY(${px(H/2+11*S)})">${esc(where)}</text>`:'')
+      +`<rect class="hit" x="-.5" y="-.5" width="1" height="1" data-h="${H+4}" style="transform:scale(calc(var(--k,1)*${(W+PAD).toFixed(0)}),calc(var(--k,1)*${H+4}))"/></g></g>`];
   });
   g.innerHTML=drawn.map(d=>d[0]).join('')+drawn.map(d=>d[1]).join('');
   fitOblChips();          // a tap on a badge: the map's pointerup (1.54.2 — a click never reached it on a computer)
@@ -2105,15 +2108,15 @@ function paintOblEvents(){
 // 1.54: each piece of a badge where its own width puts it — the text measured in the phone's own font — and the badge
 // around them. Widths in screen pixels: the text is sized in var(--k), so its length divided by KPX.
 function fitOblChips(){
-  const k=KPX||1, GAP=6;
+  const k=KPX||1, S=OBS(), GAP=6*S, PAD=Math.round(20*S);
   document.querySelectorAll('#oblevt .oblevtchip').forEach(ch=>{
     const ss=[...ch.querySelectorAll('.obseg')]; if(!ss.length) return;
     let ws; try{ ws=ss.map(e=>e.dataset.w?+e.dataset.w:(()=>{ const tx=e.querySelector('text'); return tx?tx.getComputedTextLength()/k:0; })()); }catch(e){ return; }
     if(ws.some(w=>!(w>=0))||!ws.some(w=>w>0)) return;
     const W=ws.reduce((a,w)=>a+w,0)+GAP*(ss.length-1); let x=-W/2;
     ss.forEach((e,i)=>{ e.style.transform=`translate(calc(var(--k,1)*${x.toFixed(1)}px),0px)`; x+=ws[i]+GAP; });
-    ch.querySelectorAll('rect.obbg,rect.hit').forEach(r=>{ const h=+r.dataset.h||24; r.style.transform=`scale(calc(var(--k,1)*${(W+20).toFixed(0)}),calc(var(--k,1)*${h}))`;
-      if(r.classList.contains('obbg')) r.setAttribute('rx',(h/2/(W+20)).toFixed(4)); });
+    ch.querySelectorAll('rect.obbg,rect.hit').forEach(r=>{ const h=+r.dataset.h||24; r.style.transform=`scale(calc(var(--k,1)*${(W+PAD).toFixed(0)}),calc(var(--k,1)*${h}))`;
+      if(r.classList.contains('obbg')) r.setAttribute('rx',(h/2/(W+PAD)).toFixed(4)); });
   });
 }
 // 1.54: two badges never sit on each other — Kyiv oblast's beside Chernihiv's when zoomed out. A badge under its oblast's

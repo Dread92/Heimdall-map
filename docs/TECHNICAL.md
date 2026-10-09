@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.54** · last updated 2026-10-09 (1.54.4)
+**Documented version: 1.54** · last updated 2026-10-09 (1.54.5)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -734,7 +734,8 @@ clipped to the oblast, so only their inner half shows, and a thin solid line; br
 `prefers-reduced-motion`): "somewhere in here", the middle of the oblast left clear for the targets placed in it. An
 oblast drawn without a name (Kyiv oblast, the city, Sevastopol, Crimea: `OBL_UNNAMED`) carries it in the badge ("KYIV
 OBL.", `ob_kyiv`); every outline is drawn before every badge; two badges never overlap (`layoutOblChips`, at each zoom:
-the one of an unnamed oblast steps down); the town names under a lit name or a badge give way), the posts one tap away
+the one of an unnamed oblast steps down); the town names under a lit name or a badge give way; 1.54.5, the owner: "too
+big on a phone" — on a phone (< 1,000 px) a fifth smaller, `OBS()`: 19 px high instead of 24, its text 10.5 / 9.5 px), the posts one tap away
 (`oblEventSheet`). The Near list keeps it without a distance, as "Chernihiv oblast ·
 somewhere in the oblast" (`oblWhere`, `nearRows` `vague`); it never raises the level. A push never says "within N km
 of you" for it (`proximity_watch`) — only a ballistic warning, which covers the region anyway, is still sent, naming
