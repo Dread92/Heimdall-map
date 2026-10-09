@@ -2,6 +2,13 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.49.1 — 2026-10-09
+
+### Changed
+- **The main towns of every oblast are an option** (Layers → "Main towns of every oblast"): on by default on a
+  computer, off on a phone, where the names made the map unreadable. On a phone they show only once zoomed in to a
+  region, and a town whose name has no room no longer leaves a nameless dot.
+
 ## 1.49.0 — 2026-10-09
 
 ### Added

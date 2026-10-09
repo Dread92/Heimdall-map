@@ -177,10 +177,18 @@ def test_the_towns_of_every_oblast():
     assert not names & {"Красний Луч", "Черемушки", "Харків", "Полтава", "Бровари"}   # renamed / city section / in TOWNS
     for n, lon, lat, pop, tier in d["towns"]:
         assert 22 < lon < 40.3 and 44.3 < lat < 52.4, n
-    assert "async function loadTownsUA(){ try{ const d=await(await fetch('/static/towns-ua.json')).json();" in PAGE
-    assert "+'<g id=\"twng\"></g><g id=\"minorg\"></g><g id=\"villg\"></g>';\n  loadTownsUA();" in PAGE
+    assert "async function loadTownsUA(){ const g0=$('twng'); if(!g0||g0.childElementCount||loadTownsUA.busy) return;" in PAGE
+    assert "try{ const d=await(await fetch('/static/towns-ua.json')).json();" in PAGE
+    assert "+'<g id=\"twng\"></g><g id=\"minorg\"></g><g id=\"villg\"></g>';\n  if(LAYERS.towns) loadTownsUA();" in PAGE
+    # 1.49.1: a layer of its own — on by default on a computer, off on a phone, where it was unreadable
+    assert "towns:window.innerWidth>=1000," in PAGE and '<input type="checkbox" data-l="towns">' in PAGE
+    assert "if(cb.dataset.l==='towns'&&cb.checked)loadTownsUA();" in PAGE and "svg.no-towns #twng{display:none}" in PAGE
+    assert "@media (max-width:999px){svg.veryfar #twng,svg.far .tw1{display:none}}" in PAGE
+    assert "if(it.pr>=3||it.e.classList.contains('tw')){" in PAGE                 # no nameless dots
+    for s_ in ("l_towns:'Main towns of every oblast'", "l_towns:'Основні міста кожної області'", "l_towns:'Villes principales de chaque oblast'"):
+        assert s_ in I18N
     assert "e.classList.contains('rg')||e.classList.contains('tw2')?2:" in PAGE      # the collision pass ranks them
-    assert "svg.wide #twng,svg.veryfar .tw1{display:none}" in PAGE and "svg.classList.toggle('wide',VB.w>520);" in PAGE
+    assert "svg.wide #twng,svg.veryfar .tw1,svg.no-towns #twng{display:none}" in PAGE and "svg.classList.toggle('wide',VB.w>520);" in PAGE
     assert "svg.veryfar.no-minor .town:not(.big):not(.rg):not(.uac):not(.tw2){display:none}" in PAGE
     assert "'/static/towns-ua.json'" in SW
     src = _read("scripts/build_towns.py")

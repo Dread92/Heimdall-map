@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.49** · last updated 2026-10-09 (1.49.0)
+**Documented version: 1.49** · last updated 2026-10-09 (1.49.1)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -1017,7 +1017,10 @@ of Belgium. `static/towns-ua.json` (`scripts/build_towns.py`, from GeoNames' Ukr
 centres and every town of 10,000+ of every oblast that `TOWNS` does not name (352): Ukrainian names as
 `build_places.py` gives them, with the renamed ones (Хрустальний, not Красний Луч) and city sections GeoNames files
 as towns left out. Drawn in `#twng` (`loadTownsUA`): tier 2 (a centre, or 20,000+) up to 520 km of map (`svg.wide`),
-tier 1 up to 230 km (`veryfar`); `layoutTownLabels` ranks them after the regional centres.
+tier 1 up to 230 km (`veryfar`); `layoutTownLabels` ranks them after the regional centres, and a town whose name has
+no room loses its dot. 1.49.1: a layer of its own (Layers → "Main towns of every oblast", `LAYERS.towns`), on by
+default on a computer and off on a phone, where it was unreadable; on a phone tier 2 shows up to 230 km of map and
+tier 1 up to 90 km. The file is fetched only once the layer is on.
 
 **Zoom to a kilometre (1.48).** `setView` / `zoomAt` stop at 1 km across (8 km before). Over a picture (`svg.tiled`)
 the oblast and raion names are light on a dark halo like the towns (`paint-order:stroke`), dark on a light halo in
