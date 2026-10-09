@@ -68,6 +68,24 @@ tr.m-trial td:first-child{color:#ffd9a8}tr.m-off td{color:var(--ink3)}
 .rgoff button{background:#0b0d11;border:1px solid var(--line);color:var(--ink2);padding:6px 10px;font:12.5px var(--sans);border-radius:2px;cursor:pointer}
 details.rgmore{margin:4px 0 10px}details.rgmore summary{cursor:pointer;font:600 12.5px var(--sans);color:var(--ink2);padding:6px 0}
 .tscroll{overflow-x:auto}
+/* 1.50: the AI reader, in shadow mode — its reading of a post beside the rules' */
+.aist{font:13px var(--sans);color:var(--ink2);margin:0 0 8px}.aist.mut{color:var(--ink3);font-size:12px}
+.aiw{font:13px var(--sans);color:var(--orange);margin:0 0 6px}
+.ard{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--ink3);padding:10px 12px;margin:0 0 10px}
+.ard.v-agree{border-left-color:var(--green)}.ard.v-place,.ard.v-kind,.ard.v-status{border-left-color:var(--orange)}
+.ard.v-ai_only,.ard.v-rules_only{border-left-color:var(--blue)}.ard.v-error{border-left-color:var(--red)}
+.ardh{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font:12px var(--mono);color:var(--ink3);margin:0 0 6px}.ardh .sp{flex:1}
+.vb{display:inline-block;font:600 10.5px var(--mono);letter-spacing:.05em;text-transform:uppercase;padding:2px 6px;border-radius:2px;border:1px solid var(--line);color:var(--ink2)}
+.vb.v-agree{color:var(--green)}.vb.v-place,.vb.v-kind,.vb.v-status{color:var(--orange)}.vb.v-ai_only,.vb.v-rules_only{color:var(--blue)}.vb.v-error{color:#ff8a80}
+.ardt{font:14px/1.5 var(--sans);white-space:pre-wrap;overflow-wrap:anywhere;margin:0 0 8px}
+.ardu{font:11.5px var(--mono);color:var(--ink3);margin:-4px 0 8px}
+.ardc{display:grid;grid-template-columns:1fr 1fr;gap:10px;font:13px/1.45 var(--sans)}
+.ardc>div{background:var(--bg);border:1px solid var(--line);padding:8px 10px;min-width:0}
+.ardc>div>b{display:block;font:600 10.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);margin-bottom:4px}
+.ardc .tg{margin:0 0 4px}.ardq{font:11.5px var(--mono);color:var(--ink3);overflow-wrap:anywhere}
+.ard .mut{color:var(--ink3);font-size:12.5px}
+table.aivt{max-width:440px;margin:0 0 16px}
+@media (max-width:640px){.ardc{grid-template-columns:1fr}}
 /* 1.29: online now, and the message to every reader */
 .ops{display:grid;grid-template-columns:minmax(200px,260px) 1fr;gap:12px;margin:4px 0 20px}
 @media (max-width:640px){.ops{grid-template-columns:1fr}}
@@ -198,6 +216,7 @@ table.airtab td,table.airtab th{font-size:12.5px;padding:5px 4px;white-space:now
   <button data-tab="analytics" role="tab" data-tr="tab_an">Analytics</button>
   <button data-tab="nights" role="tab" data-tr="tab_nights">Nights &amp; weeks</button>
   <button data-tab="sources" role="tab" data-tr="tab_sources">Sources</button>
+  <button data-tab="ai" role="tab" data-tr="tab_ai">AI reader</button>
   <button data-tab="usage" role="tab" data-tr="tab_usage">Usage</button>
 </nav>
 
@@ -261,6 +280,7 @@ table.airtab td,table.airtab th{font-size:12.5px;padding:5px 4px;white-space:now
 </section>
 <section class="tabsec" id="tab-nights" hidden><div id="digests"></div></section>
 <section class="tabsec" id="tab-sources" hidden><div id="health"></div></section>
+<section class="tabsec" id="tab-ai" hidden><div id="aiv"></div></section>
 <section class="tabsec" id="tab-usage" hidden><div id="out"></div><div class="foot" id="foot"></div></section>
 <div class="antip" id="antip" hidden></div>
 <script>
@@ -341,6 +361,24 @@ const T={
   h_channels:'Telegram channels',ch_name:'Channel',ch_24:'Posts 24 h',ch_marks:'Marks 24 h',ch_read:'Read 7 d',ch_last:'Last post',ch_state:'Reader',
   ch_api:'Telegram API',ch_prev:'web preview',ch_off:'not read',
   ch_note:'“Read” is the share of the channel’s posts over 7 days that put something on the map. A channel silent for 12 h or more, or whose reader fails, is highlighted.',
+  tab_ai:'AI reader',h_ai:'AI reader — shadow mode',
+  ai_note:'A language model (through OpenRouter) reads the same posts as the rules, beside them. <b>Nothing it says reaches the map, the alerts, the feed or a push.</b> Every fact it gives must quote the post and every place must be one of ours: what it cannot back up is dropped. It is sent a post’s public text, the channel’s name and our place names — never anything about a reader. What it is for: finding what the rules misread or miss, so that the rules can be fixed.',
+  ai_nokey:'Off — no OpenRouter key: run scripts/set-openrouter-key.bat once.',ai_off:'Off — ai_reader is false in config.json, or the monthly cap is 0.',
+  ai_on:'On — model {0}, prompt v{1}',ai_paused:'Paused for a few minutes — OpenRouter refused: {0}',ai_err:'The last call failed: {0}',
+  ai_budget:'The month’s cap is reached — it reads again on the 1st.',
+  ai_reads:'Read this month',ai_agree:'Agree',ai_diff:'Disagree',ai_spent:'Spent this month',ai_of:'of ${0}',ai_ms:'Median answer',
+  ai_queue:'{0} waiting',ai_sk_paused:'not read while paused',ai_sk_budget:'not read: cap reached',ai_sk_rate:'not read: hourly limit',
+  ai_f_diff:'Disagreements',ai_f_all:'All',ai_reload:'Reload',ai_none:'Nothing yet — readings appear here as the channels post.',
+  ai_rules:'Rules',ai_ai:'AI',ai_nothing:'no target',ai_unsure:'Unsure: {0}',ai_dropped:'{0} unsupported fact(s) dropped',
+  ai_unstored:'set aside by the rules as not about the sky',ai_notours:'not in our places',
+  ai_t_verdict:'Verdict',ai_t_n:'Posts',ai_t_share:'Share',
+  v_agree:'agree',v_place:'place differs',v_kind:'weapon differs',v_status:'outcome differs',v_ai_only:'only the AI',v_rules_only:'only the rules',v_none:'no target',v_error:'call failed',
+  ai_legend:'<b>Place differs</b>: the two put it in different places. <b>Weapon differs</b>, <b>outcome differs</b> (shot down, impact): at the same place. <b>Only the AI</b> found a target: perhaps a post the rules missed. <b>Only the rules</b> found one: perhaps a misreading by the rules, or the AI missed it. Check each against the post itself.',
+  r_at:'at',r_heading_to:'heading to',r_from:'from',r_near:'near',r_side_of:'of',r_in_oblast:'in',r_none:'',
+  k_shahed:'Shahed',k_jet_drone:'jet drone',k_drone:'drone',k_cruise_missile:'cruise missile',k_ballistic_missile:'ballistic missile',k_guided_bomb:'guided bomb',k_aircraft:'aircraft',k_unknown:'unknown target',
+  ty_drones:'drone',ty_banderol_missiles:'Banderol (jet drone)',ty_cruise_missiles:'cruise missile',ty_ballistic_missiles:'ballistic missile',ty_guided_aerial_bombs:'guided bomb',ty_tactic_aircraft_activity:'aircraft',ty_unknown:'unknown target',
+  st_down:'shot down',st_impact:'impact',st_lost:'lost',ai_count:'×{0}',ai_alt:'{0} m',ai_head:'course {0}',ai_fromside:'from the {0}',ai_km:'{0} km',
+  dirs:'N,NE,E,SE,S,SW,W,NW',
   h_img:'Satellite imagery',img_sat:'Sentinel-2 tiles: version {0}, to zoom {1}',img_nosat:'no Sentinel-2 tiles on the volume — scripts/upload-imagery.bat',img_esri:'Esri close zoom: {0} tiles this month (cap {1}) · {2} today (cap {3})',img_noesri:'Esri close zoom off — no ESRI_KEY (scripts/set-esri-key.bat)',img_ref_img:'Esri refused the key for the imagery — {0} — asked again in 5 min',img_ref_st:'Esri refused the key for the names and the map (Static Basemap Tiles) — {0} — asked again in 5 min; the key needs that privilege too',img_ref:'Esri refused the key ({0}) — asked again in 5 min',
   h_tr:'Translation',tr_av:'in use: {0}',tr_none:'no translation service reachable — offline glossary only',tr_paused:'paused after an error: {0}',
   ago_m:'{0} min ago',ago_h:'{0} h ago',ago_d:'{0} d ago',never:'never',
@@ -433,6 +471,24 @@ const T={
   h_channels:'Telegram-канали',ch_name:'Канал',ch_24:'Дописів 24 г',ch_marks:'Позначок 24 г',ch_read:'Зчитано 7 д',ch_last:'Останній допис',ch_state:'Читання',
   ch_api:'Telegram API',ch_prev:'веб-перегляд',ch_off:'не читається',
   ch_note:'«Зчитано» — частка дописів каналу за 7 днів, що поставили щось на мапу. Канал, що мовчить 12 год і більше, або чиє читання збоїть, підсвічено.',
+  tab_ai:'ШІ-читач',h_ai:'ШІ-читач — тіньовий режим',
+  ai_note:'Мовна модель (через OpenRouter) читає ті самі дописи, що й правила, поруч із ними. <b>Ніщо з її прочитання не потрапляє на мапу, у тривоги, у стрічку чи в сповіщення.</b> Кожен факт вона має підтвердити цитатою з допису, кожне місце — вибрати з наших; непідтверджене відкидається. Їй надсилається лише публічний текст допису, назва каналу й наші назви місць — нічого про читачів. Навіщо: знаходити, що правила читають хибно чи пропускають, щоб виправити правила.',
+  ai_nokey:'Вимкнено — немає ключа OpenRouter: один раз запустіть scripts/set-openrouter-key.bat.',ai_off:'Вимкнено — у config.json ai_reader = false або місячний ліміт 0.',
+  ai_on:'Увімкнено — модель {0}, промпт v{1}',ai_paused:'Призупинено на кілька хвилин — OpenRouter відмовив: {0}',ai_err:'Останній запит не вдався: {0}',
+  ai_budget:'Місячний ліміт вичерпано — читання відновиться 1-го числа.',
+  ai_reads:'Прочитано за місяць',ai_agree:'Збігаються',ai_diff:'Розходяться',ai_spent:'Витрачено за місяць',ai_of:'з ${0}',ai_ms:'Медіана відповіді',
+  ai_queue:'у черзі: {0}',ai_sk_paused:'не прочитано під час паузи',ai_sk_budget:'не прочитано: ліміт вичерпано',ai_sk_rate:'не прочитано: годинний ліміт',
+  ai_f_diff:'Розбіжності',ai_f_all:'Усі',ai_reload:'Оновити',ai_none:'Поки нічого — прочитання з’являться тут, щойно канали щось опублікують.',
+  ai_rules:'Правила',ai_ai:'ШІ',ai_nothing:'цілі немає',ai_unsure:'Сумнів: {0}',ai_dropped:'відкинуто непідтверджених фактів: {0}',
+  ai_unstored:'правила відклали як не про небо',ai_notours:'немає серед наших місць',
+  ai_t_verdict:'Висновок',ai_t_n:'Дописів',ai_t_share:'Частка',
+  v_agree:'збігаються',v_place:'різне місце',v_kind:'різна зброя',v_status:'різний результат',v_ai_only:'лише ШІ',v_rules_only:'лише правила',v_none:'цілі немає',v_error:'запит не вдався',
+  ai_legend:'<b>Різне місце</b>: вони ставлять ціль у різні місця. <b>Різна зброя</b>, <b>різний результат</b> (збито, влучання): на тому самому місці. Ціль знайшов <b>лише ШІ</b>: можливо, правила пропустили допис. <b>Лише правила</b>: можливо, правила прочитали хибно, або ШІ пропустив. Перевіряйте кожен за самим дописом.',
+  r_at:'над',r_heading_to:'курсом на',r_from:'з',r_near:'біля',r_side_of:'від',r_in_oblast:'в області:',r_none:'',
+  k_shahed:'шахед',k_jet_drone:'реактивний БпЛА',k_drone:'БпЛА',k_cruise_missile:'крилата ракета',k_ballistic_missile:'балістична ракета',k_guided_bomb:'КАБ',k_aircraft:'авіація',k_unknown:'невідома ціль',
+  ty_drones:'БпЛА',ty_banderol_missiles:'Бандерол (реактивний БпЛА)',ty_cruise_missiles:'крилата ракета',ty_ballistic_missiles:'балістична ракета',ty_guided_aerial_bombs:'КАБ',ty_tactic_aircraft_activity:'авіація',ty_unknown:'невідома ціль',
+  st_down:'збито',st_impact:'влучання',st_lost:'втрачено',ai_count:'×{0}',ai_alt:'{0} м',ai_head:'курс {0}',ai_fromside:'з {0}',ai_km:'{0} км',
+  dirs:'пн,пн-сх,сх,пд-сх,пд,пд-зх,зх,пн-зх',
   h_img:'Супутникові знімки',img_sat:'Тайли Sentinel-2: версія {0}, до зуму {1}',img_nosat:'тайлів Sentinel-2 на томі немає — scripts/upload-imagery.bat',img_esri:'Esri, близький зум — тайлів цього місяця: {0} (ліміт {1}) · сьогодні: {2} (ліміт {3})',img_noesri:'Esri вимкнено — немає ESRI_KEY (scripts/set-esri-key.bat)',img_ref_img:'Esri відхилив ключ для знімків — {0} — повтор за 5 хв',img_ref_st:'Esri відхилив ключ для назв і карти (Static Basemap Tiles) — {0} — повтор за 5 хв; ключу потрібен і цей дозвіл',img_ref:'Esri відхилив ключ ({0}) — повтор за 5 хв',
   h_tr:'Переклад',tr_av:'працює: {0}',tr_none:'жоден сервіс перекладу недоступний — лише офлайн-глосарій',tr_paused:'призупинено після помилки: {0}',
   ago_m:'{0} хв тому',ago_h:'{0} год тому',ago_d:'{0} д тому',never:'ніколи',
@@ -640,7 +696,7 @@ async function loadHealth(){
   try{ const r=await fetch('/api/health'+(KEYQ?'?'+KEYQ.slice(1):'')); const d=await r.json();
        if(d.error) throw new Error(d.error); H=d; H_ERR=''; }
   catch(e){ H_ERR=String(e.message||e); }
-  drawHealth();
+  drawHealth(); if(AI) drawAI();
 }
 
 // ---- online now + the message to every reader (1.29) ------------------------------------------------------
@@ -756,6 +812,66 @@ function drawNuke(){ const cur=ON&&ON.nuke;
     $('nk_since').textContent=tr('nk_since',new Date(cur.since).toLocaleString(L==='uk'?'uk-UA':'en-GB',{timeZone:'Europe/Kyiv'}));
     $('nk_cur').innerHTML=Object.entries(cur.text||{}).map(([k,v])=>`<div><b>${esc(k.toUpperCase())}</b>${esc(v)}</div>`).join(''); } }
 
+// ---- 1.50: the AI reader, in shadow mode — its reading of each post beside the rules'; nothing of it reaches the map --
+let AI=null, AI_ERR='', AI_ALL=false; try{ AI_ALL=localStorage.getItem('aiall')==='1'; }catch(e){}
+const AI_V=['agree','place','kind','status','ai_only','rules_only','none','error'];
+function aiPlace(w){ if(!w) return '—'; const m=/^o(\d+)$/.exec(w); if(!m) return w;
+  const r=((H&&H.regions)||[]).find(x=>x.id===m[1]); return r?rgName(r):(L==='uk'?'область '+m[1]:'oblast '+m[1]); }
+const aiDir=d=>{ const i=['n','ne','e','se','s','sw','w','nw'].indexOf(d); return i<0?'?':tr('dirs').split(',')[i]; };
+const aiRule=r=>(r.approach?'→ ':'')+aiPlace(r.where)+' · '+tr('ty_'+(r.type||'unknown'))+(r.status?' · '+tr('st_'+r.status):'');
+function aiTarget(t){
+  let where='';
+  if(t.place) where=t.relation==='side_of'?aiDir(t.side)+' '+tr('r_side_of')+' '+aiPlace(t.place)+(t.distance_km?' · '+tr('ai_km',t.distance_km):'')
+    :(tr('r_'+t.relation)+' '+aiPlace(t.place)).trim();
+  else if(t.place_quote) where='“'+t.place_quote+'” ('+tr('ai_notours')+')';
+  const st={shot_down:'down',impact:'impact',lost:'lost'}[t.status];
+  const bits=[tr('k_'+t.kind)+(t.count?' '+tr('ai_count',t.count):''), where, st?tr('st_'+st):'',
+    t.from_side?tr('ai_fromside',aiDir(t.from_side)):'', t.heading?tr('ai_head',aiDir(t.heading)):'', t.altitude_m?tr('ai_alt',t.altitude_m):''].filter(Boolean);
+  const q=[...new Set(['kind_quote','count_quote','place_quote','status_quote','from_quote','heading_quote','altitude_quote'].map(k=>t[k]).filter(Boolean))];
+  return `<div class="tg">${esc(bits.join(' · '))}${q.length?`<div class="ardq">${q.map(x=>'«'+esc(x)+'»').join(' ')}</div>`:''}</div>`; }
+function drawAI(){
+  const box=$('aiv'); if(!box) return;
+  const head=`<h2>${tr('h_ai')}</h2><div class="note">${tr('ai_note')}</div>`;
+  if(AI_ERR){ box.innerHTML=head+`<div class="err">${esc(AI_ERR)}</div>`; return; }
+  if(!AI){ box.innerHTML=head; return; }
+  const s=AI.stats||{}, bv=s.by_verdict||{}, n=s.reads_month||0, read=n-(bv.error||0);
+  const diff=['place','kind','status','ai_only','rules_only'].reduce((a,k)=>a+(bv[k]||0),0);
+  const pc=x=>read?Math.round(x/read*100)+'%':'—';
+  const state=!AI.stats?tr('ai_off'):!s.key?tr('ai_nokey'):!s.enabled?tr('ai_off'):tr('ai_on',s.model,s.prompt_v);
+  const warn=[]; if(s.enabled&&s.cap_usd>0&&s.usd_month>=s.cap_usd) warn.push(tr('ai_budget'));
+  if(s.paused) warn.push(tr('ai_paused',s.last_error||'?')); else if(s.last_error) warn.push(tr('ai_err',s.last_error));
+  const sk=Object.entries(s.skipped||{}).filter(([,v])=>v).map(([k,v])=>tr('ai_sk_'+k)+': '+fmt(v));
+  const cards=`<div class="cards">
+    <div class="card b"><div class="v">${fmt(n)}</div><div class="l">${tr('ai_reads')}</div></div>
+    <div class="card g"><div class="v">${pc(bv.agree||0)}</div><div class="l">${tr('ai_agree')}</div></div>
+    <div class="card o"><div class="v">${pc(diff)}</div><div class="l">${tr('ai_diff')}</div></div>
+    <div class="card"><div class="v">$${(s.usd_month||0).toFixed(2)}</div><div class="l">${tr('ai_spent')} · ${esc(tr('ai_of',s.cap_usd==null?'—':s.cap_usd))}</div></div>
+    <div class="card"><div class="v">${s.ms_median!=null?(s.ms_median/1000).toFixed(1)+' s':'—'}</div><div class="l">${tr('ai_ms')}</div></div></div>`;
+  const vt=`<table class="aivt"><tr><th>${tr('ai_t_verdict')}</th><th style="text-align:right">${tr('ai_t_n')}</th><th style="text-align:right">${tr('ai_t_share')}</th></tr>${
+    AI_V.filter(v=>bv[v]).map(v=>`<tr><td><span class="vb v-${v}">${esc(tr('v_'+v))}</span></td><td class="n">${fmt(bv[v])}</td><td class="n">${Math.round(bv[v]/n*100)}%</td></tr>`).join('')}</table>`;
+  const tm=x=>{ const d=new Date(x); return isNaN(d)?'':d.toLocaleString(L==='uk'?'uk-UA':'en-GB',{timeZone:'Europe/Kyiv',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}); };
+  const reads=AI.reads||[];
+  const list=reads.length?reads.map(r=>{ const a=(r.ai&&r.ai.targets)||[], ru=r.rules||[], v=AI_V.includes(r.verdict)?r.verdict:'error';
+    return `<div class="ard v-${v}"><div class="ardh"><span>${esc(tm(r.ts||r.at))} · @${esc(r.channel)}</span><span class="vb v-${v}">${esc(tr('v_'+v))}</span><span class="sp"></span><span>${r.error?esc(r.error):'$'+(r.cost||0).toFixed(5)+' · '+((r.ms||0)/1000).toFixed(1)+' s'}</span></div>
+      <div class="ardt">${esc(r.text)}</div>${r.stored?'':`<div class="ardu">${tr('ai_unstored')}</div>`}
+      <div class="ardc"><div><b>${tr('ai_rules')}</b>${ru.length?ru.map(x=>`<div class="tg">${esc(aiRule(x))}</div>`).join(''):`<div class="mut">${tr('ai_nothing')}</div>`}</div>
+      <div><b>${tr('ai_ai')}</b>${r.error?'<div class="mut">—</div>':a.length?a.map(aiTarget).join(''):`<div class="mut">${tr('ai_nothing')}</div>`}${
+        r.ai&&r.ai.uncertain?`<div class="mut">${esc(tr('ai_unsure',r.ai.uncertain))}</div>`:''}${r.dropped?`<div class="mut">${esc(tr('ai_dropped',r.dropped))}</div>`:''}</div></div></div>`; }).join('')
+    :`<div style="color:var(--ink3)">${tr('ai_none')}</div>`;
+  box.innerHTML=head+`<div class="aist">${esc(state)}${s.queued?' · '+esc(tr('ai_queue',s.queued)):''}</div>${warn.map(w=>`<div class="aiw">${esc(w)}</div>`).join('')}${
+    sk.length?`<div class="aist mut">${esc(sk.join(' · '))}</div>`:''}${cards}${n?vt:''}
+    <div class="anbar"><div class="seg" id="aif"><button data-a="0" class="${AI_ALL?'':'on'}">${tr('ai_f_diff')}</button><button data-a="1" class="${AI_ALL?'on':''}">${tr('ai_f_all')}</button></div><button class="dgb" id="aire">${tr('ai_reload')}</button></div>
+    <div class="note" style="margin:0 0 14px">${tr('ai_legend')}</div>${list}`;
+  $('aif').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; AI_ALL=b.dataset.a==='1'; try{localStorage.setItem('aiall',AI_ALL?'1':'0');}catch(err){} loadAI(); };
+  $('aire').onclick=()=>loadAI();
+}
+async function loadAI(){
+  try{ const r=await fetch('/api/ai_reads?limit=100&all='+(AI_ALL?1:0)+KEYQ); const d=await r.json();
+       if(d.error) throw new Error(d.error); AI=d; AI_ERR=''; }
+  catch(e){ AI_ERR=String(e.message||e); }
+  drawAI();
+}
+
 // ---- tabs, and what each one loads ----------------------------------------------------------------------------
 function badges(){ const bad=!!H&&((H.official||[]).some(x=>!x.ok)||(H.channels||[]).some(c=>c.ok===false&&c.mode!=='off'));
   $('tabs').querySelector('[data-tab="sources"]').classList.toggle('bad',bad); }
@@ -764,8 +880,11 @@ function badges(){ const bad=!!H&&((H.official||[]).some(x=>!x.ok)||(H.channels|
 let TAB='live'; try{ const v=localStorage.getItem('admintab'); if(v) TAB=v; }catch(e){}
 function showTab(t){ TAB=t; try{localStorage.setItem('admintab',t);}catch(e){}
   document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
+  const nv=$('tabs'), on=nv.querySelector('button.on');      // 1.50: six tabs overflow a phone — keep the open one in view
+  if(on&&(on.offsetLeft<nv.scrollLeft||on.offsetLeft+on.offsetWidth>nv.scrollLeft+nv.clientWidth)) nv.scrollLeft=on.offsetLeft-12;
   document.querySelectorAll('.tabsec').forEach(s=>s.hidden=s.id!=='tab-'+t);
-  if(t==='analytics'&&!AN) loadAnalytics(); }
+  if(t==='analytics'&&!AN) loadAnalytics();
+  if(t==='ai') loadAI(); }
 $('tabs').addEventListener('click',e=>{ const b=e.target.closest('button[data-tab]'); if(b) showTab(b.dataset.tab); });
 
 // ---- analytics (1.32): the Air Force's series, Kyiv's alerts, the reports over Kyiv ---------------------------
@@ -995,7 +1114,7 @@ document.addEventListener('click',e=>{ const b=e.target.closest('.csvb'); if(!b|
 $('langsw').addEventListener('click',e=>{
   const b=e.target.closest('button'); if(!b) return;
   L=b.dataset.l; try{localStorage.setItem('adminlang',L);}catch(err){}
-  drawAll(); drawOps(); drawHealth(); drawDigests(); if(AN) drawAnalytics();
+  drawAll(); drawOps(); drawHealth(); drawDigests(); if(AN) drawAnalytics(); drawAI();
 });
 
 (async()=>{
@@ -1004,6 +1123,7 @@ $('langsw').addEventListener('click',e=>{
   loadHealth(); setInterval(loadHealth,60000);  // the health view is worth leaving open on a live night
   loadDigests();
   setInterval(()=>{ if(TAB==='analytics'&&!document.hidden) loadAnalytics(true); },300000);
+  setInterval(()=>{ if(TAB==='ai'&&!document.hidden) loadAI(); },60000);
   try{ const r=await fetch('/api/usage?days=30'+KEYQ);
        D=await r.json(); if(D.error) throw new Error(D.error); }
   catch(e){ $('out').innerHTML='<div class="err">'+esc(e.message||e)+'</div>'; $('gen').textContent=''; D=null; return; }

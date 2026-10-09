@@ -51,6 +51,10 @@ try:
     import translate as _tr
 except Exception:  # pragma: no cover
     _tr = None
+try:
+    import ai_reader
+except Exception:  # pragma: no cover
+    ai_reader = None
 
 
 def to_en(text):
@@ -98,6 +102,10 @@ DEFAULT_CONFIG = {
     "access_key": "",
     "esri_key": "",                   # 1.48: Esri World Imagery for the closest zooms; or env ESRI_KEY (set-esri-key.bat)
     "esri_monthly_tiles": 1800000,    # its cap: under the 2 M free tiles a month; a tenth of it a day at most
+    "openrouter_key": "",             # 1.50: the AI reader, in shadow mode (OpenRouter); or env OPENROUTER_API_KEY (set-openrouter-key.bat)
+    "ai_reader": True,                # false: the shadow reader stays off even with a key
+    "ai_reader_model": "anthropic/claude-haiku-5.5",   # its model on OpenRouter; or env AI_READER_MODEL
+    "ai_reader_monthly_usd": 10,      # what it may spend in a month (OpenRouter's own cost of each call); past it, it stops
     "demo": False,
 }
 
@@ -402,7 +410,7 @@ def build_id():
 
 # The version the front end shows in its footer, kept here too so /api/version can answer "what is actually
 # running" without anybody reading it off a screenshot. tests/test_version.py pins the two to each other.
-APP_VERSION = "1.49"
+APP_VERSION = "1.50"
 APP_NAME = "Heimdall"
 BUILD = None    # filled at startup
 
@@ -1151,6 +1159,12 @@ class Store:
         c.execute("CREATE INDEX IF NOT EXISTS ix_air_ts ON air_reports(ts)")
         c.execute("""CREATE TABLE IF NOT EXISTS weather(
             date TEXT, place TEXT, data TEXT, PRIMARY KEY(date, place))""")
+        # 1.50: the AI reader's reading of each post it read, beside the rules' (shadow mode, §7.7) — kept 90 days
+        c.execute("""CREATE TABLE IF NOT EXISTS ai_reads(
+            post_id TEXT PRIMARY KEY, at TEXT, ts TEXT, channel TEXT, text TEXT, stored INTEGER, model TEXT, prompt_v TEXT,
+            ms INTEGER, tok_in INTEGER, tok_out INTEGER, cost REAL, verdict TEXT, rules TEXT, ai TEXT, dropped INTEGER,
+            error TEXT)""")
+        c.execute("CREATE INDEX IF NOT EXISTS ix_ai_at ON ai_reads(at)")
         c.execute("CREATE INDEX IF NOT EXISTS ix_alerts_started ON alerts(started_at)")
         c.execute("CREATE INDEX IF NOT EXISTS ix_feed_ts ON feed(ts)")
         c.execute("CREATE INDEX IF NOT EXISTS ix_mlog_ts ON marker_log(ts)")
@@ -1522,6 +1536,77 @@ class Store:
         d = dict(zip(self._DG, r))
         d["facts"] = json.loads(d["facts"] or "{}")
         return d
+
+    # -- 1.50: the AI reader (shadow mode, §7.7) ----------------------------------------------------------------
+    _ai_n = 0
+    AI_KEEP_DAYS = 90
+
+    def ai_save(self, r):
+        with self.lock:
+            self.conn.execute(
+                "INSERT OR REPLACE INTO ai_reads(post_id,at,ts,channel,text,stored,model,prompt_v,ms,tok_in,tok_out,cost,"
+                "verdict,rules,ai,dropped,error) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                (r["post_id"], r.get("at") or now_iso(), r.get("ts"), r.get("channel"), r.get("text"), r.get("stored", 1),
+                 r.get("model"), r.get("prompt_v"), r.get("ms"), r.get("tok_in"), r.get("tok_out"), r.get("cost") or 0,
+                 r.get("verdict"), json.dumps(r.get("rules") or [], ensure_ascii=False),
+                 json.dumps(r.get("ai"), ensure_ascii=False) if r.get("ai") is not None else None, r.get("dropped") or 0,
+                 r.get("error")))
+            self._ai_n += 1
+            if self._ai_n % 200 == 1:
+                cut = (datetime.now(timezone.utc) - timedelta(days=self.AI_KEEP_DAYS)).isoformat()
+                self.conn.execute("DELETE FROM ai_reads WHERE at<?", (cut,))
+            self.conn.commit()
+
+    AI_DIFF = ("place", "kind", "status", "ai_only", "rules_only", "error")
+
+    def ai_reads(self, limit=50, diff=True):
+        """The latest readings, newest first; `diff`: only those where the two readers part (and the failed calls)."""
+        where = f" WHERE verdict IN ({','.join('?' * len(self.AI_DIFF))})" if diff else ""
+        with self.lock:
+            rows = self.conn.execute(
+                "SELECT post_id,at,ts,channel,text,stored,model,prompt_v,ms,tok_in,tok_out,cost,verdict,rules,ai,dropped,error "
+                "FROM ai_reads" + where + " ORDER BY at DESC LIMIT ?", (*(self.AI_DIFF if diff else ()), limit)).fetchall()
+        keys = ("post_id", "at", "ts", "channel", "text", "stored", "model", "prompt_v", "ms", "tok_in", "tok_out", "cost",
+                "verdict", "rules", "ai", "dropped", "error")
+        out = []
+        for row in rows:
+            d = dict(zip(keys, row))
+            for k in ("rules", "ai"):
+                try:
+                    d[k] = json.loads(d[k]) if d[k] else None
+                except ValueError:
+                    d[k] = None
+            out.append(d)
+        return out
+
+    def ai_counts(self, month):
+        """The month's readings (`month` "YYYY-MM", by when they were read): how many, by verdict, what they cost,
+        and how long the last 200 calls took (median, ms)."""
+        with self.lock:
+            rows = self.conn.execute("SELECT verdict, COUNT(*), COALESCE(SUM(cost),0) FROM ai_reads WHERE at LIKE ? "
+                                     "GROUP BY verdict", ((month or "") + "%",)).fetchall()
+            ms = [r[0] for r in self.conn.execute("SELECT ms FROM ai_reads WHERE error IS NULL AND ms IS NOT NULL "
+                                                  "ORDER BY at DESC LIMIT 200")]
+        ms.sort()
+        return {"reads_month": sum(r[1] for r in rows), "by_verdict": {r[0]: r[1] for r in rows},
+                "usd_rows_month": round(sum(r[2] for r in rows), 4), "ms_median": ms[len(ms) // 2] if ms else None}
+
+    def ai_previous(self, channel, ts, minutes=40, n=3):
+        """The channel's posts just before `ts` (within `minutes`, the last `n`), oldest first, as "[HH:MM] text" in
+        Kyiv time — the context a tracker's "Далі на X" needs."""
+        t = parse_iso(ts)
+        if not t:
+            return []
+        since = (t - timedelta(minutes=minutes)).isoformat()
+        with self.lock:
+            rows = self.conn.execute("SELECT ts, text FROM feed WHERE channel=? AND ts<? AND ts>=? ORDER BY ts DESC LIMIT ?",
+                                     (channel, ts, since, n)).fetchall()
+        out = []
+        for ts_, text in reversed(rows):
+            tt = parse_iso(ts_)
+            one = re.sub(r"\s*\n\s*", " / ", _clean_post(text or "").strip())[:400]      # one line each
+            out.append(f"[{tt.astimezone(kyiv_tz()).strftime('%H:%M') if tt else '?'}] {one}")
+        return out
 
     def prune_log(self, days=120):
         cut = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
@@ -2803,7 +2888,8 @@ class State:
                 pass
         out = {"generated": now_iso(), "official": official, "channels": channels, "translation": tr, "lead": self.lead_times(30),
                "tg_api": TelegramAPI.configured(self.cfg), "max_channels": self.MAX_CHANNELS, "regions": self.regions(),
-               "imagery": {"sat": dict(zip(("version", "maxzoom"), SAT.info())), "esri": self.esri.stats()}}
+               "imagery": {"sat": dict(zip(("version", "maxzoom"), SAT.info())), "esri": self.esri.stats()},
+               "ai_reader": self.ai.stats() if getattr(self, "ai", None) else None}
         self._health_res = (time.time(), out)
         return out
 
@@ -4291,10 +4377,21 @@ class Telegram(threading.Thread):
             raw_posts.append((mid.group(1), mdt.group(1), text))
         self.ingest(ch, raw_posts, f"tg:{ch}")
 
+    def _to_ai(self, p, near, stored):
+        """1.50: a new post to the AI reader (shadow mode, §7.7) — only a channel on the map's, and never in the way
+        of the post: the reader queues it and reads it on its own thread."""
+        ai = getattr(self.state, "ai", None)
+        if not ai or self.state.channel_mode(p["channel"]) != "map":
+            return
+        try:
+            ai.add(dict(p, text=_clean_post(p["text"])), near or (), self.state.channel_home(p["channel"]), stored)
+        except Exception as e:
+            log("ai reader: not queued:", type(e).__name__)
+
     def ingest(self, ch, raw_posts, source):
         """Everything a channel post goes through, whichever way it was read (web preview or Telegram API):
         raw_posts is a list of (post_id "channel/123", ISO time, text)."""
-        posts = []
+        posts, nears = [], {}
         for post_id, dt, text in sorted(raw_posts, key=lambda r: r[1] or ""):
             text = re.sub(r"[ \t]+", " ", (text or "").strip())
             if not text:
@@ -4317,13 +4414,18 @@ class Telegram(threading.Thread):
                 del ctx[:-12]
             if not is_relevant(text, tags, ch):
                 self.state.store.mark_seen(post_id)
+                # 1.50: the AI reader sees a short one that names a place — the misses it is there to find (§7.7)
+                self._to_ai({"post_id": post_id, "channel": ch, "ts": dt, "text": text, "tags": tags}, near, False)
                 continue          # news, fundraising, culture… — not an air-threat post, not stored
             # The offline glossary, instantly. A machine translation replaces it later, off this path (Translations):
             # on the server the free translator refuses every call, and each refusal cost ~3 s per post — a burst
             # of ten posts held the drone reports in them back by half a minute.
             en, fb = (_tr.translate_offline(text), True) if _tr else (text, True)
             posts.append({"post_id": post_id, "channel": ch, "ts": dt, "text": text, "tags": tags, "text_en": en, "en_fallback": fb})
+            nears[post_id] = near
         new = self.state.store.add_feed(posts)
+        for p in new:
+            self._to_ai(p, nears.get(p["post_id"]), True)
         self.state.set_source(source, True, count=len(posts), new=len(new))
         if ch == "eRadarrua" and geo:
             for p in sorted(posts, key=lambda p: p["ts"], reverse=True):
@@ -5919,6 +6021,17 @@ class Handler(BaseHTTPRequestHandler):
                     return self._json({"error": "set ADMIN_KEY to read the summaries"}, 403)
                 return self._json({"ai": bool(st.cfg.get("ai_key")), "model": st.cfg.get("ai_model"),
                                    "digests": st.store.digests(int(q.get("limit", ["30"])[0]))})
+            # 1.50: the AI reader's readings beside the rules' (shadow mode, §7.7). Yours alone: it quotes posts.
+            if u.path == "/api/ai_reads":
+                if not self._admin_ok(q):
+                    return self._json({"error": "set ADMIN_KEY to read the AI reader"}, 403)
+                try:
+                    lim = max(1, min(int(q.get("limit", ["50"])[0]), 300))
+                except ValueError:
+                    lim = 50
+                ai = getattr(st, "ai", None)
+                return self._json({"stats": ai.stats() if ai else None,
+                                   "reads": st.store.ai_reads(lim, diff=q.get("all", ["0"])[0] != "1")})
             # The dashboard's health view: sources, channels, how early the map was. Yours alone as well.
             if u.path == "/api/health":
                 if not self._admin_ok(q):
@@ -6247,6 +6360,7 @@ def load_config(args):
         cfg["ukrainealarm_key"] = os.environ["UKRAINEALARM_KEY"]
     for env, key in (("DEEPL_KEY", "deepl_key"), ("GOOGLE_TRANSLATE_KEY", "google_translate_key"),
                      ("ANTHROPIC_API_KEY", "ai_key"), ("AI_MODEL", "ai_model"), ("ESRI_KEY", "esri_key"),
+                     ("OPENROUTER_API_KEY", "openrouter_key"), ("AI_READER_MODEL", "ai_reader_model"),
                      ("TG_API_ID", "tg_api_id"), ("TG_API_HASH", "tg_api_hash"), ("TG_SESSION", "tg_session")):
         if os.environ.get(env):
             cfg[key] = os.environ[env]
@@ -6349,6 +6463,14 @@ def main():
     Watchdog(state).start()
     state.digests = Digests(state, cfg)
     state.digests.start()
+    # 1.50: the AI reader, in shadow mode — reads the channels' posts beside the rules and changes nothing (§7.7)
+    if ai_reader and geo:
+        state.ai = ai_reader.AIReader(cfg, store, geo, rules_fn=lambda ch, t, near: geo.parse_for_channel(ch, t, near or None),
+                                      oblast_names={u: uk for u, uk, _ in OBLASTS}, previous_fn=store.ai_previous, log=log)
+        state.ai.ssl_ctx = _SSL_CTX
+        state.ai.start()
+        log("ai reader (shadow): " + (f"on — {state.ai.model()}, at most ${state.ai.cap():g} a month" if state.ai.enabled()
+                                      else "off — no OPENROUTER_API_KEY (scripts/set-openrouter-key.bat)"))
 
     # Every open page is a socket. Linux's default of 1,024 open files per process would stop the server long
     # before the stream hub does: raise it to what the system allows.

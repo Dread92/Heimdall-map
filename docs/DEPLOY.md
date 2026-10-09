@@ -48,6 +48,12 @@ asks Esri, not the browser), then double-click **`scripts/set-esri-key.bat`** an
 free, then $0.15 per 1,000; the server stops at `esri_monthly_tiles` (1.8 M) and a tenth of it a day. The month's
 count is on the dashboard. Without the key the satellite layer is Sentinel alone, enlarged when zoomed in.
 
+**The AI reader (1.50, optional)**: a language model reads the channels' posts beside the rules, in **shadow mode** —
+nothing it says reaches the map; the dashboard's *AI reader* tab shows where it and the rules disagree. Create an
+account on openrouter.ai, add a few dollars of credit, create an API key with a **credit limit** (10 dollars), then
+double-click **`scripts/set-openrouter-key.bat`** and paste it. The server also stops itself at
+`ai_reader_monthly_usd` (10 dollars a month, config.json). Only public post text is sent.
+
 ### Secrets
 
 | Secret | Needed | What it does |
@@ -58,6 +64,7 @@ count is on the dashboard. Without the key the satellite layer is Sentinel alone
 | `UKRAINEALARM_KEY` | optional | Reads api.ukrainealarm.com directly instead of the keyless siren.pp.ua proxy. |
 | `ALERTS_IN_UA_TOKEN` | optional | Makes alerts.in.ua the primary alert source. |
 | `ESRI_KEY` | optional | The satellite layer's closest zooms (Esri World Imagery). Set with `scripts/set-esri-key.bat`. |
+| `OPENROUTER_API_KEY` | optional | The AI reader in shadow mode (dashboard only, never the map). Set with `scripts/set-openrouter-key.bat`. |
 | `TG_API_ID`, `TG_API_HASH`, `TG_SESSION` | optional | Read chyste_nebo through the Telegram API. Set by `scripts\telegram-login.bat`, never by hand. |
 | `ACCESS_KEY` | **never on the public app** | Locks the whole map behind a key. |
 

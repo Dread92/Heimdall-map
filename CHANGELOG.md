@@ -2,6 +2,22 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.50.0 — 2026-10-09
+
+### Added
+- **The AI reader, in shadow mode** (dashboard → *AI reader*). A language model, through OpenRouter, reads the
+  channels' posts beside the rules. **Nothing it says reaches the map, the alerts, the feed or a push**: its reading
+  and the rules' are stored side by side, and the dashboard shows where they part — a place read differently, another
+  weapon, a shoot-down one of them missed, a post only one of them found a target in — with the post, both readings
+  and the model's quotes. It is there to find what the rules get wrong, so the rules can be fixed.
+- Its prompt holds the safety rules (never infer; quote the post; places only from the server's own gazetteer, by id,
+  never coordinates; "на X" is heading to X; Banderol is a jet drone), five worked examples and a strict JSON schema.
+  Every fact it gives is checked against the post: an unquoted fact, a place the server did not offer, a number the
+  words do not hold are dropped.
+- Only public post text is sent (the channel's name, its last posts, our place names) — nothing about any reader, and
+  a card number in a post is masked. At most $10 a month (`ai_reader_monthly_usd`), 400 posts an hour; paused when
+  OpenRouter refuses the key. Off until the owner sets the key with `scripts/set-openrouter-key.bat`.
+
 ## 1.49.4 — 2026-10-09
 
 ### Changed

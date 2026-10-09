@@ -599,6 +599,21 @@ directly under the numbers rather than in a footnote at the bottom of the panel:
 official totals, and the real numbers are higher — never lower. A floor presented as a total is a false
 precision in the same family as an invented trajectory.
 
+## A language model is a second opinion, never a source (1.50)
+
+The AI reader (TECHNICAL.md §7.7) reads the same posts as the rules, in **shadow mode**: what it says is stored for
+the dashboard and compared with the rules, and nothing of it reaches the map, the alerts, the feed, a banner or a
+push. A model writes fluent, confident answers whether or not the post supports them — exactly the confidently wrong
+marker this document exists to prevent. So it is held to the same rules as the parser, and checked rather than
+trusted: it may only state what the post states, with the post's own words as the quote for every fact; it may only
+name places this server offers it from its own gazetteer, by id, never coordinates; Banderol is a jet drone to it as
+to everything else; whatever the server cannot find in the post is dropped before anyone sees it. Its use is to
+show where the rules are wrong, so that the rules are fixed. Letting it place anything, ever, is a separate decision
+taken on its measured record — never a default, and never for a post the rules already read.
+
+Only public posts are sent to it: a channel's text, its name, our place names. Never a reader, a watched place, an
+address or a device.
+
 ## Operational security
 
 The app does not encourage publishing air-defence positions or explosion locations during an

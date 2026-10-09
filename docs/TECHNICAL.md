@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.49** · last updated 2026-10-09 (1.49.4)
+**Documented version: 1.50** · last updated 2026-10-09 (1.50.0)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -115,6 +115,7 @@ clear-sky/
 │   ├── server.py           HTTP server, API, SSE, source pollers, SQLite store, marker pipeline, push
 │   ├── geo.py              Ukrainian parsing: gazetteer, declensions, types, headings, counts, phases, altitude
 │   ├── translate.py        offline UK→EN glossary; DeepL / Google machine translation with a circuit breaker
+│   ├── ai_reader.py        1.50: the AI reader in shadow mode (OpenRouter) — prompt, schema, checks, comparison (§7.7)
 │   └── push.py             Web Push: VAPID ES256 JWT + RFC 8291 aes128gcm, on `cryptography` only
 ├── static/
 │   ├── kyiv.html           Tactical page (one self-contained file)
@@ -147,6 +148,7 @@ clear-sky/
 │   ├── build_imagery.py    builds the satellite layer (imagery/sat-ua.mbtiles) from ESA WorldCover / Sentinel-2 (1.47)
 │   ├── upload-imagery.bat  puts imagery/sat-ua.mbtiles on the Fly volume (1.47)
 │   ├── set-esri-key.bat    one-time: the owner's Esri key for the closest zooms, into Fly's secrets (1.48)
+│   ├── set-openrouter-key.bat  one-time: the owner's OpenRouter key for the AI reader, into Fly's secrets (1.50)
 │   ├── corpus.py           add / review / pull corpus cases
 │   ├── release.bat         ships a patch: checks all is committed, fly deploy, git push, shows the live version
 │   ├── telegram-login.bat  one-time Telegram sign-in for the API reader (runs telegram_login.py)
@@ -177,6 +179,7 @@ clear-sky/
 | `Watchdog` | the database and alert-state locks must be free within 15 s; a held lock logs every thread's stack, five in a row (~2 min) → exit, Fly restarts it; a starved process is only logged (load, not a deadlock) | 20 s |
 | `Digests` | each night (18:00–08:00 Kyiv) after `digest_hour`, and each Monday for the week: the figures (`State.digest_facts`), and with `ANTHROPIC_API_KEY` a written summary in EN + UK; stored in `digests` | 5 min check |
 | `Translations` | machine-translates feed posts into a language somebody reads | on demand, ~3 calls/s max |
+| `ai-reader` | 1.50, with `OPENROUTER_API_KEY`: the AI reader in **shadow mode** (§7.7) — reads the new posts one at a time beside the rules, stores both readings in `ai_reads`; never touches the map, the alerts, the feed or a push | queue; ≤ 400 posts/h, ≤ `ai_reader_monthly_usd` a month |
 | `Pusher` | sends Web Push: one notification at a time, each to all its phones at once through `push.Sender` (32 workers, one kept-open HTTPS connection per push service per worker, VAPID signed once an hour per service) | queue |
 | `streams` | **every open page's live line** (`StreamHub`, §5.4): one thread, non-blocking sockets (epoll), the data sent as changes | events + every 15 / 5 / 2 s |
 | `proximity` | per-subscriber distance checks → push | continuous |
@@ -273,6 +276,10 @@ the committed template.
 | `access_key` | `""` | Locks the WHOLE app behind a key — private deployments only. |
 | `esri_key` | `""` | Esri (ArcGIS Location Platform) API key: the satellite layer's closest zooms, 14–18 (1.48, §10.1). Set as `ESRI_KEY` by `scripts/set-esri-key.bat`. |
 | `esri_monthly_tiles` | `1800000` | Esri tiles a month, at most — under the 2 M free tiles; a tenth of it in one day at most. Past it: Sentinel alone. |
+| `openrouter_key` | `""` | OpenRouter API key: the AI reader in shadow mode (1.50, §7.7). Set as `OPENROUTER_API_KEY` by `scripts/set-openrouter-key.bat`. |
+| `ai_reader` | `true` | `false` keeps the AI reader off even with a key. |
+| `ai_reader_model` | `"anthropic/claude-haiku-5.5"` | Its model on OpenRouter (any model that takes a strict JSON schema). |
+| `ai_reader_monthly_usd` | `10` | What it may spend in a calendar month (UTC), counted from OpenRouter's own cost of each call; past it, it stops until the 1st. |
 | `demo` | `false` | Fake alerts and posts. |
 
 ### 5.3 Environment variables
@@ -294,6 +301,8 @@ Environment variables win over `config.json`. On Fly they are set as **secrets**
 | `ANTHROPIC_API_KEY` | Turns on the written summaries of each night / week on the dashboard (`ai_key`). |
 | `AI_MODEL` | Overrides `ai_model`. |
 | `ESRI_KEY` | Turns on the satellite layer's closest zooms (Esri World Imagery, `esri_key`, 1.48). Set only by `scripts/set-esri-key.bat`. |
+| `OPENROUTER_API_KEY` | Turns on the AI reader in shadow mode (`openrouter_key`, 1.50, §7.7). Set only by `scripts/set-openrouter-key.bat`. |
+| `AI_READER_MODEL` | Overrides `ai_reader_model`. |
 | `TRANSLATOR` | `google` (default) allows the free Google endpoint as last resort; anything else disables it. |
 | `TG_API_ID` | Telegram API app id (my.telegram.org). |
 | `TG_API_HASH` | Telegram API app hash. |
@@ -758,6 +767,65 @@ Analytics (§8c) and the nights' figures (§8b) all read this table. `parse_af_s
 a wrapper for older callers. `tests/test_af_reports.py` pins it on 11 real summaries of 21–28 Sep 2026
 (`tests/fixtures/af_summaries_2026_09.json`).
 
+### 7.7 The AI reader, in shadow mode (1.50)
+
+A second reader of the channels' posts: a language model, through OpenRouter (`app/ai_reader.py`, thread
+`ai-reader`). **Shadow mode: nothing it says reaches the map, the alerts, the feed, the banners or a push.** It reads
+the same posts as the rules, its reading and the rules' are stored side by side (`ai_reads`), and the dashboard's
+**AI reader** tab shows where they part. What it is for, first: finding what the rules misread or miss, so that the
+rules are fixed — they stay deterministic, free and instant. Whether it ever does more (a fallback for a post nothing
+else can read) is decided on what this record shows, in a later version.
+
+**What it reads.** `Telegram.ingest` hands it (`_to_ai`, off the post's path: a queue, read on its own thread) every
+new post of a channel **on the map** — never one on trial or off — that the tagger saw a target or a place in
+(`AIReader.WANT`), and, from the posts the rules set aside as not about the sky, those that name a place and are
+300 characters or shorter (a tracker's line the rules did not understand, "Ціль на Бровари"; a long one is news).
+Not the Air Force's summaries, not a retraction. The post as the reader sees it (`_clean_post`).
+
+**What is sent** (`OPENROUTER_URL`, one request a post, `temperature` 0): the post's public text, the channel's
+name and its oblast, the channel's previous posts of the last 40 minutes (at most 3, `Store.ai_previous`, context
+only), and the **candidate places** — the gazetteer's places the post's words match (`geo._find_places`, the regional
+villages of the oblasts in play) and those oblasts, at most 30, each with an id (`c1`…, `o<uid>`). Never anything
+about a reader, a watched place, a device or an address; a run of 13–19 digits (a card number in a fundraising line)
+is replaced before anything is sent or stored (`mask`).
+
+**The prompt is a component**, versioned (`PROMPT_VERSION`, stored with every reading):
+
+1. fixed rules from [SAFETY.md](SAFETY.md) (`SYSTEM`): never infer; every fact quotes the post; places only from the
+   candidates, by id, never coordinates; "на X" is heading to X, not at X; a city named with no place in it is the
+   city; the weapon words (Banderol a jet drone, never a cruise missile); the status words; previous posts are
+   context, never a source of facts; an alert or an all-clear alone is no target;
+2. worked examples (`EXAMPLES`, five, as earlier turns of the conversation);
+3. the post's context, assembled per post (`user_message`);
+4. a strict JSON schema (`SCHEMA`: `targets` with `kind`, `count`, `status`, `place_id`, `relation`, `side`,
+   `distance_km`, `from_side`, `heading`, `altitude_m`, each fact with its `*_quote`; `uncertain`) —
+   `response_format: json_schema, strict`, and `provider.require_parameters` so that no provider ignores it.
+
+The fixed part comes first and the post last, so a provider can reuse the unchanged beginning (prompt caching; for
+Anthropic's models its end is marked `cache_control`).
+
+**Checked against the post** (`validate`): a quote that is not in the post drops its fact; a place id that was not
+offered drops the place; a count needs a number in its words, a distance must be written, an altitude must be
+30–20,000 m with a figure in its quote; a target with nothing left (no weapon, no place, no outcome) is dropped. The
+number of facts dropped is stored (`dropped`) — a model that keeps inventing shows here.
+
+**Compared with the rules** (`compare`, on `geo.parse_for_channel` of the same text): `agree`; `place` (the places
+differ); `kind` (another weapon at the same place — a jet drone is the rules' drone or Banderol); `status` (shot down
+/ impact); `ai_only` (only the model found a target — perhaps a miss of the rules); `rules_only`; `none`; `error`. A
+side of a town ("на півночі від Миколаєва") matches the rules' oblast for it (`_rel_settle`), and Kyiv named alone is
+the city to both (`_city_settle`).
+
+**Cost and limits.** The month's spend is OpenRouter's own figure for each call (`usage.cost`), kept in
+`kv` `ai_usd:YYYY-MM`; at `ai_reader_monthly_usd` (10) it stops until the 1st; at most 400 posts an hour; a refused
+key or no credit (401 / 402 / 403) pauses it 10 minutes, "too many requests" (429) one minute; a post that arrives
+meanwhile is not read (counted in `skipped`). With the default model (`anthropic/claude-haiku-5.5`, $0.10 / $0.50
+per million tokens) a post costs ~$0.0003–0.0005: the $10 cap is ~25,000 posts a month.
+
+**The dashboard** (`GET /api/ai_reads`, 🔒): the state (key, model, prompt version, paused, last error), the month's
+readings by verdict, the spend against the cap, the median answer time, and the readings — disagreements by default,
+all on request — each with the post, the rules' places and the model's targets with their quotes. `/api/health`
+carries the same state (`ai_reader`). Readings are kept 90 days.
+
 ## 8. Translation
 
 The feed is Ukrainian; EN and FR readers get a translation.
@@ -797,11 +865,12 @@ can be checked. Without a key the figures are still stored and shown. The model 
 
 ## 8c. The dashboard (1.32: tabs and Analytics)
 
-`/admin` has five tabs (the last one opened is remembered, `localStorage.admintab`): **Live** (online now, the
+`/admin` has six tabs (the last one opened is remembered, `localStorage.admintab`): **Live** (online now, the
 admin's message with a preview in the readers' colours, the nuclear event — §9), **Analytics**, **Nights & weeks**
 (§8b), **Sources** (lead time, official sources, the channels and their controls, translation; a red dot on the
-tab when a source or a channel on the map fails) and **Usage** (the anonymous counters). Each tab loads its own
-data; only Live and Sources refresh on their own (10 s and 60 s).
+tab when a source or a channel on the map fails), **AI reader** (1.50, §7.7: the shadow reader's readings beside
+the rules') and **Usage** (the anonymous counters). Each tab loads its own data; only Live, Sources and AI reader
+refresh on their own (10 s, 60 s, 60 s while open).
 
 **Analytics** (`GET /api/analytics?days=7|30|90|365`, `State.analytics`, cached 5 min) — the trends, for the
 owner and his partners, "Excel-like":
@@ -1355,6 +1424,9 @@ then `localStorage.lang` (shared with the two pages; the УКР / EN / FR button
 - Usage counters (`usage`, `usage_seen`): a daily salted hash, no IP address, no location, no per-person
   history. A page the browser loads ahead of a tap (prerender, `Sec-Purpose: prefetch`) is not counted (1.40).
 - Flags and the corpus review are behind `ADMIN_KEY`.
+- The AI reader (1.50, §7.7) sends OpenRouter only public posts (the channel's text, its name, our place names), a
+  card-like run of digits masked; never anything about a reader. Its key (`OPENROUTER_API_KEY`) is set by the owner
+  with `scripts/set-openrouter-key.bat`, straight into Fly's secrets. Its readings are behind `ADMIN_KEY`.
 - The weather (1.33) asks Open-Meteo for seven fixed points (six launch areas and Kyiv) — nothing about a reader.
 - No secret is committed: `config.json`, `vapid.json`, `.env`, `*.pem`, databases and `.flyapp` are
   git-ignored; the history was scanned for tokens before the repository was published.
@@ -1392,13 +1464,14 @@ All JSON unless stated. Public unless marked 🔒 (`ADMIN_KEY`).
 | `POST /api/push/subscribe`, `/api/push/unsubscribe`, `/api/push/test`; `GET /api/push/key` | Web Push; subscribe takes `{subscription, home, topics: ["bridges"], lang}` |
 | `POST /api/flag` | "this reading is wrong" report |
 | 🔒 `GET /admin`, `/api/usage` | dashboard, usage counters |
-| 🔒 `GET /api/health` | official sources (ok, last check, detail), every channel read (posts / marks 24 h, share read 7 d, last post, reader state, `mode`, `read_via`, `builtin`, `home`), the compartments (`regions`: `id`, `name`, `en`, `on`, `locked`, `channels`), translation backends, lead time over the official alert in Kyiv + oblast (30 days) |
+| 🔒 `GET /api/health` | official sources (ok, last check, detail), every channel read (posts / marks 24 h, share read 7 d, last post, reader state, `mode`, `read_via`, `builtin`, `home`), the compartments (`regions`: `id`, `name`, `en`, `on`, `locked`, `channels`), translation backends, lead time over the official alert in Kyiv + oblast (30 days), the imagery (`imagery`, 1.48) and the AI reader's state (`ai_reader`, 1.50) |
 | 🔒 `GET /api/online` | pages open now with a live line (`total`, `tactical`, `light`, today's peak), the current message, the nuclear event (`nuke`), the last push fan-out (phones, seconds, delivered) |
 | 🔒 `GET /api/analytics?days=` | the dashboard's Analytics (§8c), 7–365 days: `af` per date (launched, down, used, impacts, debris, periods), `af_areas`, `af_directions`, `af_models`, `kyiv` per date (city / oblast minutes, city alerts), `starts` (7 × 24), `reports` per date by type, `hours`, `headings`; since 1.33 `weather` per date (`kyiv`, `launch`), `approach` (8 sectors per date), `air` (`per_date`, `stats`, `sorties`), `obl` (`by`, `cols`, `rows`), `weather_status`; since 1.34 `places` (the heat layer's top 25) and `bridges` (`per_date`, `totals`, `recent`) |
 | 🔒 `POST /api/admin/nuke` | `{action: arm}` → `{code, expires_s, phrase}` (refused while one is on); `{action: fire, code, phrase, text: {uk, en, fr}, push}`; `{action: end}` — the nuclear event (§9) |
 | 🔒 `POST /api/admin/channel` | `{action: add|set|delete, name, mode: map|trial|off, via: web|api, home}` — the channels read (§7.1); `home` is the compartment (an oblast uid, `31`, `ua`, or `""`); `add` checks `t.me/s/<name>` for readable posts and starts it on trial |
 | 🔒 `POST /api/admin/region` | `{id, on}` — an oblast on or off as a whole (1.43, §7.1): its place on the map and its channels; `31` is always on |
 | 🔒 `POST /api/admin/notice` | `{text: {uk, en, fr}, level: info|warn|alert, hours: 0–168 (0 = until removed), push: bool}` or `{clear: true}` — the team's message (§9) |
+| 🔒 `GET /api/ai_reads?limit=&all=` | the AI reader in shadow mode (1.50, §7.7): `stats` (`key`, `enabled`, `model`, `prompt_v`, `usd_month`, `cap_usd`, `queued`, `paused`, `last_error`, `skipped`, `reads_month`, `by_verdict`, `ms_median`) and `reads` (newest first, ≤ 300; only the disagreements and errors unless `all=1`): post, channel, `stored`, `verdict`, `rules`, `ai` (`targets`, `uncertain`), `dropped`, `cost`, `ms`, `model`, `error` |
 | 🔒 `GET /api/digests` | the stored nights and weeks: figures, written summary (EN / UK), model |
 | 🔒 `POST /api/digest/run` | `{kind: night|week}` — asks the `Digests` thread to write the last one up now (never calls the model itself) |
 | 🔒 `GET /api/flags`, `/api/corpus`; `POST /api/corpus/review`, `/api/corpus/translate` | flags and corpus review — no longer in the dashboard (1.19); used by `scripts/corpus.py` |
@@ -1424,6 +1497,7 @@ SQLite in WAL mode (`DB_PATH`; on Fly, the volume). Tables:
 | `weather` | each night's weather per point (`date, place`, JSON: mean wind, strongest gust, mean cloud cover, rain, lowest temperature) |
 | `flags` | readings people reported as wrong |
 | `corpus_reviews` | verdicts from `/admin` review, merged back with `scripts/corpus.py pull` |
+| `ai_reads` | 1.50: the AI reader's reading of each post it read (§7.7) — when, the post, whether the rules stored it, model, prompt version, ms, tokens, cost, verdict, the rules' reading and its own (JSON), facts dropped, error. Kept 90 days; the month's spend is `kv` `ai_usd:YYYY-MM` |
 | `usage`, `usage_seen` | anonymous usage counters |
 
 Columns are added in place by `Store.__init__` (`ALTER TABLE … ADD COLUMN`), so an old database upgrades itself.

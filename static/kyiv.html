@@ -1031,7 +1031,7 @@ body.lite #mycard,body.lite .panel{background:#000;border-color:#666}body.lite .
   <button class="mi" id="supbtn" type="button" data-t="m_support">Support the project</button>
   <a class="mi" id="tgbtn" data-t="m_tg" target="_blank" rel="noopener" hidden>Community on Telegram</a>
   <button class="mi" id="aboutbtn" type="button" data-t="m_about">About · disclaimer</button>
-  <div class="mi bt" id="buildtag">v1.49</div>
+  <div class="mi bt" id="buildtag">v1.50</div>
 </div>
 <div class="panel" id="lay" hidden role="dialog" aria-labelledby="layh"><div class="pgrab"></div>
   <div class="ph"><b id="layh" data-t="m_layers">Map layers</b><button type="button" class="px" data-close="lay" data-t-aria="btn_close" aria-label="Close">✕</button></div>
@@ -3164,7 +3164,7 @@ function renderStats(){ if(!STATS) return; const el=$('stats'); if(!el) return; 
 // =====================================================================================
 // ---------------------------------------------------------------------------------------------------
 // The contacts (CONTACT) and the footer (footerHTML, shareApp) are in static/i18n.js since 1.39, shared with Light.
-const APP_VERSION='1.49';
+const APP_VERSION='1.50';
 const DONATE=CONTACT.ngo;
 const ls=(k,v)=>{try{return v===undefined?localStorage.getItem(k):(localStorage.setItem(k,v),v);}catch(e){return null;}};
 
