@@ -139,25 +139,11 @@ def test_a_failed_check_is_kept_and_its_posts_are_read_at_the_next_one():
     assert ck["error"] == f'cut off at {A.MAX_OUT_CHECK} tokens — began: {{"findings": [' and len(r.q) == 2      # 1.53.4 and not store.ai_reads(5, diff=False)
 
 
-def test_on_the_clock_and_the_dashboards_switches():
-    store = server.Store(":memory:")
-    r = _reader(store)
-    assert r.mode() == "check" and r.interval() == 10
-    store.kv_set("ai_mode", "post")
-    assert r.mode() == "post" and r.stats()["mode"] == "post"
-    store.kv_set("ai_mode", "check")
-    for it in ITEMS[:2]:
-        r.add(*((it[0], it[1], it[2], it[3])))
-    asked = []
-    r.check = lambda items, retry=False: asked.append(len(items))
-    r.next_at = 0
-    r._tick_check()                                  # the first tick sets the next mark on the clock (:00, :10…)
-    assert r.next_at % 600 == 0 and asked == []
-    r.check_now()
-    r._tick_check()
-    assert asked == [2] and not r.q
-    assert "if data.get(\"mode\") in (\"check\", \"post\"):" in SRC and "ai.check_now()" in SRC
-
+def test_the_checks_are_stopped():
+    # 1.54, the owner chose to stop them: nothing schedules a check, the dashboard has no switch for it; check() is kept
+    r = _reader(server.Store(":memory:"))
+    assert not hasattr(r, "_tick_check") and not hasattr(r, "check_now") and r.stats()["mode"] == "bulletins"
+    assert "ai.check_now()" not in SRC and "\"ai_mode\"" not in SRC and callable(r.check)
 
 def test_the_worked_example_is_borne_out_by_its_own_posts():
     text, ans = A.CHECK_EXAMPLE
@@ -182,15 +168,12 @@ def test_a_post_word_from_what_the_check_found():
 
 
 # ---- on the map, never pushed ---------------------------------------------------------------------------------------
-def test_a_target_a_check_found_missing_is_drawn_and_never_pushed():
-    rules = [{"place": "Обухів", "oblast_uid": "14", "lon": 30.62, "lat": 50.11, "status": None}]
+def test_what_a_check_found_is_never_drawn():
+    # 1.54: what a check found before 1.54 adds nothing to the map (the AI's marks went with its reading)
+    assert not hasattr(server.State, "_ai_marks_of") and not hasattr(server.State, "_ai_facts")
     missed = dict(A._t(kind="shahed", relation="at"), place="Українка", toward=None, f="missed")
     facts = dict(A._t(kind="shahed", relation="at", altitude_m=900), place="Обухів", toward=None, f="facts")
-    got = server.State._ai_marks_of("kyiv_airdef/1536", ago(3), "kyiv_airdef", "…", [missed], rules)
-    assert [m["place"] for m in got] == ["Українка"] and got[0]["ai"]                    # 13 km away: another target
-    assert server.State._ai_marks_of("kyiv_airdef/1536", ago(3), "kyiv_airdef", "…", [facts], rules) == []
     assert A.match([dict(missed)], {"Обухів"}, True) is None and A.match([dict(facts)], {"x"}, True)["f"] == "facts"
-    assert "and not m.get(\"ai\")]" in SRC[SRC.index("def proximity_watch"):SRC.index("def proximity_watch") + 2500]
 
 
 # ---- the night, in full, and the AI's report on it ------------------------------------------------------------------
@@ -258,7 +241,7 @@ def test_the_dashboard_and_the_docs():
         assert ADMIN.count(k) == 2, k
     assert "${nightCard(A)}" in ADMIN and "card('c14',tr('an_c_ai')" in ADMIN and "fileDownload(`heimdall-night-${NIGHT.night}.json`" in ADMIN
     assert 'u.path == "/api/admin/night"' in SRC and 'u.path == "/api/admin/ai_report"' in SRC
-    assert "### 7.10 The 10-minute check and the night's report (1.53)" in DOC
+    assert "### 7.10 The 10-minute check (1.53; stopped in 1.54) and the night's report" in DOC and "### 7.11 The bulletins (1.54)" in DOC
     assert "## The AI reads every 10 minutes and writes up the night (1.53)" in SAFETY
 
 
@@ -273,9 +256,6 @@ def test_a_namesake_is_never_a_second_target():
     marks = geo.parse_for_channel("chyste_nebo", text, ["14", "25"])
     A.pick_namesakes(ts, cands, geo, A.anchors_of(geo, marks, None, "chyste_nebo"))
     assert ts[0]["place"] == "Козин" and ts[0]["toward"] == "Ходосівка"      # the one by Kyiv, beside Khodosivka
-    rules = [{"place": "→ Козин", "oblast_uid": "14", "lon": 30.63, "lat": 50.22, "status": None, "approach": True}]
-    t = dict(A._t(kind="unknown", relation="heading_to"), place="Козин (Прилуцький р-н)", toward=None)
-    assert server.State._ai_marks_of("chyste_nebo/1537", ago(2), "chyste_nebo", "На Козин 900", [t], rules) == []
 
 
 def test_an_alert_said_to_be_coming_is_not_where_the_target_is():
@@ -316,8 +296,8 @@ def test_the_map_on_the_whole_screen():
 def test_nothing_is_written_over_a_target():
     page = _read("static/kyiv.html")
     assert "if(drawn(dn)){ const w=dn.textContent.length*6.4+6; glyphs.push({x:p.sx-w/2,y:p.sy+6,w,h:14,p}); }" in page
-    assert "glyphs.push({x:ix-10,y:iy-10,w:20,h:20}); return {g,ix,iy}; });" in page
-    assert "im.g.classList.toggle('nolbl',clash);" in page and ".imp.nolbl .it{display:none}" in page
+    # 1.54: the explosions layer is gone, and with it the explosions' names giving way
+    assert "querySelectorAll('#impactsg .imp')" not in page
     assert "bx=placed.concat(glyphs.filter(q=>q.p))" in page
 
 
@@ -359,8 +339,6 @@ def test_a_tag_is_its_number_and_no_direction_is_shown():
     tags = [m["tag"] for m in st.markers() if m.get("tag")]
     assert tags and all(t["id"].startswith("#") and t["id"][1:].isdigit() for t in tags)
     assert "tagOrigin" not in page and "t('tg_num')" in page and "tr.tg" in replay
-    lines, _ = st.ai_map(["25", "14"])
-    assert not any(" from " in x for ls in lines.values() for x in ls)        # the AI is not told it either
 
 
 def test_no_arrows_along_the_edge_of_the_map():

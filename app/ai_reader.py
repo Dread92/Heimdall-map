@@ -1,18 +1,19 @@
-"""1.50: a second reader of the channels' posts — a language model through OpenRouter.
+"""The AI of Heimdall — a language model through OpenRouter, within a monthly budget.
 
-It never places, moves or removes a mark, and never touches the alerts, the feed or a push. It reads the same posts the
-rules read, its reading is checked against the post (every fact must quote the post's own words; every place must be
-one this server offered it from its gazetteer) and compared with the rules' reading, and the dashboard shows where the
-two disagree: posts the rules missed, places or weapons they read differently — so the rules can be fixed
-(deterministic, free, instant). 1.51: with the dashboard's switch on (`ai_live`, the kill switch), the facts it
-quoted that the rules did not read — where a target comes from, its height, its speed — fill the TARGET TAGS
-(#07 ×2 · 2200 m), marked as read by the AI. docs/TECHNICAL.md §7.7, docs/SAFETY.md.
+1.54, the owner: "the AI placing things on the map — we forget it". Since 1.54 the AI writes, it does not read for the
+map: BULLETINS of the activity over the last hour and the last 24 hours, like a weather bulletin, in Ukrainian, English
+and French in one call (server.Bulletins, ask_bulletin); and the report on each night for the dashboard (server.
+NightReports, ask_text). Nothing it writes places, moves or removes a mark, sets an alert or sends a push; the bulletins
+reach the app only behind the dashboard's switch, and each one is written from the server's own record of the window
+(official alerts, the marks the rules drew, outcomes, the Air Force), never from a reader's data.
 
-The prompt is a component, not a sentence: fixed rules taken from docs/SAFETY.md (SYSTEM), worked examples (EXAMPLES),
-the post's context assembled per post (the channel, its previous posts, the CANDIDATE places), and a strict output
-schema (SCHEMA). PROMPT_VERSION is stored with every reading, so two versions can be compared on the same posts.
+1.50–1.53 (retired in 1.54, not called by the server): a second reader of the channels' posts — one call a post, then a
+check every 10 minutes — whose reading was checked against the post (every fact quoted, every place one of the
+gazetteer's) and compared with the rules', and which drew the targets only it found (marked AI) and filled the target
+tags. Its prompt, schema and validators below are kept with their tests and the dashboard's history of what it read;
+docs/TECHNICAL.md §7.7, §7.10.
 
-Only public posts are sent — a channel's own text, its name, place names from our gazetteer. Never a reader, a
+Only public text is sent — the channels' posts in the past, the record's place names and counts now. Never a reader, a
 watched place, an address, a device.
 """
 import json
@@ -840,9 +841,9 @@ def check_messages(text, cache=False):
 
 
 # ---- 1.53: the night's report --------------------------------------------------------------------------------------
-REPORT_VERSION = "1"
+REPORT_VERSION = "2"     # 1.54: no AI checks to read any more
 MAX_OUT_REPORT = 3000
-REPORT_SYSTEM = """You are the analyst of Heimdall, an unofficial air-threat map of Ukraine built from public Telegram channels and the official alert feed. You are given the complete record of one night (12:00 to 12:00 Kyiv time): the official alerts by oblast, every target Heimdall tagged with the path its reports drew, its heights and where it came from, the reports by hour and oblast, the outcomes reported, the Air Force's figures, and the notes of the AI checks run every few minutes, with the posts where the AI and Heimdall's rules parted.
+REPORT_SYSTEM = """You are the analyst of Heimdall, an unofficial air-threat map of Ukraine built from public Telegram channels and the official alert feed. You are given the complete record of one night (12:00 to 12:00 Kyiv time): the official alerts by oblast, every target Heimdall tagged with the path its reports drew, its heights and where it came from, the reports by hour and oblast, the outcomes reported and the Air Force's figures (a night before 1.54 also has the notes of the AI checks then run every few minutes).
 
 Write the night's report for the owner, in English, plain text with short headed sections:
 1. The night in brief — when it started and ended, the waves, the oblasts most concerned, the few figures that matter.
@@ -850,9 +851,71 @@ Write the night's report for the owner, in English, plain text with short headed
 3. Heights and speeds — what was reported, and the descents.
 4. Against the Air Force — what its summary says beside what the channels reported, where both exist.
 5. Patterns — what this night shows about how the attack unfolded: timing, routes, mixes of weapons, repeats; only what the record supports.
-6. Heimdall itself — what the map missed or overstated, read from the posts where the AI and the rules parted and from the checks' notes: name the kinds of post, and the rule that would fix each.
 
 Only what the record shows: take every figure from it, never invent a number, a place or a weapon; say "reported" (these are channel reports, not a count of drones); no forecast stated as a fact, no advice on sheltering, no names of people. At most 900 words."""
+
+
+# ---- 1.54: the bulletins ------------------------------------------------------------------------------------------
+# The owner (9 Oct 2026): "instead of all that on the map, summaries of the activity of the last hour / last 24 hours,
+# a bit like a weather bulletin". One call writes the bulletin in the app's three languages, from the server's record of
+# the window (State.activity_summary / activity_text) — counts, places and times the rules and the official feed
+# recorded, never a post's text.
+BULLETIN_VERSION = "1"
+BULLETIN_KINDS = ("1h", "24h")
+MAX_OUT_BULLETIN = {"1h": 1200, "24h": 2400}
+BULLETIN_CHARS = {"1h": 700, "24h": 1600}         # per language, at most: past it, cut at the last full sentence
+BULLETIN_SYSTEM = """You write the bulletins of Heimdall, an unofficial air-threat map of Ukraine built from public Telegram channels and the official alert feed. People read them on a phone, during or after an attack, the way they read a weather bulletin: what happened, where, how much — calm, plain and short.
+
+You are given Heimdall's record of one window, the last hour or the last 24 hours (Kyiv time): the official air-raid alerts by oblast, the targets the channels reported (Heimdall's marks — reports, not a count of drones) by oblast, kind and time, the places most reported, the paths of the targets Heimdall followed, the heights reported, the outcomes reported (shot down, explosions), what was on the map when the record was made, the window before it for comparison, and for 24 hours the Air Force's figures.
+
+Write the same bulletin in Ukrainian ("uk"), English ("en") and French ("fr"). Answer with one JSON object: {"uk": "...", "en": "...", "fr": "..."}.
+
+Rules:
+1. Only what the record shows. Every number, place, weapon and time comes from the record; never invent or estimate one. These are reports of channels, not radar and not a count of drones: say "reported" ("12 drone reports over Chernihiv oblast"), never "12 drones".
+2. Kyiv first — the city, then Kyiv oblast — then the other oblasts by how much was reported. Name at most five oblasts; the rest are "other oblasts".
+3. Alerts come only from the official alerts in the record: which oblasts had an air-raid alert and, for the city of Kyiv, when it started and whether it ended. Never say an alert ended unless the record says so.
+4. Never say a place is safe or that the danger is over, never advise on shelter, never forecast ("will", "expect", "next"). A trend in the record is a fact and may be said: "fewer reports in the last 20 minutes", "more than in the hour before".
+5. Never say where the targets came from or where they are heading — the posts' origins are often wrong. A followed target's path may be told as the places it was reported at, in order: "first reported near Ripky at 19:02, last near Vyshhorod at 20:22".
+6. Times in Kyiv time, 24-hour (19:05). Heights in metres, as reported ("reported at 1,800 m").
+7. The last hour: at most 60 words a language, one paragraph, no list. The last 24 hours: at most 140 words a language, at most three short paragraphs — in brief, where, outcomes (and the Air Force's figures when given).
+8. Plain text only: no markdown, no emoji, no headings, no channel names, no names of people, no links.
+9. Place names in Ukrainian in "uk"; in "en" and "fr" their usual Latin spelling (Київ → Kyiv, Бровари → Brovary, Чернігівська область → Chernihiv oblast / l'oblast de Tchernihiv).
+10. When the record shows little, say so in one sentence ("Over the last hour the channels reported 2 drones over Sumy oblast; none near Kyiv.")."""
+BULLETIN_SCHEMA = {"type": "object", "additionalProperties": False,
+                   "properties": {"uk": {"type": "string"}, "en": {"type": "string"}, "fr": {"type": "string"}},
+                   "required": ["uk", "en", "fr"]}
+BULLETIN_LABEL = {"1h": "the last hour", "24h": "the last 24 hours"}
+_MD = re.compile(r"^\s*(?:#+|[-*•]|\d+[.)])\s+|\*\*|__|`|\[|\]\([^)]*\)", re.M)
+_LINK = re.compile(r"https?://\S+|t\.me/\S+|@\w{4,}")
+
+
+def bulletin_messages(kind, text, span=""):
+    return [{"role": "system", "content": BULLETIN_SYSTEM},
+            {"role": "user", "content": f"WINDOW: {BULLETIN_LABEL[kind]}{f' ({span}, Kyiv time)' if span else ''}\n\n{text}\n\n"
+                                        f"Write the bulletin of {BULLETIN_LABEL[kind]} as one JSON object {{\"uk\", \"en\", \"fr\"}}."}]
+
+
+def bulletin_clean(out, kind):
+    """The three texts of an answer, cleaned: plain text (no markdown, links or channel names), no card number, no longer
+    than BULLETIN_CHARS (cut at the last full sentence). None when a language is missing or empty."""
+    if not isinstance(out, dict):
+        return None
+    res = {}
+    for lang in ("uk", "en", "fr"):
+        t = out.get(lang)
+        if not isinstance(t, str):
+            return None
+        t = mask(_LINK.sub("", _MD.sub("", t)))
+        t = re.sub(r"[ \t]+", " ", re.sub(r"\n{3,}", "\n\n", t)).strip()
+        cap = BULLETIN_CHARS[kind]
+        if len(t) > cap:
+            cut = t[:cap]
+            end = max(cut.rfind(". "), cut.rfind(".\n"), cut.rfind("! "), cut.rfind("? "))
+            t = (cut[:end + 1] if end > cap // 3 else cut.rstrip() + "…").strip()
+        if not t:
+            return None
+        res[lang] = t
+    return res
 
 
 # a post's word for the dashboard, from what the check found in it (the same words as one post's reading)
@@ -871,18 +934,19 @@ def check_verdict(kinds, rules):
 
 
 # ---- the reader --------------------------------------------------------------------------------------------------
-class AIReader(threading.Thread):
-    """Reads the queued posts one at a time, within the month's budget (`ai_reader_monthly_usd`, counted from what
-    OpenRouter says each call cost) and PER_HOUR posts an hour. Paused 10 minutes when OpenRouter refuses the key or
-    the credits, a minute when it says to slow down."""
+class AIReader:
+    """The one way to the model: every call within the month's budget (`ai_reader_monthly_usd`, counted from what
+    OpenRouter says each call cost) and PER_HOUR an hour; paused 10 minutes when OpenRouter refuses the key or the
+    credits, a minute when it says to slow down; off with the dashboard's switch. 1.54: called by the bulletins
+    (ask_bulletin) and the night's report (ask_text). read() and check() — the reading of posts for the map, 1.50–1.53 —
+    are kept but no longer called: nothing feeds it posts any more."""
 
-    def __init__(self, cfg, store, geo, rules_fn, oblast_names, previous_fn=None, log=print, context_fn=None, map_fn=None):
-        super().__init__(daemon=True, name="ai-reader")
+    def __init__(self, cfg, store, geo=None, rules_fn=None, oblast_names=None, previous_fn=None, log=print, context_fn=None, map_fn=None):
         self.cfg, self.store, self.geo, self.rules_fn = cfg, store, geo, rules_fn
+        oblast_names = oblast_names or {}
         self.oblast_names, self.previous_fn, self.log = oblast_names, previous_fn, log
         self.context_fn = context_fn      # 1.51: (post, candidates) → (lines of the targets on the map, their tags)
         self.map_fn = map_fn              # 1.53: (oblast uids) → ({uid: lines of the targets on the map}, their tags)
-        self.next_at = 0.0                # 1.53: when the next check is due (Unix time)
         self.checks = 0
         self.q = deque(maxlen=400)
         self.cond = threading.Condition()
@@ -916,13 +980,6 @@ class AIReader(threading.Thread):
         except Exception:
             return True
 
-    def live(self):
-        """1.51: the other switch (kv `ai_live`): its facts in the target tags."""
-        try:
-            return self.store.kv_get("ai_live") != "0"
-        except Exception:
-            return True
-
     def _roll(self):
         m = datetime.now(timezone.utc).strftime("%Y-%m")
         if m != self.month:
@@ -932,92 +989,7 @@ class AIReader(threading.Thread):
             except (TypeError, ValueError):
                 self.spent = 0.0
 
-    # -- feeding it ---------------------------------------------------------------------------------------------
-    # a stored post is read when the tagger saw a target or a place in it…
-    WANT = {"drones", "ballistic_missiles", "banderol_missiles", "cruise_missiles", "tactic_aircraft_activity",
-            "guided_aerial_bombs", "impact", "air_defense", "unknown", "geo", "kyiv", "region"}
-    # …and a post the server set aside as not about the sky, when it names a place and is short — a tracker's line
-    # ("Ціль на Бровари"), the misses the reader is there to find; a long one is news
-    PLACE_TAGS = {"geo", "kyiv", "region"}
-    SHORT = 300
-
-    def wants(self, post, stored=True):
-        tags = set(post.get("tags") or ())
-        if tags & {"trial", "af_summary", "retract"}:
-            return False
-        if stored:
-            return bool(tags & self.WANT)
-        return bool(tags & self.PLACE_TAGS) and len(post.get("text") or "") <= self.SHORT
-
-    def add(self, post, near=(), home=None, stored=True):
-        """A new post of a channel on the map (never one on trial: the server does not draw those either), with the
-        oblasts the channel named in its last posts (`near`) and the channel's own (`home`)."""
-        if not self.enabled() or not self.wants(post, stored):
-            return
-        with self.cond:
-            self.q.append((post, tuple(near or ()), home, stored))
-            self.cond.notify()
-
-    def run(self):
-        while True:
-            try:
-                if self.mode() == "post":
-                    self._one_post()
-                else:
-                    self._tick_check()
-            except Exception as e:              # never the reader's death: the next post, the next check
-                self.last_error = f"{type(e).__name__}"
-                self.log("ai reader:", type(e).__name__, str(e)[:120])
-                time.sleep(5)
-
-    def _one_post(self):
-        with self.cond:
-            if not self.q:
-                self.cond.wait(30)
-            if not self.q:
-                return
-            item = self.q.popleft()
-        if not self.enabled():
-            return
-        why = self.read(*item)
-        if why in ("paused", "budget", "rate"):
-            self.skipped[why] = self.skipped.get(why, 0) + 1
-
-    # -- 1.53: the 10-minute check -------------------------------------------------------------------------------
-    def mode(self):
-        """"check" — every `ai_check_minutes`, one call for the posts of those minutes (the default) — or "post", one
-        call a post as until 1.52: the dashboard's choice (kv `ai_mode`), else the config's (`ai_reader_mode`)."""
-        try:
-            v = self.store.kv_get("ai_mode")
-        except Exception:
-            v = None
-        v = v or self.cfg.get("ai_reader_mode") or "check"
-        return v if v in ("check", "post") else "check"
-
-    def interval(self):
-        try:
-            return max(2, min(60, int(self.cfg.get("ai_check_minutes", 10))))
-        except (TypeError, ValueError):
-            return 10
-
-    def check_now(self):
-        """The dashboard's "check now": the posts waiting are read at once."""
-        self.next_at = 1.0
-
-    def _tick_check(self):
-        iv, now = self.interval() * 60, time.time()
-        if not self.next_at:
-            self.next_at = (now // iv + 1) * iv          # on the clock: :00, :10, :20…
-        if now < self.next_at:
-            time.sleep(min(15.0, self.next_at - now))
-            return
-        self.next_at = (now // iv + 1) * iv
-        with self.cond:
-            items = list(self.q)
-            self.q.clear()
-        if items and self.enabled():
-            self.check(items)
-
+    # -- 1.53, retired in 1.54: the 10-minute check (kept, not called) ---------------------------------------------
     def check(self, items, retry=False):
         """One check of the posts (`items`: the queue's (post, near, home, stored)): grouped by the oblast they concern,
         in calls of at most MAX_CHECK_POSTS posts. Returns the number of calls, or why none was made."""
@@ -1169,6 +1141,21 @@ class AIReader(threading.Thread):
             return {"error": why}
         return self._request([{"role": "system", "content": system}, {"role": "user", "content": text}], 1, "text")
 
+    def ask_bulletin(self, kind, text, span=""):
+        """1.54: one bulletin — {"out": {"uk", "en", "fr"}, "cost", "tok_in", "tok_out", "model"} or {"error": …}. The
+        three texts are cleaned (bulletin_clean); an answer without all three is an error."""
+        why = self._allowed(0)
+        if why:
+            return {"error": why}
+        res = self.call(bulletin_messages(kind, text, span), "bulletin:" + kind)
+        if res.get("error"):
+            return res
+        out = bulletin_clean(res.get("out"), kind)
+        if not out:
+            self.last_error = "bulletin: a language missing"
+            return dict(res, out=None, error="the answer lacks a language (uk, en, fr)")
+        return dict(res, out=out)
+
     def _save_check(self, row):
         try:
             self.store.ai_check_save(row)
@@ -1256,15 +1243,18 @@ class AIReader(threading.Thread):
     def _request(self, msgs, way, kind="post"):
         # 1.50.1: only parameters every model that takes a JSON schema accepts. With require_parameters, one the model
         # does not take (claude-haiku-5.5 takes no `temperature`) leaves no provider at all: "HTTP 404: No endpoints".
-        mx = {"check": MAX_OUT_CHECK, "text": MAX_OUT_REPORT}.get(kind, MAX_OUT)
+        # `kind`: "post", "check" (1.50–1.53), "text" (the night's report), "bulletin:1h" / "bulletin:24h" (1.54)
+        bk = kind.split(":", 1)[1] if kind.startswith("bulletin:") else None
+        mx = MAX_OUT_BULLETIN[bk] if bk else {"check": MAX_OUT_CHECK, "text": MAX_OUT_REPORT}.get(kind, MAX_OUT)
         body = {"model": self.model(), "max_tokens": mx, "messages": msgs,
                 "provider": {"require_parameters": True}, "usage": {"include": True}}
         if way == 0 and kind != "text":
             body["response_format"] = {"type": "json_schema", "json_schema": (
-                {"name": "heimdall_check", "strict": True, "schema": CHECK_SCHEMA} if kind == "check"
+                {"name": "heimdall_bulletin", "strict": True, "schema": BULLETIN_SCHEMA} if bk
+                else {"name": "heimdall_check", "strict": True, "schema": CHECK_SCHEMA} if kind == "check"
                 else {"name": "heimdall_reading", "strict": True, "schema": SCHEMA})}
         req = urllib.request.Request(OPENROUTER_URL, data=json.dumps(body, ensure_ascii=False).encode("utf-8"), headers={
-            "Authorization": "Bearer " + self.key(), "Content-Type": "application/json", "X-Title": "Heimdall (shadow reader)"})
+            "Authorization": "Bearer " + self.key(), "Content-Type": "application/json", "X-Title": "Heimdall"})
         try:
             ctx = getattr(self, "ssl_ctx", None)
             with urllib.request.urlopen(req, timeout=40, context=ctx) as r:
@@ -1368,11 +1358,14 @@ class AIReader(threading.Thread):
             chk = self.store.ai_check_counts(self.month)
         except Exception:
             pass
-        mode = self.mode()
-        return {"key": bool(self.key()), "enabled": self.enabled(), "reader_on": self.switched_on(), "live": self.live(), "model": self.model(),
-                "prompt_v": CHECK_VERSION if mode == "check" else PROMPT_VERSION, "mode": mode, "every_min": self.interval(),
-                "next_check": datetime.fromtimestamp(self.next_at, timezone.utc).isoformat(timespec="seconds") if mode == "check" and self.next_at > 1 else None,
-                **chk,
+        bl = {}
+        try:
+            bl = self.store.bulletin_counts(self.month)
+        except Exception:
+            pass
+        return {"key": bool(self.key()), "enabled": self.enabled(), "reader_on": self.switched_on(), "model": self.model(),
+                "prompt_v": BULLETIN_VERSION, "mode": "bulletins",
+                **chk, **bl,
                 "month": self.month, "usd_month": round(spent, 4), "cap_usd": self.cap(), "queued": len(self.q),
                 "paused": time.time() < self.down_until, "last_error": self.last_error, "skipped": dict(self.skipped),
                 "format": self.WAYS[self.way],

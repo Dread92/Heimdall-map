@@ -109,27 +109,23 @@ def test_the_spelling_match_is_strict():
 
 
 # ---- the AI's targets on the map ------------------------------------------------------------------------------------
-def test_a_target_only_the_ai_found_is_on_the_map_marked_and_the_switch_takes_it_off():
+def test_a_target_only_the_ai_found_is_no_longer_on_the_map():
+    # 1.54, the owner: "the AI placing things on the map — we forget it": a reading stored before 1.54 draws nothing
     st, tg = _state()
     _read_ai(st, "eRadarrua/901", "Повз околиці Коростеня на Житомир",
              [_t(kind="unknown", place="Коростень", place_quote="Повз околиці Коростеня", relation="near", toward="Житомир")])
-    m = _marks(st)["eRadarrua/901#ai0"]
-    assert m["ai"] and m["place"] == "Коростень" and m["target"] == "Житомир" and m["heading"] is not None
-    assert m["evidence"]["position"]["method"].startswith("read by the AI reader") and m["tag"]["id"] == "#01"
-    st.store.kv_set("ai_live", "0")
-    assert "eRadarrua/901#ai0" not in _marks(st)
+    assert not any("#ai" in k for k in _marks(st)) and not hasattr(st, "_ai_marks")
 
-
-def test_the_ais_reading_stands_when_the_rules_read_the_one_target_far_away():
+def test_somkova_dolyna_is_not_dolyna():
+    # the rules read "біля Сомкової Долини" as Dolyna (Ivano-Frankivsk oblast, off the map): nothing is drawn; 1.52–1.53
+    # the AI's reading was, and 1.54 no longer (the village is not in the gazetteer)
     st, tg = _state()
     text = "Мопедик кружляє біля Сомкової Долини, 800"
     tg.ingest("kyiv_airdef", [("kyiv_airdef/913", ago(2), text)], "tg:k")
     _read_ai(st, "kyiv_airdef/913", text, [_t(kind="shahed", place="Сомкова Долина", place_quote="біля Сомкової Долини",
                                               relation="near", altitude_m=800, altitude_quote="800")], 2, 1)
     assert geo.parse_for_channel("kyiv_airdef", text)[0]["place"] == "Долина"      # Dolyna, 500 km off: out of the map
-    m = _marks(st)["kyiv_airdef/913#ai0"]
-    assert m["place"] == "Сомкова Долина" and m["oblast_uid"] == "14" and m["alt"]["m"] == 800
-
+    assert "kyiv_airdef/913#ai0" not in _marks(st)
 
 def test_two_tracks_never_share_a_report_or_a_tag():
     st, tg = _state()
@@ -143,16 +139,11 @@ def test_two_tracks_never_share_a_report_or_a_tag():
     assert m["place"] == "Козелець"
 
 
-def test_never_twice_never_at_an_alert_message_and_never_a_tag_for_a_whole_oblast():
+def test_never_a_tag_for_a_whole_oblast():
     st, tg = _state()
-    tg.ingest("kyiv_airdef", [("kyiv_airdef/902", ago(3), "Шахед на Бровари")], "tg:kyiv_airdef")
-    _read_ai(st, "kyiv_airdef/902", "Шахед на Бровари", [_t(kind="shahed", place="Бровари", relation="heading_to")], 3, 1)
-    _read_ai(st, "trevoga_kartaa_noviny/903", "🚨Повітряна тривога · жовтий рівень🟡\nЖитомирський р-н\nДронова загроза",
-             [_t(kind="drone", place="o10", relation="in_oblast")])
-    _read_ai(st, "chyste_nebo/904", "Ще три з чернігівської", [_t(kind="unknown", count=3, place="o25", relation="from")])
-    ms = _marks(st)
-    assert "kyiv_airdef/902#ai0" not in ms and "trevoga_kartaa_noviny/903#ai0" not in ms
-    assert ms["chyste_nebo/904#ai0"]["place"] == "область" and ms["chyste_nebo/904#ai0"].get("tag") is None
+    tg.ingest("chyste_nebo", [("chyste_nebo/904", ago(3), "3 шахеди на Чернігівщині")], "tg:chyste_nebo")
+    ms = [m for m in _marks(st).values() if m["id"].startswith("chyste_nebo/904#")]
+    assert ms and all(m["place"] == "область" and m.get("tag") is None for m in ms)
 
 
 # ---- heights ---------------------------------------------------------------------------------------------------------
@@ -217,19 +208,19 @@ def test_a_post_the_server_set_aside_is_compared_with_nothing():
 
 # ---- the page --------------------------------------------------------------------------------------------------------
 def test_the_page():
-    assert "${m.ai?' ai':''}" in PAGE and ".mk.ai .halo{stroke-dasharray:3 3}" in PAGE and "t('ai_placed')" in PAGE
+    # 1.54: nothing of the AI on the map — no "AI" mark, label, compact tag or oblast chip
+    assert "m.ai" not in PAGE and ".mk.ai" not in PAGE and "t('ai_placed')" not in PAGE and "aiOnly" not in PAGE and "obai" not in PAGE
     assert '<g id="selpath"></g>' in PAGE and "function drawSelPath()" in PAGE and "if(SELP) drawSelPath();" in PAGE
-    assert "const ct=(m.ai?t('tg_ai_chip')+(tg?' ':''):'')+(tg?tg.id:'');" in PAGE          # zoomed out: "AI ?-03"
-    assert "aiOnly=anyLive&&evs.every(m=>m.status||m.ai)" in PAGE and 'class="obtxt obai"' in PAGE     # "AI" first on the chip
+    assert "const ct=tg?tg.id:'';" in PAGE                                   # zoomed out: the tag alone
     assert "#selpath .selp{fill:none;stroke:#ff3b3f;" in PAGE and "SELP=id;" in PAGE and "closeSheet(){ SELP=null;" in PAGE
     assert "body.m-day .mk .lbl .tid,body.m-day .mk .tgc{fill:#7a4b00;stroke:#fff}" in PAGE      # the tag in daylight
     assert "tagOrigin" not in PAGE                                     # 1.53.2: where it came from is not shown
-    for k in ("tg_inf_belarus", "tg_inf_se", "ai_placed"):
+    for k in ("tg_inf_belarus", "tg_inf_se"):
         assert I18N.count(f"{k}:'") == 3, k
     assert "k_missile:" in ADMIN and "t.toward?tr('ai_toward',aiPlace(t.toward)):''" in ADMIN
     assert ADMIN.count("v_descending:") == 2 and "m[1]==='14'?(L==='uk'?'Київська область':'Kyiv oblast')" in ADMIN
 
 
 def test_docs():
-    assert "### 7.9 The AI reader's targets on the map (1.52)" in DOC and "extra_places.json" in DOC
+    assert "### 7.9 The AI reader's targets on the map (1.52; gone in 1.54)" in DOC and "extra_places.json" in DOC
     assert "## A target only the AI reader found (1.52)" in SAFETY

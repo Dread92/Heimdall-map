@@ -126,24 +126,17 @@ def _ait(**kw):
     return t
 
 
-def test_the_ai_fills_the_letter_the_rules_did_not_read_and_the_switch_takes_it_out():
-    st, tg = _state()
-    tg.ingest("kpszsu", [("kpszsu/5", ago(2), "Шахеди на Бровари, висота 900 з боку РБ")], "tg:kpszsu")
-    assert _tags(st)["kpszsu/5#0"]["p"] in ("N", "?")            # the rules may read "з боку РБ" themselves
+def test_the_ai_never_fills_a_tag():
+    # 1.54, the owner: "the AI placing things on the map — we forget it": a reading stored by the AI before 1.54 adds
+    # nothing to a tag — no origin, no height — whatever the switches say
     st2, tg2 = _state()
     tg2.ingest("kpszsu", [("kpszsu/6", ago(2), "Група шахедів на Бровари, ідуть від кордону")], "tg:kpszsu")
-    assert _tags(st2)["kpszsu/6#0"]["p"] == "?"
     _with_ai(st2, "kpszsu/6", [_ait(kind="shahed", place="Бровари", relation="heading_to", origin="belarus",
                                     origin_quote="від кордону", altitude_m=1500, altitude_quote="висота 1500")])
     t = _tags(st2)["kpszsu/6#0"]
-    assert t["id"] == "#01" and t["os"] == "ai" and t["o"] == "belarus"
-    assert {k: t["alt"][k] for k in ("m", "q", "s", "cur")} == {"m": 1500, "q": "висота 1500", "s": "ai", "cur": True}
-    st2.store.kv_set("ai_live", "0")                               # the kill switch
-    t = _tags(st2)["kpszsu/6#0"]
-    assert t["id"] == "#01" and t["os"] is None and t["alt"] is None
+    assert t["id"] == "#01" and t["p"] == "?" and t["os"] is None and t["alt"] is None
 
-
-def test_the_rules_reading_wins_and_another_targets_facts_are_never_borrowed():
+def test_the_rules_reading_alone_and_no_target_of_the_ais():
     st, tg = _state()
     tg.ingest("kpszsu", [("kpszsu/7", ago(2), "Шахед з півдня на Обухів, висота 800\nРеактивний на Бровари")], "tg:kpszsu")
     _with_ai(st, "kpszsu/7", [_ait(kind="shahed", place="Обухів", relation="heading_to", origin="belarus", origin_quote="x",
@@ -153,10 +146,9 @@ def test_the_rules_reading_wins_and_another_targets_facts_are_never_borrowed():
     t = _tags(st)
     ob = next(v for k, v in t.items() if k.startswith("kpszsu/7#") and v and v.get("oq") == "з півдня")
     assert ob["p"] == "S" and ob["os"] == "rules" and {k: ob["alt"][k] for k in ("m", "s", "cur")} == {"m": 800, "s": "rules", "cur": True}
-    jet = next(v for k, v in t.items() if k.startswith("kpszsu/7#") and "#ai" not in k and v is not ob)
-    assert jet["p"] == "?" and jet["spd"] is None                  # the AI's Kyiv target is not the Brovary one
-    assert "kpszsu/7#ai1" in t and t["kpszsu/7#ai1"]["p"] == "E"   # 1.52: it is its own target on the map, read by the AI
-
+    jet = next(v for k, v in t.items() if k.startswith("kpszsu/7#") and v is not ob)
+    assert jet["p"] == "?" and jet["spd"] is None
+    assert not any("#ai" in k for k in t)                           # 1.54: no target the AI alone found
 
 def test_match():
     a, b = _ait(kind="shahed", place="Бровари"), _ait(kind="shahed", place="Бориспіль")
@@ -166,18 +158,17 @@ def test_match():
     assert A.match([_ait(kind="shahed", place="Київ")], {"o31"}, False) is not None   # Kyiv alone is the city
 
 
-def test_switched_off_the_reader_reads_nothing():
+def test_switched_off_the_ai_asks_nothing():
     st, _ = _state()
-    r = A.AIReader({"openrouter_key": "sk-or-test"}, st.store, geo, rules_fn=lambda *a: [], oblast_names={})
+    r = A.AIReader({"openrouter_key": "sk-or-test"}, st.store)
     assert r.enabled()
     st.store.kv_set("ai_reader_on", "0")
-    r.add({"post_id": "x/1", "channel": "x", "ts": ago(1), "text": "Шахед на Бровари", "tags": ["drones"]})
-    assert not r.enabled() and not r.q and r.stats()["reader_on"] is False
-
+    assert not r.enabled() and r.ask_bulletin("1h", "RECORD") == {"error": "off"} and r.stats()["reader_on"] is False
 
 def test_the_switches_are_the_dashboards_alone():
     st, _ = _state()
-    st.ai = A.AIReader({"openrouter_key": "sk-or-test"}, st.store, geo, rules_fn=lambda *a: [], oblast_names={})
+    st.ai = A.AIReader({"openrouter_key": "sk-or-test"}, st.store)
+    st.bulletins = server.Bulletins(st, {})
     old = server.Handler.state
     server.Handler.state = st
     srv = server.Server(("127.0.0.1", 0), server.Handler)
@@ -188,15 +179,15 @@ def test_the_switches_are_the_dashboards_alone():
     try:
         with mock.patch.dict(os.environ, {"ADMIN_KEY": "adm-test"}):
             try:
-                post(base, {"live": False})
+                post(base, {"bulletin_public": True})
                 raise AssertionError("switched without the key")
             except urllib.error.HTTPError as e:
                 assert e.code == 401
-            assert st.store.kv_get("ai_live") is None
-            d = json.loads(post(base + "?key=adm-test", {"live": False}).read())
-            assert d["ok"] and d["stats"]["live"] is False and st.store.kv_get("ai_live") == "0" and not st.ai_live()
-            d = json.loads(post(base + "?key=adm-test", {"live": True, "reader": False}).read())
-            assert d["stats"]["live"] is True and d["stats"]["reader_on"] is False and not st.ai.enabled()
+            assert st.store.kv_get("ai_bulletin_public") is None
+            d = json.loads(post(base + "?key=adm-test", {"bulletin_public": True}).read())
+            assert d["ok"] and d["bulletin_public"] is True and st.store.kv_get("ai_bulletin_public") == "1"
+            d = json.loads(post(base + "?key=adm-test", {"reader": False, "bulletin_now": "1h"}).read())
+            assert d["stats"]["reader_on"] is False and not st.ai.enabled() and st.bulletins.asked == ["1h"]
     finally:
         srv.shutdown()
         server.Handler.state = old
@@ -224,9 +215,9 @@ def test_the_replay_shows_the_tags_the_live_map_gave():
 
 # ---- the pages -----------------------------------------------------------------------------------------------------
 def test_the_map_label_carries_the_tag_and_the_bottom_line_the_telemetry():
-    assert "l1.innerHTML=`${aiT}${tg?`<tspan class=\"tid\">${esc(tg.id)}</tspan> `:''}${esc(name)}`" in PAGE
-    assert ".mk .lbl .tid{fill:#ffd500}svg.wide .mk .lbl .tid{display:none}.mk .dn.ai{font-style:italic}" in PAGE
-    assert "spdK?t('tg_spd',spdK):''" in PAGE and "dn.classList.toggle('ai',telAi);" in PAGE
+    assert "l1.innerHTML=`<tspan class=\"tid\">${esc(tg.id)}</tspan> ${esc(name)}`" in PAGE
+    assert ".mk .lbl .tid{fill:#ffd500}svg.wide .mk .lbl .tid{display:none}" in PAGE
+    assert "spdK?t('tg_spd',spdK):''" in PAGE and "telAi" not in PAGE and "aitag" not in PAGE       # 1.54: no AI on the map
     assert "${tagLine(m)}" in PAGE and "t('tg_what')" in PAGE and "<span class=\"tagid\">${esc(cur.tag.id)}</span>" in PAGE
     # the card's style is never the map's: a 12.5 px font inside the map's SVG is 12.5 km tall
     assert ".tagid{font:800 12.5px" in PAGE and not re.search(r"(?m)^\.tid\{", PAGE)
@@ -249,7 +240,7 @@ def test_the_strings_exist_in_three_languages():
 def test_the_replay_and_the_dashboard():
     assert "lb.textContent=(tr.tg?tr.tg+' ':'')" in REPLAY
     assert "card('c13',tr('an_c_tags')" in ADMIN and "if(k==='targets') csvDownload(" in ADMIN
-    assert "sw('live',s.live!==false,tr('sw_live'))" in ADMIN and "fetch('/api/admin/ai'" in ADMIN
+    assert "sw('bulletin_public',!!BL.public,tr('sw_bul'))" in ADMIN and "fetch('/api/admin/ai'" in ADMIN and "sw('live'" not in ADMIN
 
 
 def test_safety_and_docs():
@@ -258,45 +249,35 @@ def test_safety_and_docs():
 
 
 # ---- 1.51: the AI is given the map; descent and height are always shown when given ---------------------------------
-def test_the_ai_is_given_the_targets_on_the_map_near_the_post_never_the_posts_own():
-    st, tg = _state()
-    tg.ingest("kyiv_airdef", [("kyiv_airdef/9101", ago(6), "Шахед з півдня на Обухів")], "tg:kyiv_airdef")
-    tg.ingest("kpszsu", [("kpszsu/9102", ago(4), "Група шахедів з території Білорусі на Житомирщину")], "tg:kpszsu")
-    tg.ingest("kpszsu", [("kpszsu/9103", ago(1), "БпЛА на Бровари")], "tg:kpszsu")
-    cands = A.candidates(geo, "Шахед на Обухів", "kpszsu", None, (), {u: uk for u, uk, _ in server.OBLASTS})
-    # the Obukhiv report and the Brovary one are one track to the rules (S-01, "from the south"); the Zhytomyr group is
-    # reported for its whole oblast — no tag, so not on the map's list
-    lines, tags = st.ai_context({"post_id": "kpszsu/9104", "channel": "kpszsu"}, cands)
-    assert tags == ["#01"] and lines[0].startswith("#01 · drone · heading to Бровари · @kpszsu ")      # 1.53.2: no origin
-    lines, tags = st.ai_context({"post_id": "kpszsu/9103", "channel": "kpszsu"}, cands)
-    assert tags == []                                               # its own mark is not "on the map" for it
+def test_the_ai_is_given_nothing_of_the_map_any_more():
+    # 1.54: the map's context for the AI (ai_context, ai_map) went with its reading of the posts
+    st, _ = _state()
+    assert not hasattr(st, "ai_context") and not hasattr(st, "ai_map") and not hasattr(st, "ai_live")
 
-
-def test_a_descent_the_ai_quoted_is_in_the_tag_when_the_rules_read_none():
+def test_a_descent_is_in_the_tag_when_the_rules_read_it_and_never_from_the_ai():
     st, tg = _state()
     tg.ingest("kpszsu", [("kpszsu/9108", ago(2), "Шахед над Броварами, пішов униз")], "tg:kpszsu")
     _with_ai(st, "kpszsu/9108", [_ait(kind="shahed", place="Бровари", relation="at", vertical="descending", vertical_quote="пішов униз")])
-    t = _tags(st)["kpszsu/9108#0"]
-    assert t["vs"] == {"v": "descending", "q": "пішов униз", "s": "ai"}
+    assert _tags(st)["kpszsu/9108#0"]["vs"] is None                   # 1.54: the AI's reading is not used
     st2, tg2 = _state()
     tg2.ingest("kpszsu", [("kpszsu/9109", ago(2), "Шахед над Броварами, знижується")], "tg:kpszsu")
     assert _tags(st2)["kpszsu/9109#0"]["vs"] == {"v": "descending", "s": "rules"}
-
 
 def test_height_and_descent_are_shown_whenever_given():
     assert "svg.veryfar .mk .dn{display:none}" not in PAGE                   # at every zoom
     assert "dn.textContent=[altM?((dscAny?'↓':'')+altM+' '+t('m_unit')+(altOld!=null?` (${altOld}′)`:'')):(dscAny?'↓':'')" in PAGE   # also once stale
     assert "tv0.vs&&tv0.vs.v==='descending'" in PAGE
-    assert "function oblAlt(m)" in PAGE and "+(al2?`<text class=\"obtxt obalt\"" in PAGE   # region-wide reports too
+    assert "function oblAlt(m)" in PAGE and "if(al2) seg(`<text class=\"obtxt obalt\"" in PAGE   # region-wide reports too
 
 
 # ---- 1.51: a target "somewhere in the oblast" says so, and is not drawn in the alert's colours ------------------------
 def test_a_region_wide_target_is_outlined_and_says_somewhere_in_the_oblast():
     chip = PAGE[PAGE.index("function paintOblEvents(){"):PAGE.index("function oblEventSheet")]
-    # 1.53.1, the owner: "still unreadable — and not this cyan": a white dashed outline, a compact chip under the
-    # oblast's name, "somewhere in the oblast" under it from the regional view in; no hatching
+    # 1.54, the owner: "this tiny square marking looks really bad": the oblast's own name lights up, a rounded badge under
+    # it, and the border glows from the inside; "somewhere in the oblast" under the badge from the regional view in
     assert "<text class=\"obtxt obwhere\" text-anchor=\"middle\"" in chip and "svg.veryfar #oblevt .obwhere{display:none}" in PAGE
     assert "obhatch" not in PAGE and "obhp" not in PAGE and "3fe0ff" not in PAGE
     assert "tid=en[k]===1&&m.tag?m.tag.id:''" in chip                                   # its tag, when it is one report
     assert "#oblevt .obring.live{fill:none;stroke:#f4f1e8;" in PAGE                   # never the alerts' amber or red
-    assert "@media (prefers-reduced-motion:reduce){#oblevt .obring.live{animation:none}}" in PAGE
+    assert '<g class="obglow" clip-path="url(#obclip${uid})">' in chip and "e.classList.toggle('hot',hot.has(e.dataset.o))" in chip
+    assert "@media (prefers-reduced-motion:reduce){#oblevt .obglow{animation:none}}" in PAGE

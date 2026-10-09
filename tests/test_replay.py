@@ -101,7 +101,7 @@ def test_the_page_loads_the_replay_only_when_asked_and_paints_no_live_colours_me
 
 def test_nothing_personal_and_nothing_live_is_drawn_during_a_replay():
     rule = PAGE[PAGE.index("body.rp #markers"):PAGE.index("{display:none!important}", PAGE.index("body.rp #markers"))]
-    for sel in ("#markers", "#edges", "#homeg", "#zones", "#pinhold", "#impactsg", "#heatg", ".livebar"):
+    for sel in ("#markers", "#edges", "#homeg", "#zones", "#pinhold", "#heatg", ".livebar"):        # 1.54: no #impactsg
         assert sel in rule, sel
 
 

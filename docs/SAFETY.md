@@ -339,6 +339,10 @@ history to find what is flying now. Longer windows — 24 h, 72 h, 7 days — li
 chips, grouped by place: "Kyiv ×12, last at 03:41" says what two hundred dots were trying to say. The report
 repeats, under its own figures, that they count posts and not events.
 
+1.54, the owner: the layer (the ✸ button, 24 hours of explosions and shoot-downs) "does not help much for now" and is
+gone, with its report. The live outcomes stay on the map, on their own short clocks (see "An explosion is a moment, not
+a state"). Should a history layer come back, this rule and the next ones are what it has to meet.
+
 ## What was destroyed decides what it means
 
 "Склад гуманітарного фонду … знищено" is a warehouse on the ground. Read as a shoot-down it became a green
@@ -599,6 +603,30 @@ directly under the numbers rather than in a footnote at the bottom of the panel:
 official totals, and the real numbers are higher — never lower. A floor presented as a total is a false
 precision in the same family as an invented trajectory.
 
+## The AI writes bulletins, and puts nothing on the map (1.54)
+
+The owner (9 Oct 2026): "instead of all that on the map, summaries of the activity of the last hour / the last 24
+hours, a bit like a weather bulletin — the AI placing things on the map, we forget it". So since 1.54 nothing the AI
+says reaches the map, the tags, the alerts, the feed or a push. It writes **bulletins** (TECHNICAL.md §7.11), and they
+are held to this document like everything else on the screen:
+
+- **Written from the server's own record**, never from a post: the official alerts, the targets the rules drew, the
+  outcomes, the heights, the Air Force's figures — counts, place names and times. What it is given is stored with what
+  it wrote, so every sentence can be checked against its record.
+- **"Reported", always.** Channel reports, not radar and not a count of drones; the card says "written by AI from the
+  channels' posts and the official alerts — not radar".
+- **Never "safe"**, never that the danger is over, never shelter advice, **never a forecast** — a trend the record shows
+  ("fewer reports in the last 20 minutes") is a fact and may be said; "they will" is not.
+- **Never where targets came from or where they are heading**: the posts' origins were wrong too often to show on the
+  map (1.53.2), and a bulletin is no place to bring them back. A followed target's reported places, in order, may be told.
+- Alerts are named only from the official data, and only the official data sets a colour — a bulletin starts and ends
+  nothing.
+- **Behind the dashboard's switch**, off until the owner turns it on; and a bulletin the server can no longer stand by —
+  the AI off, out of budget, failing — goes stale and leaves the app rather than describing an hour that has moved on.
+- A quiet window is said by the server itself, in fixed words, without asking the model anything.
+
+The sections below describe the AI reading posts for the map (1.50–1.53); none of it runs any more.
+
 ## A language model is a second opinion, never a source (1.50)
 
 The AI reader (TECHNICAL.md §7.7) reads the same posts as the rules: what it says is stored for the dashboard and
@@ -617,6 +645,8 @@ address or a device.
 
 ## A target only the AI reader found (1.52)
 
+(Until 1.54 — no such target is drawn any more.)
+
 The owner's decision (9 Oct 2026): a target missed is worse than a duplicate — a "ghost" ten kilometres from a real
 target is better than a target nobody drew because a post was worded loosely. So a target the AI reader found that the
 rules did not read is drawn, marked "AI" on the map and in its card (1.53: never pushed "near you" — see below). What
@@ -627,6 +657,8 @@ drawn ("біля Сомкової Долини" was read by the rules as Dolyna,
 target off the map within ten seconds.
 
 ## The AI reads every 10 minutes and writes up the night (1.53)
+
+(1.54: the 10-minute check is stopped; the report on each night stays, for the dashboard.)
 
 The owner's decision (9 Oct 2026), on cost: the AI reads the posts of each ten minutes in one call, beside what the
 rules drew and what the map shows, and reports only where the rules are wrong or incomplete. The rules stay the reader
@@ -655,7 +687,7 @@ it passed, not an origin. A target reported for a whole oblast gets no tag at al
 target it is. The bottom line (height, speed) is only
 what the target's latest report stated. The format is Heimdall's, not a military one — the card says so — because a
 tag that looks like an air-defence designation would be read as coming from air defence. The rules' reading comes
-first; the AI's fills only what the rules did not read, and the card marks it "AI".
+first; until 1.54 the AI's filled what the rules did not read, marked "AI" — since 1.54 a tag is the rules' reading alone.
 
 A target drawn at the town it is heading for ("2 реактиви у бік Києва з півдня") is not at that town. Its glyph stands
 off the town on the side the post named, a fixed distance on the screen — not a distance on the ground, which nobody

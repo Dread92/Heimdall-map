@@ -82,6 +82,9 @@ details.rgmore{margin:4px 0 10px}details.rgmore summary{cursor:pointer;font:600 
 .nstat{font:12.5px var(--mono);color:var(--ink2);margin:0 0 6px}
 /* 1.53: the checks, and what each found */
 .aih3{font:600 12px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);margin:18px 0 8px}
+/* 1.54: the bulletins, and the record each was written from; the readings before 1.54, folded */
+.bulin summary{cursor:pointer;font:12px var(--sans);color:var(--ink3);margin-top:6px}.bulin pre{white-space:pre-wrap;font:11.5px/1.4 var(--mono);color:var(--ink2);max-height:320px;overflow:auto;margin:6px 0 0}
+.aihist{margin-top:22px;border-top:1px solid var(--line)}.aihist>summary{cursor:pointer;list-style:none}.aihist>summary::before{content:'▸ '}.aihist[open]>summary::before{content:'▾ '}
 .ack{background:var(--panel);border:1px solid var(--line);border-left:3px solid #7fd3c8;padding:9px 12px;margin:0 0 8px}.ack.bad{border-left-color:var(--red)}
 .ackf{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 6px}.ackn{font:13px/1.5 var(--sans);margin:4px 0 0}.ackn b{font-weight:600;color:var(--ink2);margin-right:4px}
 .fk{display:inline-block;font:600 10.5px var(--mono);letter-spacing:.04em;text-transform:uppercase;color:#7fd3c8;border:1px solid #2c5a55;padding:1px 6px;border-radius:2px;margin:0 6px 3px 0}
@@ -378,8 +381,9 @@ const T={
   h_channels:'Telegram channels',ch_name:'Channel',ch_24:'Posts 24 h',ch_marks:'Marks 24 h',ch_read:'Read 7 d',ch_last:'Last post',ch_state:'Reader',
   ch_api:'Telegram API',ch_prev:'web preview',ch_off:'not read',
   ch_note:'“Read” is the share of the channel’s posts over 7 days that put something on the map. A channel silent for 12 h or more, or whose reader fails, is highlighted.',
-  tab_ai:'AI reader',h_ai:'AI reader',
-  ai_note:'A language model (through OpenRouter) reads the same posts as the rules, beside them — since 1.53 every 10 minutes, all the posts of those minutes in one call, grouped by oblast, with what the rules drew and what the map shows. <b>It never moves or removes a target, never touches the alerts, and never sends a push.</b> A target only it found is drawn on the map marked AI. Every fact it gives must quote the post and every place must be one of ours: what it cannot back up is dropped. While the switch below is on, the facts it quoted that the rules did not read — where a target comes from, its height, its speed — fill the target tags on the map (S-07 ×2 · 3500 m), marked AI. It is sent a post’s public text, the channel’s name and our place names — never anything about a reader. Here: where it and the rules read a post differently, so that the rules can be fixed.',sw_h:'Switches',sw_reader:'AI reader — reads the posts (and spends)',sw_live:'Its facts in the target tags on the map',sw_on:'ON',sw_off:'OFF',sw_turn_off:'Switch off',sw_turn_on:'Switch on',sw_q_live_off:'Take the AI’s facts out of the target tags now? The tags keep only what the rules read.',sw_q_live_on:'Put the AI’s quoted facts (origin, height, speed) in the target tags on the map?',sw_q_reader_off:'Stop the AI reader? No post is sent to OpenRouter until it is switched on again.',sw_q_reader_on:'Start the AI reader again?',sw_note:'Takes effect within 10 seconds on every open map.',
+  tab_ai:'AI',h_ai:'AI',
+  bul_note:'Since 1.54 the AI (a language model through OpenRouter) <b>puts nothing on the map</b>: it writes the <b>bulletins</b> — the activity of the last hour and of the last 24 hours, like a weather bulletin, in Ukrainian, English and French in one call — and the report on each night (Analytics). A bulletin is written from the server’s own record of the window: the official alerts, the targets the rules drew, the outcomes, the Air Force’s figures — counts, places and times, never a post’s text or anything about a reader. The app shows the latest of each over the Near list while the switch below is on.',bul_h:'Bulletins',sw_bul:'Bulletins in the app (over the Near list)',sw_q_bulletin_public_on:'Show the AI’s bulletins in the app, to everyone?',sw_q_bulletin_public_off:'Take the bulletins out of the app now?',bul_every:'The last hour every {0} min and the last 24 hours every hour, on the clock — only while there is activity; the same record is never written twice, and a quiet window gets one line from the server, without a call.',bul_now1:'Write the last hour now',bul_now24:'Write the last 24 hours now',bul_k_1h:'Last hour',bul_k_24h:'Last 24 hours',bul_quiet:'quiet window — the server’s own line, no call',bul_none:'No bulletin yet. The first comes at the next mark on the clock with activity in the window, or with “write now”.',bul_why:'{0} — last turn: {1}',bul_input:'The record it was written from',bul_m:'Bulletins this month',bul_avg:'{0} each',bul_writing:'Writing the {0} bulletin…',ai_hist:'Before 1.54: the AI reading posts and checking the map (stopped)',
+  ai_note:'A language model (through OpenRouter) reads the same posts as the rules, beside them — since 1.53 every 10 minutes, all the posts of those minutes in one call, grouped by oblast, with what the rules drew and what the map shows. <b>It never moves or removes a target, never touches the alerts, and never sends a push.</b> A target only it found is drawn on the map marked AI. Every fact it gives must quote the post and every place must be one of ours: what it cannot back up is dropped. While the switch below is on, the facts it quoted that the rules did not read — where a target comes from, its height, its speed — fill the target tags on the map (S-07 ×2 · 3500 m), marked AI. It is sent a post’s public text, the channel’s name and our place names — never anything about a reader. Here: where it and the rules read a post differently, so that the rules can be fixed.',sw_h:'Switches',sw_reader:'The AI — writes the bulletins and the night’s report (and spends)',sw_live:'Its facts in the target tags on the map',sw_on:'ON',sw_off:'OFF',sw_turn_off:'Switch off',sw_turn_on:'Switch on',sw_q_live_off:'Take the AI’s facts out of the target tags now? The tags keep only what the rules read.',sw_q_live_on:'Put the AI’s quoted facts (origin, height, speed) in the target tags on the map?',sw_q_reader_off:'Stop the AI? Nothing is sent to OpenRouter until it is switched on again; the bulletins go stale and leave the app.',sw_q_reader_on:'Start the AI again?',sw_note:'Takes effect within 10 seconds on every open map.',
   ai_nokey:'Off — no OpenRouter key: run scripts/set-openrouter-key.bat once.',ai_off:'Off — ai_reader is false in config.json, or the monthly cap is 0.',
   ai_on:'On — model {0}, prompt v{1}',ai_paused:'Paused for a few minutes — OpenRouter refused: {0}',ai_err:'The last call failed: {0}',
   ai_budget:'The month’s cap is reached — it reads again on the 1st.',
@@ -506,8 +510,9 @@ const T={
   h_channels:'Telegram-канали',ch_name:'Канал',ch_24:'Дописів 24 г',ch_marks:'Позначок 24 г',ch_read:'Зчитано 7 д',ch_last:'Останній допис',ch_state:'Читання',
   ch_api:'Telegram API',ch_prev:'веб-перегляд',ch_off:'не читається',
   ch_note:'«Зчитано» — частка дописів каналу за 7 днів, що поставили щось на мапу. Канал, що мовчить 12 год і більше, або чиє читання збоїть, підсвічено.',
-  tab_ai:'ШІ-читач',h_ai:'ШІ-читач',
-  ai_note:'Мовна модель (через OpenRouter) читає ті самі дописи, що й правила, поруч із ними — з 1.53 раз на 10 хвилин, усі дописи цих хвилин одним запитом, за областями, разом із тим, що намалювали правила і що показує мапа. <b>Вона ніколи не переміщує й не прибирає ціль, не впливає на тривоги й не надсилає сповіщень.</b> Ціль, яку знайшла лише вона, з’являється на мапі з позначкою ШІ. Кожен факт вона має підтвердити цитатою з допису, кожне місце — вибрати з наших; непідтверджене відкидається. Поки перемикач нижче увімкнено, факти, які вона процитувала, а правила не прочитали, — звідки летить ціль, висота, швидкість — потрапляють у номери цілей на мапі (S-07 ×2 · 3500 м) з позначкою ШІ. Їй надсилається лише публічний текст допису, назва каналу й наші назви місць — нічого про читачів. Тут видно, де вона й правила читають допис по-різному, щоб виправити правила.',sw_h:'Перемикачі',sw_reader:'ШІ-читач — читає дописи (і витрачає кошти)',sw_live:'Його факти в номерах цілей на мапі',sw_on:'УВІМК.',sw_off:'ВИМК.',sw_turn_off:'Вимкнути',sw_turn_on:'Увімкнути',sw_q_live_off:'Прибрати факти ШІ з номерів цілей зараз? У номерах лишиться тільки те, що прочитали правила.',sw_q_live_on:'Додати процитовані ШІ факти (звідки, висота, швидкість) у номери цілей на мапі?',sw_q_reader_off:'Зупинити ШІ-читача? Жоден допис не надсилатиметься в OpenRouter, доки його знову не увімкнуть.',sw_q_reader_on:'Знову запустити ШІ-читача?',sw_note:'Діє протягом 10 секунд на кожній відкритій мапі.',
+  tab_ai:'ШІ',h_ai:'ШІ',
+  bul_note:'З 1.54 ШІ (мовна модель через OpenRouter) <b>нічого не наносить на мапу</b>: вона пише <b>зведення</b> — активність за останню годину та за останні 24 години, як прогноз погоди, українською, англійською та французькою одним запитом — і звіт про кожну ніч (Аналітика). Зведення пишеться із власного запису сервера за цей проміжок: офіційні тривоги, цілі, які намалювали правила, наслідки, дані Повітряних сил — числа, місця й час, ніколи текст допису чи будь-що про читача. Застосунок показує останнє з кожних над списком «Поруч», доки ввімкнено перемикач нижче.',bul_h:'Зведення',sw_bul:'Зведення в застосунку (над списком «Поруч»)',sw_q_bulletin_public_on:'Показувати зведення ШІ в застосунку всім?',sw_q_bulletin_public_off:'Прибрати зведення із застосунку зараз?',bul_every:'Остання година — раз на {0} хв, останні 24 години — щогодини, за годинником; лише коли є активність. Той самий запис не пишеться двічі, а тихий проміжок отримує один рядок від сервера, без запиту.',bul_now1:'Написати останню годину зараз',bul_now24:'Написати останні 24 години зараз',bul_k_1h:'Остання година',bul_k_24h:'Останні 24 години',bul_quiet:'тихий проміжок — рядок від сервера, без запиту',bul_none:'Зведень ще немає. Перше буде на наступній позначці годинника з активністю, або кнопкою «написати зараз».',bul_why:'{0} — останній раз: {1}',bul_input:'Запис, з якого його написано',bul_m:'Зведень за місяць',bul_avg:'{0} за одне',bul_writing:'Пишеться зведення «{0}»…',ai_hist:'До 1.54: ШІ читав дописи й перевіряв мапу (зупинено)',
+  ai_note:'Мовна модель (через OpenRouter) читає ті самі дописи, що й правила, поруч із ними — з 1.53 раз на 10 хвилин, усі дописи цих хвилин одним запитом, за областями, разом із тим, що намалювали правила і що показує мапа. <b>Вона ніколи не переміщує й не прибирає ціль, не впливає на тривоги й не надсилає сповіщень.</b> Ціль, яку знайшла лише вона, з’являється на мапі з позначкою ШІ. Кожен факт вона має підтвердити цитатою з допису, кожне місце — вибрати з наших; непідтверджене відкидається. Поки перемикач нижче увімкнено, факти, які вона процитувала, а правила не прочитали, — звідки летить ціль, висота, швидкість — потрапляють у номери цілей на мапі (S-07 ×2 · 3500 м) з позначкою ШІ. Їй надсилається лише публічний текст допису, назва каналу й наші назви місць — нічого про читачів. Тут видно, де вона й правила читають допис по-різному, щоб виправити правила.',sw_h:'Перемикачі',sw_reader:'ШІ — пише зведення і звіт про ніч (і витрачає кошти)',sw_live:'Його факти в номерах цілей на мапі',sw_on:'УВІМК.',sw_off:'ВИМК.',sw_turn_off:'Вимкнути',sw_turn_on:'Увімкнути',sw_q_live_off:'Прибрати факти ШІ з номерів цілей зараз? У номерах лишиться тільки те, що прочитали правила.',sw_q_live_on:'Додати процитовані ШІ факти (звідки, висота, швидкість) у номери цілей на мапі?',sw_q_reader_off:'Зупинити ШІ? Нічого не надсилатиметься в OpenRouter, доки його знову не увімкнуть; зведення застаріють і зникнуть із застосунку.',sw_q_reader_on:'Знову запустити ШІ?',sw_note:'Діє протягом 10 секунд на кожній відкритій мапі.',
   ai_nokey:'Вимкнено — немає ключа OpenRouter: один раз запустіть scripts/set-openrouter-key.bat.',ai_off:'Вимкнено — у config.json ai_reader = false або місячний ліміт 0.',
   ai_on:'Увімкнено — модель {0}, промпт v{1}',ai_paused:'Призупинено на кілька хвилин — OpenRouter відмовив: {0}',ai_err:'Останній запит не вдався: {0}',
   ai_budget:'Місячний ліміт вичерпано — читання відновиться 1-го числа.',
@@ -864,7 +869,7 @@ function drawNuke(){ const cur=ON&&ON.nuke;
     $('nk_cur').innerHTML=Object.entries(cur.text||{}).map(([k,v])=>`<div><b>${esc(k.toUpperCase())}</b>${esc(v)}</div>`).join(''); } }
 
 // ---- 1.50: the AI reader, in shadow mode — its reading of each post beside the rules'; nothing of it reaches the map --
-let AI=null, AI_ERR='', AI_ALL=false; try{ AI_ALL=localStorage.getItem('aiall')==='1'; }catch(e){}
+let AI=null, AI_ERR='', AI_ALL=false, AI_HIST=false; try{ AI_ALL=localStorage.getItem('aiall')==='1'; }catch(e){}
 const AI_V=['agree','place','kind','status','ai_only','rules_only','facts','none','error'];
 function aiPlace(w){ if(!w) return '—'; const m=/^o(\d+)$/.exec(w); if(!m) return w;
   // Kyiv oblast and the city are one compartment of the dashboard's regions ("31"): named here
@@ -887,7 +892,7 @@ function aiTarget(t){
   return `<div class="tg">${esc(bits.join(' · '))}${q.length?`<div class="ardq">${q.map(x=>'«'+esc(x)+'»').join(' ')}</div>`:''}</div>`; }
 function drawAI(){
   const box=$('aiv'); if(!box) return;
-  const head=`<h2>${tr('h_ai')}</h2><div class="note">${tr('ai_note')}</div>`;
+  const head=`<h2>${tr('h_ai')}</h2><div class="note">${tr('bul_note')}</div>`;
   if(AI_ERR){ box.innerHTML=head+`<div class="err">${esc(AI_ERR)}</div>`; return; }
   if(!AI){ box.innerHTML=head; return; }
   const s=AI.stats||{}, bv=s.by_verdict||{}, n=s.reads_month||0, read=n-(bv.error||0);
@@ -920,37 +925,42 @@ function drawAI(){
       <div><b>${tr('ai_ai')}</b>${r.error?'<div class="mut">—</div>':fs?(fs.length?finds(r):`<div class="mut">${tr('v_'+v)}</div>`):a.length?a.map(aiTarget).join(''):`<div class="mut">${tr('ai_nothing')}</div>`}${
         r.ai&&r.ai.uncertain?`<div class="mut">${esc(tr('ai_unsure',r.ai.uncertain))}</div>`:''}${r.dropped?`<div class="mut">${esc(tr('ai_dropped',r.dropped))}</div>`:''}</div></div></div>`; }).join('')
     :`<div style="color:var(--ink3)">${tr('ai_none')}</div>`;
-  // 1.51: the two switches — the reader itself, and its facts in the target tags (the kill switch)
+  // 1.54: the AI's switches — the AI itself (every call stops), and its bulletins in the app
   const sw=(k,on,lab)=>`<div class="aisw ${on?'on':'off'}"><span>${esc(lab)}</span><b>${esc(tr(on?'sw_on':'sw_off'))}</b><button class="dgb" data-sw="${k}" data-on="${on?0:1}">${esc(tr(on?'sw_turn_off':'sw_turn_on'))}</button></div>`;
-  // 1.53: how it reads — every N minutes (one call) or each post — and "check now"
-  const ck=s.mode!=='post', ev=s.every_min||10;
-  const msw=`<div class="aisw on"><span>${esc(tr('sw_mode'))}</span><b>${esc(ck?tr('sw_mode_check',ev):tr('sw_mode_post'))}</b><button class="dgb" data-mode="${ck?'post':'check'}">${esc(ck?tr('sw_to_post'):tr('sw_to_check',ev))}</button></div>`;
-  const sws=AI.stats&&s.key?`<div class="aisws">${sw('reader',s.reader_on!==false,tr('sw_reader'))}${sw('live',s.live!==false,tr('sw_live'))}${msw}<div class="aist mut">${esc(tr('sw_note'))}</div></div>`:'';
-  const CK=AI.checks||[], last=CK[0];
-  const modeLine=!s.key?'':`<div class="aist">${esc(ck?tr('ai_mode_check',ev):tr('ai_mode_post'))}${ck&&s.next_check?' · '+esc(tr('ai_next',tm(s.next_check))):''}${
-    last?' · '+esc(tr('ai_last',ckt(last.id),last.posts,(last.cost||0).toFixed(4))):''}${ck&&s.enabled?` <button class="dgb" id="aick">${esc(tr('ai_checknow'))}</button>`:''}</div>`;
-  const ckList=!ck&&!CK.length?'':`<h3 class="aih3">${esc(tr('h_checks'))}</h3>`+(CK.length?CK.map(c=>{ const fk=Object.entries(c.findings||{}).filter(([,n])=>n);
+  const BL=AI.bulletin||{}, BS=AI.bulletins||[];
+  const sws=AI.stats&&s.key?`<div class="aisws">${sw('reader',s.reader_on!==false,tr('sw_reader'))}${sw('bulletin_public',!!BL.public,tr('sw_bul'))}</div>`:'';
+  const why=Object.entries(BL.why||{}).filter(([,v])=>v).map(([k,v])=>`<div class="aist mut">${esc(tr('bul_why',tr('bul_k_'+k),v))}</div>`).join('');
+  const btns=s.key&&s.enabled?`<div class="anbar"><button class="dgb" data-bn="1h">${esc(tr('bul_now1'))}</button><button class="dgb" data-bn="24h">${esc(tr('bul_now24'))}</button>${
+    BL.writing?`<span class="aist">${esc(tr('bul_writing',tr('bul_k_'+BL.writing)))}</span>`:''}</div>`:'';
+  const bcards=`<div class="cards"><div class="card"><div class="v">$${(s.usd_month||0).toFixed(2)}</div><div class="l">${tr('ai_spent')} · ${esc(tr('ai_of',s.cap_usd==null?'—':s.cap_usd))}</div></div>
+    <div class="card b"><div class="v">${fmt(s.bulletins_month||0)}</div><div class="l">${tr('bul_m')}${s.bulletins_month?' · '+esc(tr('bul_avg','$'+(s.usd_bulletins_month/s.bulletins_month).toFixed(4))):''}</div></div></div>`;
+  const blist=BS.length?BS.map(r=>`<div class="ack${r.error?' bad':''}"><div class="ardh"><span><b>${esc(tr('bul_k_'+r.kind))}</b> · ${esc(tm(r.at))}</span><span class="sp"></span><span>${
+      r.error?esc(r.error):r.quiet?esc(tr('bul_quiet')):'$'+(r.cost||0).toFixed(4)+' · '+(r.tok_in||0)+'/'+(r.tok_out||0)+' tok'}</span></div>${
+      ['uk','en','fr'].filter(l=>r[l]).map(l=>`<div class="ackn"><b>${l.toUpperCase()}</b> ${esc(r[l])}</div>`).join('')}${
+      r.input?`<details class="bulin"><summary>${esc(tr('bul_input'))}</summary><pre>${esc(r.input)}</pre></details>`:''}</div>`).join('')
+    :`<div class="mut">${esc(tr('bul_none'))}</div>`;
+  const bul=`<h3 class="aih3">${esc(tr('bul_h'))}</h3><div class="note">${tr('bul_note')}</div>${sws}<div class="aist">${esc(state)}</div>${
+    warn.map(w=>`<div class="aiw">${esc(w)}</div>`).join('')}<div class="aist mut">${esc(tr('bul_every',BL.every_min||20))}</div>${why}${btns}${bcards}${blist}`;
+  const CK=AI.checks||[];
+  const ckList=!CK.length?'':`<h3 class="aih3">${esc(tr('h_checks'))}</h3>`+CK.map(c=>{ const fk=Object.entries(c.findings||{}).filter(([,n])=>n);
     return `<div class="ack${c.error?' bad':''}"><div class="ardh"><span>${esc(tm(c.first))}–${esc(tm(c.last).slice(-5))} · ${esc(tr('ai_ck_posts',c.posts))}${(c.oblasts||[]).length?' · '+esc((c.oblasts||[]).map(u=>aiPlace('o'+u)).join(', ')):''}</span><span class="sp"></span><span>${c.error?esc(tr('ai_ck_err',c.error)):'$'+(c.cost||0).toFixed(4)+' · '+((c.ms||0)/1000).toFixed(1)+' s · '+(c.tok_in||0)+'/'+(c.tok_out||0)+' tok'}</span></div>${
       fk.length?`<div class="ackf">${fk.map(([k,n])=>`<span class="fk">${esc(tr('f_'+k))} ×${n}</span>`).join(' ')}</div>`:''}${
-      (c.notes||[]).map(n=>`<div class="ackn"><b>${esc(aiPlace(n.oblast))}</b> ${esc(n.note)}</div>`).join('')}${c.uncertain?`<div class="mut">${esc(tr('ai_ck_unsure',c.uncertain))}</div>`:''}</div>`; }).join('')
-    :`<div class="mut">${esc(tr('ai_ck_none',ev))}</div>`);
-  box.innerHTML=head+sws+`<div class="aist">${esc(state)}${s.queued?' · '+esc(tr('ai_queue',s.queued)):''}</div>${modeLine}${warn.map(w=>`<div class="aiw">${esc(w)}</div>`).join('')}${
-    sk.length?`<div class="aist mut">${esc(sk.join(' · '))}</div>`:''}${cards}${n?vt:''}${ckList}<h3 class="aih3">${esc(tr('h_ai_posts'))}</h3>
+      (c.notes||[]).map(n=>`<div class="ackn"><b>${esc(aiPlace(n.oblast))}</b> ${esc(n.note)}</div>`).join('')}${c.uncertain?`<div class="mut">${esc(tr('ai_ck_unsure',c.uncertain))}</div>`:''}</div>`; }).join('');
+  // before 1.54: what it read post by post and what its checks found — the history, folded
+  const hist=`<details class="aihist"${AI_HIST?' open':''}><summary class="aih3">${esc(tr('ai_hist'))}</summary>${sk.length?`<div class="aist mut">${esc(sk.join(' · '))}</div>`:''}${cards}${n?vt:''}${ckList}<h3 class="aih3">${esc(tr('h_ai_posts'))}</h3>
     <div class="anbar"><div class="seg" id="aif"><button data-a="0" class="${AI_ALL?'':'on'}">${tr('ai_f_diff')}</button><button data-a="1" class="${AI_ALL?'on':''}">${tr('ai_f_all')}</button></div><button class="dgb" id="aire">${tr('ai_reload')}</button></div>
-    <div class="note" style="margin:0 0 14px">${tr('ai_legend')}</div>${list}`;
+    <div class="note" style="margin:0 0 14px">${tr('ai_legend')}</div>${list}</details>`;
+  box.innerHTML=`<h2>${tr('h_ai')}</h2>`+bul+hist;
+  const hd=box.querySelector('.aihist'); if(hd) hd.ontoggle=()=>{ AI_HIST=hd.open; };
   $('aif').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; AI_ALL=b.dataset.a==='1'; try{localStorage.setItem('aiall',AI_ALL?'1':'0');}catch(err){} loadAI(); };
   $('aire').onclick=()=>loadAI();
   box.querySelectorAll('[data-sw]').forEach(b=>b.onclick=async()=>{ const k=b.dataset.sw, on=b.dataset.on==='1';
     if(!confirm(tr('sw_q_'+k+(on?'_on':'_off')))) return; b.disabled=true;
     try{ await fetch('/api/admin/ai'+(KEYQ?'?'+KEYQ.slice(1):''),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({[k]:on})}); }catch(e){}
     loadAI(); });
-  box.querySelectorAll('[data-mode]').forEach(b=>b.onclick=async()=>{ const m=b.dataset.mode;
-    if(!confirm(tr('sw_q_mode_'+m,ev))) return; b.disabled=true;
-    try{ await fetch('/api/admin/ai'+(KEYQ?'?'+KEYQ.slice(1):''),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:m})}); }catch(e){}
-    loadAI(); });
-  const cn=$('aick'); if(cn) cn.onclick=async()=>{ cn.disabled=true;
-    try{ await fetch('/api/admin/ai'+(KEYQ?'?'+KEYQ.slice(1):''),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({check_now:true})}); }catch(e){}
-    setTimeout(loadAI,20000); cn.textContent='…'; };
+  box.querySelectorAll('[data-bn]').forEach(b=>b.onclick=async()=>{ b.disabled=true;
+    try{ await fetch('/api/admin/ai'+(KEYQ?'?'+KEYQ.slice(1):''),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({bulletin_now:b.dataset.bn})}); }catch(e){}
+    setTimeout(loadAI,2500); setTimeout(loadAI,15000); });
 }
 async function loadAI(){
   try{ const r=await fetch('/api/ai_reads?limit=100&all='+(AI_ALL?1:0)+KEYQ); const d=await r.json();

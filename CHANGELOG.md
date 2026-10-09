@@ -2,6 +2,38 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.54.0 — 2026-10-09
+
+### Added
+- **The AI's bulletins** — the owner: "instead of all that on the map, summaries of the activity of the last hour / the
+  last 24 hours, a bit like a weather bulletin". Over the Near list (on a computer, in the left column): "Bulletin · AI",
+  the last hour or the last 24 hours, in the reader's language, with the time it was written and "written by AI from the
+  channels' posts and the official alerts — not radar". The AI writes them in Ukrainian, English and French in one call
+  from the server's own record of the window — the official alerts, the targets the rules drew (reports, not drones),
+  the outcomes, the heights, the paths followed, the Air Force's figures: counts, places and times, never a post's text.
+  The last hour every 20 minutes and the last 24 hours every hour, only while there is activity; a quiet window gets one
+  line from the server, without a call; the same record is never written twice. Never "safe", no shelter advice, no
+  forecast, no "where they came from". **Behind the dashboard's switch** (off until switched on), and a bulletin the
+  server can no longer stand by (the AI off or out of budget) leaves the app.
+- Dashboard → AI: the bulletins' switch, "write the last hour / 24 hours now", the month's bulletins and their cost, each
+  bulletin in three languages with the record it was written from.
+
+### Changed
+- **The AI puts nothing on the map any more** — the owner: "the AI placing things on the map — we forget it". No target
+  only the AI found, no AI fact in a tag (height, speed, descent, origin), no "AI" on a label or an oblast's chip; no post
+  is handed to it and its 10-minute checks are stopped (the owner's choice). What it read until now stays on the
+  dashboard, folded under the bulletins; its reading code is kept, not called.
+- **A target reported for a whole oblast**, the owner: "this tiny square marking looks really bad": the oblast's own name
+  lights up, a rounded badge under it (the weapon in its colour, ×count, a height), and the oblast's border glows softly
+  from the inside — "somewhere in here", the middle left clear for the targets placed in it. Kyiv oblast's badge carries
+  its name; two badges never overlap; the town names under them give way; the badge's pieces are measured in the
+  phone's own font.
+- The night's report no longer reads the AI's checks (there are none).
+
+### Removed
+- **The explosions layer of the last 24 hours** (the ✸ button on the map, its key over the map and its report by place)
+  — the owner: it "does not help much for now". The live outcomes stay on the map as they were.
+
 ## 1.53.4 — 2026-10-09
 
 ### Fixed

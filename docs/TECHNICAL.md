@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.53** · last updated 2026-10-09 (1.53.4)
+**Documented version: 1.54** · last updated 2026-10-09 (1.54.0)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -181,7 +181,7 @@ clear-sky/
 | `Watchdog` | the database and alert-state locks must be free within 15 s; a held lock logs every thread's stack, five in a row (~2 min) → exit, Fly restarts it; a starved process is only logged (load, not a deadlock) | 20 s |
 | `Digests` | each night (18:00–08:00 Kyiv) after `digest_hour`, and each Monday for the week: the figures (`State.digest_facts`), and with `ANTHROPIC_API_KEY` a written summary in EN + UK; stored in `digests` | 5 min check |
 | `Translations` | machine-translates feed posts into a language somebody reads | on demand, ~3 calls/s max |
-| `ai-reader` | 1.50, with `OPENROUTER_API_KEY`: the AI reader (§7.7) — 1.53: every `ai_check_minutes` one call for the posts of those minutes (§7.10; `ai_reader_mode` "post": one at a time as before), stores its findings in `ai_reads` and the check in `ai_checks`; never touches the alerts or the feed, never sends a push | queue; ≤ 400 posts/h, ≤ `ai_reader_monthly_usd` a month |
+| `bulletins` | 1.54, with `OPENROUTER_API_KEY`: the AI's bulletins (§7.11) — on the clock, the last hour every `ai_bulletin_minutes` (20) and the last 24 hours every hour, only while there is activity, one call each in three languages → `ai_bulletins`; or one the dashboard asks for. (Until 1.53 an `ai-reader` thread read the posts — §7.7; retired) | 20 s; ≤ `ai_reader_monthly_usd` a month |
 | `night-reports` | 1.53: after `ai_report_hour` (Kyiv), the AI's report on the night before (§7.10) → `ai_reports`; or a night the dashboard asks for | 5 min |
 | `Pusher` | sends Web Push: one notification at a time, each to all its phones at once through `push.Sender` (32 workers, one kept-open HTTPS connection per push service per worker, VAPID signed once an hour per service) | queue |
 | `streams` | **every open page's live line** (`StreamHub`, §5.4): one thread, non-blocking sockets (epoll), the data sent as changes | events + every 15 / 5 / 2 s |
@@ -279,12 +279,11 @@ the committed template.
 | `access_key` | `""` | Locks the WHOLE app behind a key — private deployments only. |
 | `esri_key` | `""` | Esri (ArcGIS Location Platform) API key: the satellite layer's closest zooms, 14–18 (1.48, §10.1). Set as `ESRI_KEY` by `scripts/set-esri-key.bat`. |
 | `esri_monthly_tiles` | `1800000` | Esri tiles a month, at most — under the 2 M free tiles; a tenth of it in one day at most. Past it: Sentinel alone. |
-| `openrouter_key` | `""` | OpenRouter API key: the AI reader in shadow mode (1.50, §7.7). Set as `OPENROUTER_API_KEY` by `scripts/set-openrouter-key.bat`. |
-| `ai_reader` | `true` | `false` keeps the AI reader off even with a key. |
+| `openrouter_key` | `""` | OpenRouter API key: the AI (1.50, §7.7; 1.54 the bulletins, §7.11, and the night's report). Set as `OPENROUTER_API_KEY` by `scripts/set-openrouter-key.bat`. |
+| `ai_reader` | `true` | `false` keeps the AI off even with a key. |
 | `ai_reader_model` | `"anthropic/claude-haiku-5.5"` | Its model on OpenRouter (any model that takes a strict JSON schema). |
 | `ai_reader_monthly_usd` | `10` | What it may spend in a calendar month (UTC), counted from OpenRouter's own cost of each call; past it, it stops until the 1st. |
-| `ai_reader_mode` | `"check"` | 1.53: `"check"` — one call every `ai_check_minutes` for all the posts of those minutes (§7.10); `"post"` — one call a post (until 1.52). The dashboard's switch (`kv` `ai_mode`) wins. |
-| `ai_check_minutes` | `10` | 1.53: how often the check runs, on the clock (2–60). |
+| `ai_bulletin_minutes` | `20` | 1.54: the last hour's bulletin, every N minutes on the clock (10–60), while there is activity (§7.11). (`ai_reader_mode` and `ai_check_minutes`, 1.53, went with the check.) |
 | `ai_report_hour` | `9` | 1.53: the Kyiv hour after which the AI writes its report on the night that began the day before at 12:00. |
 | `demo` | `false` | Fake alerts and posts. |
 
@@ -711,8 +710,16 @@ in the oblast"; still under `prefers-reduced-motion`. 1.52.1: the hatching only 
 owner: "still unreadable — and not this cyan": a **white** dashed outline (dark in daylight) slowly fading in and out, no
 hatching, and a compact chip — the weapon, the count, a height, "AI" when only the AI read it — right under the oblast's
 own name; "somewhere in the oblast" is written under the chip from the regional view in (`svg.veryfar` hides it), and in
-words on a tap) and a chip with the weapon's silhouette and the
-count, the posts one tap away (`oblEventSheet`). The Near list keeps it without a distance, as "Chernihiv oblast ·
+words on a tap. **1.54**, the owner: "this tiny square marking looks really bad": the oblast's own name **lights up**
+(`#obllbl .oblbl.hot`, the names carry `data-o`), a **rounded badge** under it — the weapon's silhouette in its colour,
+×count, a height, its border the weapon's colour — whose pieces are measured once drawn (`fitOblChips`: the phone's own
+font never runs one into the next), and the oblast's **border glows from the inside** (`.obglow`: three wide strokes
+clipped to the oblast, so only their inner half shows, and a thin solid line; breathing slowly, still under
+`prefers-reduced-motion`): "somewhere in here", the middle of the oblast left clear for the targets placed in it. An
+oblast drawn without a name (Kyiv oblast, the city, Sevastopol, Crimea: `OBL_UNNAMED`) carries it in the badge ("KYIV
+OBL.", `ob_kyiv`); every outline is drawn before every badge; two badges never overlap (`layoutOblChips`, at each zoom:
+the one of an unnamed oblast steps down); the town names under a lit name or a badge give way), the posts one tap away
+(`oblEventSheet`). The Near list keeps it without a distance, as "Chernihiv oblast ·
 somewhere in the oblast" (`oblWhere`, `nearRows` `vague`); it never raises the level. A push never says "within N km
 of you" for it (`proximity_watch`) — only a ballistic warning, which covers the region anyway, is still sent, naming
 the oblast; the Light page's radar does not draw it.
@@ -779,7 +786,13 @@ Analytics (§8c) and the nights' figures (§8b) all read this table. `parse_af_s
 a wrapper for older callers. `tests/test_af_reports.py` pins it on 11 real summaries of 21–28 Sep 2026
 (`tests/fixtures/af_summaries_2026_09.json`).
 
-### 7.7 The AI reader (1.50; its facts in the target tags since 1.51)
+### 7.7 The AI reader (1.50; its facts in the target tags since 1.51; retired from the map in 1.54)
+
+> **1.54, the owner: "the AI placing things on the map — we forget it".** Nothing in §7.7, §7.9 or §7.10's check runs any
+> more: no post is handed to the AI (`Telegram._to_ai` is gone), no AI mark is drawn (`State._ai_marks`), no AI fact
+> fills a tag (`State._ai_facts`, the `ai_live` switch), and the map's context for it (`ai_context`, `ai_map`) is gone. The
+> reading itself — prompt, schema, validators, `AIReader.read` / `check` — is kept in `ai_reader.py` with its tests, and
+> the dashboard still shows what it read until then. The AI now writes **bulletins** (§7.11) and the night's report.
 
 A second reader of the channels' posts: a language model, through OpenRouter (`app/ai_reader.py`, thread
 `ai-reader`). **It never places, moves or removes a mark, and never reaches the alerts, the feed, the banners or a
@@ -932,7 +945,9 @@ does not sit on the last one shown, and the card adds "N-07 tonight: 12 reports 
 1.52.1: an answer may be `MAX_OUT` = 2,400 tokens long (1,200 cut one reading in ten off mid-answer — "not JSON");
 an answer cut off at the length is recorded as "cut off at 2400 tokens".
 
-### 7.9 The AI reader's targets on the map (1.52)
+### 7.9 The AI reader's targets on the map (1.52; gone in 1.54)
+
+> 1.54: no target the AI alone found is drawn any more (§7.7's note).
 
 The owner's decision (9 Oct 2026): a target missed is worse than a duplicate. A target the AI reader found that the
 rules did not read goes **on the map**, while the switch `live` is on (§7.7), with the same chaining, scope, ageing,
@@ -971,7 +986,10 @@ can continue — it made a second track sharing that report, and both found the 
 skips a tag another track of the same pass already has (`taken`, the tracks taken oldest first). Place names ending in
 "-лець" decline with a soft sign (Козелець → Козельця, Козельцем): the stem index has that form too.
 
-### 7.10 The 10-minute check and the night's report (1.53)
+### 7.10 The 10-minute check (1.53; stopped in 1.54) and the night's report
+
+> 1.54: the owner chose to stop the check — nothing schedules it, the dashboard has no switch for it. The night's report
+> stays (`REPORT_VERSION` 2: there are no checks' notes to read any more).
 
 The owner (9 Oct 2026): one call a post costs too much at the channels' pace — the dashboard showed ~150 posts an hour
 at ~$0.0004 each (≈ 8,000 tokens in: the rules and eleven worked examples, for every post), the month's $10 gone in a
@@ -1027,9 +1045,8 @@ another tagged track's report of the same kind (another channel's word for the s
 track's tag — one target, two reports, one number (`twins`: those reports may share it).
 
 **Nothing over a target (1.53)**, the owner: "do not stack things like this". The label de-collision (tick) also keeps
-clear of every mark's height (`.dn`) and compact tag (`.tgc`) and of the history layer's glyphs; an explosion's name
-(`.imp .it`) that would touch a target's label, glyph or height, or another explosion, is hidden (`.imp.nolbl`); and the
-town names give way to the targets' glyphs and heights as well as their labels (`LBLBOX`).
+clear of every mark's height (`.dn`) and compact tag (`.tgc`); and the town names give way to the targets' glyphs and
+heights as well as their labels (`LBLBOX`). (Until 1.54 also of the explosions layer's glyphs and names — §10.1.)
 
 **A short card (1.53)**: on a phone a target's card opens at most 38 % of the screen high — the kind, height, tag, where
 and the post in three lines; the track, the night's path, the notes and the evidence are `.sec` and come with "More"
@@ -1045,6 +1062,44 @@ data (`/api/…`) is never kept.
 **Full-screen map (1.53)**: the last button of the map's column (`#fsbtn`, yellow) hides the header and the drawer
 (`body.fullmap`) and asks the browser for full screen where it allows it (Android); the alert status stays as a chip
 top left (`#fmchip`, mirroring the band `#kyiv`; a tap, Escape or the phone's Back leaves).
+
+### 7.11 The bulletins (1.54)
+
+The owner: "instead of all that on the map, summaries of the activity of the last hour / the last 24 hours, a bit like
+a weather bulletin". The `bulletins` thread (`Bulletins`) writes two, on the clock: **the last hour** every
+`ai_bulletin_minutes` (20: at :00, :20, :40) and **the last 24 hours** every hour (:00).
+
+- **The record.** `State.activity_summary(since, until)` reads what the server itself recorded over the oblasts the map
+  covers (`scope_uids`): the official air-raid alerts by oblast (minutes in the window, on now, started, ended, whole
+  oblast or raions; Kyiv city first), the targets the rules drew (`marker_log`: reports, not drones) by oblast, kind and
+  10-minute or hourly slice, the window before for comparison, the places most reported, the targets reported for a
+  whole oblast, the followed tracks' paths (`target_points`: the places in order, at most four shown), the heights, the
+  outcomes (`outcomes`: shot down, explosions), what is on the map at the end of the window, and for 24 hours the Air
+  Force's figures. `State.activity_text` makes it the plain text the AI is given. Counts, place names and times only —
+  never a post's text, a channel's name in the answer, a reader, a watched place or a device.
+- **Only while there is activity** (`State.activity_active`: a report, an outcome, an alert, a target on the map). A
+  window with nothing in it gets the server's own line (`Bulletins.QUIET`, `quiet` = 1), once, with no call. The same
+  record (`sig`, a hash of the text) is never written twice. The 24 hours are written again only after an hour with
+  activity, or every 6 hours.
+- **One call, three languages** (`AIReader.ask_bulletin`): `BULLETIN_SYSTEM` (`BULLETIN_VERSION` 1) and a strict schema
+  `{uk, en, fr}`; `bulletin_clean` takes out markdown, links, channel names and card numbers and cuts a text past
+  `BULLETIN_CHARS` (700 / 1,600 characters) at its last full sentence; a language missing is an error. The prompt's rules:
+  only what the record shows, "reported" (channel reports, not radar, not a count of drones), Kyiv first, alerts only
+  from the official ones, never "safe", never shelter advice, never a forecast (a trend in the record may be said), never
+  where targets came from or are heading (a followed target's places in order may be told), Kyiv time, 60 / 140 words a
+  language. Within the month's budget like every call; its refusals (off, paused, budget, rate) store nothing.
+- **Kept** in `ai_bulletins` (30 days) with the record it was written from, the cost and any error.
+- **In the app** (`GET /api/bulletin`): only while the dashboard's switch is on (`kv` `ai_bulletin_public` = "1"), the
+  latest bulletin of each kind — and only while the server still stands by it: each turn that finds the latest still
+  true (nothing new, the same record) sets `kv` `bul_checked:<kind>`, and a bulletin neither written nor checked within
+  35 minutes (the hour) or 75 minutes (24 h) is not shown — when the AI cannot write (off, no key, out of budget) it goes
+  stale and leaves the app. The Tactical page shows it over the Near list (`#bul` in the drawer on a phone, `#bulL` in
+  the left column on a computer): "Bulletin · AI", the last hour / 24 hours, the text in the reader's language, the time
+  it was written and "written by AI from the channels' posts and the official alerts — not radar" (`loadBulletin`,
+  every 2 minutes; `localStorage.bulk` remembers the tab).
+- **Dashboard → AI**: the AI's switch and the app's, "write the last hour / 24 hours now", the month's bulletins and their
+  cost, each bulletin in three languages with the record it was written from; the readings and checks of 1.50–1.53 are
+  folded below.
 
 ## 8. Translation
 
@@ -1372,8 +1427,9 @@ of dozen elsewhere — on an Odesa or Lviv view they did nothing. Now:
   colour. A tap on the line opens the card. Measured at 360 × 760: about 210–230 px open on a quiet night, 56 px
   folded.
 - **The map** with its controls on the right, each 44 px: **Layers** (`#laybtn`), +, −, centre on my place, the
-  impacts toggle.
-- **The drawer** at the bottom, tabs **Near · Feed · Alerts · Stats**, three heights (tab bar / half / most of the
+  replay, full screen. **1.54**, the owner: the explosions layer of the last 24 hours (`#impbtn`, `IMP_H`, its key over
+  the map and its report by place) "does not help much for now" — gone; the live outcomes stay on the map as before.
+- **The drawer** at the bottom, tabs **Near · Feed · Alerts · Stats** (1.54: the AI's bulletin over the Near list, §7.11), three heights (tab bar / half / most of the
   screen: a tap on a tab opens it to half, the handle cycles, a swipe moves it). While it is up the card folds to
   the same one line (a tap folds the drawer back).
 - **Near** (`nearRows()`, `nearHTML()`): every live target with its distance from the watched place (or the centre
@@ -1449,7 +1505,7 @@ Main parts:
   left out (`nolbl`). The boxes (`LBLBOX`) hide the town names under them (`layoutTownLabels`);
 - the map's own pictograms are vector shapes, not the phone's emoji (1.39): the airfields, power plants and nuclear
   plants of the infrastructure layer (`POIS`, `POI_G`: a plane, a lightning bolt, a trefoil; shown zoomed in, hidden
-  at night and in blackout), the watched place's house, and the impacts button's burst — the same on every phone;
+  at night and in blackout) and the watched place's house — the same on every phone;
 - the OSM tile credit sits small in the bottom corner; the Crimea Cossack is drawn in `#obllbl`, above the raion
   outlines, one path per colour;
 - display modes: normal, day (inverted, WCAG-checked), night (dim, arrows only), blackout (2G);
@@ -1669,6 +1725,7 @@ All JSON unless stated. Public unless marked 🔒 (`ADMIN_KEY`).
 | `GET /api/version` | `{v, now, missile, msl, build, app}` — the cheap ping pages poll |
 | `GET /api/state` | active alerts, per-oblast status, whether each source works (1.46: `{ok}` only — the detail is `/api/health`), єРадар counts, the admin's message, the nuclear event, the Kyiv bridges (`bridges`, §9b), the oblasts on the map (`scope`, 1.43), config summary |
 | `GET /api/markers` | live marks with evidence, history, staleness; 1.51: each target in the air with its `tag` (§7.8) |
+| `GET /api/bulletin` | 1.54 (§7.11): `{on: false}` while the dashboard's switch is off; else `{on: true, h1, h24}`, each the latest bulletin still checked (`at`, `since`, `until`, `quiet`, `uk`, `en`, `fr`) or null |
 | `GET /api/trail?night=&n=` | 1.52.1: a tag's path for the night (§7.8), oldest first: `{night, n, points: [{ts, lon, lat, place, alt}]}` — at most 300 |
 | `GET /api/feed?limit=&lang=` | recent posts (`text`, `text_en`, `text_fr`, `en_mt`, tags, and `home` for a regional channel's post — 1.43); `lang` asks for translation |
 | `GET /api/stream?sync=&ev=&p=&lang=` | the live line (§5.4): `hello`, `sync` (changes of `mk`, `st`, `fd` as asked in `sync`) and, unless `ev=0`, the events `start`, `end`, `threat`, `update`, `feed`, `eradar`, `tr`, `notice`, `nuke`; `p=light` counts it as a Light page |
@@ -1690,12 +1747,12 @@ All JSON unless stated. Public unless marked 🔒 (`ADMIN_KEY`).
 | 🔒 `GET /api/analytics?days=` | the dashboard's Analytics (§8c), 7–365 days: `af` per date (launched, down, used, impacts, debris, periods), `af_areas`, `af_directions`, `af_models`, `kyiv` per date (city / oblast minutes, city alerts), `starts` (7 × 24), `reports` per date by type, `hours`, `headings`; since 1.33 `weather` per date (`kyiv`, `launch`), `approach` (8 sectors per date), `air` (`per_date`, `stats`, `sorties`), `obl` (`by`, `cols`, `rows`), `weather_status`; since 1.34 `places` (the heat layer's top 25) and `bridges` (`per_date`, `totals`, `recent`) |
 | 🔒 `POST /api/admin/nuke` | `{action: arm}` → `{code, expires_s, phrase}` (refused while one is on); `{action: fire, code, phrase, text: {uk, en, fr}, push}`; `{action: end}` — the nuclear event (§9) |
 | 🔒 `POST /api/admin/channel` | `{action: add|set|delete, name, mode: map|trial|off, via: web|api, home}` — the channels read (§7.1); `home` is the compartment (an oblast uid, `31`, `ua`, or `""`); `add` checks `t.me/s/<name>` for readable posts and starts it on trial |
-| 🔒 `POST /api/admin/ai` | `{reader: bool, live: bool}` — the AI reader's switches (1.51, §7.7): reading at all, and its facts in the target tags (the kill switch); 1.53: `mode: "check"\|"post"`, `check_now: true` (§7.10) |
+| 🔒 `POST /api/admin/ai` | `{reader: bool}` — the AI at all (every call stops); 1.54 (§7.11): `{bulletin_public: bool}` — the bulletins in the app; `{bulletin_now: "1h"\|"24h"}` — asks the `bulletins` thread to write one now. (`live`, `mode`, `check_now` went with the AI's reading in 1.54) |
 | 🔒 `GET /api/admin/night?night=YYYY-MM-DD` | 1.53: one night in full (§7.10): `summary` (`State.night_summary`), `text` (`State.night_text`), `report` (the AI's, or null), `reports` (the nights that have one), `writing`, `report_hour` |
 | 🔒 `POST /api/admin/ai_report` | 1.53: `{night}` — asks the `night-reports` thread to write (again) that night's report |
 | 🔒 `POST /api/admin/region` | `{id, on}` — an oblast on or off as a whole (1.43, §7.1): its place on the map and its channels; `31` is always on |
 | 🔒 `POST /api/admin/notice` | `{text: {uk, en, fr}, level: info|warn|alert, hours: 0–168 (0 = until removed), push: bool}` or `{clear: true}` — the team's message (§9) |
-| 🔒 `GET /api/ai_reads?limit=&all=` | the AI reader in shadow mode (1.50, §7.7): `stats` (`key`, `enabled`, `model`, `prompt_v`, `usd_month`, `cap_usd`, `queued`, `paused`, `last_error`, `skipped`, `reads_month`, `by_verdict`, `ms_median`) and `reads` (newest first, ≤ 300; only the disagreements and errors unless `all=1`): post, channel, `stored`, `verdict`, `rules`, `ai` (`targets`, `uncertain`), `dropped`, `cost`, `ms`, `model`, `error` |
+| 🔒 `GET /api/ai_reads?limit=&all=` | the dashboard's AI tab: `stats` (`key`, `enabled`, `model`, `prompt_v`, `mode` "bulletins", `usd_month`, `cap_usd`, `paused`, `last_error`, 1.54 `bulletins_month`, `usd_bulletins_month`, `bulletin_errors_month`; and of the readings before 1.54 `reads_month`, `by_verdict`, `ms_median`), 1.54 `bulletins` (the last 30, with the record each was written from) and `bulletin` (`public`, `every_min`, `writing`, `why`), `checks`, and `reads` (newest first, ≤ 300; only the disagreements and errors unless `all=1`): post, channel, `stored`, `verdict`, `rules`, `ai` (`targets`, `uncertain`), `dropped`, `cost`, `ms`, `model`, `error` |
 | 🔒 `GET /api/digests` | the stored nights and weeks: figures, written summary (EN / UK), model |
 | 🔒 `POST /api/digest/run` | `{kind: night|week}` — asks the `Digests` thread to write the last one up now (never calls the model itself) |
 | 🔒 `GET /api/flags`, `/api/corpus`; `POST /api/corpus/review`, `/api/corpus/translate` | flags and corpus review — no longer in the dashboard (1.19); used by `scripts/corpus.py` |
@@ -1709,7 +1766,7 @@ SQLite in WAL mode (`DB_PATH`; on Fly, the volume). Tables:
 | `alerts` | every alert seen (active and finished) — the normalised shape. One row per region and alert type: a region's next alert overwrites the row (its start stays the first one), so it is not a history — the replay reads `events` |
 | `events` | start / end / threat / update events — the alert history the replay rebuilds intervals from (§10.3c) |
 | `feed` | posts: `post_id, channel, ts, text, tags, text_en, text_fr, en_mt` |
-| `kv` | small settings: the VAPID key pair, the usage counter's daily salt, the channels (`channels`), the admin's message (`notice`), the nuclear event (`nuke`), and similar |
+| `kv` | small settings: the VAPID key pair, the usage counter's daily salt, the channels (`channels`), the admin's message (`notice`), the nuclear event (`nuke`), the AI's switches (`ai_reader_on`, 1.54 `ai_bulletin_public`), and similar |
 | `push_subs` | push subscriptions with a ~10 km cell, the topics asked for (`bridges`) and the language |
 | `marker_log` | every mark as computed, with its evidence |
 | `outcomes` | shoot-downs, impacts, losses |
@@ -1727,6 +1784,7 @@ SQLite in WAL mode (`DB_PATH`; on Fly, the volume). Tables:
 | `ai_reads` | 1.50: the AI reader's reading of each post it read (§7.7) — when, the post, whether the rules stored it, model, prompt version, ms, tokens, cost, verdict, the rules' reading and its own (JSON), facts dropped, error. Kept 90 days; the month's spend is `kv` `ai_usd:YYYY-MM`. 1.53: `chk`, the check that read it (its `ai` then holds the findings: `targets` with `f`, `findings`) |
 | `ai_checks` | 1.53: each 10-minute check (§7.10) — `id` (its UTC time), the posts' first and last time, how many, the oblasts, model, prompt version, ms, tokens, cost, `findings` (by kind), `notes` (per oblast), `uncertain`, `error` |
 | `ai_reports` | 1.53: the AI's report on each night (§7.10) — `night`, when, up to when, model, tokens, cost, `text`, `error` |
+| `ai_bulletins` | 1.54: each bulletin (§7.11) — `kind` ("1h" / "24h"), when, the window (`since`, `until`), `quiet`, `sig` (a hash of the record), `uk`, `en`, `fr`, model, tokens, cost, `error`, and `input` (the record it was written from). Kept 30 days; `kv` `ai_bulletin_public` (the app's switch) and `bul_checked:<kind>` (when the latest was last found still true) |
 | `usage`, `usage_seen` | anonymous usage counters |
 
 Columns are added in place by `Store.__init__` (`ALTER TABLE … ADD COLUMN`), so an old database upgrades itself.

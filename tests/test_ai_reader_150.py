@@ -305,38 +305,12 @@ def test_an_answer_that_is_not_json_is_an_error_but_still_costs():
     assert r.spent == 0.001 and r.store.saved[-1]["error"] == "not JSON"
 
 
-def test_what_it_is_given_to_read():
+def test_nothing_feeds_it_posts_any_more():
+    # 1.54, the owner: "the AI placing things on the map — we forget it". No queue is fed: the reading of posts is kept
+    # (read, check) but nothing calls it
     r = _reader()
-    r.add(POST)
-    r.add(dict(POST, post_id="x/2", tags=["alert"]))                       # an alert alone: nothing to compare
-    r.add(dict(POST, post_id="x/3", tags=["trial", "drones"]))             # a channel on trial
-    r.add(dict(POST, post_id="x/4", tags=["kyiv"], text="Ціль на Бровари"), stored=False)        # set aside, short: read
-    r.add(dict(POST, post_id="x/5", tags=["kyiv"], text="Київ " * 80), stored=False)             # set aside, long: news
-    r.add(dict(POST, post_id="x/6", tags=["drones"], text="Шахед"), stored=False)                # set aside, no place
-    assert [p["post_id"] for p, *_ in r.q] == ["kpszsu/1", "x/4"] and r.q[1][3] is False
-    off = _reader(openrouter_key="")
-    off.add(POST)
-    assert not off.q
-
-
-def test_a_failure_never_stops_the_reader():
-    r, n = _reader(ai_reader_mode="post"), {"rules": 0}       # 1.53: one post at a time is now the dashboard's choice
-
-    def rules(ch, t, near):
-        n["rules"] += 1
-        if n["rules"] == 1:
-            raise RuntimeError("boom")
-        return geo.parse_for_channel(ch, t)
-    r.rules_fn = rules
-    with mock.patch.object(A.urllib.request, "urlopen", lambda req, timeout=None, context=None: _ok(GOOD)):
-        r.start()
-        r.add(POST)
-        r.add(dict(POST, post_id="kpszsu/2"))
-        for _ in range(100):
-            if r.store.saved:
-                break
-            time.sleep(0.05)
-    assert r.store.saved and r.store.saved[0]["post_id"] == "kpszsu/2" and r.last_error is None
+    assert not hasattr(r, "add") and not hasattr(r, "run") and not hasattr(r, "mode")
+    assert "def _to_ai(" not in SERVER and "ai.add(" not in SERVER and ".check_now()" not in SERVER
 
 
 def test_it_reaches_nothing_but_openrouter_and_its_own_table():
@@ -381,21 +355,14 @@ def test_the_previous_posts_are_the_channels_last_ones_before_it():
 
 
 # ---- the server: the posts handed to it, the dashboard's view of it -------------------------------------------------
-def test_ingest_hands_it_the_new_posts_of_a_channel_on_the_map():
+def test_ingest_never_hands_the_ai_a_post():
     st = server.State(server.Store(":memory:"), {})
-    st.ai = _reader()
+    st.ai = mock.Mock(side_effect=AssertionError("the AI was called"))
     tg = server.Telegram(st, {})
     ts = "2026-10-09T18:00:00+00:00"
-    tg.ingest("kyiv_airdef", [("kyiv_airdef/1", ts, "Шахед на Бровари"), ("kyiv_airdef/3", ts, "У Києві " + "новини міста " * 40)],
-              "tg:kyiv_airdef")
-    tg.ingest("kpszsu", [("kpszsu/2", ts, "Ціль на Бровари")], "tg:kpszsu")       # set aside by the rules: read all the same
-    got = {p["post_id"]: (stored, home) for p, near, home, stored in st.ai.q}
-    assert got == {"kyiv_airdef/1": (True, "31"), "kpszsu/2": (False, "ua")}     # "ua": the whole country, no oblast of its own
-    tg.ingest("kyiv_airdef", [("kyiv_airdef/1", ts, "Шахед на Бровари")], "tg:kyiv_airdef")     # already stored: not again
-    assert len(st.ai.q) == 2
-    st._modes["kyiv_airdef"] = "trial"
-    tg.ingest("kyiv_airdef", [("kyiv_airdef/9", ts, "Шахед на Бориспіль")], "tg:kyiv_airdef")
-    assert len(st.ai.q) == 2
+    tg.ingest("kyiv_airdef", [("kyiv_airdef/1", ts, "Шахед на Бровари")], "tg:kyiv_airdef")
+    tg.ingest("kpszsu", [("kpszsu/2", ts, "Ціль на Бровари")], "tg:kpszsu")
+    assert st.store.has_post("kyiv_airdef/1") and not st.ai.method_calls
 
 
 def test_the_route_is_the_dashboards_alone():
@@ -429,9 +396,9 @@ def test_the_server_wiring():
     assert '("OPENROUTER_API_KEY", "openrouter_key")' in SERVER[i:SERVER.index("return cfg", i)]
     i = SERVER.index("def main(")
     body = SERVER[i:]
-    assert "state.ai = ai_reader.AIReader(" in body and "state.ai.ssl_ctx = _SSL_CTX" in body and "state.ai.start()" in body
-    i = SERVER.index("    def _to_ai(")
-    assert 'self.state.channel_mode(p["channel"]) != "map"' in SERVER[i:i + 800] and "_clean_post(" in SERVER[i:i + 800]
+    # 1.54: the AI is no thread of its own any more — the bulletins' thread and the night's reports ask it
+    assert "state.ai = ai_reader.AIReader(cfg, store, log=log)" in body and "state.ai.ssl_ctx = _SSL_CTX" in body
+    assert "state.ai.start()" not in body and "state.bulletins = Bulletins(state, cfg)" in body and "state.bulletins.start()" in body
 
 
 def test_the_key_is_set_by_the_owner_through_fly_secrets():
@@ -456,7 +423,7 @@ def test_the_dashboard_tab():
 
 
 def test_the_documentation():
-    assert "### 7.7 The AI reader (1.50; its facts in the target tags since 1.51)" in DOC and "`OPENROUTER_API_KEY`" in DOC
+    assert "### 7.7 The AI reader (1.50; its facts in the target tags since 1.51; retired from the map in 1.54)" in DOC and "`OPENROUTER_API_KEY`" in DOC
     assert "set-openrouter-key.bat" in DOC and "ai_reader.py" in DOC
 
 

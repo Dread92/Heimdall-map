@@ -149,9 +149,8 @@ def test_an_explosion_keeps_its_own_shorter_clock():
 
 # ── the map surface ────────────────────────────────────────────────────────────────────────────────────
 def test_the_running_tally_is_not_across_the_bottom_of_the_map():
-    i = PAGE.index("$('livebar').innerHTML=")
-    line = PAGE[i:PAGE.index("\n", i)]
-    assert "parts.join" not in line, "the counters are still drawn over the map"
+    # 1.54: nothing is written in the bar over the bottom of the map any more (it held the explosions layer's key)
+    assert "$('livebar').innerHTML=" not in PAGE, "something is drawn over the map again"
 
 
 def test_the_tally_moved_somewhere_rather_than_being_deleted():
@@ -160,12 +159,11 @@ def test_the_tally_moved_somewhere_rather_than_being_deleted():
     assert I18N.count("lv_now:") == 3 and I18N.count("lv_none:") == 3
 
 
-def test_the_history_layer_keeps_its_key_while_it_is_switched_on():
-    """Those marks are drawn over the map by an explicit toggle. Taking the legend away would leave symbols
-    on the map with nothing to read them by."""
-    i = PAGE.index("$('livebar').innerHTML=")
-    line = PAGE[i:PAGE.index("\n", i)]
-    assert "IMP_H" in line
+def test_the_explosions_layer_of_the_last_24_hours_is_gone():
+    """1.54, the owner: the filter of the last 24 hours' explosions "does not help much for now" — its button, its
+    layer, its key over the map and its report are gone. The live outcomes stay on the map as they were."""
+    for gone in ('id="impbtn"', 'id="impactsg"', "IMP_H", "loadImpacts", "drawImpacts", "impactReport", "openImpactGroup"):
+        assert gone not in PAGE, gone
 
 
 # ── 2026-09-24: the warning sign, the missile shapes, the ring ────────────────────────────────────────
@@ -223,4 +221,3 @@ def test_fire_damage_and_channel_clear_marks_are_not_drawn():
     m = re.search(r"const HIDDEN_STATUS=new Set\(\[(.*?)\]\)", PAGE)
     assert m and {x.strip().strip("'") for x in m.group(1).split(",")} == {"clear", "fire", "damage"}
     assert "!HIDDEN_STATUS.has(m.status)" in PAGE, "the live map still draws them"
-    assert "IMP.filter(m=>!HIDDEN_STATUS.has(m.status))" in PAGE, "the history layer still draws them"

@@ -94,8 +94,7 @@ def test_pictograms_not_emoji_in_stats_and_on_the_map():
     pois = PAGE[i:PAGE.index("];", i)]
     assert not EMOJI.search(pois), EMOJI.findall(pois)
     assert "const POI_G={air:" in PAGE and "POI_G.home" in PAGE
-    i = PAGE.index('<button id="impbtn"')
-    assert 'class="impico"' in PAGE[i:PAGE.index("</button>", i)] and "✸" not in PAGE[i:PAGE.index("</button>", i)]
+    assert 'id="impbtn"' not in PAGE           # 1.54: the explosions layer and its button are gone (the owner)
 
 
 def test_the_stats_key_is_one_sample_per_line():

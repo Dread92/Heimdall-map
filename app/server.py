@@ -102,12 +102,11 @@ DEFAULT_CONFIG = {
     "access_key": "",
     "esri_key": "",                   # 1.48: Esri World Imagery for the closest zooms; or env ESRI_KEY (set-esri-key.bat)
     "esri_monthly_tiles": 1800000,    # its cap: under the 2 M free tiles a month; a tenth of it a day at most
-    "openrouter_key": "",             # 1.50: the AI reader, in shadow mode (OpenRouter); or env OPENROUTER_API_KEY (set-openrouter-key.bat)
-    "ai_reader": True,                # false: the shadow reader stays off even with a key
+    "openrouter_key": "",             # 1.50: the AI (OpenRouter); or env OPENROUTER_API_KEY (set-openrouter-key.bat)
+    "ai_reader": True,                # false: the AI stays off even with a key
     "ai_reader_model": "anthropic/claude-haiku-5.5",   # its model on OpenRouter; or env AI_READER_MODEL
     "ai_reader_monthly_usd": 10,      # what it may spend in a month (OpenRouter's own cost of each call); past it, it stops
-    "ai_reader_mode": "check",        # 1.53: "check" — one call every ai_check_minutes for all the posts of those minutes; "post" — one a post
-    "ai_check_minutes": 10,           # 1.53: how often the check runs (2–60)
+    "ai_bulletin_minutes": 20,        # 1.54: the last hour's bulletin, every N minutes on the clock (10–60) while there is activity
     "ai_report_hour": 9,              # 1.53: Kyiv hour after which the AI writes its report on the night that began the day before at 12:00
     "demo": False,
 }
@@ -426,7 +425,7 @@ def build_id():
 
 # The version the front end shows in its footer, kept here too so /api/version can answer "what is actually
 # running" without anybody reading it off a screenshot. tests/test_version.py pins the two to each other.
-APP_VERSION = "1.53"
+APP_VERSION = "1.54"
 APP_NAME = "Heimdall"
 BUILD = None    # filled at startup
 
@@ -1193,6 +1192,12 @@ class Store:
         c.execute("""CREATE TABLE IF NOT EXISTS ai_reports(
             night TEXT PRIMARY KEY, at TEXT, until TEXT, model TEXT, tok_in INTEGER, tok_out INTEGER, cost REAL, text TEXT,
             error TEXT)""")
+        # 1.54: the AI's bulletins — the last hour, the last 24 hours — each in three languages, with what it cost and the
+        # record it was written from (`input`); a quiet window's bulletin is written by the server itself (quiet=1)
+        c.execute("""CREATE TABLE IF NOT EXISTS ai_bulletins(
+            id INTEGER PRIMARY KEY AUTOINCREMENT, kind TEXT, at TEXT, since TEXT, until TEXT, quiet INTEGER, sig TEXT,
+            uk TEXT, en TEXT, fr TEXT, model TEXT, tok_in INTEGER, tok_out INTEGER, cost REAL, error TEXT, input TEXT)""")
+        c.execute("CREATE INDEX IF NOT EXISTS ix_aib ON ai_bulletins(kind, at)")
         # 1.51: the target tags — each tag (night + number) with what it shows, and the reports that belong to it
         c.execute("""CREATE TABLE IF NOT EXISTS targets(
             night TEXT, n INTEGER, prefix TEXT, origin TEXT, osrc TEXT, oquote TEXT, opost TEXT, first_ts TEXT, last_ts TEXT,
@@ -1671,25 +1676,46 @@ class Store:
                                   (night,)).fetchone()
         return dict(zip(("night", "at", "until", "model", "tok_in", "tok_out", "cost", "text", "error"), r)) if r else None
 
+    BUL_COLS = ("id", "kind", "at", "since", "until", "quiet", "sig", "uk", "en", "fr", "model", "tok_in", "tok_out", "cost",
+                "error", "input")
+
+    def bulletin_save(self, r):
+        """1.54: one bulletin (or one failed attempt: `error`). Kept 30 days."""
+        cols = self.BUL_COLS[1:]
+        with self.lock:
+            self.conn.execute(f"INSERT INTO ai_bulletins({','.join(cols)}) VALUES({','.join('?' * len(cols))})",
+                              tuple(r.get(k) for k in cols))
+            cut = (datetime.now(timezone.utc) - timedelta(days=30)).isoformat()
+            self.conn.execute("DELETE FROM ai_bulletins WHERE at<?", (cut,))
+            self.conn.commit()
+
+    def bulletin_last(self, kind, ok=True):
+        """The latest bulletin of a kind ("1h", "24h") — written, unless `ok` is False — or None."""
+        with self.lock:
+            r = self.conn.execute(f"SELECT {','.join(self.BUL_COLS)} FROM ai_bulletins WHERE kind=?"
+                                  + (" AND error IS NULL" if ok else "") + " ORDER BY at DESC, id DESC LIMIT 1", (kind,)).fetchone()
+        return dict(zip(self.BUL_COLS, r)) if r else None
+
+    def bulletins(self, limit=30):
+        """The latest bulletins and attempts, newest first, with the record each was written from (cut to 6,000)."""
+        with self.lock:
+            rows = self.conn.execute(f"SELECT {','.join(self.BUL_COLS)} FROM ai_bulletins ORDER BY at DESC, id DESC LIMIT ?",
+                                     (limit,)).fetchall()
+        out = [dict(zip(self.BUL_COLS, r)) for r in rows]
+        for d in out:
+            d["input"] = (d.get("input") or "")[:6000]
+        return out
+
+    def bulletin_counts(self, month):
+        """The month's bulletins written by the AI: how many, what they cost, how many failed."""
+        with self.lock:
+            r = self.conn.execute("SELECT COUNT(*), COALESCE(SUM(cost),0), SUM(CASE WHEN error IS NOT NULL THEN 1 ELSE 0 END) "
+                                  "FROM ai_bulletins WHERE at LIKE ? AND COALESCE(quiet,0)=0", ((month or "") + "%",)).fetchone()
+        return {"bulletins_month": r[0], "usd_bulletins_month": round(r[1], 4), "bulletin_errors_month": r[2] or 0}
+
     def ai_report_nights(self, limit=60):
         with self.lock:
             return [r[0] for r in self.conn.execute("SELECT night FROM ai_reports ORDER BY night DESC LIMIT ?", (limit,))]
-
-    def ai_recent(self, since):
-        """1.52: the readings of the posts since `since` (post time) that found targets — for the marks the AI alone
-        found."""
-        with self.lock:
-            rows = self.conn.execute("SELECT post_id, ts, channel, text, ai FROM ai_reads WHERE ts>=? AND error IS NULL "
-                                     "AND ai IS NOT NULL ORDER BY ts", (since,)).fetchall()
-        out = []
-        for pid, ts, ch, text, ai in rows:
-            try:
-                d = json.loads(ai)
-            except ValueError:
-                continue
-            if d.get("targets"):
-                out.append((pid, ts, ch, text or "", d["targets"]))
-        return out
 
     def ai_get(self, post_id):
         """One post's reading (1.51: the target tags), or None."""
@@ -2539,10 +2565,6 @@ class State:
             return []
         kyiv_ends = self.kyiv_city_all_clears(ttl)
         out = self._marks_from_posts(sorted(self.store.feed_since(ttl), key=lambda p: p["ts"]), kyiv_ends, self._marker_cache)
-        try:
-            out += self._ai_marks(out, ttl)      # 1.52: the targets only the AI reader found, while the switch is on
-        except Exception as e:
-            log("ai marks:", type(e).__name__, e)
         # Kyiv, its oblast, the five oblasts around it, and Sumy — the corridor most Shaheds into Kyiv arrive
         # through. Everything else is dropped here rather than hidden in the page, so a raid over Odesa never
         # reaches the Kyiv map, the counts, the proximity pushes or the light page. A mark with no oblast is kept
@@ -2571,17 +2593,10 @@ class State:
         return out
 
     # -- 1.51: target tags ------------------------------------------------------------------------------------------
-    def ai_live(self):
-        """The dashboard's switch: the AI reader's facts — quoted, checked against the post — in the target tags. On
-        unless switched off (kv `ai_live` = "0"); nothing of it ever moves, adds or removes a mark."""
-        ai = getattr(self, "ai", None)
-        return bool(ai and ai.enabled() and ai.live())
-
     def _tag_marks(self, ms):
-        """Each target in the air gets its tag: night + number (TargetTags), the letter of the origin a post stated —
-        the rules' reading first, the AI's when the rules found none and the switch is on — and the height and speed
-        its latest report stated."""
-        ai = getattr(self, "ai", None) if self.ai_live() else None
+        """Each target in the air gets its tag: night + number (TargetTags), the letter of the origin a post stated (kept
+        for the record, shown nowhere since 1.53.2) and the height and speed its latest report stated. 1.54: the rules'
+        reading alone — the AI no longer adds anything to the map."""
         taken, done = set(), []
         for m in sorted(ms, key=lambda m: min([h["ts"] for h in m.get("history") or []] + [m["ts"]])):
             # 1.52, the owner's rule: a number only when we are sure which target it is — never for one reported for a
@@ -2604,9 +2619,6 @@ class State:
             o, src = m.get("origin_t"), None
             if o:
                 src = "rules"
-            facts = self._ai_facts(m, ai) if ai else {}
-            if not o and facts.get("origin"):
-                o, src = facts["origin"], "ai"
             prefix = TAG_PREFIX.get(o["o"], "?") if o else "?"
             if not o and m.get("first_uid") in TAG_REGION:
                 prefix, said = TAG_REGION[m["first_uid"]]
@@ -2615,8 +2627,6 @@ class State:
             alt = spd = None
             if (m.get("alt") or {}).get("m"):
                 alt = {"m": m["alt"]["m"], "s": "rules", "at": m["ts"], "cur": True}
-            elif facts.get("alt"):
-                alt = dict(facts["alt"], s="ai", at=m["ts"], cur=True)
             else:
                 # 1.52: the latest height the track's earlier reports stated — a height is shown whenever one was given
                 # (with its age: a later report did not repeat it)
@@ -2625,11 +2635,8 @@ class State:
                     alt = {"m": h["alt_m"], "s": "rules", "at": h.get("ts"), "cur": False}
             if m.get("speed"):
                 spd = dict(m["speed"], s="rules")
-            elif facts.get("spd"):
-                spd = dict(facts["spd"], s="ai")
             # 1.51: descending / climbing / low / high — with the height, what matters most to the people under it
-            vs = {"v": m["alt"]["state"], "s": "rules"} if (m.get("alt") or {}).get("state") else (
-                dict(facts["vs"], s="ai") if facts.get("vs") else None)
+            vs = {"v": m["alt"]["state"], "s": "rules"} if (m.get("alt") or {}).get("state") else None
             m["tag"] = {"id": tag_id(key[1]), "n": key[1], "p": prefix, "night": key[0],
                         "o": o and o["o"], "os": src, "oq": o and o.get("q"), "oc": o and o.get("ch"), "ot": o and o.get("ts"),
                         "ou": o and o.get("uid"),
@@ -2653,191 +2660,6 @@ class State:
                         math.hypot((h["lon"] - lo) * 70.7, (h["lat"] - la) * 111) <= 6:
                     return key
         return None
-
-    def ai_map(self, uids):
-        """1.53: for the 10-minute check — what the map shows now in each of these oblasts: every target in the air,
-        tagged ("S-01 · jet drone ×2 · heading to Київ · from s · 2900 m · @monitor_ukr 19:23") or reported for the
-        whole oblast ("— · drone ×3 · in oblast 25 · @kpszsu 19:20"). Returns ({uid: lines}, the tags shown)."""
-        want = {str(u) for u in uids}
-        out, tags = {}, []
-        for m in sorted(self.markers_now(), key=lambda m: m["ts"], reverse=True):
-            u = m.get("oblast_uid")
-            if u not in want or m.get("status") or m.get("endedBy") or len(out.get(u, [])) >= 14:
-                continue
-            tg = m.get("tag") or {}
-            line = ai_reader.parser_lines([dict(m, origin=None)])[0]       # 1.53.2: no origin (tag_id)
-            t = parse_iso(m["ts"])
-            hm = t.astimezone(kyiv_tz()).strftime("%H:%M") if t else "?"
-            out.setdefault(u, []).append(f"{tg.get('id') or '—'} · {line}{' · AI' if m.get('ai') else ''} · @{m.get('channel')} {hm}")
-            if tg.get("id"):
-                tags.append(tg["id"])
-        return out, tags
-
-    def ai_context(self, post, cands):
-        """1.51: for the AI reader — the targets on the map now, from every channel, near the places this post may be
-        naming (the candidates' oblasts, or 80 km of them): "S-01 · jet drone ×2 · heading to Київ · from s · @monitor_ukr
-        19:23". Returns (lines, their tags). Never this post's own marks."""
-        pid = post.get("post_id") or ""
-        uids, pts = set(), []
-        for cid, key, _ in cands:
-            if cid.startswith("o"):
-                uids.add(cid[1:])
-            elif geo and key in geo.PLACES:
-                lon, lat, uid = geo.PLACES[key]
-                pts.append((lon, lat))
-                uids.add(uid)
-        home = self.channel_home(post.get("channel"))
-        if home and home != "ua":
-            uids.add(home)
-        out = []
-        for m in self.markers_now():
-            tg = m.get("tag")
-            if not tg or m.get("status") or (m.get("id") or "").startswith(pid + "#"):
-                continue
-            near = m.get("oblast_uid") in uids or any(
-                m.get("lon") is not None and math.hypot((m["lon"] - lo) * 70.7, (m["lat"] - la) * 111) <= 80 for lo, la in pts)
-            if not near:
-                continue
-            out.append(m)
-        out.sort(key=lambda m: m["ts"], reverse=True)
-        lines, tags = [], []
-        for m in out[:10]:
-            line = ai_reader.parser_lines([dict(m, origin=None)])[0]       # 1.53.2: no origin (tag_id)
-            t = parse_iso(m["ts"])
-            hm = t.astimezone(kyiv_tz()).strftime("%H:%M") if t else "?"
-            lines.append(f"{m['tag']['id']} · {line} · @{m.get('channel')} {hm}")
-            tags.append(m["tag"]["id"])
-        return lines, tags
-
-    _ai_mark_cache = {}
-
-    def _ai_marks(self, out, ttl):
-        """1.52: the targets the AI reader found that the rules did not — on the map, marked "AI", while the dashboard's
-        switch is on (the owner's decision: a target missed is worse than a duplicate). Each is placed only at a place
-        the post names, one the server offered the AI from its gazetteer; never at an official alert message's
-        district; each goes through the same chaining, scope, ageing and pushes as the rules' marks."""
-        if not geo or not self.ai_live():
-            return []
-        since = (datetime.now(timezone.utc) - timedelta(minutes=ttl)).isoformat()
-        rules = {}
-        for m in out:
-            rules.setdefault(m["id"].split("#")[0], []).append(m)
-        res = []
-        for pid, ts, ch, text, targets in self.store.ai_recent(since):
-            if self.channel_mode(ch) != "map":
-                continue
-            key = (pid, len(rules.get(pid, ())))
-            got = self._ai_mark_cache.get(key)
-            if got is None:
-                got = self._ai_marks_of(pid, ts, ch, text, targets, rules.get(pid, []))
-                if len(self._ai_mark_cache) > 3000:
-                    self._ai_mark_cache.clear()
-                self._ai_mark_cache[key] = got
-            res += [dict(m) for m in got]
-        return res
-
-    @staticmethod
-    def _ai_marks_of(pid, ts, ch, text, targets, rules):
-        if geo.ALERT_MSG_RX.search(text or "") and not geo.MOVE_RX.search(text or ""):
-            return []                            # an official alert message names a district, not a target
-        live = [m for m in rules if not m.get("status")]
-        one = len(targets) == 1 and len(live) == 1
-        rw = {ai_reader._where_rules(m) for m in rules} - {""}
-        out = []
-        for i, t in enumerate(targets):
-            place, toward = t.get("place"), t.get("toward")
-            if not place or t.get("f") in ("facts", "weapon", "outcome"):
-                continue                         # 1.53: a check's facts are about the rules' own target
-            if ai_reader._canon(place) in rw or (toward and ai_reader._canon(toward) in rw):
-                continue                         # the rules have this one
-            m = State._ai_mark(pid, i, ts, ch, text, t)
-            if not m:
-                continue
-            # one target each way, read about the same place: the rules read it. Read far apart — "біля Сомкової
-            # Долини" the rules took for Dolyna, 500 km off and out of the map — the AI's stands too (a duplicate is
-            # better than a miss). 1.53: a target a check found MISSING is another one, wherever it is
-            if one and t.get("f") != "missed" and (m["place"] == "область" or math.hypot(
-                    (m["lon"] - live[0]["lon"]) * 70.7, (m["lat"] - live[0]["lat"]) * 111) <= 30):
-                continue
-            out.append(m)
-        return out
-
-    @staticmethod
-    def _ai_mark(pid, i, ts, ch, text, t):
-        """One AI target as a mark, in the rules' own shape."""
-        place, toward, rel = t.get("place"), t.get("toward"), t.get("relation")
-        if place.startswith("o") and place[1:].isdigit():
-            uid = place[1:]
-            c = geo._OBL_CENTRE.get(uid)
-            if not c:
-                return None
-            lon, lat, where = c[0], c[1], "область"
-        else:
-            p = ai_reader.place_of(geo, place)
-            if not p:
-                return None
-            lon, lat, uid = p
-            where = ("→ " + place) if rel == "heading_to" else place
-        heading = None
-        if toward:
-            q = ai_reader.place_of(geo, toward)
-            if q:
-                heading = round(geo.bearing(lon, lat, q[0], q[1]))
-        elif t.get("heading") in ai_reader.DIRS:
-            heading = ai_reader.DIRS.index(t["heading"]) * 45
-        elif rel == "heading_to" and t.get("origin") in ai_reader.DIRS:
-            heading = (ai_reader.DIRS.index(t["origin"]) * 45 + 180) % 360
-        kind = t.get("kind") or "unknown"
-        typ = ai_reader.KIND_TYPE.get(kind, "unknown")
-        alt = None
-        if t.get("altitude_m") or t.get("vertical"):
-            alt = {"m": t.get("altitude_m"), "state": t.get("vertical"), "matched": t.get("altitude_quote") or t.get("vertical_quote")}
-        ev = {"segment": text, "type": {"matched": t.get("kind_quote"), "method": "read by the AI reader", "confidence": "medium"},
-              "position": {"matched": t.get("place_quote"), "place": place, "confidence": "low",
-                           "method": "read by the AI reader from the post — the rules did not read it"},
-              "heading": ({"matched": t.get("toward_quote") or t.get("heading_quote"), "confidence": "medium",
-                           "method": "the course the post gave, read by the AI reader"} if heading is not None
-                          else {"matched": None, "method": "no course stated", "confidence": "none"})}
-        m = {"id": f"{pid}#ai{i}", "ts": ts, "channel": ch, "text": text, "text_en": None, "tags": [], "ai": True,
-             "type": typ, "jet": kind == "jet_drone", "lon": round(lon, 3), "lat": round(lat, 3), "place": where,
-             "oblast_uid": uid, "heading": heading, "count": t.get("count"), "approach": rel == "heading_to" and not toward,
-             "target": toward or (place if rel == "heading_to" else None), "alt": alt,
-             "status": ai_reader.STATUS_OF.get(t.get("status")) or ("lost" if t.get("status") == "lost" else None),
-             "evidence": ev}
-        if t.get("origin"):
-            m["origin"] = {"o": t["origin"], "q": t.get("origin_quote"), "by": "ai"}
-        if t.get("speed_kmh"):
-            m["speed"] = {"kmh": t["speed_kmh"], "q": t.get("speed_quote"), "by": "ai"}
-        return m
-
-    def _ai_facts(self, m, ai):
-        """What the AI reader read, for this track: the first origin any of its reports' posts stated, and the height
-        and speed its latest report's post stated — each only from the AI target that is this track's (its place, or
-        the only target of a post the rules also read as one)."""
-        out = {}
-        wheres = {ai_reader._where_rules(m)} | {ai_reader._where_rules({"place": h.get("place")}) for h in m.get("history") or []}
-        if m.get("target"):
-            wheres.add(ai_reader._canon(m["target"]))
-        wheres.discard("")
-        for rid in m.get("reports") or [m["id"]]:
-            pid = rid.split("#")[0]
-            ts = ai.targets_for(pid)
-            if not ts:
-                continue
-            alone = len([x for x in (self._marker_cache.get(pid) or []) if not x.get("status")]) == 1
-            t = ai_reader.match(ts, wheres, alone)
-            if not t:
-                continue
-            if "origin" not in out and t.get("origin"):
-                out["origin"] = {"o": t["origin"], "q": t.get("origin_quote"), "id": rid, "ch": pid.split("/")[0], "ts": None}
-            if rid == m["id"]:
-                if t.get("vertical"):
-                    out["vs"] = {"v": t["vertical"], "q": t.get("vertical_quote")}
-                if t.get("altitude_m"):
-                    out["alt"] = {"m": t["altitude_m"], "q": t.get("altitude_quote")}
-                if t.get("speed_kmh"):
-                    out["spd"] = {"kmh": t["speed_kmh"], "q": t.get("speed_quote")}
-        return out
 
     def _marks_from_posts(self, posts, kyiv_ends, cache, evidence=True):
         """Posts (oldest first) → the marks they place, each read in the context of the channel's previous post.
@@ -3886,6 +3708,174 @@ class State:
         for p in parted:
             L.append(f"- {p['t']} @{p['channel']} [{p['verdict']}] «{p['post'][:160]}» rules: {p['rules'] or '—'} · AI: {p['ai'] or '—'}"
                      + (f" · why: {'; '.join(p['why'])}" if p["why"] else ""))
+        return "\n".join(L)
+
+    # -- 1.54: the record of a window, for the AI's bulletins ----------------------------------------------------------
+    def activity_summary(self, since, until=None):
+        """What Heimdall recorded between two UTC times over the oblasts the map covers: the official alerts, the targets
+        the channels reported (the marks the rules drew — reports, not a count of drones) by oblast, kind and time, the
+        places most reported, the paths of the targets it followed, the heights, the outcomes, the window before for
+        comparison, what is on the map now, and the Air Force's figures. Counts, places and times only — never a post's
+        text, never a reader, a watched place or a device."""
+        tz = kyiv_tz()
+        now = datetime.now(timezone.utc)
+        until = min(until or now, now)
+        span = until - since
+        S, U, P = since.isoformat(), until.isoformat(), (since - span).isoformat()
+        scope = self.scope_uids()
+        names = {u: (uk, en) for u, uk, en in OBLASTS}
+        nm = lambda u: f"{names[u][0]} ({names[u][1]})" if u in names else (u or "?")      # noqa: E731
+        loc = lambda t: parse_iso(t).astimezone(tz).strftime("%H:%M") if parse_iso(t) else "?"   # noqa: E731
+        fam = lambda typ, jet: ("jet drone" if jet else "drone") if typ == "drones" else (typ or "unknown").replace("_", " ")   # noqa: E731
+        inside = lambda u: u is None or str(u) in scope      # noqa: E731
+        st = self.store
+        with st.lock:
+            al = st.conn.execute("SELECT oblast_uid, location_type, location_title, started_at, finished_at FROM alerts "
+                                 "WHERE alert_type='air_raid' AND started_at<? AND (finished_at IS NULL OR finished_at>?)", (U, S)).fetchall()
+            ml = st.conn.execute("SELECT ts, type, status, place, oblast_uid, jet, count FROM marker_log WHERE ts>=? AND ts<?",
+                                 (P, U)).fetchall()
+            oc = st.conn.execute("SELECT ts, status, type, place, oblast_uid, count FROM outcomes WHERE ts>=? AND ts<?", (S, U)).fetchall()
+            pts = st.conn.execute("SELECT p.night, p.n, p.ts, p.place, p.alt_m, t.type FROM target_points p LEFT JOIN targets t "
+                                  "ON t.night=p.night AND t.n=p.n WHERE p.ts>=? AND p.ts<? ORDER BY p.ts", (S, U)).fetchall()
+        # 1. the official alerts, oblast by oblast (Kyiv city on its own): minutes under alert in the window, on now or not
+        spans = {}
+        for uid, lt, title, sa, fa in al:
+            a, b = parse_iso(sa), parse_iso(fa)
+            if not a or not inside(uid) or (not fa and (now - a).days > 3):
+                continue
+            r = spans.setdefault(uid, {"spans": [], "now": False, "raions": set(), "oblast_wide": False, "start": None, "end": None})
+            r["spans"].append((max(a, since), min(b or until, until)))
+            if not fa:
+                r["now"] = True
+            if lt == "oblast" or uid == "31":
+                r["oblast_wide"] = True
+            else:
+                r["raions"].add(title)
+            r["start"] = min(r["start"] or a, a)
+            if b and (not r["end"] or b > r["end"]):
+                r["end"] = b
+        alerts = []
+        for uid, r in spans.items():
+            sp = [x for x in r["spans"] if x[1] > x[0]]
+            alerts.append({"uid": uid, "oblast": nm(uid), "minutes": _union_minutes(sp), "on_now": r["now"],
+                           "whole_oblast": r["oblast_wide"], "raions": len(r["raions"]), "started": loc(r["start"].isoformat()),
+                           "ended": None if r["now"] or not r["end"] else loc(r["end"].isoformat())})
+        alerts.sort(key=lambda x: (x["uid"] != "31", x["uid"] != "14", -x["minutes"]))
+        # 2. the reports: by oblast and kind, by slice of time, the places, the region-wide ones; the window before
+        step = 10 if span <= timedelta(hours=2) else 60
+        slices, by_obl, kinds, wide = collections.Counter(), collections.defaultdict(collections.Counter), collections.Counter(), collections.Counter()
+        places, last_at, before = collections.Counter(), {}, 0
+        for ts, typ, status, place, uid, jet, cnt in ml:
+            if status or not inside(uid):
+                continue
+            k = parse_iso(ts)
+            if not k:
+                continue
+            if ts < S:
+                before += 1
+                continue
+            lk = k.astimezone(tz)
+            slices[lk.replace(minute=lk.minute - lk.minute % step, second=0, microsecond=0)] += 1
+            f = fam(typ, jet)
+            by_obl[uid or "?"][f] += 1
+            kinds[f] += 1
+            if place == "область":
+                wide[uid or "?"] += cnt or 1
+            elif place:
+                key = f"{place} ({names.get(uid, ('', uid or '?'))[1]})"
+                places[key] += 1
+                last_at[key] = max(last_at.get(key, ""), ts)
+        total = sum(kinds.values())
+        # 3. the targets it followed: the places their reports put them at, in order (two places or more)
+        tracks = collections.OrderedDict()
+        for night, n, ts, place, alt, typ in pts:
+            tracks.setdefault((night, n), {"type": typ, "pts": []})["pts"].append((ts, place, alt))
+        followed = []
+        one = lambda x: "…" if x is None else f"{x[1]} {loc(x[0])}" + (f" ({x[2]} m)" if x[2] else "")      # noqa: E731
+        for (night, n), t in tracks.items():
+            p = [x for x in t["pts"] if x[1]]
+            path = [p[0]] + [x for a_, x in zip(p, p[1:]) if x[1] != a_[1]] if p else []
+            if len(path) < 2:
+                continue
+            followed.append({"kind": fam(t["type"], False), "reports": len(p),
+                             "path": [one(x) for x in (path if len(path) <= 4 else path[:2] + [None] + path[-2:])]})
+        followed.sort(key=lambda x: -x["reports"])
+        heights = sorted(x[2] for t in tracks.values() for x in t["pts"] if x[2])
+        # 4. the outcomes the channels reported
+        outs, oplaces = collections.defaultdict(collections.Counter), collections.Counter()
+        for ts, status, typ, place, uid, cnt in oc:
+            if not inside(uid) or status not in ("down", "impact"):
+                continue
+            outs[uid or "?"][status] += cnt or 1
+            if place and place != "область":
+                oplaces[f"{place} ({'shot down' if status == 'down' else 'explosion'})"] += 1
+        # 5. what is on the map now (only when the window ends now)
+        on_map = collections.defaultdict(collections.Counter)
+        if (now - until).total_seconds() < 120:
+            for m in self.markers_now():
+                if m.get("status") or m.get("stale") or m.get("endedBy") or not inside(m.get("oblast_uid")):
+                    continue
+                on_map[m.get("oblast_uid") or "?"][fam(m.get("type"), m.get("jet"))] += m.get("count") or 1
+        # 6. the Air Force's figures (all of Ukraine), posted in the window
+        af = []
+        if span >= timedelta(hours=6):
+            for r in st.af_reports((since.astimezone(tz).date() - timedelta(days=1)).isoformat()):
+                pt = parse_iso(r.get("ts"))
+                if pt and since <= pt <= until:
+                    af.append({"posted": loc(r.get("ts")), "period": r.get("period"), "launched": r.get("launched") or {},
+                               "down": r.get("down") or {}})
+        order = sorted(by_obl, key=lambda u: (u != "31", u != "14", -sum(by_obl[u].values())))
+        day = (lambda t: t.astimezone(tz).strftime("%d.%m %H:%M")) if span > timedelta(hours=12) else (lambda t: t.astimezone(tz).strftime("%H:%M"))
+        return {"from": day(since), "until": day(until), "span_min": round(span.total_seconds() / 60), "timezone": "Kyiv",
+                "alerts": alerts,
+                "reports": {"total": total, "before": before, "kinds": dict(kinds), "slice_min": step, "by_slice": {k.strftime("%H:%M"): v for k, v in sorted(slices.items())},
+                            "by_oblast": [{"oblast": nm(u), **by_obl[u]} for u in order],
+                            "region_wide": [{"oblast": nm(u), "targets": n} for u, n in wide.most_common()],
+                            "places": [{"place": k, "reports": n, "last": loc(last_at[k])} for k, n in places.most_common(12)]},
+                "followed": followed[:8], "followed_total": len(followed),
+                "heights": {"reports": len(heights), "min": heights[0] if heights else None,
+                            "median": heights[len(heights) // 2] if heights else None, "max": heights[-1] if heights else None},
+                "outcomes": [{"oblast": nm(u), **outs[u]} for u in outs], "outcome_places": dict(oplaces.most_common(10)),
+                "on_map_now": [{"oblast": nm(u), **on_map[u]} for u in sorted(on_map, key=lambda u: (u != "31", u != "14"))],
+                "air_force": af}
+
+    @staticmethod
+    def activity_active(d):
+        """Is there anything in the window: a report, an outcome, an official alert (in it, or on now)?"""
+        return bool(d["reports"]["total"] or d["outcomes"] or d["alerts"] or d["on_map_now"])
+
+    @staticmethod
+    def activity_text(d):
+        """The same window as plain text — what the AI writes the bulletin from."""
+        fmt = lambda c: ", ".join(f"{k} {v}" for k, v in c.items() if k != "oblast")      # noqa: E731
+        r = d["reports"]
+        L = [f"RECORD {d['from']}–{d['until']} Kyiv time ({d['span_min']} min). Reports of public channels as Heimdall's rules "
+             "read them — not radar, not a count of drones; places are the ones the posts named.", ""]
+        L.append("OFFICIAL AIR-RAID ALERTS (minutes in the window · on now? · started · ended · raions):")
+        L += [f"- {a['oblast']}: {a['minutes']} min · {'ON NOW' if a['on_now'] else 'not now'} · started {a['started']}"
+              f"{' · ended ' + a['ended'] if a['ended'] else ''} · {'whole oblast' if a['whole_oblast'] else str(a['raions']) + ' raion(s)'}"
+              for a in d["alerts"]] or ["- none"]
+        L += ["", f"TARGETS REPORTED: {r['total']} reports ({fmt(r['kinds']) or 'none'}); the window before: {r['before']} reports"]
+        if r["total"]:
+            L.append(f"By {r['slice_min']} min: " + "; ".join(f"{k} {v}" for k, v in r["by_slice"].items()))
+            L.append("By oblast: " + "; ".join(f"{o['oblast']}: {fmt(o)}" for o in r["by_oblast"]))
+            if r["region_wide"]:
+                L.append("Reported for a whole oblast, no town: " + "; ".join(f"{o['oblast']} {o['targets']}" for o in r["region_wide"]))
+            L.append("Places most reported: " + ("; ".join(f"{p['place']} ×{p['reports']} (last {p['last']})" for p in r["places"]) or "—"))
+        if d["followed"]:
+            L += ["", f"TARGETS FOLLOWED over two places or more: {d['followed_total']}" + (", the longest:" if d["followed_total"] > len(d["followed"]) else ":")]
+            L += [f"- {f['kind']}, {f['reports']} reports: " + " → ".join(f["path"]) for f in d["followed"]]
+        h = d["heights"]
+        if h["reports"]:
+            L += ["", f"HEIGHTS REPORTED: {h['reports']} reports, from {h['min']} m to {h['max']} m (median {h['median']} m)"]
+        L += ["", "OUTCOMES REPORTED: " + ("; ".join(f"{o['oblast']}: " + ", ".join(f"{'shot down' if k == 'down' else 'explosions'} {v}"
+                                                                    for k, v in o.items() if k != "oblast") for o in d["outcomes"]) or "none")]
+        if d["outcome_places"]:
+            L.append("Places: " + "; ".join(f"{k} ×{v}" for k, v in d["outcome_places"].items()))
+        L += ["", "ON THE MAP WHEN THIS WAS RECORDED: " + ("; ".join(f"{o['oblast']}: {fmt(o)}" for o in d["on_map_now"]) or "nothing")]
+        if d["air_force"]:
+            L += ["", "AIR FORCE (all of Ukraine):"] + [f"- {a['period'] or ''} (posted {a['posted']}): launched {a['launched']} · "
+                                                         f"shot down or suppressed {a['down']}" for a in d["air_force"]]
         return "\n".join(L)
 
     # -- statistics of past attacks (cached 5 min) ---------------------------
@@ -5262,21 +5252,10 @@ class Telegram(threading.Thread):
             raw_posts.append((mid.group(1), mdt.group(1), text))
         self.ingest(ch, raw_posts, f"tg:{ch}")
 
-    def _to_ai(self, p, near, stored):
-        """1.50: a new post to the AI reader (shadow mode, §7.7) — only a channel on the map's, and never in the way
-        of the post: the reader queues it and reads it on its own thread."""
-        ai = getattr(self.state, "ai", None)
-        if not ai or self.state.channel_mode(p["channel"]) != "map":
-            return
-        try:
-            ai.add(dict(p, text=_clean_post(p["text"])), near or (), self.state.channel_home(p["channel"]), stored)
-        except Exception as e:
-            log("ai reader: not queued:", type(e).__name__)
-
     def ingest(self, ch, raw_posts, source):
         """Everything a channel post goes through, whichever way it was read (web preview or Telegram API):
         raw_posts is a list of (post_id "channel/123", ISO time, text)."""
-        posts, nears = [], {}
+        posts = []
         for post_id, dt, text in sorted(raw_posts, key=lambda r: r[1] or ""):
             text = re.sub(r"[ \t]+", " ", (text or "").strip())
             if not text:
@@ -5299,18 +5278,13 @@ class Telegram(threading.Thread):
                 del ctx[:-12]
             if not is_relevant(text, tags, ch):
                 self.state.store.mark_seen(post_id)
-                # 1.50: the AI reader sees a short one that names a place — the misses it is there to find (§7.7)
-                self._to_ai({"post_id": post_id, "channel": ch, "ts": dt, "text": text, "tags": tags}, near, False)
                 continue          # news, fundraising, culture… — not an air-threat post, not stored
             # The offline glossary, instantly. A machine translation replaces it later, off this path (Translations):
             # on the server the free translator refuses every call, and each refusal cost ~3 s per post — a burst
             # of ten posts held the drone reports in them back by half a minute.
             en, fb = (_tr.translate_offline(text), True) if _tr else (text, True)
             posts.append({"post_id": post_id, "channel": ch, "ts": dt, "text": text, "tags": tags, "text_en": en, "en_fallback": fb})
-            nears[post_id] = near
         new = self.state.store.add_feed(posts)
-        for p in new:
-            self._to_ai(p, nears.get(p["post_id"]), True)
         self.state.set_source(source, True, count=len(posts), new=len(new))
         if ch == "eRadarrua" and geo:
             for p in sorted(posts, key=lambda p: p["ts"], reverse=True):
@@ -5764,6 +5738,143 @@ class NightReports(threading.Thread):
             with self.cond:
                 if not self.asked:
                     self.cond.wait(300)
+
+
+class Bulletins(threading.Thread):
+    """1.54: the AI's bulletins — the owner: "summaries of the activity of the last hour / the last 24 hours, a bit like a
+    weather bulletin". On the clock — the last hour at :00, :20 and :40 (`ai_bulletin_minutes`), the last 24 hours at :00
+    — the window's record (State.activity_summary) is written up by the AI in Ukrainian, English and French in one call
+    (ai_reader.BULLETIN_SYSTEM), and only while there is something in it: a window with nothing in it gets the server's
+    own one-line bulletin, once, without a call. The same record is never written twice; the 24 hours are written again
+    after an hour with something in it, or every 6 hours. Kept in `ai_bulletins`. The app shows the latest of each behind
+    the dashboard's switch (kv `ai_bulletin_public`), and only while it is still checked (kv `bul_checked:<kind>`): when
+    the AI cannot write (off, no key, out of budget) a bulletin goes stale and the app stops showing it. The dashboard can
+    ask for one now."""
+    WINDOW = {"1h": timedelta(hours=1), "24h": timedelta(hours=24)}
+    FRESH = {"1h": timedelta(minutes=35), "24h": timedelta(minutes=75)}     # how long the app shows one unchecked
+    QUIET = {"1h": {"uk": "За останню годину канали не повідомляли про цілі в районі, який показує Heimdall, і офіційних повітряних тривог там не було.",
+                    "en": "Over the last hour the channels reported no targets in the area Heimdall covers, and there was no official air-raid alert there.",
+                    "fr": "Au cours de la dernière heure, les canaux n'ont signalé aucune cible dans la zone couverte par Heimdall, et aucune alerte aérienne officielle n'y a été donnée."},
+             "24h": {"uk": "За останні 24 години канали не повідомляли про цілі в районі, який показує Heimdall, і офіційних повітряних тривог там не було.",
+                     "en": "Over the last 24 hours the channels reported no targets in the area Heimdall covers, and there was no official air-raid alert there.",
+                     "fr": "Au cours des dernières 24 heures, les canaux n'ont signalé aucune cible dans la zone couverte par Heimdall, et aucune alerte aérienne officielle n'y a été donnée."}}
+    NOT_ASKED = ("off", "paused", "budget", "rate")      # the reader's own refusals: nothing was asked, nothing is stored
+
+    def __init__(self, state, cfg):
+        super().__init__(daemon=True, name="bulletins")
+        self.state, self.cfg = state, cfg
+        self.cond = threading.Condition()
+        self.asked = []
+        self.busy = None
+        self.last_slot = {}
+        self.why = {}            # kind → why the last turn wrote nothing (the dashboard)
+
+    def every(self, kind):
+        if kind == "24h":
+            return 60
+        try:
+            return max(10, min(60, int(self.cfg.get("ai_bulletin_minutes", 20))))
+        except (TypeError, ValueError):
+            return 20
+
+    def slot(self, kind, t=None):
+        return int((t if t is not None else time.time()) // (self.every(kind) * 60))
+
+    def ask(self, kind):
+        with self.cond:
+            if kind in self.WINDOW and kind not in self.asked:
+                self.asked.append(kind)
+            self.cond.notify()
+
+    def _checked(self, kind, why=None):
+        """The latest bulletin still says what the window holds: the app may keep showing it."""
+        self.why[kind] = why
+        try:
+            self.state.store.kv_set(f"bul_checked:{kind}", now_iso())
+        except Exception:
+            pass
+
+    def write(self, kind, force=False, now=None):
+        """One turn for one kind: a bulletin written (the row), or None and why (self.why)."""
+        now = now or datetime.now(timezone.utc)
+        st = self.state
+        d = st.activity_summary(now - self.WINDOW[kind], now)
+        last = st.store.bulletin_last(kind)
+        base = {"kind": kind, "at": now.isoformat(timespec="seconds"), "since": (now - self.WINDOW[kind]).isoformat(timespec="seconds"),
+                "until": now.isoformat(timespec="seconds")}
+        if not State.activity_active(d):
+            if last and last.get("quiet") and not force:
+                self._checked(kind, "nothing in the window — said already")
+                return None
+            row = dict(base, quiet=1, sig="quiet", cost=0, **self.QUIET[kind])
+            st.store.bulletin_save(row)
+            self._checked(kind)
+            return row
+        if kind == "24h" and not force and last and not last.get("quiet"):
+            age = now - (parse_iso(last["at"]) or now)
+            if age < timedelta(hours=6) and not State.activity_active(st.activity_summary(now - timedelta(hours=1), now)):
+                self._checked(kind, "nothing new in the last hour")
+                return None
+        text = State.activity_text(d)
+        sig = hashlib.sha1(text.encode("utf-8")).hexdigest()[:16]
+        if last and last.get("sig") == sig and not force:
+            self._checked(kind, "the same record as the last bulletin")
+            return None
+        ai = getattr(st, "ai", None)
+        if not ai or not ai.enabled():
+            self.why[kind] = "the AI is off (no key, or switched off on the dashboard)"
+            return None
+        self.busy = kind
+        try:
+            res = ai.ask_bulletin(kind, text, f"{d['from']}–{d['until']}")
+        finally:
+            self.busy = None
+        if res.get("error") in self.NOT_ASKED:
+            self.why[kind] = f"not asked: {res['error']}"
+            return None
+        row = dict(base, quiet=0, sig=sig, input=text, model=res.get("model") or ai.model(), tok_in=res.get("tok_in"),
+                   tok_out=res.get("tok_out"), cost=res.get("cost") or 0, error=res.get("error"), **(res.get("out") or {}))
+        st.store.bulletin_save(row)
+        if not row["error"]:
+            self._checked(kind)
+        else:
+            self.why[kind] = f"failed: {row['error'][:200]}"
+        log(f"bulletin {kind}: " + ("written" if not row["error"] else f"not written ({row['error'][:120]})") + f" · ${row['cost']:.4f}")
+        return row
+
+    def run(self):
+        time.sleep(20)
+        for k in self.WINDOW:
+            self.last_slot[k] = self.slot(k)            # from the next mark on the clock
+        while True:
+            with self.cond:
+                asked, self.asked = self.asked, []
+            for k in self.WINDOW:
+                sl = self.slot(k)
+                due = sl != self.last_slot.get(k)
+                self.last_slot[k] = sl
+                if due or k in asked:
+                    try:
+                        self.write(k, force=k in asked)
+                    except Exception as e:
+                        log(f"bulletin {k} error:", type(e).__name__, e)
+            with self.cond:
+                if not self.asked:
+                    self.cond.wait(20)
+
+    def public(self):
+        """What the app shows: the latest bulletin of each kind still checked, or None — and nothing at all while the
+        dashboard's switch is off."""
+        st = self.state
+        if st.store.kv_get("ai_bulletin_public") != "1":
+            return {"on": False}
+        now = datetime.now(timezone.utc)
+        out = {"on": True}
+        for k, key in (("1h", "h1"), ("24h", "h24")):
+            r = st.store.bulletin_last(k)
+            seen = max([t for t in (parse_iso(r and r.get("at")), parse_iso(st.store.kv_get(f"bul_checked:{k}"))) if t] or [None]) if r else None
+            out[key] = {f: r.get(f) for f in ("at", "since", "until", "quiet", "uk", "en", "fr")} if r and seen and now - seen <= self.FRESH[k] else None
+        return out
 
 
 class Vitals(threading.Thread):
@@ -6873,6 +6984,10 @@ class Handler(BaseHTTPRequestHandler):
             if u.path == "/api/markers":
                 st.markers_now()
                 return self._send_cached(st._resp["markers"])
+            if u.path == "/api/bulletin":
+                # 1.54: the AI's bulletins — the last hour, the last 24 hours — behind the dashboard's switch
+                bl = getattr(st, "bulletins", None)
+                return self._json(bl.public() if bl else {"on": False})
             if u.path == "/api/trail":
                 # 1.52.1: a tag's path for the night — every place its reports put it, oldest first (the card, on a tap)
                 night, n = q.get("night", [""])[0], q.get("n", [""])[0]
@@ -7002,7 +7117,11 @@ class Handler(BaseHTTPRequestHandler):
                 except ValueError:
                     lim = 50
                 ai = getattr(st, "ai", None)
+                bl = getattr(st, "bulletins", None)
                 return self._json({"stats": ai.stats() if ai else None,
+                                   "bulletins": st.store.bulletins(30),
+                                   "bulletin": {"public": st.store.kv_get("ai_bulletin_public") == "1", "every_min": bl.every("1h") if bl else None,
+                                                "writing": bl.busy if bl else None, "why": dict(bl.why) if bl else {}},
                                    "reads": st.store.ai_reads(lim, diff=q.get("all", ["0"])[0] != "1"),
                                    "checks": st.store.ai_checks(24)})
             # The dashboard's health view: sources, channels, how early the map was. Yours alone as well.
@@ -7089,27 +7208,21 @@ class Handler(BaseHTTPRequestHandler):
                         return self._json({"error": f"could not reach t.me: {str(e)[:120]}"}, 502)
                 ok, msg = st.channel_update(action, name, data.get("mode"), via, data.get("home"))
                 return self._json({"ok": ok, "message": msg, "name": name}, 200 if ok else 400)
-            # 1.51: the AI reader's two switches (dashboard → AI reader): reading at all (`reader`), and its facts in the
-            # target tags (`live`) — the kill switch, effective at the next computation of the marks (≤ 10 s)
+            # The AI's switches (dashboard → AI): the AI at all (`reader`: every call stops at once), and 1.54 the bulletins
+            # in the app (`bulletin_public`), and "write one now" (`bulletin_now`: "1h" or "24h")
             if u.path == "/api/admin/ai":
                 if not self._admin_ok(q):
                     return self._json({"error": "unauthorized"}, 401)
-                for k, kv in (("reader", "ai_reader_on"), ("live", "ai_live")):
+                for k, kv in (("reader", "ai_reader_on"), ("bulletin_public", "ai_bulletin_public")):
                     if k in data:
                         st.store.kv_set(kv, "1" if data.get(k) else "0")
-                        log(f"ai reader: {k} switched {'on' if data.get(k) else 'off'} from the dashboard")
-                # 1.53: how it reads — every 10 minutes ("check") or each post ("post") — and "check now"
-                if data.get("mode") in ("check", "post"):
-                    st.store.kv_set("ai_mode", data["mode"])
-                    log(f"ai reader: reads {'every check' if data['mode'] == 'check' else 'each post'} (dashboard)")
+                        log(f"ai: {k} switched {'on' if data.get(k) else 'off'} from the dashboard")
+                bl = getattr(st, "bulletins", None)
+                if data.get("bulletin_now") in ("1h", "24h") and bl:
+                    bl.ask(data["bulletin_now"])
                 ai = getattr(st, "ai", None)
-                if data.get("check_now") and ai:
-                    ai.check_now()
-                hit = st._resp.get("markers")       # the marks recomputed at the next ask, with or without its facts
-                if hit:
-                    st._resp["markers"] = (0,) + tuple(hit[1:])
-                ai = getattr(st, "ai", None)
-                return self._json({"ok": True, "stats": ai.stats() if ai else None})
+                return self._json({"ok": True, "stats": ai.stats() if ai else None,
+                                   "bulletin_public": st.store.kv_get("ai_bulletin_public") == "1"})
             if u.path == "/api/admin/region":
                 # 1.43: an oblast on or off as a whole — its channels and its place on the map
                 if not self._admin_ok(q):
@@ -7469,17 +7582,16 @@ def main():
     state.digests.start()
     state.reports = NightReports(state, cfg)      # 1.53: the AI's report on each night
     state.reports.start()
-    # 1.50: the AI reader — reads the channels' posts beside the rules; it never places a mark. 1.51: its quoted facts
-    # fill the target tags while the dashboard's switch is on (§7.7)
-    if ai_reader and geo:
-        state.ai = ai_reader.AIReader(cfg, store, geo, rules_fn=lambda ch, t, near: geo.parse_for_channel(ch, t, near or None),
-                                      oblast_names={u: uk for u, uk, _ in OBLASTS}, previous_fn=store.ai_previous, log=log,
-                                      context_fn=state.ai_context, map_fn=state.ai_map)
+    # The AI (§7.7): 1.54 — it writes the bulletins of the last hour and the last 24 hours, and the night's report; it
+    # no longer reads the posts and puts nothing on the map
+    if ai_reader:
+        state.ai = ai_reader.AIReader(cfg, store, log=log)
         state.ai.ssl_ctx = _SSL_CTX
-        state.ai.start()
-        log("ai reader: " + (f"on — {state.ai.model()}, at most ${state.ai.cap():g} a month; its facts in the target tags: "
-                             f"{'on' if state.ai.live() else 'off'} (dashboard → AI reader)" if state.ai.enabled()
-                             else "off — no OPENROUTER_API_KEY (scripts/set-openrouter-key.bat), or switched off on the dashboard"))
+        log("ai: " + (f"on — {state.ai.model()}, at most ${state.ai.cap():g} a month: bulletins and the night's report "
+                      f"(in the app: {'on' if store.kv_get('ai_bulletin_public') == '1' else 'off'} — dashboard → AI)" if state.ai.enabled()
+                      else "off — no OPENROUTER_API_KEY (scripts/set-openrouter-key.bat), or switched off on the dashboard"))
+    state.bulletins = Bulletins(state, cfg)       # 1.54: the AI's bulletins (§7.10)
+    state.bulletins.start()
 
     # Every open page is a socket. Linux's default of 1,024 open files per process would stop the server long
     # before the stream hub does: raise it to what the system allows.
