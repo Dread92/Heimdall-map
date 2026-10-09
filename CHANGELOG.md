@@ -2,6 +2,17 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.54.4 — 2026-10-09
+
+### Fixed
+- **A drone's path drawn across 150 km and the whole of Kyiv** — the owner: "this line is probably wrong — not 100 %
+  sure, but no wild assumption when the gap between two points is so huge". #157 joined "Сквира" (00:29) and "Велика
+  Димерка" (00:53), both @kyiv_airdef with no type stated: a bare place name of a channel that tracks drones could be
+  continued at 15 km a minute, a missile's pace, and a drone at 7. Now a drone's report continues a track only as far as
+  a drone flies between them — a Shahed 3.5 km a minute (210 km/h with a tailwind), never past 80 km; a jet drone 9 km a
+  minute, never past 120 km — and a bare place name from a drone tracker is a drone. On the map, the red dots of a
+  tapped target leave out the line between two reports too far apart to be one drone's flight; the dots stay.
+
 ## 1.54.3 — 2026-10-09
 
 ### Added

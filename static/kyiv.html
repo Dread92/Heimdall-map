@@ -2660,8 +2660,16 @@ function drawSelPath(){ const g=$('selpath'); if(!g) return; const m=SELP?MK.fin
   // a time on a dot only where it does not sit on the last one shown (a night's path can have dozens)
   let last=null; const lab=pts.map((o,i)=>{ if(o.cur) return false; const far=!last||Math.hypot(o.p[0]-last[0],o.p[1]-last[1])/KPX>=46;
     if(far||i===k-1||i===pts.length-2){ last=o.p; return true; } return false; });
-  g.innerHTML=(k>0?`<polyline class="selp old" points="${line(pts.slice(0,k+1))}"/>`:'')
-    +`<polyline class="selp" points="${line(pts.slice(Math.max(k,0)))}"/>`
+  // 1.54.4, the owner: "no wild assumption when the gap between two points is so huge" — two reports a drone could not
+  // have flown between (past 80 km, or faster than 3.5 km a minute; a jet drone 120 km, 9 km a minute) are not joined:
+  // their dots stay, the line between them is left out. Nobody saw it there.
+  const jet=!!m.jet, dr=m.type==='drones'||m.type==='unknown', cut=(a,b)=>{ if(!dr) return false;
+    const d=Math.hypot(a.p[0]-b.p[0],a.p[1]-b.p[1]), dt=Math.max(0,(Date.parse(b.ts)-Date.parse(a.ts))/6e4);
+    return d>(jet?120:80)||d>(jet?9:3.5)*dt+15; };
+  const runs=(a,cls)=>{ const out=[]; let cur=[a[0]]; for(let i=1;i<a.length;i++){ if(cut(a[i-1],a[i])){ out.push(cur); cur=[a[i]]; } else cur.push(a[i]); }
+    out.push(cur); return out.filter(r=>r.length>1).map(r=>`<polyline class="${cls}" points="${line(r)}"/>`).join(''); };
+  g.innerHTML=(k>0?runs(pts.slice(0,k+1),'selp old'):'')
+    +runs(pts.slice(Math.max(k,0)),'selp')
     +pts.map((o,i)=>o.cur?'':`<circle class="selpd${o.old?' old':''}" cx="${kx(o.p[0])}" cy="${kx(o.p[1])}" r="${kx((o.old?2.6:3.2)*KPX)}"/>`
       +(lab[i]?`<text class="selpt${o.old?' old':''}" x="${kx(o.p[0]+5*KPX)}" y="${kx(o.p[1]-5*KPX)}">${esc(fmtT(o.ts))}</text>`:'')).join(''); }
 // 1.53: the map alone, on the whole screen (a phone's browser bars too, where the browser allows it)

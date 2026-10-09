@@ -360,3 +360,34 @@ def test_the_tapped_targets_path_is_a_layer_and_the_explosions_switches_are_gone
     assert "const LAYERS={sat:true,tiles:false,trails:false,selpath:true," in PAGE
     assert 'data-l="himp"' not in PAGE and 'data-l="hdown"' not in PAGE and "himp:" not in PAGE
     assert I18N.count("l_selpath:'") == 3
+
+
+# ---- 1.54.4: no line a drone could not have flown ------------------------------------------------------------------------
+def _m(mid, minutes, place, **kw):
+    import geo
+    lon, lat, uid = geo.PLACES[place]
+    m = {"id": mid, "ts": ago(minutes), "type": "unknown", "status": None, "lon": lon, "lat": lat, "place": place, "channel": "kyiv_airdef",
+         "heading": None, "count": 1, "jet": False, "likely": "drones", "origin": None, "oblast_uid": uid}
+    m.update(kw)
+    return m
+
+
+def test_a_drone_track_is_never_continued_past_a_drones_reach():
+    # #157: Skvyra 00:29, Velyka Dymerka 00:53 — 150 km across Kyiv in 24 minutes
+    ms = server.State._chain([_m("a/1#0", 26, "Сквира"), _m("a/2#0", 2, "Велика Димерка")])
+    assert not any(m.get("superseded_by") for m in ms) and all(not m["history"] for m in ms)
+    # a Shahed between two towns 35 km apart in 8 minutes is one target
+    ms = server.State._chain([_m("b/1#0", 20, "Фастів", type="drones"), _m("b/2#0", 12, "Боярка", type="drones")])
+    assert ms[0]["superseded_by"] == "b/2#0"
+    # a jet drone flies further: 66 km in 8 minutes is one jet, not one Shahed
+    jet = server.State._chain([_m("c/1#0", 10, "Чернігів", type="drones", jet=True), _m("c/2#0", 2, "Козелець", type="drones", jet=True)])
+    shahed = server.State._chain([_m("d/1#0", 10, "Чернігів", type="drones"), _m("d/2#0", 2, "Козелець", type="drones")])
+    assert jet[0]["superseded_by"] == "c/2#0" and not shahed[0]["superseded_by"]
+    assert "lim = min(9.0 * dt + 15, 120) if jet else min(3.5 * dt + 15, 80)" in SRC
+
+
+def test_the_tapped_path_leaves_out_a_line_a_drone_could_not_have_flown():
+    fn = PAGE[PAGE.index("function drawSelPath(){"):PAGE.index("// 1.53: the map alone, on the whole screen")]
+    assert "return d>(jet?120:80)||d>(jet?9:3.5)*dt+15; };" in fn and "dr=m.type==='drones'||m.type==='unknown'" in fn
+    assert "out.filter(r=>r.length>1)" in fn and "runs(pts.slice(Math.max(k,0)),'selp')" in fn
+    assert "a drone's reach" in DOC

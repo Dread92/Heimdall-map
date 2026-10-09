@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.54** · last updated 2026-10-09 (1.54.3)
+**Documented version: 1.54** · last updated 2026-10-09 (1.54.4)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -704,6 +704,13 @@ reading (`tag_feed_text`); the stored and shown text is never changed.
    centre) never takes over a report that named a place, a destination ("на Зміїв") is never handed to one, and its
    point is never a step of a track's history. Before this, the Kyiv channels' bare names — one a minute — took over
    every Odesa, Chernihiv and Kharkiv report within 475 km and 30 min, and those oblasts' reports were never drawn.
+   **1.54.4, a drone's reach** (the owner: "not 100 % sure, but no wild assumption when the gap between two points is so
+   huge" — #157, "Сквира" 00:29 then "Велика Димерка" 00:53, one track 150 km across Kyiv in 24 minutes): a drone's
+   report continues a track only within `min(3.5 km/min × dt + 15, 80)` km — a Shahed's 210 km/h with a tailwind — a
+   jet drone's within `min(9 × dt + 15, 120)`; an unstated type is a drone when it is a bare place name of a channel
+   that tracks drones (`likely`) or another channel's; other unstated types and missiles keep `15 × dt + 25`. The
+   tapped target's red dots (§7.8) leave out the line between two reports a drone could not have flown between, by the
+   same measure — the dots stay (`drawSelPath`, `cut`).
    **1.43.1, the regional clock**: a report from a channel with a regional home (`geo.CHANNEL_HOME`) is `stale` after
    `REGIONAL_STALE_MIN` = 10 min and dropped after `REGIONAL_GONE_MIN` = 25 (an unknown after 10) — the trackers
    post every five to twenty minutes; it carries `slow: true`, and the map fades it on the same clock (grey at 10,

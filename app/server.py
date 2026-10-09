@@ -4314,10 +4314,21 @@ class State:
                     continue
                 # an unspecified threat is a target of unknown speed: from its own channel it may be anything, but
                 # two channels' bare place names are only one target at the speed of a drone
-                vmax = 7.0 if fam(m) == "drone" or (fam(m) == "unknown" and not same) else 15.0
+                # 1.54.4, the owner: "this line is probably wrong — not 100 % sure, but no wild assumption when the gap
+                # between two points is so huge": #157, "Сквира" 00:29 and "Велика Димерка" 00:53 (@kyiv_airdef, type not
+                # stated), one track 150 km across Kyiv in 24 minutes — 7 km a minute was allowed to a drone, 15 to an
+                # unstated type. A drone continues a track only as far as a drone flies between two reports: a Shahed
+                # 3.5 km a minute (210 km/h: its speed and a tailwind) and never past 80 km; a jet drone 9 km a minute,
+                # never past 120 km. A bare place name from a channel that tracks drones (`likely`) is a drone.
+                drone = fam(m) == "drone" or (fam(m) == "unknown" and (not same or m.get("likely") == "drones" or pm.get("likely") == "drones"))
                 d = km(pm, m)
+                if drone:
+                    jet = bool(m.get("jet") or pm.get("jet"))
+                    lim = min(9.0 * dt + 15, 120) if jet else min(3.5 * dt + 15, 80)
+                else:
+                    lim = 15.0 * dt + 25
                 # an approach mark stands at the town the target is heading to, not where it is: it may be further
-                if d > (80 if m.get("approach") else vmax * dt + 25):
+                if d > (80 if m.get("approach") else lim):
                     continue
                 if pm.get("heading") is not None and d > 12:
                     b = (math.degrees(math.atan2((m["lon"] - pm["lon"]) * 70.7, (m["lat"] - pm["lat"]) * 111)) + 360) % 360
