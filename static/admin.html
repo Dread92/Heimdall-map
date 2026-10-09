@@ -341,6 +341,7 @@ const T={
   h_channels:'Telegram channels',ch_name:'Channel',ch_24:'Posts 24 h',ch_marks:'Marks 24 h',ch_read:'Read 7 d',ch_last:'Last post',ch_state:'Reader',
   ch_api:'Telegram API',ch_prev:'web preview',ch_off:'not read',
   ch_note:'“Read” is the share of the channel’s posts over 7 days that put something on the map. A channel silent for 12 h or more, or whose reader fails, is highlighted.',
+  h_img:'Satellite imagery',img_sat:'Sentinel-2 tiles: version {0}, to zoom {1}',img_nosat:'no Sentinel-2 tiles on the volume — scripts/upload-imagery.bat',img_esri:'Esri close zoom: {0} tiles this month (cap {1}) · {2} today (cap {3})',img_noesri:'Esri close zoom off — no ESRI_KEY (scripts/set-esri-key.bat)',img_ref:'Esri refused the key ({0}) — asked again in 5 min',
   h_tr:'Translation',tr_av:'in use: {0}',tr_none:'no translation service reachable — offline glossary only',tr_paused:'paused after an error: {0}',
   ago_m:'{0} min ago',ago_h:'{0} h ago',ago_d:'{0} d ago',never:'never',
   gen:'generated {0}',
@@ -432,6 +433,7 @@ const T={
   h_channels:'Telegram-канали',ch_name:'Канал',ch_24:'Дописів 24 г',ch_marks:'Позначок 24 г',ch_read:'Зчитано 7 д',ch_last:'Останній допис',ch_state:'Читання',
   ch_api:'Telegram API',ch_prev:'веб-перегляд',ch_off:'не читається',
   ch_note:'«Зчитано» — частка дописів каналу за 7 днів, що поставили щось на мапу. Канал, що мовчить 12 год і більше, або чиє читання збоїть, підсвічено.',
+  h_img:'Супутникові знімки',img_sat:'Тайли Sentinel-2: версія {0}, до зуму {1}',img_nosat:'тайлів Sentinel-2 на томі немає — scripts/upload-imagery.bat',img_esri:'Esri, близький зум — тайлів цього місяця: {0} (ліміт {1}) · сьогодні: {2} (ліміт {3})',img_noesri:'Esri вимкнено — немає ESRI_KEY (scripts/set-esri-key.bat)',img_ref:'Esri відхилив ключ ({0}) — повтор за 5 хв',
   h_tr:'Переклад',tr_av:'працює: {0}',tr_none:'жоден сервіс перекладу недоступний — лише офлайн-глосарій',tr_paused:'призупинено після помилки: {0}',
   ago_m:'{0} хв тому',ago_h:'{0} год тому',ago_d:'{0} д тому',never:'ніколи',
   gen:'згенеровано {0}',
@@ -579,8 +581,14 @@ function drawHealth(){
     <div class="note" style="margin:8px 0 0">${tr('ch_note')}</div>
 
     <h2>${tr('h_tr')}</h2>
-    <div style="font:13px var(--sans)">${(trn.available||[]).length?esc(tr('tr_av',trn.available.join(' → '))):esc(tr('tr_none'))}${paused.length?' · <span style="color:var(--orange)">'+esc(tr('tr_paused',paused.join(', ')))+'</span>':''}</div>`;
+    <div style="font:13px var(--sans)">${(trn.available||[]).length?esc(tr('tr_av',trn.available.join(' → '))):esc(tr('tr_none'))}${paused.length?' · <span style="color:var(--orange)">'+esc(tr('tr_paused',paused.join(', ')))+'</span>':''}</div>
+    ${imagery(H.imagery||{})}`;
 }
+// 1.48: the satellite tiles — which file is on the volume, and how many Esri tiles the month has used of its cap
+function imagery(im){ const s=im.sat||{}, e=im.esri||{};
+  return `<h2>${tr('h_img')}</h2><div style="font:13px var(--sans)">${s.version?esc(tr('img_sat',s.version,s.maxzoom)):esc(tr('img_nosat'))}<br>${
+    e.key?esc(tr('img_esri',fmt(e.tiles_month),fmt(e.cap_month),fmt(e.tiles_today),fmt(e.cap_day))):esc(tr('img_noesri'))}${
+    e.refused&&e.paused?' · <span style="color:var(--orange)">'+esc(tr('img_ref',e.refused))+'</span>':''}</div>`; }
 // ---- 1.43: the channels, oblast by oblast — each oblast a compartment the map can do without ----------------------
 const rgName=r=>r?(L==='uk'?r.name:r.en):'';
 function RG_OPTS(cur){ const rs=(H&&H.regions)||[];

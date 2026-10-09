@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.47** · last updated 2026-10-09 (1.47.1)
+**Documented version: 1.48** · last updated 2026-10-09 (1.48.0)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -144,6 +144,7 @@ clear-sky/
 │   ├── build_mapdata.py    rebuilds static/map-ua.json from Natural Earth (1.45)
 │   ├── build_imagery.py    builds the satellite layer (imagery/sat-ua.mbtiles) from ESA WorldCover / Sentinel-2 (1.47)
 │   ├── upload-imagery.bat  puts imagery/sat-ua.mbtiles on the Fly volume (1.47)
+│   ├── set-esri-key.bat    one-time: the owner's Esri key for the closest zooms, into Fly's secrets (1.48)
 │   ├── corpus.py           add / review / pull corpus cases
 │   ├── release.bat         ships a patch: checks all is committed, fly deploy, git push, shows the live version
 │   ├── telegram-login.bat  one-time Telegram sign-in for the API reader (runs telegram_login.py)
@@ -268,6 +269,8 @@ the committed template.
 | `ai_model` | `"claude-sonnet-5"` | The model that writes them. |
 | `digest_hour` | `9` | Kyiv hour after which last night is written up (the Air Force morning summary is out by then). |
 | `access_key` | `""` | Locks the WHOLE app behind a key — private deployments only. |
+| `esri_key` | `""` | Esri (ArcGIS Location Platform) API key: the satellite layer's closest zooms, 14–18 (1.48, §10.1). Set as `ESRI_KEY` by `scripts/set-esri-key.bat`. |
+| `esri_monthly_tiles` | `1800000` | Esri tiles a month, at most — under the 2 M free tiles; a tenth of it in one day at most. Past it: Sentinel alone. |
 | `demo` | `false` | Fake alerts and posts. |
 
 ### 5.3 Environment variables
@@ -288,6 +291,7 @@ Environment variables win over `config.json`. On Fly they are set as **secrets**
 | `GOOGLE_TRANSLATE_KEY` | Google Cloud Translation key. |
 | `ANTHROPIC_API_KEY` | Turns on the written summaries of each night / week on the dashboard (`ai_key`). |
 | `AI_MODEL` | Overrides `ai_model`. |
+| `ESRI_KEY` | Turns on the satellite layer's closest zooms (Esri World Imagery, `esri_key`, 1.48). Set only by `scripts/set-esri-key.bat`. |
 | `TRANSLATOR` | `google` (default) allows the free Google endpoint as last resort; anything else disables it. |
 | `TG_API_ID` | Telegram API app id (my.telegram.org). |
 | `TG_API_HASH` | Telegram API app hash. |
@@ -921,8 +925,9 @@ and no imagery on the server, the streets are drawn in its place (`updateOsm`). 
 year of cloud-free Sentinel-2 pixels, 10 m, one processing for the whole country, so the tiles join without seams;
 CC BY 4.0, credited on the map whenever it is drawn (`SAT_ATTR` in `#attrib`: "© ESA WorldCover 2021 · contains
 modified Copernicus Sentinel data (2021)"). `scripts/build_imagery.py` reads it once from the public bucket
-(`s3://esa-worldcover-s2`, no account) at its 20 m overview and makes the WebP tiles of zoom 5–12 that touch
-Ukraine (about 21,000, ~130 MB); closer than zoom 12 the page enlarges the zoom-12 tiles. **The open sea is
+(`s3://esa-worldcover-s2`, no account) and makes the WebP tiles that touch Ukraine: 1.47's first file, zoom 5–12
+from the 20 m overview (about 21,000, ~130 MB); **1.48's, zoom 5–13 from the full 10 m** (each 1° cell read in four
+pieces with a 16-pixel margin; 80,415 tiles, 406 MB — 59,736 of them at zoom 13, ~4 KB each). Closer than the file's deepest zoom the page enlarges its tiles. **The open sea is
 transparent**: the oblasts' outlines take in coastal waters (Odesa oblast reaches Zmiinyi) and the composite has sea
 pixels near the coast and none farther out, so the Black Sea ended in a staircase of tiles. Water (near-infrared
 below `NIR_WATER`) connected to the open Black Sea or the Sea of Azov — found once on a ~150 m mosaic of the region
@@ -930,13 +935,38 @@ after an opening of ~1 km, so that no river joins it (`sea_mask`) — is left ou
 sea; the Dnipro, its reservoirs, the Dniester, the lakes stay in the picture. The **server serves them
 itself** (`GET /tiles/sat/{z}/{x}/{y}.webp`, `SatTiles`, `SAT_TILES` on the volume): no map provider learns which
 part of the country a reader looks at, and nothing is paid per tile. The tiles never change under one address — the
-page asks with the layer's version (`?v=SAT_V`) and the answer is cached a year (`immutable`). The page offers the
+page asks with the file's version (`?v=SAT_V`) and the answer is cached a year (`immutable`). 1.48: that version
+and the deepest zoom are the **file's own** (its `metadata`: `version`, `maxzoom`; `SatTiles.info()` →
+`state.config.sat_v`, `sat_z`), not numbers in the page — a page that asked for zoom 13 or version 2 before the new
+file was on the volume would have kept the old pictures under the new address for a year. The page offers the
 layer only when the server has the file (`state.config.sat`); a new file put in place is read within ten seconds,
 no restart. With the layer drawn the map is "tiled" like under the OSM streets (outlines over the picture, our own
 roads and rivers hidden). Darkened by mode (`#sat`
 filter: standard, day, night). Why this source and not a commercial one: a paid product cannot use the
 non-commercial tiers, and the commercial imagery services (Esri, Mapbox, Google) bill per tile and forbid keeping
 their tiles — a one-off build of open data costs nothing per reader.
+
+**The closest zooms: Esri World Imagery (1.48).** 10 m Sentinel pixels show a town, not a street. From zoom 14
+(`tileZoom()`, ~1:35,000) to 18 the satellite layer draws **Esri World Imagery** (Maxar, Earthstar Geographics and
+others; ArcGIS Location Platform, which allows a commercial app) over the Sentinel tiles (`#esri`, between `#sat`
+and `#tiles`, inside `#uaclip`, same filters), credited "Powered by Esri · Esri, Maxar, Earthstar Geographics, and
+the GIS User Community" whenever drawn (`ESRI_ATTR`). It is part of the satellite layer, not a layer of its own.
+The page asks **this server** (`GET /tiles/esri/{z}/{x}/{y}.jpg`); `EsriTiles` asks Esri with the owner's key
+(`ESRI_KEY`, set by `scripts/set-esri-key.bat`) — the key never reaches a browser and is never logged (the request
+address carries it). **Nothing is kept on the server** (Esri's terms forbid storing its tiles); the reader's browser
+keeps a tile as long as Esri's cache header says, `private`. Only tiles over Ukraine (`ESRI_BBOX`), zoom 14–18, are
+asked for. Every tile counts against the free tier (2 M a month, then paid), so they are **counted and capped**:
+`esri_monthly_tiles` a month (1.8 M), a tenth of it a day at most (one busy night cannot spend the month), 3,000 an
+hour for one reader (a salted hash of the address, in memory for the hour). The counts are kept in `kv`
+(`esri_tiles:YYYY-MM`, `esri_tiles_day:YYYY-MM-DD`, saved every 200 tiles) and shown on the dashboard
+(`/api/health` → `imagery`). Past a cap, or with no key, `state.config.esri` is false and the page draws the Sentinel
+picture alone; a refused key (HTTP 401/403/498/499, or Esri's 200-with-a-JSON-error) pauses the asking for 5 minutes.
+At most 12 requests to Esri at once. A large screen that would need more than 140 tiles at its zoom gets the zoom
+below (`placeTiles(…, zmin)`), for both layers.
+
+**Zoom to a kilometre (1.48).** `setView` / `zoomAt` stop at 1 km across (8 km before). Over a picture (`svg.tiled`)
+the oblast and raion names are light on a dark halo like the towns (`paint-order:stroke`), dark on a light halo in
+day mode — dark slate on darkened imagery could not be read.
 
 **The layers outside Kyiv oblast (1.45).** The rivers, roads and "airports / plants" layers were drawn by hand for
 Kyiv oblast only, and "villages and small towns" had the core gazetteer's hundred-odd Kyiv-oblast places and a couple
@@ -1287,6 +1317,7 @@ All JSON unless stated. Public unless marked 🔒 (`ADMIN_KEY`).
 | `GET /api/replay?from=&to=` | the replay (§10.3c), Unix seconds, ≤ 26 h within the last 7 days: `alerts` `[{k, o, lt, rk, lv, at, ti, s, e}]` (intervals, `e` null while on) and `tracks` `[{ty, jet, n, ap, h, ch, p: [[t, lon, lat, place]]}]` |
 | `GET /api/stats?days=` | statistics; the Stats tab reads only `windows` (with `af`: launched / down by type, used, impacts, debris) and `af_days` (the Air Force summaries, each with its `post`) |
 | `GET /tiles/sat/{z}/{x}/{y}.webp` | the satellite layer's tiles (1.47, §10.1): WebP from `SAT_TILES`, cached a year (`immutable`); 404 where there is none |
+| `GET /tiles/esri/{z}/{x}/{y}.jpg` | the satellite layer's closest zooms (1.48, §10.1): Esri World Imagery asked with `ESRI_KEY`, zoom 14–18 over Ukraine only, nothing kept; 404 outside / no key, 429 past a cap, 503 key refused |
 | `GET /api/places?oblast=` | gazetteer (names, coordinates, oblast; 1.46: built once an hour, gzipped): `oblast=14,31,…`, `all`, or (1.43) `scope` — the oblasts the map covers now; (1.45) `villages=scope`: the regional villages of those oblasts (hromada centres and places of 1,000+, `geo.villages`), for the map's villages layer, cached an hour |
 | `GET /api/drone_heat?days=1|7|30` | the heat layer: `points` `[lon, lat, posts, place, oblast]` — where drones and unidentified targets were reported (cached 10 min) |
 | `POST /api/push/subscribe`, `/api/push/unsubscribe`, `/api/push/test`; `GET /api/push/key` | Web Push; subscribe takes `{subscription, home, topics: ["bridges"], lang}` |
@@ -1331,7 +1362,8 @@ Columns are added in place by `Store.__init__` (`ALTER TABLE … ADD COLUMN`), s
 Next to the database, on the volume (1.47): **`sat-ua.mbtiles`**, the satellite layer (`SAT_TILES`, §10.1) — an
 MBTiles file (SQLite, `tiles` / `metadata`), read-only for the server, built once by `scripts/build_imagery.py`
 and uploaded by `scripts/upload-imagery.bat`. Never in git or the image (`imagery/` is in `.gitignore` and
-`.dockerignore`).
+`.dockerignore`). 1.48's zoom-13 file is 406 MB: the upload goes beside the old file before it replaces it, so the volume needs
+~0.45 GB free for it (the 1 GB volume has it; `fly volumes extend` otherwise, DEPLOY.md). No Esri tile is ever stored.
 
 ## 14. Testing and quality
 

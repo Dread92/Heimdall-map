@@ -35,7 +35,7 @@ import urllib.error
 import urllib.request
 from datetime import datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, quote, urlparse
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))   # sibling modules, however the file is launched
 
@@ -96,6 +96,8 @@ DEFAULT_CONFIG = {
     "history_backfill_hours": 6,
     "desktop_notifications": True,
     "access_key": "",
+    "esri_key": "",                   # 1.48: Esri World Imagery for the closest zooms; or env ESRI_KEY (set-esri-key.bat)
+    "esri_monthly_tiles": 1800000,    # its cap: under the 2 M free tiles a month; a tenth of it a day at most
     "demo": False,
 }
 
@@ -400,7 +402,7 @@ def build_id():
 
 # The version the front end shows in its footer, kept here too so /api/version can answer "what is actually
 # running" without anybody reading it off a screenshot. tests/test_version.py pins the two to each other.
-APP_VERSION = "1.47"
+APP_VERSION = "1.48"
 APP_NAME = "Heimdall"
 BUILD = None    # filled at startup
 
@@ -1732,6 +1734,7 @@ class State:
     def __init__(self, store, cfg):
         self.store = store
         self.cfg = cfg
+        self.esri = EsriTiles(cfg, store)      # 1.48: the closest zooms of the satellite layer
         self.lock = threading.Lock()
         self.active = {}            # key -> alert dict
         self.sources = {}           # name -> {ok, last, error, ...}
@@ -2799,7 +2802,8 @@ class State:
             except Exception:
                 pass
         out = {"generated": now_iso(), "official": official, "channels": channels, "translation": tr, "lead": self.lead_times(30),
-               "tg_api": TelegramAPI.configured(self.cfg), "max_channels": self.MAX_CHANNELS, "regions": self.regions()}
+               "tg_api": TelegramAPI.configured(self.cfg), "max_channels": self.MAX_CHANNELS, "regions": self.regions(),
+               "imagery": {"sat": dict(zip(("version", "maxzoom"), SAT.info())), "esri": self.esri.stats()}}
         self._health_res = (time.time(), out)
         return out
 
@@ -3499,21 +3503,26 @@ class State:
         # poll, so every reader was sent the whole table again at each beat of the live line — ~80 % of what the line
         # carried. The details (last read, counts, errors) are the dashboard's: /api/health.
         sources = {k: {"ok": bool(v.get("ok"))} for k, v in sources.items()}
+        sv, sz = SAT.info()                          # 1.48: the imagery file's own version and deepest zoom
         return {"now": now_iso(), "active": active, "oblasts": by_oblast, "sources": sources, "eradar": self.eradar,
                 "notice": self.notice_now(), "nuke": self.nuke, "bridges": bridges, "scope": sorted(SCOPE_UIDS, key=int),
                 "favourites": self.cfg.get("favourites") or [], "config": {"demo": bool(self.cfg.get("demo")), "canonical": canonical_host(self.cfg),
                 "has_token": bool(self.cfg.get("alerts_in_ua_token")), "channels": self.cfg.get("telegram_channels"),
-                "sat": SAT.available()}}
+                "sat": SAT.available(), "sat_v": sv, "sat_z": sz, "esri": self.esri.enabled()}}
 
 
 # ---------------------------------------------------------------------------
 # Desktop notifications (optional plyer)
 # ---------------------------------------------------------------------------
 class SatTiles:
-    """The satellite layer (1.47): Ukraine at zoom 5–12 from the ESA WorldCover Sentinel-2 composite of 2021, WebP
-    tiles in an MBTiles file, read-only. Served by this server and nobody else: no map provider learns which part
-    of the country a reader looks at. A new file put in place (scripts/upload-imagery.bat) is picked up on the next
-    request — no restart."""
+    """The satellite layer (1.47): Ukraine from the ESA WorldCover Sentinel-2 composite of 2021, WebP tiles in an
+    MBTiles file, read-only — zoom 5–12 in the first build, 5–13 at the full 10 m since 1.48. Served by this server
+    and nobody else: no map provider learns which part of the country a reader looks at. A new file put in place
+    (scripts/upload-imagery.bat) is picked up on the next request — no restart.
+
+    1.48: the page is told the file's own version and deepest zoom (its metadata), not a number written in the page:
+    the tiles are kept a year under their address, and a page that asked for the new zoom or the new version before
+    the new file was on the volume would have kept the old pictures under the new address."""
     ATTRIBUTION = "ESA WorldCover 2021 · contains modified Copernicus Sentinel data (2021)"
 
     def __init__(self, path):
@@ -3522,6 +3531,7 @@ class SatTiles:
         self.conn = None
         self.sig = None
         self.checked = 0.0
+        self.meta = {}
 
     def _db(self):
         now = time.monotonic()
@@ -3539,9 +3549,14 @@ class SatTiles:
         if sig != self.sig:
             if self.conn:
                 self.conn.close()
+            self.meta = {}
             try:
                 self.conn = sqlite3.connect(f"file:{self.path}?mode=ro", uri=True, check_same_thread=False)
                 self.conn.execute("SELECT 1 FROM tiles LIMIT 1").fetchone()
+                try:
+                    self.meta = dict(self.conn.execute("SELECT name, value FROM metadata").fetchall())
+                except sqlite3.Error:
+                    pass
             except sqlite3.Error as e:
                 log("satellite tiles unreadable:", e)
                 self.conn = None
@@ -3551,6 +3566,18 @@ class SatTiles:
     def available(self):
         with self.lock:
             return self._db() is not None
+
+    def info(self):
+        """(version, deepest zoom) of the file in place — what the page asks for, and under which address."""
+        with self.lock:
+            if self._db() is None:
+                return None, None
+            m = self.meta
+        try:
+            z = max(5, min(16, int(m.get("maxzoom") or 12)))
+        except ValueError:
+            z = 12
+        return re.sub(r"[^\w.-]", "", str(m.get("version") or ""))[:12] or "1", z
 
     def tile(self, z, x, y):
         if not (0 <= z <= 20 and 0 <= x < (1 << z) and 0 <= y < (1 << z)):
@@ -3568,6 +3595,157 @@ class SatTiles:
 
 
 SAT = SatTiles(SAT_PATH)
+
+# 1.48: closer than Sentinel's 10 m — Esri World Imagery (ArcGIS Location Platform), zoom 14 and closer, Ukraine only
+ESRI_URL = "https://ibasemaps-api.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+ESRI_BBOX = (22.0, 44.2, 40.4, 52.5)       # lon, lat — the tiles asked for must touch it
+
+
+class EsriTiles:
+    """The closest zooms of the satellite layer (1.48): a street, a building — what 10 m Sentinel pixels cannot show.
+    The key is the owner's (ESRI_KEY, a Fly secret set with scripts/set-esri-key.bat) and stays on this server: the
+    page asks /tiles/esri/…, this server asks Esri. Nothing is kept here — Esri's terms forbid storing its tiles; the
+    browser keeps what Esri's own cache headers let it.
+
+    Every tile is paid for past the free tier, so they are counted and capped: `esri_monthly_tiles` a month (under the
+    2 M free tiles), never more than a tenth of them in one day (one busy night cannot spend the month), PER_IP_HOUR
+    for one reader. Past a cap the page is told (state.config.esri) and shows the Sentinel picture alone. Only tiles
+    over Ukraine, zoom ZMIN–ZMAX, are ever asked for."""
+    ATTRIBUTION = "Powered by Esri · Esri, Maxar, Earthstar Geographics, and the GIS User Community"
+    ZMIN, ZMAX = 14, 18
+    PER_IP_HOUR = 3000
+    SAVE_EVERY = 200
+
+    def __init__(self, cfg, store=None):
+        self.cfg, self.store = cfg, store
+        self.lock = threading.Lock()
+        self.gate = threading.BoundedSemaphore(12)       # requests to Esri at once
+        self.month = self.day = None
+        self.n_month = self.n_day = self.unsaved = 0
+        self.hour, self.by_ip = None, {}
+        self.salt = os.urandom(16)
+        self.down_until = 0.0
+        self.refused = None
+
+    def cap(self):
+        try:
+            return max(0, int(self.cfg.get("esri_monthly_tiles", 1800000)))
+        except (TypeError, ValueError):
+            return 0
+
+    def _roll(self):
+        now = datetime.now(timezone.utc)
+        m, d = now.strftime("%Y-%m"), now.strftime("%Y-%m-%d")
+        if m != self.month:
+            self._save()
+            self.month, self.n_month = m, 0
+            if self.store:
+                try:
+                    self.n_month = int(self.store.kv_get(f"esri_tiles:{m}") or 0)
+                except (TypeError, ValueError):
+                    pass
+        if d != self.day:
+            self.day, self.n_day = d, 0
+            if self.store:
+                try:
+                    self.n_day = int(self.store.kv_get(f"esri_tiles_day:{d}") or 0)
+                except (TypeError, ValueError):
+                    pass
+
+    def _save(self):
+        if self.store and self.month and self.unsaved:
+            self.store.kv_set(f"esri_tiles:{self.month}", str(self.n_month))
+            self.store.kv_set(f"esri_tiles_day:{self.day}", str(self.n_day))
+        self.unsaved = 0
+
+    def _spent(self):
+        cap = self.cap()
+        return self.n_month >= cap or self.n_day >= max(1, cap // 10)
+
+    def enabled(self):
+        if not self.cfg.get("esri_key") or not self.cap():
+            return False
+        with self.lock:
+            self._roll()
+            return not self._spent() and time.monotonic() >= self.down_until
+
+    def stats(self):
+        with self.lock:
+            self._roll()
+            return {"key": bool(self.cfg.get("esri_key")), "month": self.month, "tiles_month": self.n_month,
+                    "tiles_today": self.n_day, "cap_month": self.cap(), "cap_day": self.cap() // 10,
+                    "paused": time.monotonic() < self.down_until, "refused": self.refused}
+
+    @staticmethod
+    def over_ukraine(z, x, y):
+        n = 1 << z
+        lon0, lon1 = x / n * 360 - 180, (x + 1) / n * 360 - 180
+        lat1 = math.degrees(math.atan(math.sinh(math.pi * (1 - 2 * y / n))))
+        lat0 = math.degrees(math.atan(math.sinh(math.pi * (1 - 2 * (y + 1) / n))))
+        w, s, e, nn = ESRI_BBOX
+        return lon1 > w and lon0 < e and lat1 > s and lat0 < nn
+
+    def fetch(self, z, x, y, ip=""):
+        """(HTTP status, body, content type, cache header) for the page."""
+        if not (self.ZMIN <= z <= self.ZMAX and 0 <= x < (1 << z) and 0 <= y < (1 << z)) or not self.over_ukraine(z, x, y):
+            return 404, b"", None, "public, max-age=86400"
+        key = self.cfg.get("esri_key")
+        if not key or not self.cap():
+            return 404, b"", None, "no-store"
+        h = hashlib.sha256(self.salt + (ip or "").encode()).hexdigest()[:16]    # in memory, for the hour, never stored
+        with self.lock:
+            self._roll()
+            if self._spent():
+                return 429, b"", None, "no-store"
+            if time.monotonic() < self.down_until:
+                return 503, b"", None, "no-store"
+            hr = int(time.time() // 3600)
+            if hr != self.hour:
+                self.hour, self.by_ip = hr, {}
+            if self.by_ip.get(h, 0) >= self.PER_IP_HOUR:
+                return 429, b"", None, "no-store"
+            self.by_ip[h] = self.by_ip.get(h, 0) + 1
+            self.n_month += 1
+            self.n_day += 1
+            self.unsaved += 1
+            if self.unsaved >= self.SAVE_EVERY:
+                self._save()
+        if not self.gate.acquire(timeout=10):
+            return 503, b"", None, "no-store"
+        try:
+            url = ESRI_URL.format(z=z, x=x, y=y) + "?blankTile=false&token=" + quote(key, safe="")
+            req = urllib.request.Request(url, headers={"User-Agent": f"Heimdall/{APP_VERSION}"})
+            with urllib.request.urlopen(req, timeout=10, context=_SSL_CTX) as r:
+                body, ctype, cc = r.read(), r.headers.get("Content-Type") or "", r.headers.get("Cache-Control")
+        except urllib.error.HTTPError as e:
+            # never e.url or str(e) of the request: the address carries the key
+            if e.code in (401, 403, 498, 499):
+                self._refused(f"HTTP {e.code}")
+                return 503, b"", None, "no-store"
+            return (404 if e.code == 404 else 502), b"", None, ("public, max-age=86400" if e.code == 404 else "no-store")
+        except Exception as e:
+            log("esri tiles:", type(e).__name__)
+            return 502, b"", None, "no-store"
+        finally:
+            self.gate.release()
+        if not ctype.startswith("image/"):
+            # a refused key comes back as 200 and a JSON error
+            code = None
+            try:
+                code = (json.loads(body).get("error") or {}).get("code")
+            except Exception:
+                pass
+            self._refused(f"error {code}" if code else "not an image")
+            return 503, b"", None, "no-store"
+        # the reader's browser keeps it as long as Esri says; no shared cache does
+        cc = cc if cc and "no-store" not in cc else "max-age=86400"
+        return 200, body, ctype, ", ".join(["private"] + [p.strip() for p in cc.split(",") if p.strip() not in ("", "public", "private")])
+
+    def _refused(self, why):
+        """Esri refused the key (wrong, expired, out of credits): ask again in 5 minutes, not on every tile."""
+        log("esri tiles refused:", why, "— paused 5 min")
+        with self.lock:
+            self.refused, self.down_until = why, time.monotonic() + 300
 
 
 class Notifier:
@@ -5678,6 +5856,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._file(u.path[len("/static/"):], None)
             if u.path.startswith("/tiles/sat/"):
                 return self._sat_tile(u.path)
+            if u.path.startswith("/tiles/esri/"):
+                return self._esri_tile(u.path)
             if u.path == "/favicon.ico":
                 return self._file("heimdall-64.png", "image/png")
             self._json({"error": "not found"}, 404)
@@ -5890,6 +6070,23 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
+    _ESRI_RX = re.compile(r"/tiles/esri/(\d{1,2})/(\d{1,7})/(\d{1,7})\.jpg")
+
+    def _esri_tile(self, path):
+        """1.48: one tile of the closest zooms, asked of Esri with the owner's key (EsriTiles). Past a cap, or with no
+        key, the page gets an empty answer and shows the Sentinel picture under it."""
+        m = self._ESRI_RX.fullmatch(path)
+        code, data, ctype, cc = (self.state.esri.fetch(*map(int, m.groups()), ip=self._peer_ip()) if m
+                                 else (404, b"", None, "public, max-age=86400"))
+        self.send_response(code)
+        if ctype:
+            self.send_header("Content-Type", ctype)
+        self.send_header("Cache-Control", cc)
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        if data:
+            self.wfile.write(data)
+
     def _stream(self):
         self.send_response(200)
         self.send_header("Content-Type", "text/event-stream")
@@ -5958,7 +6155,7 @@ def load_config(args):
     if os.environ.get("UKRAINEALARM_KEY"):
         cfg["ukrainealarm_key"] = os.environ["UKRAINEALARM_KEY"]
     for env, key in (("DEEPL_KEY", "deepl_key"), ("GOOGLE_TRANSLATE_KEY", "google_translate_key"),
-                     ("ANTHROPIC_API_KEY", "ai_key"), ("AI_MODEL", "ai_model"),
+                     ("ANTHROPIC_API_KEY", "ai_key"), ("AI_MODEL", "ai_model"), ("ESRI_KEY", "esri_key"),
                      ("TG_API_ID", "tg_api_id"), ("TG_API_HASH", "tg_api_hash"), ("TG_SESSION", "tg_session")):
         if os.environ.get(env):
             cfg[key] = os.environ[env]

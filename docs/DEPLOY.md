@@ -30,9 +30,22 @@ Change `app = "…"` in `fly.toml` to your app name.
 ### The satellite layer (once)
 
 The satellite imagery is a file on the volume, not part of the image. Build it with `python scripts/build_imagery.py
-imagery/sat-ua.mbtiles` (needs `pip install rasterio numpy pillow scipy matplotlib`, ~45 minutes, reads ~13 GB from the public ESA
-bucket), then double-click **`scripts/upload-imagery.bat`**: it shows the volume's free space and uploads the file
-(`fly ssh sftp put`). Without the file the map simply does not offer the layer.
+imagery/sat-ua.mbtiles` (needs `pip install rasterio numpy pillow scipy matplotlib`; zoom 13, the full 10 m: ~1.5 h,
+reads every cell at full resolution from the public ESA bucket, makes 406 MB — `--maxzoom 12` is ~45 minutes and
+~130 MB), then
+double-click **`scripts/upload-imagery.bat`**: it shows the volume's free space and uploads the file
+(`fly ssh sftp put`). Without the file the map simply does not offer the layer. Every new build takes a new
+`--version` (the default is 2): the browsers keep the tiles a year under that version.
+
+The upload goes next to the old file before replacing it, so the volume needs ~0.45 GB free for the zoom-13 file
+(`upload-imagery.bat` shows it first; the 1 GB volume has it). If not: `fly volumes list -a kyiv-air-watch-gb`, then
+`fly volumes extend <volume id> -s 2 -a kyiv-air-watch-gb` (once; $0.15 per GB a month).
+
+**The closest zooms (1.48, optional)**: Esri World Imagery from zoom 14. Create an account on ArcGIS Location
+Platform (location.arcgis.com), an API key with the *Basemaps* privilege and **no referrer restriction** (the server
+asks Esri, not the browser), then double-click **`scripts/set-esri-key.bat`** and paste it. 2 M tiles a month are
+free, then $0.15 per 1,000; the server stops at `esri_monthly_tiles` (1.8 M) and a tenth of it a day. The month's
+count is on the dashboard. Without the key the satellite layer is Sentinel alone, enlarged when zoomed in.
 
 ### Secrets
 
@@ -43,6 +56,7 @@ bucket), then double-click **`scripts/upload-imagery.bat`**: it shows the volume
 | `GOOGLE_TRANSLATE_KEY` | optional | Alternative translator (Google Cloud Translation). |
 | `UKRAINEALARM_KEY` | optional | Reads api.ukrainealarm.com directly instead of the keyless siren.pp.ua proxy. |
 | `ALERTS_IN_UA_TOKEN` | optional | Makes alerts.in.ua the primary alert source. |
+| `ESRI_KEY` | optional | The satellite layer's closest zooms (Esri World Imagery). Set with `scripts/set-esri-key.bat`. |
 | `TG_API_ID`, `TG_API_HASH`, `TG_SESSION` | optional | Read chyste_nebo through the Telegram API. Set by `scripts\telegram-login.bat`, never by hand. |
 | `ACCESS_KEY` | **never on the public app** | Locks the whole map behind a key. |
 

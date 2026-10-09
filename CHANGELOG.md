@@ -2,6 +2,27 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.48.0 — 2026-10-09
+
+### Added
+- **Much closer satellite imagery**: past street level (zoom 14–18) the satellite layer shows Esri World Imagery
+  (Maxar and others) over the Sentinel picture — buildings, roads, a stadium's stands. Heimdall's server asks Esri
+  for the tiles with the owner's key, which never reaches a browser; nothing is kept on the server. The month's
+  tiles are counted and capped under Esri's free tier (`esri_monthly_tiles`, a tenth of it a day at most, 3,000 an
+  hour per reader); past the cap the Sentinel picture is shown alone. The count is on the dashboard (Satellite
+  imagery). Turned on once with `scripts/set-esri-key.bat`.
+- **The map zooms in to 1 km across** (8 km before).
+
+### Changed
+- **Sentinel-2 at its full 10 m**: the imagery file is rebuilt to zoom 13 (twice as sharp as 1.47's, which stopped
+  at 12). The page asks for the tiles under the file's own version and deepest zoom, so a browser never keeps the old
+  pictures under the new address, whichever is deployed first — the code or the file.
+- **Oblast and raion names are readable over the imagery**: light on a dark halo (dark on a light one in day mode).
+- A screen that would need too many tiles at its zoom gets the zoom below instead of no picture.
+
+### Fixed
+- **Layer choices are remembered again**: since 1.47.1 the line that saved them had ended up inside a comment.
+
 ## 1.47.1 — 2026-10-09
 
 ### Changed

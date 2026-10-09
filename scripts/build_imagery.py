@@ -1,12 +1,14 @@
-"""Build the satellite layer: data/… → sat-ua.mbtiles, Ukraine at zoom 5–12 (1.47).
+"""Build the satellite layer: data/… → sat-ua.mbtiles, Ukraine at zoom 5–13 (1.47; zoom 13, the full 10 m, 1.48).
 
     pip install rasterio numpy pillow scipy matplotlib     (only to build — the server needs none of them)
-    python scripts/build_imagery.py OUT.mbtiles [--maxzoom 12] [--only N50E030,…]
+    python scripts/build_imagery.py OUT.mbtiles [--maxzoom 13] [--version 2] [--only N50E030,…]
 
 The imagery is the ESA WorldCover Sentinel-2 composite for 2021: the median of a year of cloud-free Sentinel-2
 pixels, 10 m, the same processing everywhere — so the tiles join without seams. It is read straight from the public
-bucket (s3://esa-worldcover-s2, no account), at its 20 m overview, which is all zoom 12 needs (~25 m a pixel at
-Kyiv's latitude); zoom 13 and closer are the zoom-12 tiles enlarged on the page.
+bucket (s3://esa-worldcover-s2, no account). Zoom 13 (~12 m a pixel at Kyiv's latitude) reads the full 10 m, each
+1° cell in four pieces with a margin (a cell is 12,000² pixels, ~1 GB as floats); --maxzoom 12 reads the 20 m
+overview, a quarter of the data. Closer than the deepest zoom, the page enlarges these tiles under Esri's (1.48).
+A build takes ~1¾ h at zoom 13 on two cores and makes ~410 MB (80,000 tiles); --maxzoom 12, ~45 min and ~130 MB.
 
 Licence: CC BY 4.0. Attribution, on the map whenever the layer is drawn:
 "ESA WorldCover project 2021 / Contains modified Copernicus Sentinel data (2021) processed by ESA WorldCover consortium".
@@ -168,15 +170,22 @@ def sea_mask(cache):
     return sea.astype(np.uint8), tr
 
 
-def read_cell(url, ovr, tries=7):
-    """The cell's RGB at overview `ovr`, retried: the bucket and the network between drop a long read now and then."""
+def read_cell(url, ovr, S=1, qx=0, qy=0, tries=7, margin=16):
+    """The RGB + near-infrared of piece (qx, qy) of a cell cut in S×S (qy from the top), at overview `ovr`, with a
+    margin so the warp has neighbours at the piece's edges; retried: the bucket and the network between drop a long
+    read now and then."""
+    from rasterio.windows import Window
     for k in range(tries):
         try:
             with rasterio.Env(**GDAL_ENV):
                 with rasterio.open(url) as d:
-                    h, w_ = d.height // ovr, d.width // ovr
-                    src = d.read([1, 2, 3, 4], out_shape=(4, h, w_), resampling=Resampling.average).astype(np.float32)
-                    return src, d.transform * Affine.scale(d.width / w_, d.height / h)
+                    P = d.width // S
+                    c0, r0 = max(0, qx * P - margin), max(0, qy * P - margin)
+                    c1, r1 = min(d.width, (qx + 1) * P + margin), min(d.height, (qy + 1) * P + margin)
+                    win = Window(c0, r0, c1 - c0, r1 - r0)
+                    h, w_ = (r1 - r0) // ovr, (c1 - c0) // ovr
+                    src = d.read([1, 2, 3, 4], window=win, out_shape=(4, h, w_), resampling=Resampling.average).astype(np.float32)
+                    return src, d.window_transform(win) * Affine.scale((c1 - c0) / w_, (r1 - r0) / h)
         except Exception as ex:
             wait = min(90, 5 * 2 ** k)
             print(f"  retry {k + 1} in {wait}s: {str(ex)[:160]}", flush=True)
@@ -215,34 +224,43 @@ def put(db, z, x, y, data):
 
 
 def build_top(db, tiles, z, rings, only=None, sea=None):
-    """Zoom z from the source: each 1° cell read once at the overview that suits z, warped onto the tile grid."""
+    """Zoom z from the source, warped onto the tile grid: each 1° cell read once at the overview that suits z — at full
+    resolution (zoom 13 and closer) in quarters, so a cell never has to be held whole (12,000² × 4 bands)."""
     n = 2 ** z
     res = 2 * ORIGIN / n / 256                       # metres (Mercator) per pixel
-    # which 1° cells each tile needs
+    ovr = max(1, int(res * math.cos(math.radians(48.5)) / 10 / 1.2))      # 10 m source; keep a little finer than the tile
+    ovr = 1 << (ovr.bit_length() - 1)
+    S = 2 if ovr == 1 else 1                         # units of 1/S degree
+    # which units each tile needs
     need = {}
     for (x, y) in tiles:
         w, nlat = tile_lonlat(x, y, z)
         e, slat = tile_lonlat(x + 1, y + 1, z)
-        cells = {(la, lo) for la in range(math.floor(slat), math.floor(nlat - 1e-9) + 1)
-                 for lo in range(math.floor(w), math.floor(e - 1e-9) + 1)}
-        need[(x, y)] = cells
-    cells = sorted({c for v in need.values() for c in v}, key=lambda c: (-c[0], c[1]))
+        need[(x, y)] = {(uy, ux) for uy in range(math.floor(slat * S), math.floor(nlat * S - 1e-9) + 1)
+                        for ux in range(math.floor(w * S), math.floor(e * S - 1e-9) + 1)}
+    units = sorted({u for v in need.values() for u in v}, key=lambda u: (-u[0], u[1]))
+    cells = {(uy // S, ux // S) for uy, ux in units}
     have = existing_cells(sorted({c[0] for c in cells}))
-    print(f"{len(cells)} cells needed, {len([c for c in cells if c in have])} exist (the others are open sea)", flush=True)
+    print(f"{len(cells)} cells needed, {len([c for c in cells if c in have])} exist (the others are open sea); "
+          f"{len(units)} pieces at overview {ovr}", flush=True)
     if only:
-        cells = [c for c in cells if f"N{c[0]:02d}E{c[1]:03d}" in only]
+        units = [u for u in units if f"N{u[0] // S:02d}E{u[1] // S:03d}" in only]
     left = {t: len(v) for t, v in need.items()}
+    by_unit = {}
+    for t, v in need.items():
+        for u in v:
+            by_unit.setdefault(u, []).append(t)
     acc = {}
-    ovr = max(1, int(res * math.cos(math.radians(48.5)) / 10 / 1.2))      # 10 m source; keep a little finer than the tile
-    ovr = 1 << (ovr.bit_length() - 1)
     t0 = time.time()
     done = 0
-    for i, (la, lo) in enumerate(cells):
-        url = SRC.format(lat=la, lon=lo)
+    for i, (uy, ux) in enumerate(units):
+        la, lo = uy // S, ux // S
+        qyb, qx = uy - la * S, ux - lo * S           # the piece, counted from the cell's south-west corner
+        top, left_lon = la + (qyb + 1) / S, lo + qx / S
         src = st = None
         if (la, lo) in have:
-            src, st = read_cell(url, ovr)
-        mine = [t for t, v in need.items() if (la, lo) in v]
+            src, st = read_cell(SRC.format(lat=la, lon=lo), ovr, S, qx, S - 1 - qyb)
+        mine = by_unit.get((uy, ux), [])
         if src is not None and mine:
             xs = [t[0] for t in mine]
             ys = [t[1] for t in mine]
@@ -252,13 +270,15 @@ def build_top(db, tiles, z, rings, only=None, sea=None):
             dt = Affine(res, 0, -ORIGIN + tx0 * 256 * res, 0, -res, ORIGIN - ty0 * 256 * res)
             reproject(src, dst, src_transform=st, src_crs="EPSG:4326", dst_transform=dt, dst_crs="EPSG:3857",
                       resampling=Resampling.bilinear, src_nodata=0, dst_nodata=0, num_threads=2)
-            # the sea of this cell (±0.1°), onto the same grid
+            del src
+            # the sea of this piece (±0.1°), onto the same grid
             dsea = np.zeros((H, W), np.uint8)
             if sea is not None:
                 mask, mt = sea
-                r0 = max(0, int((mt.f - (la + 1.1)) / -mt.e))
-                c0 = max(0, int(((lo - 0.1) - mt.c) / mt.a))
-                crop = mask[r0:r0 + int(1.2 * SEA_RES), c0:c0 + int(1.2 * SEA_RES)]
+                r0 = max(0, int((mt.f - (top + 0.1)) / -mt.e))
+                c0 = max(0, int(((left_lon - 0.1) - mt.c) / mt.a))
+                span = int((1 / S + 0.2) * SEA_RES)
+                crop = mask[r0:r0 + span, c0:c0 + span]
                 if crop.size:
                     reproject(crop, dsea, src_transform=mt * Affine.translation(c0, r0), src_crs="EPSG:4326",
                               dst_transform=dt, dst_crs="EPSG:3857", resampling=Resampling.nearest)
@@ -274,6 +294,7 @@ def build_top(db, tiles, z, rings, only=None, sea=None):
                 else:
                     m = (cur[0] == 0) & (cur[1] == 0) & (cur[2] == 0)
                     cur[:, m] = part[:, m]
+            del dst
         for t in mine:
             left[t] -= 1
             if left[t] == 0:
@@ -284,8 +305,8 @@ def build_top(db, tiles, z, rings, only=None, sea=None):
                     done += 1
         db.commit()
         el = time.time() - t0
-        print(f"z{z} cell {i + 1}/{len(cells)} N{la}E{lo:03d}: {done} tiles, {el / 60:.1f} min, "
-              f"~{el / (i + 1) * (len(cells) - i - 1) / 60:.0f} min left", flush=True)
+        print(f"z{z} piece {i + 1}/{len(units)} N{la}E{lo:03d}/{qyb}{qx}: {done} tiles, {el / 60:.1f} min, "
+              f"~{el / (i + 1) * (len(units) - i - 1) / 60:.0f} min left", flush=True)
     return done
 
 
@@ -312,9 +333,10 @@ def build_lower(db, z):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("out")
-    ap.add_argument("--maxzoom", type=int, default=12)
+    ap.add_argument("--maxzoom", type=int, default=13)
     ap.add_argument("--minzoom", type=int, default=5)
     ap.add_argument("--only", default="", help="cells to read, e.g. N50E030 (a test)")
+    ap.add_argument("--version", default="2", help="a new one for every new build (the page's cache key)")
     a = ap.parse_args()
     rings = ukraine_rings()
     tiles = tiles_touching(rings, a.maxzoom)
@@ -328,10 +350,13 @@ def main():
         n += k
     lons = [p[0] for r in rings for p in r]
     lats = [p[1] for r in rings for p in r]
-    meta = {"name": "Heimdall — Ukraine, Sentinel-2 2021", "format": "webp", "type": "baselayer", "version": "1",
+    # the page asks for the tiles under this version (state.config.sat_v): a new build is a new version, or the
+    # browsers keep last year's pictures under the same address (they are cached as immutable)
+    meta = {"name": "Heimdall — Ukraine, Sentinel-2 2021", "format": "webp", "type": "baselayer", "version": a.version,
             "minzoom": str(a.minzoom), "maxzoom": str(a.maxzoom), "attribution": ATTRIBUTION,
             "bounds": f"{min(lons):.4f},{min(lats):.4f},{max(lons):.4f},{max(lats):.4f}",
-            "description": "ESA WorldCover Sentinel-2 RGB median composite 2021, 20 m overview, built by scripts/build_imagery.py"}
+            "description": f"ESA WorldCover Sentinel-2 RGB median composite 2021, {10 << max(0, 13 - a.maxzoom)} m, "
+                           "built by scripts/build_imagery.py"}
     db.executemany("INSERT INTO metadata VALUES (?,?)", meta.items())
     db.commit()
     db.execute("VACUUM")
