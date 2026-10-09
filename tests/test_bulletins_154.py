@@ -298,3 +298,16 @@ def test_a_whole_oblast_target_reads_as_an_area():
 def test_the_docs():
     assert "### 7.11 The bulletins (1.54)" in DOC and "`GET /api/bulletin`" in DOC and "| `ai_bulletins` |" in DOC
     assert "## The AI writes bulletins, and puts nothing on the map (1.54)" in SAFETY
+
+
+# ---- 1.54.1: the card of a target on a computer ------------------------------------------------------------------------
+def test_on_a_computer_the_card_is_a_card_beside_the_list_and_the_target_stays_in_view():
+    i = PAGE.index("/* 1.54.1, the owner:")
+    css = PAGE[i:PAGE.index("\n}\n", i)]
+    assert "@media (min-width:1000px){" in css and "#sheet{left:372px;right:auto;bottom:12px;width:min(420px," in css
+    assert "max-height:calc(100vh - var(--sat) - var(--top) - 24px)" in css and "#sheet .shact{position:sticky;bottom:0;" in css
+    assert "  sheetClear(x,y);\n}" in PAGE and "function sheetClear(x,y){" in PAGE
+    fn = PAGE[PAGE.index("function sheetClear(x,y){"):PAGE.index("\n}\n", PAGE.index("function sheetClear(x,y){"))]
+    assert "if(window.innerWidth<1000" in fn and "s.offsetWidth" in fn and "VB.x=x0-dx*e" in fn           # sideways only
+    assert ".sheet.mark:not(.more){max-height:38vh" in PAGE                   # the phone's card as it was
+    assert "1.54.1, on a computer" in DOC

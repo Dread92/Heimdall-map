@@ -334,6 +334,23 @@ body.lite #drawer .dchev{background:#111;border-color:#fff;color:#fff}
 /* sheets & toast */
 .sheet{position:fixed;left:0;right:0;bottom:0;z-index:30;background:#14171d;border-top:2px solid var(--ua-yellow);padding:12px 14px calc(14px + var(--sab));transform:translateY(105%);transition:transform .28s cubic-bezier(.2,.8,.2,1);max-height:82vh;max-height:82dvh;overflow:auto}
 .sheet.top{z-index:65}   /* the support sheet opened from the welcome notice (z 60) sits above it */
+/* 1.54.1, the owner: "on the desktop version the UI isn't that great when we click a threat". The card took the whole
+   width of the window under the map — lines of three words across 1,700 px, over the map, the list and the feed. On a
+   computer it is a card over the map's lower left, beside the list: 420 px wide, as high as it needs and no higher,
+   scrolling inside, its buttons always in view; the map moves the target out from under it (sheetClear). */
+@media (min-width:1000px){
+  #sheet{left:372px;right:auto;bottom:12px;width:min(420px,max(300px,calc(100vw - 764px)));max-height:calc(100vh - var(--sat) - var(--top) - 24px);
+    border:1px solid var(--line);border-top:3px solid var(--ua-yellow);border-radius:12px;padding:12px 14px 0;
+    box-shadow:0 14px 40px rgba(0,0,0,.55);transform:translateY(calc(100% + 24px));opacity:0;visibility:hidden;
+    transition:transform .24s cubic-bezier(.2,.8,.2,1),opacity .2s,visibility 0s .24s}
+  #sheet.show{transform:none;opacity:1;visibility:visible;transition:transform .24s cubic-bezier(.2,.8,.2,1),opacity .2s}
+  #sheet .type{font-size:19px;gap:6px}#sheet .chip{font-size:11.5px}
+  #sheet .kv1{font-size:13.5px;margin-top:5px}#sheet .kv1.muted{font-size:12.5px}
+  #sheet .txt{font-size:14px;padding:7px 9px}
+  #sheet .shact{position:sticky;bottom:0;margin:10px -14px 0;padding:10px 14px 12px;background:inherit;border-top:1px solid var(--line)}
+  #sheet #sheetbody{padding-bottom:12px}#sheet #sheetbody:has(.shact){padding-bottom:0}
+  body.m-day #sheet{border-color:#c3c8d0;border-top-color:var(--ua-yellow);box-shadow:0 14px 40px rgba(0,0,0,.22)}
+}
 .sheet.show{transform:none}
 .sheet .grab{display:none}
 .shmore{display:none;align-items:center;gap:4px;margin-top:6px;background:transparent;border:1px solid var(--line);color:var(--ink2);border-radius:8px;padding:5px 10px;font:600 12.5px var(--sans);cursor:pointer}
@@ -2542,6 +2559,21 @@ function openSheet(id){
   $('sheet').classList.remove('more'); $('sheet').scrollTop=0;
   $('shmore').onclick=()=>{ const on=$('sheet').classList.toggle('more'); $('shmore').textContent=t(on?'sh_less':'sh_more'); };
   $('sheet').classList.add('show','mark'); document.body.classList.add('shmk'); syncMini();
+  sheetClear(x,y);
+}
+// 1.54.1: on a computer the card sits over the map's lower left. A target it would hide is brought, in a quarter of a
+// second, to the middle of the map beside the card — sideways only, at the same zoom.
+function sheetClear(x,y){
+  if(window.innerWidth<1000||x==null||y==null) return;
+  requestAnimationFrame(()=>{ const s=$('sheet'); if(!s.classList.contains('show')) return;
+    // where the card will stand once it has slid in (its box without the slide's transform)
+    const cs=getComputedStyle(s), left=parseFloat(cs.left)||372, bottom=innerHeight-(parseFloat(cs.bottom)||12);
+    const c={right:left+s.offsetWidth, top:bottom-s.offsetHeight}, r=SR(); if(!r.width||!s.offsetWidth) return;
+    const sx=r.left+(x-VB.x)/VB.w*r.width, sy=r.top+(y-VB.y)/VB.h*r.height;
+    if(sx>c.right+28||sy<c.top-28||sx<r.left-40||sy>r.bottom+40) return;      // in the clear, or off the map anyway
+    const dx=(c.right+(r.right-c.right)/2-sx)/r.width*VB.w, x0=VB.x, t0=performance.now();
+    const step=n=>{ const k=Math.min(1,(n-t0)/280), e=1-Math.pow(1-k,3); VB.x=x0-dx*e; applyVB(k<1); if(k<1) requestAnimationFrame(step); };
+    requestAnimationFrame(step); });
 }
 // 1.42.1: a mark's sheet takes the lower half on a phone, the card folds to its line and the admin's message steps
 // aside — the map stays visible between them (it was 7 px on a phone with a ballistic warning and a message showing)

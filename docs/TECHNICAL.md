@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.54** · last updated 2026-10-09 (1.54.0)
+**Documented version: 1.54** · last updated 2026-10-09 (1.54.1)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -1050,7 +1050,11 @@ heights as well as their labels (`LBLBOX`). (Until 1.54 also of the explosions l
 
 **A short card (1.53)**: on a phone a target's card opens at most 38 % of the screen high — the kind, height, tag, where
 and the post in three lines; the track, the night's path, the notes and the evidence are `.sec` and come with "More"
-(`#shmore`, `.sheet.more`).
+(`#shmore`, `.sheet.more`). **1.54.1, on a computer** (the owner: "the UI isn't that great when we click a threat"): the
+card is no longer a bar across the whole window under the map but a card over the map's lower left, beside the list
+(`#sheet` at ≥ 1,000 px: 420 px wide, as high as it needs up to the map's height, scrolling inside, its buttons in a bar
+that stays in view); a target it would hide is brought, sideways and at the same zoom, to the middle of the map beside it
+(`sheetClear`, from the card's box without its slide).
 
 **The map opens at once (1.53)**: `sw.js` keeps the satellite tiles (`/tiles/sat/`, cache `heimdall-tiles-1`,
 cache-first, ≤ 5,000, the oldest dropped) — their address carries the layer's version, so a kept tile is never stale —

@@ -2,6 +2,14 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.54.1 — 2026-10-09
+
+### Changed
+- **The card of a target on a computer** — the owner: "the UI isn't that great when we click a threat (only on desktop)".
+  It took the whole width of the window under the map, lines of a few words across 1,700 px, over the map, the list and
+  the feed. It is now a card over the map's lower left, beside the list: 420 px wide, scrolling inside, its buttons
+  always in view; the map slides the target out from under it. The phone's card is unchanged.
+
 ## 1.54.0 — 2026-10-09
 
 ### Added
