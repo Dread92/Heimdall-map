@@ -1623,7 +1623,16 @@ def parse_post(text, home=None):
     ctx_obl = _find_oblast(t, positional=True)
     cur_obl = ctx_obl
     post_type, post_type_ev = mtype, type_ev
-    for seg in segs:
+    # 1.50.2: a height on a line of its own ("3.5 км висоти") is the height of the target on the line just above it —
+    # never of every target in the post. On 9 Oct @monitor_ukr's five jets, from Kyiv to Odesa, all got its last line's
+    # 3.5 km. The whole post's height is a single target's only (after the loop).
+    _alt_below = {}
+    for _i, _s in enumerate(segs):
+        if _i and len(_s.split()) <= 5 and not any(rx.search(_s) for _, rx in TYPE_RX):
+            _a = parse_altitude(_s)
+            if _a and _a.get("m"):
+                _alt_below[_i - 1] = _a
+    for _si, seg in enumerate(segs):
         if ALERT_MSG_RX.search(seg) and not MOVE_RX.search(seg):
             continue
         seg_obl = _find_oblast(seg, positional=True)
@@ -1815,7 +1824,7 @@ def parse_post(text, home=None):
         elif GROUP_RX.search(seg):
             cnt = 3
             ev["count"] = {"matched": GROUP_RX.search(seg).group(0), "method": "'group' → shown as ×3 (unknown size)"}
-        alt = parse_altitude(seg) or parse_altitude(t)
+        alt = parse_altitude(seg) or _alt_below.get(_si)
         if alt:
             ev["altitude"] = {"matched": alt["matched"], "method": "stated in the post", "confidence": "high"}
         # The sentence first: a post can open with a general assessment and then report one specific stage.
@@ -1835,6 +1844,11 @@ def parse_post(text, home=None):
                         "phase": _ph, "phase_step": phase_progress(mtype, _ph),
                         "phase_ladder": PHASE_LADDER.get(PHASE_FAMILY.get(mtype)) if _ph else None,
                         "evidence": ev})
+    if len(markers) == 1 and not markers[0].get("alt"):
+        whole = parse_altitude(t)               # one target: the post's height is its height, wherever it is written
+        if whole:
+            markers[0]["alt"] = whole
+            markers[0]["evidence"]["altitude"] = {"matched": whole["matched"], "method": "stated in the post", "confidence": "high"}
     return markers
 
 

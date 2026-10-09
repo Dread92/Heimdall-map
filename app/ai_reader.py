@@ -23,7 +23,7 @@ import urllib.request
 from collections import deque
 from datetime import datetime, timezone
 
-PROMPT_VERSION = "1"
+PROMPT_VERSION = "2"     # 1.50.2: origin and speed; nothing nullable on the wire
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 DEFAULT_MODEL = "anthropic/claude-haiku-5.5"
 MAX_CANDIDATES = 30
@@ -52,50 +52,86 @@ def mask(text):
 SYSTEM = """You read ONE Telegram post from a Ukrainian air-threat monitoring channel and extract only what it STATES about aerial targets (drones, missiles, guided bombs, aircraft). People decide whether to take cover from what is drawn, so a wrong position is worse than none.
 
 Rules:
-1. Never infer. A position, heading, count, altitude or weapon the post does not state is null (or "unknown" for the weapon). A likely guess is still a guess.
-2. Quote. Every non-null fact carries the exact words of the post that state it, copied character for character into its *_quote field. If you cannot quote it, it is null.
-3. Places only from CANDIDATES, by their id (c1, c2…, or o<number> for an oblast). Never output coordinates. A place the post names that is not in CANDIDATES: place_id null, its words in place_quote.
+1. Never infer. A fact the post does not state is left empty: "" for a text, 0 for a number, "none" for a direction or an origin, "unknown" for the weapon. A likely guess is still a guess.
+2. Quote. Every fact you give carries the exact words of the post that state it, copied character for character into its *_quote field. If you cannot quote it, leave it empty.
+3. Places only from CANDIDATES, by their id (c1, c2…, or o<number> for an oblast). Never output coordinates. A place the post names that is not in CANDIDATES: place_id "", its words in place_quote.
 4. The relation to the place is what the words say:
    - "на X", "курсом на X", "в напрямку X", "у бік X" = heading_to X — the target is NOT at X;
    - "над X", "в районі X", "біля X" said of where it is now, or X alone in a tracker's line = at X; "поблизу X", "неподалік X" = near X;
-   - "з X", "від X", "із X" = from X;
+   - "з X", "від X", "із X" (a Ukrainian place) = from X;
    - "північніше X", "на півночі від X", "за 20 км на північ від X" = side_of X (side n; distance_km 20 only if written);
    - an oblast only ("на Київщині", "Сумщина", "в Черкаській області") = in_oblast, with the oblast's o-id.
 5. A city named with no place in it ("над Києвом", "околиці Києва", "правий берег Києва") is the city itself (relation at, the city's id). Never pick a district or a street the post does not name.
-6. Weapons, by the post's words: "шахед", "герань", "мопед", "ударний БпЛА" = shahed; "реактивний", "реактивний БпЛА/дрон", "Бандерол" = jet_drone (Banderol is a jet drone, never a cruise missile); "БпЛА", "дрон" of no stated kind = drone; "крилата ракета", "Калібр", "Х-101", "Х-55" = cruise_missile; "балістика", "балістична", "Іскандер", "КН-23" = ballistic_missile; "КАБ", "керовані авіабомби" = guided_bomb; "тактична авіація", "МіГ", "Су-34" = aircraft; nothing said ("ціль", "увага") = unknown.
+6. Weapons, by the post's words: "шахед", "герань", "мопед", "ударний БпЛА" = shahed; "реактивний", "реактив", "реактивний БпЛА/дрон", "Бандерол" = jet_drone (Banderol is a jet drone, never a cruise missile); "БпЛА", "дрон" of no stated kind = drone; "крилата ракета", "Калібр", "Х-101", "Х-55" = cruise_missile; "балістика", "балістична", "Іскандер", "КН-23" = ballistic_missile; "КАБ", "керовані авіабомби" = guided_bomb; "тактична авіація", "МіГ", "Су-34" = aircraft; nothing said ("ціль", "увага") = unknown.
 7. Status only when stated: "збито", "знищено", "мінус", "мінуснули", "приземлили" (of a target) = shot_down; "вибух", "вибухи", "приліт", "влучання" = impact; "втрачено контакт", "зник", "не фіксується" = lost; otherwise in_flight.
-8. One entry per target or group, in the order of the post. A count only if written ("2 шахеди", "група з 5", "×3", "кілька" is not a number).
-9. Heading only when the post gives a course as a direction ("курс на захід" = w); from_side only when it says where it comes from as a direction ("з півночі" = n). A town it flies to is heading_to that town, not a heading.
-10. Altitude only when written ("висота 2200", "на 1,5 км" = 1500), in metres.
-11. Nothing about aerial targets — an alert starting or ending alone ("Відбій"), news, a fundraiser, the Air Force's morning totals: targets [].
-12. PREVIOUS POSTS are context only. "Далі на X" continues the last target named there; but never copy a fact from them into this post's entry unless this post states it.
-13. Unsure? Say so in "uncertain" in one short English sentence, and still give only what is stated."""
+8. One entry per target or group, in the order of the post. A count only if written ("2 шахеди", "група з 5", "×3"; "кілька", "група" alone are not a number).
+9. Origin: where the post says the target comes from, outside the places above — a direction ("з півночі" = n, "з південного сходу" = se) or a country or area ("з Білорусі", "з території РБ" = belarus; "з Росії", "з Брянщини", "з Курщини", "з боку Бєлгорода" = russia; "з моря", "з акваторії Чорного моря" = sea; "з Криму" = crimea; "з окупованих територій", "з ТОТ" = occupied). A Ukrainian oblast or town it comes from is relation from that place, never an origin.
+10. Heading only when the post gives a course as a direction ("курс на захід" = w). A town it flies to is heading_to that town, not a heading.
+11. Altitude and speed only when written ("висота 2200", "на 1,5 км" = 1500 m; "швидкість 180 км/год" = 180), and only for the target they are written for: the target of the same line or paragraph. A height on a line of its own after several targets belongs to the target just above it.
+12. Nothing about aerial targets — an alert starting or ending alone ("Відбій"), news, a fundraiser, the Air Force's morning totals: targets [].
+13. PREVIOUS POSTS are context only. "Далі на X" continues the last target named there; but never copy a fact from them into this post's entry unless this post states it.
+14. Unsure? Say so in "uncertain" in one short English sentence ("" when sure), and still give only what is stated.
 
-_NS = {"type": ["string", "null"]}
-_NI = {"type": ["integer", "null"]}
-_DIR = {"type": ["string", "null"], "enum": DIRS + [None]}
+Answer with the JSON object only — no other text, no code fence."""
+
+ORIGINS = ["belarus", "russia", "sea", "crimea", "occupied"] + DIRS
+# the facts a target can carry, and how each is written on the wire when the post does not state it. No field is
+# nullable: a nullable field is a "union type" to Anthropic's structured outputs, which take at most 16 of them in
+# a schema — and a provider that cannot compile the schema answers "HTTP 400: Provider returned error" (1.50.2).
+TEXTS = ("kind_quote", "count_quote", "status_quote", "place_id", "place_quote", "origin_quote", "heading_quote",
+         "altitude_quote", "speed_quote")
+INTS = ("count", "distance_km", "altitude_m", "speed_kmh")
+_S, _I = {"type": "string"}, {"type": "integer"}
+_DIR = {"type": "string", "enum": DIRS + ["none"]}
 TARGET = {
     "type": "object", "additionalProperties": False,
     "properties": {
-        "kind": {"type": "string", "enum": KINDS}, "kind_quote": _NS,
-        "count": _NI, "count_quote": _NS,
-        "status": {"type": "string", "enum": STATUSES}, "status_quote": _NS,
-        "place_id": _NS, "place_quote": _NS,
+        "kind": {"type": "string", "enum": KINDS}, "kind_quote": _S,
+        "count": _I, "count_quote": _S,
+        "status": {"type": "string", "enum": STATUSES}, "status_quote": _S,
+        "place_id": _S, "place_quote": _S,
         "relation": {"type": "string", "enum": RELATIONS},
-        "side": _DIR, "distance_km": _NI,
-        "from_side": _DIR, "from_quote": _NS,
-        "heading": _DIR, "heading_quote": _NS,
-        "altitude_m": _NI, "altitude_quote": _NS,
+        "side": _DIR, "distance_km": _I,
+        "origin": {"type": "string", "enum": ORIGINS + ["none"]}, "origin_quote": _S,
+        "heading": _DIR, "heading_quote": _S,
+        "altitude_m": _I, "altitude_quote": _S,
+        "speed_kmh": _I, "speed_quote": _S,
     },
 }
 TARGET["required"] = list(TARGET["properties"])
 SCHEMA = {"type": "object", "additionalProperties": False,
-          "properties": {"targets": {"type": "array", "items": TARGET}, "uncertain": _NS},
+          "properties": {"targets": {"type": "array", "items": TARGET}, "uncertain": _S},
           "required": ["targets", "uncertain"]}
 
 
+def wire(ans):
+    """A reading as the model writes it: "" / 0 / "none" for what is not stated."""
+    def one(t):
+        o = {}
+        for k in TARGET["properties"]:
+            v = t.get(k)
+            o[k] = ("" if k in TEXTS else 0 if k in INTS else "none" if k in ("side", "heading", "origin") else v) if v is None else v
+        return o
+    return {"targets": [one(t) for t in ans.get("targets") or []], "uncertain": ans.get("uncertain") or ""}
+
+
+def unwire(t):
+    """…and back: what is not stated is None."""
+    o = {k: t.get(k) for k in TARGET["properties"]}
+    for k in TEXTS:
+        if not isinstance(o[k], str) or not o[k].strip():
+            o[k] = None
+    for k in INTS:
+        if o[k] in (0, None) or isinstance(o[k], bool):
+            o[k] = None
+    for k in ("side", "heading", "origin"):
+        if o[k] in ("none", ""):
+            o[k] = None
+    return o
+
+
 def _t(**kw):
-    """One target of an example, the fields not given null."""
+    """One target of an example, the fields not given unstated."""
     base = {k: None for k in TARGET["properties"]}
     base.update(kind="unknown", status="in_flight", relation="none")
     base.update(kw)
@@ -107,7 +143,7 @@ EXAMPLES = [
     ("@kpszsu (oblast: —)", [], "2 шахеди з півночі на Бровари",
      "c1 | Бровари | Київська область\no14 | Київська область",
      {"targets": [_t(kind="shahed", kind_quote="шахеди", count=2, count_quote="2 шахеди", place_id="c1",
-                     place_quote="на Бровари", relation="heading_to", from_side="n", from_quote="з півночі")],
+                     place_quote="на Бровари", relation="heading_to", origin="n", origin_quote="з півночі")],
       "uncertain": None}),
     ("@kyiv_airdef (oblast: Kyiv city)", ["[21:02] Дрон над Троєщиною"], "Збито ціль над Оболонню",
      "c1 | Оболонь | м. Київ\nc2 | Троєщина | м. Київ\no31 | м. Київ",
@@ -123,6 +159,13 @@ EXAMPLES = [
                      relation="in_oblast", altitude_m=2200, altitude_quote="висота 2200"),
                   _t(kind="shahed", kind_quote="шахед", count=1, count_quote="один шахед", place_id="c1",
                      place_quote="над Києвом", relation="at")], "uncertain": None}),
+    ("@monitor_ukr (oblast: —)", [], "Група шахедів з території Білорусі на Житомирщину.\n\n1 реактив над Коростенем\nшвидкість 400 км/год, висота 3 км",
+     "c1 | Коростень | Житомирська область\no10 | Житомирська область",
+     {"targets": [_t(kind="shahed", kind_quote="шахедів", place_id="o10", place_quote="на Житомирщину",
+                     relation="heading_to", origin="belarus", origin_quote="з території Білорусі"),
+                  _t(kind="jet_drone", kind_quote="реактив", count=1, count_quote="1 реактив", place_id="c1",
+                     place_quote="над Коростенем", relation="at", speed_kmh=400, speed_quote="швидкість 400 км/год",
+                     altitude_m=3000, altitude_quote="висота 3 км")], "uncertain": None}),
     ("@kyivoda (oblast: Kyiv oblast)", [], "Відбій повітряної тривоги в Київській області.", "o14 | Київська область",
      {"targets": [], "uncertain": None}),
 ]
@@ -141,7 +184,7 @@ def messages(channel_line, previous, text, cand_lines, cache=False):
     out = [{"role": "system", "content": SYSTEM}]
     for ch, prev, post, cands, ans in EXAMPLES:
         out.append({"role": "user", "content": user_message(ch, prev, post, cands)})
-        out.append({"role": "assistant", "content": json.dumps(ans, ensure_ascii=False)})
+        out.append({"role": "assistant", "content": json.dumps(wire(ans), ensure_ascii=False)})
     if cache:
         out[-1]["content"] = [{"type": "text", "text": out[-1]["content"], "cache_control": {"type": "ephemeral"}}]
     out.append({"role": "user", "content": user_message(channel_line, previous, text, cand_lines)})
@@ -196,6 +239,17 @@ def _norm(s):
     return re.sub(r"\s+", " ", (s or "").lower().replace("’", "'").replace("ʼ", "'").replace("`", "'")).strip()
 
 
+_DIR_WORD = re.compile(r"півн|півд|схід|сход|зах|север|юг|восток|запад")
+ORIGIN_WORDS = {
+    "belarus": re.compile(r"білорус|беларус|\bрб\b|лукашенк|гомел|мозир|мозыр"),
+    "russia": re.compile(r"\bрос|\bрф\b|брянщ|брянськ|брянск|курщ|курськ|курск|бєлгород|білгород|белгород|орловщ|смоленщ|"
+                         r"воронеж|ростов|кубан|краснодар|таганрог|єйськ|ейск|приморсько|міллеров|шаталов|енгельс|саратов|моздок"),
+    "sea": re.compile(r"\bмор[ея]|акваторі|чорного моря|черного моря"),
+    "crimea": re.compile(r"крим|джанко|севастоп|чорноморськ"),
+    "occupied": re.compile(r"окупов|\bтот\b|тимчасово"),
+}
+
+
 def validate(out, text, cands):
     """(targets, dropped) — the model's targets with every fact the post does not bear out removed: a quote that is
     not in the post, a place that is not a candidate, a number its quote does not hold."""
@@ -207,7 +261,7 @@ def validate(out, text, cands):
         if not isinstance(raw, dict):
             dropped += 1
             continue
-        t = {k: raw.get(k) for k in TARGET["properties"]}
+        t = unwire(raw)
         if t["kind"] not in KINDS or (t["kind"] != "unknown" and not ok(t["kind_quote"])):
             dropped += t["kind"] != "unknown"
             t["kind"], t["kind_quote"] = "unknown", None
@@ -230,14 +284,25 @@ def validate(out, text, cands):
         if t["distance_km"] is not None and not (isinstance(t["distance_km"], int) and str(t["distance_km"]) in nt):
             dropped += 1
             t["distance_km"] = None
-        for f, q in (("from_side", "from_quote"), ("heading", "heading_quote")):
-            if t[f] is not None and not (t[f] in DIRS and ok(t[q])):
-                dropped += 1
-                t[f], t[q] = None, None
+        if t["heading"] is not None and not (t["heading"] in DIRS and ok(t["heading_quote"])):
+            dropped += 1
+            t["heading"], t["heading_quote"] = None, None
+        # an origin is a direction or a country / area, in words that say so — never a Ukrainian oblast or town
+        # ("з Чернігівщини" is relation from that place): its quote must hold a word of its class
+        if t["origin"] is not None and not (
+                t["origin"] in ORIGINS and ok(t["origin_quote"])
+                and (_DIR_WORD if t["origin"] in DIRS else ORIGIN_WORDS[t["origin"]]).search(_norm(t["origin_quote"]))):
+            dropped += 1
+            t["origin"], t["origin_quote"] = None, None
         if t["altitude_m"] is not None and not (isinstance(t["altitude_m"], int) and 30 <= t["altitude_m"] <= 20000
                                                 and ok(t["altitude_quote"]) and re.search(r"\d", t["altitude_quote"])):
             dropped += 1
             t["altitude_m"], t["altitude_quote"] = None, None
+        if t["speed_kmh"] is not None and not (isinstance(t["speed_kmh"], int) and 30 <= t["speed_kmh"] <= 5000
+                                               and ok(t["speed_quote"]) and re.search(r"\d", t["speed_quote"])
+                                               and re.search(r"км|km", _norm(t["speed_quote"]))):
+            dropped += 1
+            t["speed_kmh"], t["speed_quote"] = None, None
         if t["kind"] == "unknown" and t["place_id"] is None and t["status"] == "in_flight":
             dropped += 1
             continue            # nothing the post bears out is left of it
@@ -306,6 +371,44 @@ def compare(rules, ai):
         if r_st != a_st:
             return "status"
     return "agree"
+
+
+def plain(msgs):
+    """The same conversation without the caching marks: plain text messages only."""
+    return [dict(m, content=m["content"][0]["text"]) if isinstance(m["content"], list) else m for m in msgs]
+
+
+def _json_of(content):
+    """The answer's JSON object — also when a model asked by the prompt alone wraps it in a code fence or a sentence."""
+    if isinstance(content, (dict, list)):
+        return content
+    try:
+        return json.loads(content)
+    except (TypeError, ValueError):
+        i, j = content.find("{"), content.rfind("}")
+        if i < 0 or j <= i:
+            raise
+        return json.loads(content[i:j + 1])
+
+
+def _why(e):
+    """What OpenRouter, and the provider behind it, said about a refused request. "Provider returned error" alone
+    says nothing: the provider's own words are in error.metadata.raw (1.50.2)."""
+    try:
+        err = json.loads(e.read() or b"{}").get("error") or {}
+    except Exception:
+        return ""
+    msg = str(err.get("message") or "")[:140]
+    meta = err.get("metadata") or {}
+    raw = meta.get("raw")
+    if raw:
+        try:
+            r = json.loads(raw) if isinstance(raw, str) else raw
+            raw = ((r.get("error") or {}).get("message") if isinstance(r.get("error"), dict) else r.get("error")) or r.get("message") or raw
+        except Exception:
+            pass
+        msg += f" — {meta.get('provider_name') or 'provider'}: {str(raw)[:240]}"
+    return msg
 
 
 # ---- the reader --------------------------------------------------------------------------------------------------
@@ -436,14 +539,34 @@ class AIReader(threading.Thread):
                    rules, dropped, verdict)
         return verdict
 
+    # How the answer's shape is asked for: 0 — a strict JSON schema the provider enforces; 1 — the prompt and the
+    # examples alone (the provider refused the schema: 1.50.2). Either way the server checks every fact (validate).
+    WAYS = ("schema", "prompt")
+    way = 0
+
     def call(self, msgs):
-        """{"out": dict, "cost", "tok_in", "tok_out"} or {"error": "..."} — the one request to OpenRouter."""
+        """{"out": dict, "cost", "tok_in", "tok_out"} or {"error": "..."} — the one request to OpenRouter. A provider
+        that refuses the request as asked (400) is asked once more the simpler way, which is kept if it works."""
+        res = self._request(msgs, self.way)
+        if res.get("code") == 400 and self.way == 0:
+            res2 = self._request(plain(msgs), 1)
+            if not res2.get("error"):
+                self.way = 1
+                self.log("ai reader: the provider refused the JSON schema —", res["error"], "— answering by the prompt alone")
+                return res2
+            self.down_until = time.time() + 600       # refused both ways: no point asking again for every post
+        elif res.get("code") == 400:
+            self.down_until = time.time() + 600
+        return res
+
+    def _request(self, msgs, way):
         # 1.50.1: only parameters every model that takes a JSON schema accepts. With require_parameters, one the model
         # does not take (claude-haiku-5.5 takes no `temperature`) leaves no provider at all: "HTTP 404: No endpoints".
         body = {"model": self.model(), "max_tokens": 1200, "messages": msgs,
-                "response_format": {"type": "json_schema", "json_schema": {"name": "heimdall_reading", "strict": True,
-                                                                             "schema": SCHEMA}},
                 "provider": {"require_parameters": True}, "usage": {"include": True}}
+        if way == 0:
+            body["response_format"] = {"type": "json_schema", "json_schema": {"name": "heimdall_reading", "strict": True,
+                                                                              "schema": SCHEMA}}
         req = urllib.request.Request(OPENROUTER_URL, data=json.dumps(body, ensure_ascii=False).encode("utf-8"), headers={
             "Authorization": "Bearer " + self.key(), "Content-Type": "application/json", "X-Title": "Heimdall (shadow reader)"})
         try:
@@ -451,19 +574,15 @@ class AIReader(threading.Thread):
             with urllib.request.urlopen(req, timeout=40, context=ctx) as r:
                 data = json.loads(r.read().decode("utf-8"))
         except urllib.error.HTTPError as e:
-            msg = ""
-            try:
-                msg = (json.loads(e.read() or b"{}").get("error") or {}).get("message") or ""
-            except Exception:
-                pass
-            err = f"HTTP {e.code}" + (f": {msg[:140]}" if msg else "")
+            why = _why(e)
+            err = f"HTTP {e.code}" + (f": {why}" if why else "")
             if e.code in (401, 402, 403, 404):          # the key, the credit, or a model / parameter nobody serves
                 self.down_until = time.time() + 600
             elif e.code == 429:
                 self.down_until = time.time() + 60
             self.last_error = err
             self.log("ai reader:", err)
-            return {"error": err}
+            return {"error": err, "code": e.code}
         except Exception as e:
             self.last_error = type(e).__name__
             return {"error": type(e).__name__}
@@ -477,19 +596,19 @@ class AIReader(threading.Thread):
             except Exception:
                 pass
         try:
-            out = json.loads(data["choices"][0]["message"]["content"])
+            out = _json_of(data["choices"][0]["message"]["content"])
         except Exception:
             self.last_error = "not JSON"
             return {"error": "not JSON", "cost": cost, "tok_in": usage.get("prompt_tokens"), "tok_out": usage.get("completion_tokens")}
         self.last_error = None
         return {"out": out, "cost": cost, "tok_in": usage.get("prompt_tokens"), "tok_out": usage.get("completion_tokens"),
-                "model": data.get("model") or self.model()}
+                "model": data.get("model") or self.model(), "way": way}
 
     def _save(self, post, text, stored, ms, res, ai, rules, dropped, verdict):
         try:
             self.store.ai_save({"post_id": post["post_id"], "ts": post["ts"], "channel": post["channel"], "text": text,
                                 "stored": 1 if stored else 0,
-                                "model": res.get("model") or self.model(), "prompt_v": PROMPT_VERSION, "ms": ms,
+                                "model": res.get("model") or self.model(), "prompt_v": PROMPT_VERSION + ("p" if res.get("way") == 1 else ""), "ms": ms,
                                 "tok_in": res.get("tok_in"), "tok_out": res.get("tok_out"), "cost": res.get("cost") or 0,
                                 "verdict": verdict, "rules": rules, "ai": ai, "dropped": dropped, "error": res.get("error")})
         except Exception as e:
@@ -507,4 +626,5 @@ class AIReader(threading.Thread):
         return {"key": bool(self.key()), "enabled": self.enabled(), "model": self.model(), "prompt_v": PROMPT_VERSION,
                 "month": self.month, "usd_month": round(spent, 4), "cap_usd": self.cap(), "queued": len(self.q),
                 "paused": time.time() < self.down_until, "last_error": self.last_error, "skipped": dict(self.skipped),
+                "format": self.WAYS[self.way],
                 **counts}

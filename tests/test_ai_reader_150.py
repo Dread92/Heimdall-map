@@ -90,13 +90,13 @@ def test_a_fact_the_post_does_not_bear_out_is_dropped():
     out = {"targets": [_ans(kind="shahed", kind_quote="шахеди", count=3, count_quote="3 шахеди", place_id="c9",
                             place_quote="на Бровари", relation="heading_to", heading="w", heading_quote="на захід",
                             altitude_m=2000, altitude_quote="висота 2000", status="impact", status_quote="вибух",
-                            from_side="n", from_quote="з півночі")], "uncertain": None}
+                            origin="n", origin_quote="з півночі")], "uncertain": None}
     kept, dropped = A.validate(out, post, CANDS)
     assert dropped == 5
     t = kept[0]          # the weapon and the side it came from are left: the post says them
     assert (t["kind"], t["count"], t["place_id"], t["relation"], t["heading"], t["altitude_m"], t["status"]) == \
         ("shahed", None, None, "none", None, None, "in_flight")
-    assert t["from_side"] == "n" and t["place"] is None
+    assert t["origin"] == "n" and t["place"] is None
     out["targets"][0].update(kind="ballistic_missile", kind_quote="балістика")
     assert A.validate(out, post, CANDS) == ([], 7)          # nothing of it left but a side: not a target
 
@@ -210,7 +210,7 @@ class _Resp:
 
 
 def _ok(out, cost=0.0004):
-    return _Resp({"model": "anthropic/claude-haiku-5.5", "choices": [{"message": {"content": json.dumps(out, ensure_ascii=False)}}],
+    return _Resp({"model": "anthropic/claude-haiku-5.5", "choices": [{"message": {"content": json.dumps(A.wire(out), ensure_ascii=False)}}],
                   "usage": {"prompt_tokens": 2400, "completion_tokens": 120, "cost": cost}})
 
 
@@ -223,7 +223,7 @@ def _reader(**cfg):
 POST = {"post_id": "kpszsu/1", "channel": "kpszsu", "ts": "2026-10-09T18:00:00+00:00", "text": "2 шахеди з півночі на Бровари",
         "tags": ["drones", "kyiv", "geo"], "text_en": "TRANSLATION-NOT-SENT", "home": "READER-HOME-NOT-SENT"}
 GOOD = {"targets": [_ans(kind="shahed", kind_quote="шахеди", count=2, count_quote="2 шахеди", place_id="c1",
-                         place_quote="на Бровари", relation="heading_to", from_side="n", from_quote="з півночі")], "uncertain": None}
+                         place_quote="на Бровари", relation="heading_to", origin="n", origin_quote="з півночі")], "uncertain": None}
 
 
 def test_it_is_on_only_with_a_key_a_cap_and_not_switched_off():
@@ -455,3 +455,97 @@ def test_the_dashboard_tab():
 def test_the_documentation():
     assert "### 7.7 The AI reader, in shadow mode (1.50)" in DOC and "`OPENROUTER_API_KEY`" in DOC
     assert "set-openrouter-key.bat" in DOC and "ai_reader.py" in DOC
+
+
+# ---- 1.50.2: "HTTP 400: Provider returned error" -----------------------------------------------------------------------
+def test_no_field_is_nullable_on_the_wire():
+    """Anthropic's structured outputs take at most 16 nullable ("union type") fields in a schema; 15 of ours, and a
+    grammar they could not compile, came back as "HTTP 400: Provider returned error" for every post. Nothing on the
+    wire is nullable now: "" / 0 / "none" say "not stated"."""
+    txt = json.dumps(A.SCHEMA)
+    assert "null" not in txt and '"type": [' not in txt and "anyOf" not in txt
+    w = A.wire({"targets": [_ans(kind="shahed", kind_quote="шахед")], "uncertain": None})
+    t = w["targets"][0]
+    assert w["uncertain"] == "" and t["count"] == 0 and t["place_id"] == "" and t["origin"] == "none" and t["side"] == "none"
+    assert A.unwire(t)["count"] is None and A.unwire(t)["origin"] is None and A.unwire(t)["kind"] == "shahed"
+    for _, _, post, cands, ans in A.EXAMPLES:      # what the model is shown is what it is asked for
+        for tt in A.wire(ans)["targets"]:
+            assert set(tt) == set(A.TARGET["properties"]) and None not in tt.values()
+
+
+def test_a_wire_answer_is_read_like_any_other():
+    post = "Група шахедів з території Білорусі на Бровари, швидкість 180 км/год"
+    out = {"targets": [{**A.wire({"targets": [_ans()]})["targets"][0], "kind": "shahed", "kind_quote": "шахедів",
+                        "place_id": "c1", "place_quote": "на Бровари", "relation": "heading_to", "origin": "belarus",
+                        "origin_quote": "з території Білорусі", "speed_kmh": 180, "speed_quote": "швидкість 180 км/год"}],
+           "uncertain": ""}
+    (t,), dropped = A.validate(out, post, CANDS)
+    assert dropped == 0 and t["origin"] == "belarus" and t["speed_kmh"] == 180 and t["count"] is None and t["place"] == "Бровари"
+
+
+def test_an_origin_must_be_a_direction_or_a_country_in_the_posts_words():
+    def origin(o, q, post):
+        return A.validate({"targets": [_ans(kind="shahed", kind_quote="шахед", origin=o, origin_quote=q)]}, post, [])[0][0]["origin"]
+    assert origin("belarus", "з території Білорусі", "шахед з території Білорусі") == "belarus"
+    assert origin("russia", "з Брянщини", "шахед з Брянщини") == "russia"
+    assert origin("s", "з півдня", "шахед з півдня") == "s"
+    assert origin("sea", "з моря", "шахед з моря") == "sea"
+    assert origin("n", "з Чернігівщини", "шахед з Чернігівщини") is None        # a Ukrainian oblast: relation from
+    assert origin("russia", "з Чернігівщини", "шахед з Чернігівщини") is None
+    assert origin("belarus", "з Білорусі", "шахед на Бровари") is None          # not in the post
+
+
+def test_a_speed_needs_its_figure_and_unit():
+    def speed(v, q, post):
+        return A.validate({"targets": [_ans(kind="shahed", kind_quote="шахед", speed_kmh=v, speed_quote=q)]}, post, [])[0][0]["speed_kmh"]
+    assert speed(180, "180 км/год", "шахед 180 км/год") == 180
+    assert speed(180, "швидко", "шахед швидко") is None and speed(9000, "9000 км/год", "шахед 9000 км/год") is None
+
+
+def _http_raw(code, raw):
+    body = {"error": {"message": "Provider returned error", "code": code,
+                      "metadata": {"provider_name": "Anthropic", "raw": json.dumps({"type": "error", "error": {
+                          "type": "invalid_request_error", "message": raw}})}}}
+    return urllib.error.HTTPError(A.OPENROUTER_URL, code, "x", {}, io.BytesIO(json.dumps(body).encode()))
+
+
+def test_the_providers_own_words_are_shown_and_it_asks_the_simpler_way():
+    r, seen = _reader(), []
+
+    def fake(req, timeout=None, context=None):
+        body = json.loads(req.data.decode())
+        seen.append(body)
+        if "response_format" in body:
+            raise _http_raw(400, "Schema is too complex for compilation.")
+        return _Resp({"model": "anthropic/claude-haiku-5.5", "usage": {"cost": 0.0003},
+                      "choices": [{"message": {"content": "```json\n" + json.dumps(A.wire(GOOD), ensure_ascii=False) + "\n```"}}]})
+    with mock.patch.object(A.urllib.request, "urlopen", fake):
+        assert r.read(POST) == "agree"
+        assert r.read(dict(POST, post_id="kpszsu/2")) == "agree"
+    assert "response_format" in seen[0] and "response_format" not in seen[1] and "response_format" not in seen[2]
+    assert all(isinstance(m["content"], str) for m in seen[1]["messages"])            # no caching marks either
+    assert len(seen) == 3 and r.way == 1 and r.stats()["format"] == "prompt" and r.store.saved[-1]["prompt_v"] == A.PROMPT_VERSION + "p"
+    assert r.last_error is None and not r.stats()["paused"]
+
+
+def test_refused_both_ways_it_pauses_and_says_why():
+    r = _reader()
+    with mock.patch.object(A.urllib.request, "urlopen", side_effect=lambda *a, **k: (_ for _ in ()).throw(
+            _http_raw(400, "messages.3.content.0: cache_control is not allowed here"))):
+        assert r.read(POST) == "error"
+    err = r.store.saved[-1]["error"]
+    assert err.startswith("HTTP 400: Provider returned error — Anthropic: messages.3.content.0: cache_control")
+    assert r.stats()["paused"] and r.way == 0
+
+
+def test_the_rules_now_ask_for_origin_and_speed():
+    assert A.PROMPT_VERSION == "2"
+    for rule in ("9. Origin:", '"з Білорусі"', "never an origin", "speed only when written", "the target just above it",
+                 "Answer with the JSON object only"):
+        assert rule.lower() in A.SYSTEM.lower(), rule
+
+
+def test_an_approach_mark_is_not_spotted_at_the_town_it_heads_for():
+    page = _read("static/kyiv.html")
+    assert "const appr=!!cur.approach&&!cur.status&&!cur.endedBy;" in page
+    assert "${appr?esc(t('sh_appr',pn(cur.place))):`${cur.status?t('tp_reported'):t('tp_spotted')}" in page

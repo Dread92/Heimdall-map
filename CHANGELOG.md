@@ -2,6 +2,26 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.50.2 — 2026-10-09
+
+### Fixed
+- **The AI reader still read nothing**: "HTTP 400: Provider returned error" on every post. Its answer format had 15
+  fields that could be empty (null) — Anthropic's structured outputs take at most 16 such fields, and could not
+  compile it. No field can be null any more ("" / 0 / "none" mean "not stated"). If a provider still refuses the
+  format, the reader asks once more without it (the prompt and the examples say the same) and keeps the way that
+  works; the dashboard shows which, and a refusal now shows the provider's own reason, not only "Provider returned
+  error".
+- **A height given on the last line of a post went to every target in it.** @monitor_ukr's five jets, from Kyiv to
+  Odesa, with "3.5 км висоти" under the Odesa one: the two coming at Kyiv from the south showed "3500 м". A height
+  on a line of its own is now the height of the target on the line above it; the whole post's height is used only
+  when the post reports a single target.
+- The card of a target drawn at the town it is heading for said "spotted near Kyiv". It now says "Heading for Kyiv —
+  where it is now was not given".
+
+### Changed
+- The AI reader's prompt (version 2) also reads where a target comes from — a direction, Belarus, Russia, the sea,
+  Crimea, the occupied territories, never a Ukrainian oblast — and a stated speed; each must quote the post.
+
 ## 1.50.1 — 2026-10-09
 
 ### Fixed

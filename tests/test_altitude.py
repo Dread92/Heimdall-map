@@ -72,3 +72,32 @@ def test_the_tactical_track_lists_the_heights():
 
 def test_lt_alt_at_exists_in_three_languages():
     assert len(re.findall(r"lt_alt_at:'[^']*\{0\}[^']*'", I18N)) == 3
+
+
+# ---- 1.50.2: a height belongs to its own target, not to every target of the post -----------------------------------
+MONITOR_0910 = """2 реактиви у бік Києва з півдня.
+
+ 1 реактив пролетів Славутич курсом на Київщину, Вишгородський р-н.
+
+ 1 реактив на Кіровоградщині курсом на Вінниччину.
+
+ 2 реактиви вилетіли з Донецького аеропорту і летять вздовж Дніпропетровщини.
+
+ 1 реактив над Одесою.
+3.5 км висоти"""
+
+
+def test_a_height_on_its_own_line_is_the_height_of_the_target_above_it():
+    """@monitor_ukr, 9 Oct 19:02: five jets from Kyiv to Odesa, and the last line, "3.5 км висоти", under the Odesa
+    one. Every jet got 3.5 km — the two coming at Kyiv from the south showed "3500 м" on the map."""
+    got = {m["place"]: (m.get("alt") or {}).get("m") for m in geo.parse_for_channel("monitor_ukr", MONITOR_0910)}
+    assert got["Одеса"] == 3500
+    assert all(v is None for k, v in got.items() if k != "Одеса"), got
+
+
+def test_a_single_targets_height_is_still_read_wherever_it_is_written():
+    for text in ("Шахед на Бровари\nвисота 1500", "Висота 1500\nШахед на Бровари", "Шахед на Бровари, висота 1500"):
+        (m,) = geo.parse_for_channel("kpszsu", text)
+        assert m["alt"]["m"] == 1500 and m["evidence"]["altitude"]["method"] == "stated in the post", text
+    a, b = geo.parse_for_channel("kpszsu", "2 шахеди на Бровари, висота 900\n1 на Бориспіль")
+    assert a["alt"]["m"] == 900 and not b.get("alt")

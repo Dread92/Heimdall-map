@@ -2315,7 +2315,10 @@ function showTip(m,e){
   const title=cur.status?`${statusIco(cur.status)} ${statusName(cur.status)}`:`${th[0]} ${cur.type==='drones'&&cur.jet?t('k_jet'):th[1]}${cur.count>1?' ×'+cur.count:''}`;
   const where=cur.place==='область'?oblWhere(cur):pn(cur.place);
   const ev=cur.evidence||{};
-  $('tip').innerHTML=`<b>${title}</b><div class="m">${cur.status?t('tp_reported'):t('tp_spotted')} ${t('tp_near')} <b style="display:inline">${esc(where)}</b> · ${fmtT(cur.ts)} (${t('tp_ago',Math.round(agoMin(cur.ts)))}) · ${esc(CH[cur.channel]||cur.channel)}</div>
+  // 1.50.2: a mark drawn at the town it is heading for was "spotted near" that town — "2 реактиви у бік Києва з півдня"
+  // read as two jets seen over Kyiv. Where it is now was not given, and the card says so.
+  const appr=!!cur.approach&&!cur.status&&!cur.endedBy;
+  $('tip').innerHTML=`<b>${title}</b><div class="m">${appr?esc(t('sh_appr',pn(cur.place))):`${cur.status?t('tp_reported'):t('tp_spotted')} ${t('tp_near')} <b style="display:inline">${esc(where)}</b>`} · ${fmtT(cur.ts)} (${t('tp_ago',Math.round(agoMin(cur.ts)))}) · ${esc(CH[cur.channel]||cur.channel)}</div>
     ${cur.status?'':`<div class="m">${t('tp_heading')} ${cur.heading==null?t('tp_nr'):dirName(cur.heading)+' ('+cur.heading+'°)'}${cur.target?' → '+esc(tgtName(cur)):''}${info.inbound?` · <span style="color:#ffb3b5">${t('tp_tokyiv')}</span>`:''}</div>`}
     ${phaseTxt(cur)?`<div class="m">${t('ph_label')}: <b style="display:inline">${esc(phaseTxt(cur))}</b></div>`:''}
     ${cur.endedBy?`<div class="m" style="color:#a8f0cf">${statusName(cur.endedBy.status)} ${t('tp_near')} ${esc(pn(cur.endedBy.place))} ${t('tp_at')} ${fmtT(cur.endedBy.ts)}</div>`:''}

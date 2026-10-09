@@ -378,6 +378,8 @@ const T={
   k_shahed:'Shahed',k_jet_drone:'jet drone',k_drone:'drone',k_cruise_missile:'cruise missile',k_ballistic_missile:'ballistic missile',k_guided_bomb:'guided bomb',k_aircraft:'aircraft',k_unknown:'unknown target',
   ty_drones:'drone',ty_banderol_missiles:'Banderol (jet drone)',ty_cruise_missiles:'cruise missile',ty_ballistic_missiles:'ballistic missile',ty_guided_aerial_bombs:'guided bomb',ty_tactic_aircraft_activity:'aircraft',ty_unknown:'unknown target',
   st_down:'shot down',st_impact:'impact',st_lost:'lost',ai_count:'×{0}',ai_alt:'{0} m',ai_head:'course {0}',ai_fromside:'from the {0}',ai_km:'{0} km',
+  ai_speed:'{0} km/h',o_belarus:'from Belarus',o_russia:'from Russia',o_sea:'from the sea',o_crimea:'from Crimea',o_occupied:'from the occupied territories',
+  ai_fmt_schema:'answers in a strict JSON schema',ai_fmt_prompt:'answers by the prompt alone (the provider refused the schema)',
   dirs:'N,NE,E,SE,S,SW,W,NW',
   h_img:'Satellite imagery',img_sat:'Sentinel-2 tiles: version {0}, to zoom {1}',img_nosat:'no Sentinel-2 tiles on the volume — scripts/upload-imagery.bat',img_esri:'Esri close zoom: {0} tiles this month (cap {1}) · {2} today (cap {3})',img_noesri:'Esri close zoom off — no ESRI_KEY (scripts/set-esri-key.bat)',img_ref_img:'Esri refused the key for the imagery — {0} — asked again in 5 min',img_ref_st:'Esri refused the key for the names and the map (Static Basemap Tiles) — {0} — asked again in 5 min; the key needs that privilege too',img_ref:'Esri refused the key ({0}) — asked again in 5 min',
   h_tr:'Translation',tr_av:'in use: {0}',tr_none:'no translation service reachable — offline glossary only',tr_paused:'paused after an error: {0}',
@@ -488,6 +490,8 @@ const T={
   k_shahed:'шахед',k_jet_drone:'реактивний БпЛА',k_drone:'БпЛА',k_cruise_missile:'крилата ракета',k_ballistic_missile:'балістична ракета',k_guided_bomb:'КАБ',k_aircraft:'авіація',k_unknown:'невідома ціль',
   ty_drones:'БпЛА',ty_banderol_missiles:'Бандерол (реактивний БпЛА)',ty_cruise_missiles:'крилата ракета',ty_ballistic_missiles:'балістична ракета',ty_guided_aerial_bombs:'КАБ',ty_tactic_aircraft_activity:'авіація',ty_unknown:'невідома ціль',
   st_down:'збито',st_impact:'влучання',st_lost:'втрачено',ai_count:'×{0}',ai_alt:'{0} м',ai_head:'курс {0}',ai_fromside:'з {0}',ai_km:'{0} км',
+  ai_speed:'{0} км/год',o_belarus:'з Білорусі',o_russia:'з Росії',o_sea:'з моря',o_crimea:'з Криму',o_occupied:'з окупованих територій',
+  ai_fmt_schema:'відповідає за суворою JSON-схемою',ai_fmt_prompt:'відповідає лише за промптом (провайдер не прийняв схему)',
   dirs:'пн,пн-сх,сх,пд-сх,пд,пд-зх,зх,пн-зх',
   h_img:'Супутникові знімки',img_sat:'Тайли Sentinel-2: версія {0}, до зуму {1}',img_nosat:'тайлів Sentinel-2 на томі немає — scripts/upload-imagery.bat',img_esri:'Esri, близький зум — тайлів цього місяця: {0} (ліміт {1}) · сьогодні: {2} (ліміт {3})',img_noesri:'Esri вимкнено — немає ESRI_KEY (scripts/set-esri-key.bat)',img_ref_img:'Esri відхилив ключ для знімків — {0} — повтор за 5 хв',img_ref_st:'Esri відхилив ключ для назв і карти (Static Basemap Tiles) — {0} — повтор за 5 хв; ключу потрібен і цей дозвіл',img_ref:'Esri відхилив ключ ({0}) — повтор за 5 хв',
   h_tr:'Переклад',tr_av:'працює: {0}',tr_none:'жоден сервіс перекладу недоступний — лише офлайн-глосарій',tr_paused:'призупинено після помилки: {0}',
@@ -819,6 +823,8 @@ function aiPlace(w){ if(!w) return '—'; const m=/^o(\d+)$/.exec(w); if(!m) ret
   const r=((H&&H.regions)||[]).find(x=>x.id===m[1]); return r?rgName(r):(L==='uk'?'область '+m[1]:'oblast '+m[1]); }
 const aiDir=d=>{ const i=['n','ne','e','se','s','sw','w','nw'].indexOf(d); return i<0?'?':tr('dirs').split(',')[i]; };
 const aiRule=r=>(r.approach?'→ ':'')+aiPlace(r.where)+' · '+tr('ty_'+(r.type||'unknown'))+(r.status?' · '+tr('st_'+r.status):'');
+// 1.50.2: where the post says it comes from — a direction, a country or an area (older readings: from_side)
+const aiOrigin=t=>{ const o=t.origin||t.from_side; if(!o) return ''; return ['belarus','russia','sea','crimea','occupied'].includes(o)?tr('o_'+o):tr('ai_fromside',aiDir(o)); };
 function aiTarget(t){
   let where='';
   if(t.place) where=t.relation==='side_of'?aiDir(t.side)+' '+tr('r_side_of')+' '+aiPlace(t.place)+(t.distance_km?' · '+tr('ai_km',t.distance_km):'')
@@ -826,8 +832,8 @@ function aiTarget(t){
   else if(t.place_quote) where='“'+t.place_quote+'” ('+tr('ai_notours')+')';
   const st={shot_down:'down',impact:'impact',lost:'lost'}[t.status];
   const bits=[tr('k_'+t.kind)+(t.count?' '+tr('ai_count',t.count):''), where, st?tr('st_'+st):'',
-    t.from_side?tr('ai_fromside',aiDir(t.from_side)):'', t.heading?tr('ai_head',aiDir(t.heading)):'', t.altitude_m?tr('ai_alt',t.altitude_m):''].filter(Boolean);
-  const q=[...new Set(['kind_quote','count_quote','place_quote','status_quote','from_quote','heading_quote','altitude_quote'].map(k=>t[k]).filter(Boolean))];
+    aiOrigin(t), t.heading?tr('ai_head',aiDir(t.heading)):'', t.altitude_m?tr('ai_alt',t.altitude_m):'', t.speed_kmh?tr('ai_speed',t.speed_kmh):''].filter(Boolean);
+  const q=[...new Set(['kind_quote','count_quote','place_quote','status_quote','origin_quote','from_quote','heading_quote','altitude_quote','speed_quote'].map(k=>t[k]).filter(Boolean))];
   return `<div class="tg">${esc(bits.join(' · '))}${q.length?`<div class="ardq">${q.map(x=>'«'+esc(x)+'»').join(' ')}</div>`:''}</div>`; }
 function drawAI(){
   const box=$('aiv'); if(!box) return;
@@ -837,7 +843,7 @@ function drawAI(){
   const s=AI.stats||{}, bv=s.by_verdict||{}, n=s.reads_month||0, read=n-(bv.error||0);
   const diff=['place','kind','status','ai_only','rules_only'].reduce((a,k)=>a+(bv[k]||0),0);
   const pc=x=>read?Math.round(x/read*100)+'%':'—';
-  const state=!AI.stats?tr('ai_off'):!s.key?tr('ai_nokey'):!s.enabled?tr('ai_off'):tr('ai_on',s.model,s.prompt_v);
+  const state=!AI.stats?tr('ai_off'):!s.key?tr('ai_nokey'):!s.enabled?tr('ai_off'):tr('ai_on',s.model,s.prompt_v)+(s.format?' · '+tr('ai_fmt_'+s.format):'');
   const warn=[]; if(s.enabled&&s.cap_usd>0&&s.usd_month>=s.cap_usd) warn.push(tr('ai_budget'));
   if(s.paused) warn.push(tr('ai_paused',s.last_error||'?')); else if(s.last_error) warn.push(tr('ai_err',s.last_error));
   const sk=Object.entries(s.skipped||{}).filter(([,v])=>v).map(([k,v])=>tr('ai_sk_'+k)+': '+fmt(v));

@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.50** · last updated 2026-10-09 (1.50.1)
+**Documented version: 1.50** · last updated 2026-10-09 (1.50.2)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -789,17 +789,29 @@ villages of the oblasts in play) and those oblasts, at most 30, each with an id 
 about a reader, a watched place, a device or an address; a run of 13–19 digits (a card number in a fundraising line)
 is replaced before anything is sent or stored (`mask`).
 
-**The prompt is a component**, versioned (`PROMPT_VERSION`, stored with every reading):
+**The prompt is a component**, versioned (`PROMPT_VERSION`, stored with every reading; 2 since 1.50.2, a `p` after it
+when the answer was asked for by the prompt alone):
 
 1. fixed rules from [SAFETY.md](SAFETY.md) (`SYSTEM`): never infer; every fact quotes the post; places only from the
    candidates, by id, never coordinates; "на X" is heading to X, not at X; a city named with no place in it is the
    city; the weapon words (Banderol a jet drone, never a cruise missile); the status words; previous posts are
-   context, never a source of facts; an alert or an all-clear alone is no target;
-2. worked examples (`EXAMPLES`, five, as earlier turns of the conversation);
+   context, never a source of facts; an alert or an all-clear alone is no target; 1.50.2: the **origin** — a
+   direction or a country or area ("з півночі", "з Білорусі", "з Брянщини", "з моря", "з Криму", "з ТОТ"), never a
+   Ukrainian oblast or town, which is a place it comes *from* — and the **speed**; a height or a speed belongs to
+   the target of its own line or paragraph, a height on a line of its own to the target just above it;
+2. worked examples (`EXAMPLES`, six, as earlier turns of the conversation);
 3. the post's context, assembled per post (`user_message`);
 4. a strict JSON schema (`SCHEMA`: `targets` with `kind`, `count`, `status`, `place_id`, `relation`, `side`,
-   `distance_km`, `from_side`, `heading`, `altitude_m`, each fact with its `*_quote`; `uncertain`) —
-   `response_format: json_schema, strict`, and `provider.require_parameters` so that no provider ignores it. The
+   `distance_km`, `origin`, `heading`, `altitude_m`, `speed_kmh`, each fact with its `*_quote`; `uncertain`) —
+   `response_format: json_schema, strict`, and `provider.require_parameters` so that no provider ignores it.
+   **Nothing in it is nullable** (1.50.2): what a post does not state is `""`, `0` or `"none"` on the wire (`wire`,
+   `unwire`; the examples are written with `None` and sent in that form). A nullable field is a "union type" to
+   Anthropic's structured outputs, which take at most 16 in a schema, and 1.50.0's 15 came back as "HTTP 400:
+   Provider returned error" on every post. A provider that still refuses the schema (400) is asked once more by the
+   prompt and the examples alone, without the schema and the caching marks (`plain`); if that works it is kept
+   (`AIReader.way`, `format` on the dashboard: `schema` / `prompt`), an answer wrapped in a code fence is still read
+   (`_json_of`); refused both ways, it pauses 10 minutes. A refusal shows the provider's own words
+   (`error.metadata.raw`, `_why`), not only OpenRouter's. The
    request carries no other model parameter (1.50.1): with `require_parameters`, one the model does not take — the
    `temperature` claude-haiku-5.5 does not — leaves no provider at all (OpenRouter's "HTTP 404: No endpoints found
    that can handle the requested parameters"). A model set in `ai_reader_model` must take `response_format`.
@@ -809,7 +821,10 @@ Anthropic's models its end is marked `cache_control`).
 
 **Checked against the post** (`validate`): a quote that is not in the post drops its fact; a place id that was not
 offered drops the place; a count needs a number in its words, a distance must be written, an altitude must be
-30–20,000 m with a figure in its quote; a target with nothing left (no weapon, no place, no outcome) is dropped. The
+30–20,000 m with a figure in its quote, a speed 30–5,000 km/h with a figure and "км" in its quote; an origin's quote
+must hold a word of its class (`ORIGIN_WORDS`: "білорус", "брянщ", "мор", "крим", "окупов"…, or a compass word for
+a direction) — "з Чернігівщини" is never an origin; a target with nothing left (no weapon, no place, no outcome) is
+dropped. The
 number of facts dropped is stored (`dropped`) — a model that keeps inventing shows here.
 
 **Compared with the rules** (`compare`, on `geo.parse_for_channel` of the same text): `agree`; `place` (the places
