@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="theme-color" content="#0b0e13">
+<!-- 1.54.7: the page draws its own dark and light modes; a browser's "dark theme for sites" must not recolour it (or its map tiles) -->
+<meta name="color-scheme" content="only light">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="mobile-web-app-capable" content="yes">
@@ -725,6 +727,15 @@ svg.veryfar .rpl{display:none}
 .rpctl button{min-width:44px;height:36px;padding:0 8px;white-space:nowrap;border:1px solid var(--line);border-radius:9px;background:var(--panel2);color:var(--ink);font:700 13px var(--mono)}
 .rpctl .rpp{min-width:52px;background:#ff8a3d;border-color:#ff8a3d;color:#111;font-size:16px}
 #rpcount{margin-left:auto;color:var(--ink2);font:12px var(--mono);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.rpspin{display:inline-block;width:30px;height:30px;border:3px solid rgba(255,138,61,.25);border-top-color:#ff8a3d;border-radius:50%;animation:rpspin .8s linear infinite;flex:none}
+.rpspin.sm{width:13px;height:13px;border-width:2px;vertical-align:-2px;margin-right:7px}@keyframes rpspin{to{transform:rotate(360deg)}}
+#rpbar.loading #rpcount{color:#ffb27a;font-weight:700}#rpbar.loading .rpctl button,#rpbar.loading .rptrack{opacity:.35;pointer-events:none}
+#rpbar.loading .rptrack{background:linear-gradient(90deg,transparent 0,rgba(255,138,61,.35) 50%,transparent 100%) 0 0/40% 100% no-repeat;animation:rpslide 1.2s linear infinite;opacity:1}@keyframes rpslide{from{background-position:-40% 0}to{background-position:140% 0}}
+#rpwait{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%);z-index:9;display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px 22px;border-radius:14px;background:rgba(10,12,16,.9);border:1px solid #3a2a1c;color:#f4f1e8;font:600 14px system-ui;text-align:center;pointer-events:none;max-width:min(80vw,320px);box-shadow:0 8px 28px rgba(0,0,0,.45)}
+#rpwait[hidden]{display:none}#rpwait small{font:12px/1.35 system-ui;color:#b9b4a8}
+body.m-day #rpwait{background:rgba(255,255,255,.96);color:#14171c;border-color:#e3c9b2}body.m-day #rpwait small{color:#59616e}body.m-day #rpbar.loading #rpcount{color:#a24a00}
+body.m-night #rpwait{background:#070a0f;color:#a9b6c4;border-color:#1c242f}body.m-night .rpspin{border-color:rgba(160,90,40,.25);border-top-color:#a8602c}
+body.lite #rpwait{background:#000;color:#fff;border-color:#fff}body.lite .rpspin{border-color:#555;border-top-color:#fff}
 .rpnote{color:var(--ink3);font:11px/1.35 var(--sans);margin-top:6px}
 .rpns{display:none}
 @media (max-width:480px){.rpnl{display:none}.rpns{display:inline}#rptime{font-size:22px}.rpnote{margin-top:4px}}
@@ -2675,11 +2686,12 @@ function drawSelPath(){ const g=$('selpath'); if(!g) return; const m=SELP?MK.fin
   let last=null; const lab=pts.map((o,i)=>{ if(o.cur) return false; const far=!last||Math.hypot(o.p[0]-last[0],o.p[1]-last[1])/KPX>=46;
     if(far||i===k-1||i===pts.length-2){ last=o.p; return true; } return false; });
   // 1.54.4, the owner: "no wild assumption when the gap between two points is so huge" — two reports a drone could not
-  // have flown between (past 80 km, or faster than 3.5 km a minute; a jet drone 120 km, 9 km a minute) are not joined:
-  // their dots stay, the line between them is left out. Nobody saw it there.
+  // have flown between are not joined: their dots stay, the line between them is left out. Nobody saw it there.
+  // 1.54.7: the server's physical check (reach_km): 350 km/h for a Shahed, 650 for a jet drone, 8 km for the places,
+  // never past 80 / 120 km
   const jet=!!m.jet, dr=m.type==='drones'||m.type==='unknown', cut=(a,b)=>{ if(!dr) return false;
     const d=Math.hypot(a.p[0]-b.p[0],a.p[1]-b.p[1]), dt=Math.max(0,(Date.parse(b.ts)-Date.parse(a.ts))/6e4);
-    return d>(jet?120:80)||d>(jet?9:3.5)*dt+15; };
+    return d>(jet?120:80)||d>(jet?650:350)/60*dt+8; };
   const runs=(a,cls)=>{ const out=[]; let cur=[a[0]]; for(let i=1;i<a.length;i++){ if(cut(a[i-1],a[i])){ out.push(cur); cur=[a[i]]; } else cur.push(a[i]); }
     out.push(cur); return out.filter(r=>r.length>1).map(r=>`<polyline class="${cls}" points="${line(r)}"/>`).join(''); };
   g.innerHTML=(k>0?runs(pts.slice(0,k+1),'selp old'):'')
@@ -2783,6 +2795,10 @@ function placeTiles(g,z,url,max,zmin){
 }
 function tileDone(e){ const im=e.target, g=im.parentNode, ok=e.type==='load'; im.dataset.ok=ok?'1':'0';
   if(g&&(g.id==='emap'||g.id==='lbl')) esriSeen(ok,g);
+  // 1.54.7: a satellite tile that did not come (a busy server, a dropped connection, a phone waking) is asked again — after
+  // 2, 8 and 30 s, under an address of its own so no kept failure answers. It used to stay missing until the view moved.
+  if(!ok&&g&&g.id==='sat'){ const n=(+im.dataset.r||0)+1; if(n<=3) setTimeout(()=>{ if(!im.isConnected||im.dataset.ok==='1') return;
+    im.dataset.r=n; im.dataset.ok=''; im.setAttribute('href',im.getAttribute('href').replace(/&r=\d+$/,'')+'&r='+n); },[2000,8000,30000][n-1]); }
   if(g) tileSweep(g); }
 function tileSweep(g){ const olds=g.querySelectorAll('image.old'); if(!olds.length) return;
   for(const im of g.querySelectorAll(`image[data-z="${g.dataset.z}"]:not(.old)`)) if(im.dataset.ok!=='1') return;   // waiting, or failed
@@ -2834,13 +2850,13 @@ function satAvail(c){ c=c||{}; const ok=!!c.sat, v=String(c.sat_v||'1'), z=Math.
 function warmTiles(){ try{
   const c=navigator.connection||{}; if(c.saveData||/(^|-)2g$/.test(c.effectiveType||'')||document.hidden) return;
   const sw=navigator.serviceWorker&&navigator.serviceWorker.controller; if(!sw||!SAT_OK) return;
-  if(localStorage.getItem('satwarm')===SAT_V) return;
+  if(localStorage.getItem('satwarm2')===SAT_V) return;   // 1.54.7: the tiles' store was emptied once (sw.js)
   const urls=[], box=(z,lo0,la0,lo1,la1)=>{ const n=2**z, X=lon=>Math.floor((lon+180)/360*n),
     Y=lat=>{ const f=lat*Math.PI/180; return Math.floor((1-Math.log(Math.tan(f)+1/Math.cos(f))/Math.PI)/2*n); };
     for(let x=X(lo0);x<=X(lo1);x++) for(let y=Y(la1);y<=Y(la0);y++) urls.push(`/tiles/sat/${z}/${x}/${y}.webp?v=${SAT_V}`); };
   for(const z of [5,6,7,8]) if(z<=SAT_MAX) box(z,27,48,36,52.6);      // Kyiv and the oblasts around it
   for(const z of [9,10]) if(z<=SAT_MAX) box(z,29.2,49.2,32.2,51.6);   // Kyiv oblast
-  sw.postMessage({warm:urls}); localStorage.setItem('satwarm',SAT_V); }catch(e){} }
+  sw.postMessage({warm:urls}); localStorage.setItem('satwarm2',SAT_V); }catch(e){} }
 function updateSat(){
   const g=$('sat'); if(!g) return; const on=SAT_OK&&LAYERS.sat&&MAP&&!CITY&&!LITE_ON(); svg.classList.toggle('satd',!!on);
   if(!on){g.innerHTML='';return;}

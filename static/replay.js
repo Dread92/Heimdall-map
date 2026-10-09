@@ -49,11 +49,22 @@ function days(){
   $r('rpdays').innerHTML=ws.map(w=>`<button type="button" data-w="${w.k}"${w.title?` title="${esc(w.title)}"`:''} class="${RP.win&&RP.win.k===w.k?'on':''}">${esc(w.label)}</button>`).join('');
   $r('rpdays').querySelectorAll('button').forEach(b=>b.onclick=()=>load(ws.find(w=>w.k===b.dataset.w)));
 }
+// 1.54.7, the owner: "an obvious loading spinner — people think the feature simply does not work". A night is read again
+// from its posts on the server (up to half a minute the first time): while it comes, a spinner turns in the bar and over
+// the map, with the words, and the controls wait greyed out.
+function waiting(on){
+  const b=$r('rpbar'); if(b) b.classList.toggle('loading',!!on);
+  let o=$r('rpwait');
+  if(on&&!o){ o=document.createElement('div'); o.id='rpwait'; o.setAttribute('role','status'); o.setAttribute('aria-live','polite'); $r('mapwrap').appendChild(o); }
+  if(o){ o.hidden=!on; if(on) o.innerHTML=`<span class="rpspin" aria-hidden="true"></span><b>${esc(t('rp_load'))}</b><small>${esc(t('rp_wait'))}</small>`; }
+  if(on) $r('rpcount').innerHTML=`<span class="rpspin sm" aria-hidden="true"></span>${esc(t('rp_load'))}`;
+}
 async function load(w){
   RP.win=w; play(false); days(); RP.data=null; RP.asig=null; clearTracks();
-  $r('rpcount').textContent=t('rp_load');
+  waiting(true);
   let d=null; try{ d=await jget(`/api/replay?from=${Math.floor(w.from/1000)}&to=${Math.floor(w.to/1000)}`,30000); }catch(e){}
   if(RP.win!==w||!RP.on) return;
+  waiting(false);
   if(!d||!d.alerts){ $r('rpcount').textContent=t('rp_err'); return; }
   for(const a of d.alerts) a.al={oblast_uid:a.o,location_type:a.lt,raion_key:a.rk,alert_level:a.lv,alert_type:a.at,location_title:a.ti};
   d.alerts.forEach((a,i)=>a.i=i);
@@ -152,7 +163,7 @@ function keys(e){
   else if(e.key==='Escape') close();
 }
 function close(){
-  play(false); RP.on=false; RP.data=null; RP.asig=null; clearTracks();
+  play(false); RP.on=false; RP.data=null; RP.asig=null; clearTracks(); waiting(false);
   document.body.classList.remove('rp'); const b=$r('rpbar'); if(b) b.hidden=true; if(typeof syncMini==='function') syncMini();
   document.removeEventListener('keydown',keys);
   if(location.hash==='#replay') history.replaceState(null,'',location.pathname+location.search);

@@ -846,9 +846,13 @@ def _find_places(text, ctx_uid=None):
                 continue          # 1.54.2: the oblast, unless the post says metro
             key = (m.start(), m.end())
             spans.setdefault(key, []).append(name)
-    # 1.43: the villages of the oblast the post is about (its channel's, or the one it names) — only then
-    if ctx_uid and (ctx_uid in _REG_IDX or ctx_uid in REGIONAL_WORDS):
-        for s0, e0, ks in _find_regional(text, ctx_uid):
+    # 1.43: the villages of the oblast the post is about (its channel's, or the one it names) — only then.
+    # 1.54.7: a Kyiv tracker (ctx "31") reports the whole of Kyiv oblast too — its villages are read with the city's
+    area = ("31", "14") if ctx_uid == "31" else (ctx_uid,) if ctx_uid else ()
+    for ru in area:
+        if not (ru in _REG_IDX or ru in REGIONAL_WORDS):
+            continue
+        for s0, e0, ks in _find_regional(text, ru):
             if _OBLAST_NOUN_RX.match(text, e0):
                 continue
             ks = [k for k in ks if _gender_ok(text[s0:e0].split()[-1], k)]
@@ -869,6 +873,14 @@ def _find_places(text, ctx_uid=None):
         if ctx_uid:
             own = [n for n in names if PLACES[n][2] == ctx_uid]
             core = [n for n in own if dict.__contains__(PLACES, n)]
+            # 1.54.7: a Kyiv tracker's village of Kyiv oblast — the one place of that name when no town of the gazetteer
+            # has it ("Кулажинці", "Мощун"); a district of Kyiv and villages of the oblast with its name ("лук'янівка",
+            # @chyste_nebo, 01:12, was the village east of Brovary, not Lukyanivka in Kyiv): the district stays the
+            # default, and the server takes the one next to the channel's reports before and after (the candidates)
+            vill = [n for n in names if ctx_uid == "31" and not dict.__contains__(PLACES, n) and PLACES[n][2] == "14"]
+            if vill and not own and not any(dict.__contains__(PLACES, n) for n in names):
+                own = vill
+            vill = [n for n in vill if core and _norm(n.split(" (")[0]) == _norm(core[0].split(" (")[0])]
             # 1.43.1: a town of the core gazetteer in the next oblast, against small villages of this one that share
             # its name: "На Таращу" from the Cherkasy tracker is the town of Тараща in Kyiv oblast, where the drones
             # leave Cherkasy oblast — not the hamlet of the same name — unless the channel's previous report or the
@@ -876,7 +888,9 @@ def _find_places(text, ctx_uid=None):
             said = _norm(text[k[0]:k[1]])
             other = [n for n in names if "(" not in n and dict.__contains__(PLACES, n) and PLACES[n][2] != ctx_uid
                      and own and _norm(n) in (_norm(own[0].split(" (")[0]), said)]   # the same name (or the word as written)
-            if core:
+            if core and vill and ctx_uid == "31":
+                pick = _ambig_token(core[:1] + vill, ctx_uid, text[k[0]:k[1]], default=core[0])
+            elif core:
                 pick = core[0]               # the town the core gazetteer lists, over a village of the same name
             elif own and other and all(_REG_META.get(o, ("P", 0, ""))[0] == "P" and _REG_META.get(o, ("P", 0, ""))[1] < 2000
                                        for o in own):
@@ -2073,6 +2087,25 @@ def _live_lines(text, uid):
     return out if len(out) >= 2 else None
 
 
+_HEIGHT_NUM = r"(?<![\d.,])\d{3,4}(?![\d.,])"
+
+
+def _height_only(t):
+    """1.54.7: a post that is a height and nothing else ("500", "400 м", "↓600", "Увага 500", "1200 знижується") — the
+    height (as parse_altitude gives it), or None."""
+    nums = re.findall(_HEIGHT_NUM, t)
+    if len(nums) != 1:
+        return None
+    rest = re.sub(_HEIGHT_NUM + r"|увага|уважно|висот\w*|зниж\w*|набира\w*|низько|метр\w*|(?<![а-яіїєґ])м(?![а-яіїєґ])"
+                  r"|(?<![a-z])m(?![a-z])", " ", t)
+    if re.search(r"[а-яіїєґыэa-z\d]", rest):
+        return None
+    v = int(nums[0])
+    if not 100 <= v <= 9000:
+        return None
+    return dict(_alt_full(t) or {"state": None, "matched": nums[0]}, m=v)
+
+
 def _parse_live(text, uid):
     """@kyiv_airdef live tracking: bare place names, one per post ('ДВРЗ', 'Позняки', 'ТЕЦ-5 уважно'),
     outcome words on their own ('Впав', 'Знижується', 'Збили'), occasionally full sentences.
@@ -2093,6 +2126,19 @@ def _parse_live(text, uid):
     if re.search(r"укритт|тривог|відбій", t) and not re.search(r"курс|йде|летить|над\b", t):
         return []          # shelter / alert warning / all-clear (1.45), not a position report
     st = _status_of(t)
+    # 1.54.7: a height and nothing else — "500", "400" (@chyste_nebo, 01:21, between "Куладинці" and "Кулажинці") — is
+    # the height of the target this channel reported last: carried to that report by the server (needs_context), never
+    # a place of its own. Read from @chyste_nebo it was dropped, and the drone at 400 m north-east of Brovary was not shown.
+    ho = None if st else _height_only(t)
+    if ho:
+        return [{"type": "unknown", "status": None, "lon": None, "lat": None, "heading": None, "place": None, "target": None,
+                 "count": None, "jet": False, "oblast_uid": uid, "needs_context": True, "height_only": True, "live": True,
+                 "likely": "drones", "alt": ho,
+                 "evidence": {"segment": t.strip(), "type": {"matched": None, "confidence": "none",
+                                                             "method": "a height alone — the target this channel reported last"},
+                              "position": {"matched": None, "place": None, "confidence": "medium",
+                                           "method": "no place in this post — placed at the channel's previous report"},
+                              "heading": None, "count": None}}]
     places = _find_places(t, uid)
     if st and not places:
         sm = next((rx.search(t) for n, rx in STATUS_RX if n == st), None)
@@ -2795,6 +2841,49 @@ def _load_extra(path=None):
                 EXTRA_PLACES[key] = (lon, lat, uid)
 
 
+# 1.54.7: the villages of Kyiv oblast for the rules too. In 1.52 they went to the AI reader alone, and since 1.54 the AI
+# reads no post, so "Кулажинці" (@chyste_nebo, 10 Oct, 01:21 — a drone at 400–500 m north-east of Brovary) placed
+# nothing at all. They are read like any regional channel's villages (_find_regional): in a Kyiv tracker's short posts
+# (_parse_live, ctx "31") and in a post about Kyiv oblast — never in a long sentence from elsewhere. Words that are
+# also some village's name here are kept out, like REGIONAL_STOP's.
+KYIV_VILLAGE_STOP = frozenset("""
+озеро ферма кулі круги ями піски потік рови руда стави недра оране мила мрія вишня крива лука буда буки синяк рачки
+пайки шпилі гулі коржі клюки дудки юшки олива рудня ріжки селище ромашки
+""".split())
+
+
+def _load_kyiv_villages(path=None):
+    path = path or os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "extra_places.json")
+    try:
+        with open(path, encoding="utf-8") as f:
+            rows = (json.load(f).get("oblasts") or {}).get("14") or []
+    except Exception:
+        return
+    core = {_norm(n).split(" (")[0] for n, v in dict.items(PLACES) if v[2] == "14"}
+    names = {}
+    for name, lon, lat, raion in rows:
+        nm = name.replace("’", "'").replace("ʼ", "'")
+        names.setdefault(nm, []).append((lon, lat, raion))
+    idx = _REG_IDX.setdefault("14", {})
+    for name, entries in names.items():
+        if _norm(name) in core:
+            continue                                 # the core gazetteer has it, and matches it everywhere
+        for lon, lat, raion in entries:
+            key = name if len(entries) == 1 and name not in PLACES else f"{name} ({raion or '14'})"
+            if key in REGIONAL:
+                continue
+            REGIONAL[key] = (lon, lat, "14")
+            _REG_META[key] = ("P", 0, raion)
+            for a in _ru_variants(_norm(name)):
+                if a in REGIONAL_STOP or a in KYIV_VILLAGE_STOP or len(a.replace(" ", "")) < 4:
+                    continue
+                for st in _reg_stems(a):
+                    lst = idx.setdefault(st, [])
+                    if (key, a) not in lst:
+                        lst.append((key, a))
+
+
 _load_regional()
 _load_raions()
 _load_extra()
+_load_kyiv_villages()

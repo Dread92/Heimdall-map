@@ -124,8 +124,9 @@ def test_somkova_dolyna_is_not_dolyna():
     tg.ingest("kyiv_airdef", [("kyiv_airdef/913", ago(2), text)], "tg:k")
     _read_ai(st, "kyiv_airdef/913", text, [_t(kind="shahed", place="Сомкова Долина", place_quote="біля Сомкової Долини",
                                               relation="near", altitude_m=800, altitude_quote="800")], 2, 1)
-    assert geo.parse_for_channel("kyiv_airdef", text)[0]["place"] == "Долина"      # Dolyna, 500 km off: out of the map
-    assert "kyiv_airdef/913#ai0" not in _marks(st)
+    # 1.54.7: the villages of Kyiv oblast are the rules' too — the village, not Dolyna 500 km off
+    assert geo.parse_for_channel("kyiv_airdef", text)[0]["place"] == "Сомкова Долина"
+    assert "kyiv_airdef/913#ai0" not in _marks(st) and "kyiv_airdef/913#0" in _marks(st)
 
 def test_two_tracks_never_share_a_report_or_a_tag():
     st, tg = _state()

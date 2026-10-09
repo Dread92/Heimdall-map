@@ -130,6 +130,8 @@ def test_a_bare_place_with_no_mark_stays_an_honest_unknown():
 
 
 def test_a_place_the_gazetteer_does_not_know_is_left_out_not_guessed():
-    """Мархалівка has no coordinates here. Placing it anywhere would be a position nobody reported."""
-    got = _read("1х Коцюбинське\n1х Мархалівка")
+    """Мархалівкове has no coordinates here. Placing it anywhere would be a position nobody reported. (1.54.7: Мархалівка,
+    a village of Kyiv oblast, is known now.)"""
+    got = _read("1х Коцюбинське\n1х Мархалівкове")
     assert [g[1] for g in got] == ["Коцюбинське"]
+    assert [g[1] for g in _read("1х Коцюбинське\n1х Мархалівка")] == ["Коцюбинське", "Мархалівка"]

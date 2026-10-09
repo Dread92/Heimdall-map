@@ -2,6 +2,34 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.54.7 — 2026-10-10
+
+### Fixed
+- **The villages of Kyiv oblast are on the map again** — the owner: "critical data, and it was not displayed".
+  @chyste_nebo, 01:21: "Кулажинці", a drone at 400–500 m north-east of Brovary, drew nothing. The ~825 villages of
+  Kyiv oblast the gazetteer lacks were the AI reader's alone (1.52), and since 1.54 the AI reads no post. The rules
+  read them now, in a Kyiv tracker's posts and in posts about Kyiv oblast (everyday words like "Озеро", "Ферма" kept
+  out).
+- **"лук'янівка" was the village, not the Kyiv district** — "that's another Lukyanivka, not a district but a village".
+  A Kyiv district and villages of its name are now candidates: the district by default, the village when the channel's
+  report before or after is next to it — "Кулажинці", nine minutes later, 14 km from the village and 52 km from the
+  district, moves the mark there.
+- **A height alone ("500", "400")** is the height of the target the channel reported last (within 15 minutes) — it was
+  dropped.
+- **Glitched satellite tiles on one reader's phone** — a tile the server could not read at that moment was answered with
+  a "missing" the browser kept for a day; it is now a short failure nobody keeps, the page asks a missing tile again
+  (2, 8, 30 s), the phone's kept tiles are refreshed once, and a browser's "dark theme for sites" can no longer
+  recolour the page.
+
+### Changed
+- **The physical check** — the owner's idea: "if attaching a new report to a target implies 1,000 km/h, reject the
+  match". Two reports are one target only at a speed it can fly: 350 km/h for a Shahed (185 by its specification),
+  650 for a jet drone and the Banderol (550–650), plus 8 km for two named places — still never past 80 / 120 km. The
+  same check decides between places that share a name, and leaves out a line on the card.
+- **The replay says it is loading** — "an obvious loading spinner, people think the feature does not work": a spinner
+  over the map and in the bar, with "the night is being read again from its posts — up to half a minute the first
+  time", while the controls wait greyed out.
+
 ## 1.54.6 — 2026-10-09
 
 ### Changed

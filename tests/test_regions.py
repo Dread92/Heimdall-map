@@ -117,8 +117,10 @@ def test_a_chernihiv_line_with_two_reports_is_two_jet_drones_on_their_routes():
 
 
 def test_a_village_is_read_only_in_its_own_oblast():
-    # Іванівка is dozens of villages; from Kyiv it is nothing at all
-    assert _marks("kyiv_airdef", "Іванівка") == []
+    # Іванівка is dozens of villages; from Kyiv it is one of Kyiv oblast's two (1.54.7), placed only next to the channel's
+    # previous report — never one of the others
+    (m,) = _marks("kyiv_airdef", "Іванівка")
+    assert m["ambiguous"] and {c[3] for c in m["candidates"]} == {"14"} and len(m["candidates"]) == 2
     # Дмитрівка from the Chernihiv tracker is in Chernihiv oblast — never the one near Kyiv, 200 km away
     m = _marks("chernihiv_nebo", "Новий реактивний з Сумщини на Дмитрівку.")[0]
     assert m["oblast_uid"] == "25" and m["target"].startswith("Дмитрівка (") and m["lon"] > 32.5

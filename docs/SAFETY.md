@@ -121,7 +121,9 @@ apart gets no course drawn to it. "In the area of A - B" is an area, never a rou
 
 ## Two channels' reports are one target only when they could be (1.43.1)
 
-A report continues another channel's track only within 15 minutes and at a speed a drone can fly; a report that
+A report continues another channel's track only within 15 minutes and at a speed a drone can fly (1.54.7: the owner's
+physical check — 350 km/h for a Shahed, 650 for a jet drone, with 8 km for the places; a match that needs more is two
+targets, and a village sharing a name with a Kyiv district is never chosen if the drone could not have reached it); a report that
 names only the oblast never replaces one that named a place, and a destination is never handed to it. Joining two
 targets into one hides one of them — on 7 October the Kyiv channels' place names were taking over every Odesa and
 Chernihiv report within 475 km, and those oblasts' targets were not drawn at all. A drone or aircraft the post calls

@@ -383,12 +383,12 @@ def test_a_drone_track_is_never_continued_past_a_drones_reach():
     jet = server.State._chain([_m("c/1#0", 10, "Чернігів", type="drones", jet=True), _m("c/2#0", 2, "Козелець", type="drones", jet=True)])
     shahed = server.State._chain([_m("d/1#0", 10, "Чернігів", type="drones"), _m("d/2#0", 2, "Козелець", type="drones")])
     assert jet[0]["superseded_by"] == "c/2#0" and not shahed[0]["superseded_by"]
-    assert "lim = min(9.0 * dt + 15, 120) if jet else min(3.5 * dt + 15, 80)" in SRC
+    assert "lim = reach_km(max(dt, (t1 - tp).total_seconds() / 60), jet, cap=fam(m) != \"banderol\")" in SRC   # 1.54.7
 
 
 def test_the_tapped_path_leaves_out_a_line_a_drone_could_not_have_flown():
     fn = PAGE[PAGE.index("function drawSelPath(){"):PAGE.index("// 1.53: the map alone, on the whole screen")]
-    assert "return d>(jet?120:80)||d>(jet?9:3.5)*dt+15; };" in fn and "dr=m.type==='drones'||m.type==='unknown'" in fn
+    assert "return d>(jet?120:80)||d>(jet?650:350)/60*dt+8; };" in fn and "dr=m.type==='drones'||m.type==='unknown'" in fn
     assert "out.filter(r=>r.length>1)" in fn and "runs(pts.slice(Math.max(k,0)),'selp')" in fn
     assert "a drone's reach" in DOC
 

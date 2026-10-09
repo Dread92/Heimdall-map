@@ -10,7 +10,8 @@ const CACHE = 'heimdall-shell-3';
 // the map opens with its picture at once and with no network; the ones of Kyiv and around are fetched ahead once per
 // version (the page asks, see warmTiles). Esri's closer tiles are not kept here: the browser's own cache keeps them
 // for as long as Esri's answer allows.
-const TILES = 'heimdall-tiles-1';
+// 1.54.7: emptied once (-2): a tile kept wrong on a phone is fetched again
+const TILES = 'heimdall-tiles-2';
 const TILES_MAX = 5000;
 // the map's drawing (borders, towns, districts): answered from here at once, then refreshed for the next opening
 const FAST = ['/static/kyiv-map.json', '/static/map-ua.json', '/static/ukraine-map.json', '/static/light-map.json', '/static/kyiv-districts.json', '/static/towns-ua.json'];
@@ -32,7 +33,7 @@ async function tile(req) {
   const hit = await c.match(req);
   if (hit) return hit;
   const r = await fetch(req);
-  if (r.ok) { c.put(req, r.clone()).then(trimSoon).catch(() => {}); }
+  if (r.ok && /^image\//.test(r.headers.get('content-type') || '')) { c.put(req, r.clone()).then(trimSoon).catch(() => {}); }   // a picture, nothing else
   return r;
 }
 let trimT = null;
@@ -65,7 +66,7 @@ self.addEventListener('message', e => {
   if (e.data && Array.isArray(e.data.warm)) e.waitUntil((async () => {
     const c = await caches.open(TILES), list = e.data.warm.filter(u => typeof u === 'string' && u.startsWith('/tiles/sat/')).slice(0, 800);
     for (let i = 0; i < list.length; i += 4) await Promise.all(list.slice(i, i + 4).map(async u => {
-      try { if (!(await c.match(u))) { const r = await fetch(u); if (r.ok) await c.put(u, r); } } catch (_) {} }));
+      try { if (!(await c.match(u))) { const r = await fetch(u); if (r.ok && /^image\//.test(r.headers.get('content-type') || '')) await c.put(u, r); } } catch (_) {} }));
     trimSoon();
   })());
 });

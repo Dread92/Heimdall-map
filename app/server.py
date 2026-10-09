@@ -2161,6 +2161,23 @@ class TargetTags:
             log("target tags: not written:", e)
 
 
+
+# 1.54.7, the owner: "a basic physical check — if attaching a new report to a target implies a speed of 1,000 km/h, reject
+# the match. Take the technical spec of the Shahed with a propeller, the jet Shahed and the Banderol." The Shahed-136 flies
+# at about 185 km/h, the jet Geran-3 at 550–600, the Banderol at about 500 (650 at most): the limits are the owner's,
+# 350 and 650 km/h — the specification with room for a tailwind and for places named a few km from where the target was.
+VMAX_KMH = {False: 350, True: 650}         # jet?
+POS_TOL_KM = 8.0                           # two named places, each a few km from where the target really was
+REACH_CAP_KM = {False: 80, True: 120}      # 1.54.4: never past this between two reports, however long between them
+
+
+def reach_km(dt_min, jet=False, cap=True):
+    """How far apart two reports of one drone can be, `dt_min` minutes apart: its top speed over the time, the places'
+    imprecision, and never past the cap (a Banderol has none: it flies a missile's distances). A match that needs more
+    is two targets (State._chain, the shared names)."""
+    r = VMAX_KMH[bool(jet)] / 60.0 * max(0.0, dt_min) + POS_TOL_KM
+    return min(r, REACH_CAP_KM[bool(jet)]) if cap else r
+
 class State:
     """In-memory current picture + SSE fan-out."""
 
@@ -2661,6 +2678,23 @@ class State:
                     return key
         return None
 
+    @staticmethod
+    def _reports_ahead(posts, cache):
+        """1.54.7: channel → [(time, lon, lat)] of the posts already read that placed a target at one place — no shared
+        name, no carried position, no outcome, no destination alone. Only the cache: a post is read in order on this
+        pass, and the next pass (seconds later) has it."""
+        out = {}
+        for p in posts:
+            ms = cache.get(p["post_id"])
+            if not ms:
+                continue
+            m = next((x for x in ms if x.get("lon") is not None and not x.get("candidates") and not x.get("needs_context")
+                      and not x.get("status") and not x.get("dest_only")), None)
+            t = parse_iso(p["ts"]) if m else None
+            if t:
+                out.setdefault(p["channel"], []).append((t, m["lon"], m["lat"]))
+        return out
+
     def _marks_from_posts(self, posts, kyiv_ends, cache, evidence=True):
         """Posts (oldest first) → the marks they place, each read in the context of the channel's previous post.
         The live map (markers) and the replay (1.42) read posts through this one function, so a replayed night is
@@ -2677,6 +2711,7 @@ class State:
         # place, and the reports after it ("Пролітають …", "Впали") name no weapon
         weapon_by_channel = {}
         near_by_channel = {}     # 1.45: the oblasts each channel named (or reported in) lately — geo's `near`
+        ahead = None             # 1.54.7: each channel's placed reports, for a shared name's next report (_reports_ahead)
         for p in posts:
             pts = parse_iso(p["ts"])
             ms = cache.get(p["post_id"])
@@ -2710,11 +2745,27 @@ class State:
                     # 1.43: a name several villages of the oblast share ("Ивановка", "Троицкое"). The one within 60 km of
                     # this channel's report of the last half hour is the one it means; with no such report, the clear
                     # default the parser chose (raion centre, city district, by far the largest) — or nothing at all.
+                    # 1.54.7: and the channel's next report, when it came within 15 minutes — "лук'янівка" (@chyste_nebo,
+                    # 01:12) then "Кулажинці" (01:21): the village 14 km from Kulazhyntsi, not the Kyiv district 52 km away.
+                    # Recomputed on every pass, so a mark moves to the right village once the next report is in.
+                    # And the physical check (reach_km): a candidate the target could not have reached from the report
+                    # before, or flown from to the report after, in the minutes between, is not it.
                     pick = None
+                    near_pts = []          # ((lon, lat), minutes between)
                     if ctx and pts and (pts - ctx[0]).total_seconds() <= 30 * 60:
-                        here = (ctx[1]["lon"], ctx[1]["lat"])
-                        best = min(m["candidates"], key=lambda c: geo._km((c[1], c[2]), here))
-                        if geo._km((best[1], best[2]), here) <= geo._REG_KM:
+                        near_pts.append(((ctx[1]["lon"], ctx[1]["lat"]), (pts - ctx[0]).total_seconds() / 60))
+                    if pts:
+                        if ahead is None:
+                            ahead = self._reports_ahead(posts, cache)
+                        nxt = next(((lo, la, (t_ - pts).total_seconds() / 60) for t_, lo, la in ahead.get(p["channel"], ())
+                                    if 0 < (t_ - pts).total_seconds() <= 15 * 60), None)
+                        if nxt:
+                            near_pts.append(((nxt[0], nxt[1]), nxt[2]))
+                    jet = bool(m.get("jet") or (ctx and ctx[1].get("jet")))
+                    feas = [c for c in m["candidates"] if all(geo._km((c[1], c[2]), h) <= reach_km(dtm, jet) for h, dtm in near_pts)]
+                    if near_pts and feas:
+                        best = min(feas, key=lambda c: sum(geo._km((c[1], c[2]), h) for h, _ in near_pts))
+                        if min(geo._km((best[1], best[2]), h) for h, _ in near_pts) <= geo._REG_KM:
                             pick = best
                     if pick is None and m.get("ambiguous"):
                         continue
@@ -2734,7 +2785,20 @@ class State:
                         m["evidence"] = ev
                     m.pop("candidates", None)
                     m.pop("ambiguous", None)
-                if m.get("needs_context"):
+                if m.get("height_only"):
+                    # 1.54.7: "500" — the height of the target this channel reported last (within 15 minutes: a tracker
+                    # gives the height of the one it follows), at that report's place and time, of its kind
+                    if not (ctx and pts and (pts - ctx[0]).total_seconds() <= 15 * 60 and not ctx[1].get("status")):
+                        continue
+                    c1 = ctx[1]
+                    m.update(lon=c1["lon"], lat=c1["lat"], place=c1["place"], oblast_uid=c1.get("oblast_uid"), pos_ts=ctx[2],
+                             type=c1.get("type") or "unknown", jet=bool(c1.get("jet")), likely=c1.get("likely"))
+                    m.pop("needs_context", None)
+                    ev = dict(m.get("evidence") or {})
+                    ev["position"] = dict(ev.get("position") or {}, matched=c1.get("place"), place=c1.get("place"))
+                    ev["type"] = dict(c1.get("evidence", {}).get("type") or ev.get("type") or {})
+                    m["evidence"] = ev
+                elif m.get("needs_context"):
                     if ctx and pts and (pts - ctx[0]).total_seconds() <= 8 * 60:
                         m.update(lon=ctx[1]["lon"], lat=ctx[1]["lat"], place=ctx[1]["place"], oblast_uid=ctx[1].get("oblast_uid"), pos_ts=ctx[2])
                         wpn = weapon_by_channel.get(p["channel"])
@@ -4317,14 +4381,20 @@ class State:
                 # 1.54.4, the owner: "this line is probably wrong — not 100 % sure, but no wild assumption when the gap
                 # between two points is so huge": #157, "Сквира" 00:29 and "Велика Димерка" 00:53 (@kyiv_airdef, type not
                 # stated), one track 150 km across Kyiv in 24 minutes — 7 km a minute was allowed to a drone, 15 to an
-                # unstated type. A drone continues a track only as far as a drone flies between two reports: a Shahed
-                # 3.5 km a minute (210 km/h: its speed and a tailwind) and never past 80 km; a jet drone 9 km a minute,
-                # never past 120 km. A bare place name from a channel that tracks drones (`likely`) is a drone.
+                # unstated type. A drone continues a track only as far as a drone flies between two reports, never past
+                # 80 km; a jet drone never past 120 km. A bare place name from a channel that tracks drones (`likely`) is a
+                # drone.
+                # 1.54.7, the owner: "a basic physical check — if attaching a new report to a target implies 1,000 km/h, the
+                # match is rejected": the reach is the kind's top speed (VMAX_KMH) over the time between the two reports,
+                # plus the few km a named place is off (POS_TOL_KM) — and still never past 80 km (120 for a jet). A Banderol
+                # is a jet drone here too.
                 drone = fam(m) == "drone" or (fam(m) == "unknown" and (not same or m.get("likely") == "drones" or pm.get("likely") == "drones"))
                 d = km(pm, m)
-                if drone:
-                    jet = bool(m.get("jet") or pm.get("jet"))
-                    lim = min(9.0 * dt + 15, 120) if jet else min(3.5 * dt + 15, 80)
+                if drone or fam(m) == "banderol":
+                    jet = fam(m) == "banderol" or bool(m.get("jet") or pm.get("jet"))
+                    # from when the earlier report's POSITION was reported: "500" carries the place of 9 minutes before
+                    tp = parse_iso(pm.get("pos_ts") or "") or parse_iso(pm["ts"])
+                    lim = reach_km(max(dt, (t1 - tp).total_seconds() / 60), jet, cap=fam(m) != "banderol")
                 else:
                     lim = 15.0 * dt + 25
                 # an approach mark stands at the town the target is heading to, not where it is: it may be further
@@ -4553,18 +4623,24 @@ class SatTiles:
         return re.sub(r"[^\w.-]", "", str(m.get("version") or ""))[:12] or "1", z
 
     def tile(self, z, x, y):
+        return self.lookup(z, x, y)[1]
+
+    def lookup(self, z, x, y):
+        """1.54.7: (found, data) — `found` False when there is no such tile (a 404 the browser may keep), None when the
+        file could not be read just then (a new file going in, a busy volume: a 503 nobody keeps). In 1.47–1.54.6 both
+        were the same 404, kept a day by the browser: a tile asked for at the wrong moment stayed missing for a day."""
         if not (0 <= z <= 20 and 0 <= x < (1 << z) and 0 <= y < (1 << z)):
-            return None
+            return False, None
         with self.lock:
             c = self._db()
             if not c:
-                return None
+                return None, None
             try:
                 row = c.execute("SELECT tile_data FROM tiles WHERE zoom_level=? AND tile_column=? AND tile_row=?",
                                 (z, x, (1 << z) - 1 - y)).fetchone()
             except sqlite3.Error:
-                return None
-        return row[0] if row else None
+                return None, None
+        return (True, row[0]) if row else (False, None)
 
 
 SAT = SatTiles(SAT_PATH)
@@ -7381,10 +7457,10 @@ class Handler(BaseHTTPRequestHandler):
         """1.47: one tile of the satellite layer. The tiles never change under the same address (the page asks for
         them with the layer's version), so the browser keeps them a year and never asks again."""
         m = self._SAT_RX.fullmatch(path)
-        data = SAT.tile(*map(int, m.groups())) if m else None
+        found, data = SAT.lookup(*map(int, m.groups())) if m else (False, None)
         if data is None:
-            self.send_response(404)
-            self.send_header("Cache-Control", "public, max-age=86400")
+            self.send_response(404 if found is False else 503)
+            self.send_header("Cache-Control", "public, max-age=86400" if found is False else "no-store")
             self.send_header("Content-Length", "0")
             self.end_headers()
             return

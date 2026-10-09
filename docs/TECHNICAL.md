@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.54** · last updated 2026-10-09 (1.54.6)
+**Documented version: 1.54** · last updated 2026-10-10 (1.54.7)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -139,7 +139,7 @@ clear-sky/
 ├── data/
 │   ├── ua_regions.json     official region id → oblast / parent raion / map shape (built)
 │   ├── regional_places.json the villages and city districts of the oblasts with a tracker (GeoNames, built, 1.43)
-│   ├── extra_places.json   the villages of Kyiv oblast, offered to the AI reader alone — never read by the rules (built, 1.52)
+│   ├── extra_places.json   the villages of Kyiv oblast (built, 1.52; read by the rules too since 1.54.7)
 │   └── corpus.jsonl        regression corpus of real posts and their expected readings
 ├── scripts/
 │   ├── build_geo.py        rebuilds data/ua_regions.json and static/light-map.json (`--light`: the Light maps only)
@@ -678,6 +678,22 @@ rules read (`ru_to_uk`, `_RU_MAP`: the weapons, the outcomes, the prepositions, 
 (Харьков, Днепр, Чернигов … in `ALT`; the villages' in the regional file). The tagger reads the same Ukrainian
 reading (`tag_feed_text`); the stored and shown text is never changed.
 
+**Kyiv oblast's villages for the rules (1.54.7).** `data/extra_places.json` (1.52) was the AI reader's alone, and since
+1.54 the AI reads no post: "Кулажинці" (@chyste_nebo, 10 Oct, 01:21, a drone at 400–500 m north-east of Brovary) drew
+nothing. `_load_kyiv_villages()` puts the ~825 villages the core gazetteer does not have into the regional index of
+oblast "14" (`REGIONAL`, `_REG_IDX["14"]`, kind P, raion as the key's suffix when two share a name), with
+`KYIV_VILLAGE_STOP` for the ones that are everyday words ("Озеро", "Ферма", "Селище", "Кулі" …). They are read like any
+regional channel's villages — in a Kyiv tracker's post (`_find_places(text, "31")` reads oblast 14's villages with the
+city's: the one place of a name no town of the gazetteer has, or the candidates when several share it) and in a post
+about Kyiv oblast — never in a long sentence from elsewhere. **A district of Kyiv and villages with its name** —
+"лук'янівка" (01:12) was the village east of Brovary, not Lukyanivka in Kyiv — are candidates with the district as the
+default (`_ambig_token`); the server takes the one next to the channel's report before (≤ 30 min) **and its report
+after** (≤ 15 min, `State._reports_ahead`: the posts already read on this pass), the sum of the two distances, among
+the candidates the target could have reached (`reach_km`, §7.4) — recomputed every pass, so the mark moves to the
+village once "Кулажинці" is in. **A height alone** ("500", "400 м", "Увага 500", `geo._height_only`) is the height of
+the target the channel reported last, within 15 minutes, at that report's place and time and of its kind
+(`height_only`: carried by `_marks_from_posts` like an outcome line) — never a place of its own.
+
 ### 7.4 Scope, chaining, staleness
 
 `State.markers()`:
@@ -711,6 +727,14 @@ reading (`tag_feed_text`); the stored and shown text is never changed.
    that tracks drones (`likely`) or another channel's; other unstated types and missiles keep `15 × dt + 25`. The
    tapped target's red dots (§7.8) leave out the line between two reports a drone could not have flown between, by the
    same measure — the dots stay (`drawSelPath`, `cut`).
+   **1.54.7, the physical check** (the owner: "if attaching a new report to a target implies 1,000 km/h, reject the
+   match — take the technical spec of the Shahed, the jet Shahed and the Banderol"): `reach_km(dt, jet)` =
+   `VMAX_KMH` (350 km/h for a Shahed — 185 by its specification; 650 for a jet drone — the Geran-3 550–600, the Banderol
+   about 500, 650 at most) × the minutes between the two reports + `POS_TOL_KM` = 8 km (two named places, each a few km
+   from where the target was), never past `REACH_CAP_KM` (80 / 120 km; a Banderol has no cap). The minutes count from
+   when the earlier report's **position** was reported (`pos_ts`: "500" carries a place nine minutes old). A Banderol
+   is a jet drone here too (it had a missile's `15 × dt + 25`). The same reach decides between places that share a name
+   (§7.3b) and leaves out a line on the card (`cut`: `d>(jet?650:350)/60*dt+8`).
    **1.43.1, the regional clock**: a report from a channel with a regional home (`geo.CHANNEL_HOME`) is `stale` after
    `REGIONAL_STALE_MIN` = 10 min and dropped after `REGIONAL_GONE_MIN` = 25 (an unknown after 10) — the trackers
    post every five to twenty minutes; it carries `slow: true`, and the map fades it on the same clock (grey at 10,
@@ -1345,7 +1369,13 @@ and the deepest zoom are the **file's own** (its `metadata`: `version`, `maxzoom
 `state.config.sat_v`, `sat_z`), not numbers in the page — a page that asked for zoom 13 or version 2 before the new
 file was on the volume would have kept the old pictures under the new address for a year. The page offers the
 layer only when the server has the file (`state.config.sat`); a new file put in place is read within ten seconds,
-no restart. With the layer drawn the map is "tiled" like under the OSM streets (outlines over the picture, our own
+no restart. **1.54.7**: a tile that could not be read just then (the file going in, a busy volume — `SatTiles.lookup`
+→ `(None, None)`) is a `503 no-store`; only a tile the file does not have is the 404 the browser keeps a day — in
+1.47–1.54.6 both were that 404, and a tile asked for at the wrong moment stayed missing for a day. The page asks a
+satellite tile that did not come again after 2, 8 and 30 s (`tileDone`, `&r=n` — an address no kept failure answers);
+the service worker keeps only an answer that is a picture, and its store was emptied once (`heimdall-tiles-2`, the
+warm-up flag `satwarm2`) after a reader's map showed pale squares; the page says `color-scheme: only light`, so a
+browser's "dark theme for sites" never recolours it or its tiles. With the layer drawn the map is "tiled" like under the OSM streets (outlines over the picture, our own
 roads and rivers hidden). Darkened by mode (`#sat`
 filter: standard, day, night). Why this source and not a commercial one: a paid product cannot use the
 non-commercial tiers, and the commercial imagery services (Esri, Mapbox, Google) bill per tile and forbid keeping
@@ -1668,7 +1698,10 @@ in Layers) opens a bar at the foot of the map with the window (the last 24 h, or
 official alert, a slider, −10′ / ▶ / +10′ and the speed (2, 10 or 30 minutes of replay per second). Keys: space,
 ← / → (a minute), Esc. It starts ten minutes before the attack (the first ten minutes with at least a quarter of the
 busiest ten minutes' reports). `/m#replay` opens it at once (for a presentation). `static/replay.js` is downloaded only when it
-is opened.
+is opened. **1.54.7** (the owner: "an obvious loading spinner — people think the feature simply does not work"): while a
+window loads (up to half a minute the first time), a spinner turns over the map with the words (`#rpwait`,
+`role=status`, "the night is being read again from its posts") and in the bar, the slider shimmers and the controls
+wait greyed out (`#rpbar.loading`, `waiting()`).
 
 - **The alerts**: `GET /api/replay` rebuilds them as intervals from the start / end **events** (§13) — the `alerts`
   table cannot answer "what was on at 02:14": it keeps one row per region and alert type, and a region's second alert

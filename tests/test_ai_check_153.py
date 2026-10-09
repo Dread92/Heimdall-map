@@ -310,7 +310,7 @@ def test_a_short_card_and_a_map_that_opens_at_once():
     # the satellite tiles cache-first, the map's drawing at once then refreshed; the data never
     assert "if (u.pathname.startsWith('/tiles/sat/')) { e.respondWith(tile(e.request)" in sw and "const TILES_MAX = 5000;" in sw
     assert "/api/" not in sw.split("const FAST")[1].split("self.addEventListener('push'")[0].replace("(/api/…)", "")
-    assert "sw.postMessage({warm:urls}); localStorage.setItem('satwarm',SAT_V);" in page and "c.saveData" in page
+    assert "sw.postMessage({warm:urls}); localStorage.setItem('satwarm2',SAT_V);" in page and "c.saveData" in page
 
 
 # ---- 1.53.1 ----------------------------------------------------------------------------------------------------------
@@ -360,7 +360,8 @@ def test_a_finding_is_flat_and_short():
 
 def test_the_rules_errors_the_first_checks_found():
     rd = lambda ch, t, near=None: [m["place"] for m in geo.parse_for_channel(ch, t, near)]   # noqa: E731
-    assert rd("chyste_nebo", "На Лозовик") == []                        # Lozovyk by Kyiv is not Lozova in Kharkiv oblast
+    assert rd("chyste_nebo", "На Лозовик") == ["→ Лозовик"]             # Lozovyk by Kyiv is not Lozova in Kharkiv oblast
+    assert geo.PLACES["Лозовик"][2] == "14"                              # 1.54.7: the Kyiv oblast village, now known
     assert rd("kyiv_airdef", "Шахед над Лозовою") == ["Лозова"] and rd("kyiv_airdef", "Шахед над Оболонню") == ["Оболонь"]
     assert rd("kyiv_airdef", "Ціль на Бориспіль") == ["→ Бориспіль"] and rd("kyiv_airdef", "Шахед над Броварами") == ["Бровари"]
     with mock.patch.dict(geo.CHANNEL_HOME, {"trevoga_kartaa_noviny": "10"}):
