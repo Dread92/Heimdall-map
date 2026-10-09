@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Heimdall (Kyiv Air Watch) — the full technical documentation, with a map of the system.">
-<meta name="heimdall-version" content="1.54.9">
-<meta name="heimdall-docs" content="880acd615781776f">
+<meta name="heimdall-version" content="1.55.0">
+<meta name="heimdall-docs" content="a6fb205e07de342f">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Heimdall Technical Manual</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -237,7 +237,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
 <header class="top">
   <div class="wrap">
     <a class="brand" href="#top"><b>Heimdall</b><span>Technical manual</span></a>
-    <span class="ver">1.54.9</span>
+    <span class="ver">1.55.0</span>
     <nav class="nav" aria-label="Sections">
       <a href="#map">Map</a><a href="#journeys">Journeys</a><a href="#rules">Rules</a><a href="#reference">Reference</a><a href="#safety">Safety</a>
     </nav>
@@ -256,7 +256,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
       <h1 class="title">How Heimdall works</h1>
       <p class="lead">An unofficial air-threat map for Kyiv and the oblasts around it. One Python process reads the official
       alert data and the channels that track drones and missiles, stores every post before it reads it, rebuilds the map
-      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.54.9, 10 October 2026:
+      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.55.0, 10 October 2026:
       the map first, then everything in full.</p>
     </div>
     <dl class="facts">
@@ -275,7 +275,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
       pass, what it serves and sends, and where that lands. Every box opens its section of the reference.</p>
       <figure class="map">
         <div class="scroll">
-<svg class="sysmap" viewBox="0 0 1240 890" role="img" aria-label="Heimdall's system map: official alerts, Telegram channels, weather, imagery and the AI model on the left; the threads that read them; the SQLite store; the reading the server rebuilds on every pass; the routes and pushes it serves; and the devices that use them.">
+<svg class="sysmap" viewBox="0 0 1240 890" role="img" aria-label="Heimdall's system map: official alerts, Telegram channels, weather, imagery and the AI model on the left; the threads that read them; the SQLite store; the reading the server rebuilds on every pass, and the direction patterns it builds every hour for the dashboard; the routes and pushes it serves; and the devices that use them.">
   <defs>
     <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="m-ah" d="M0 0 L10 5 L0 10 z"/></marker>
   </defs>
@@ -316,6 +316,9 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
     <path d="M380 650 V626 H520 V602" marker-end="url(#ah)"/>
     <path d="M885 698 H928" marker-end="url(#ah)"/>
     <path d="M1095 698 H1133" marker-end="url(#ah)"/>
+    <path d="M620 545 H663" marker-end="url(#ah)"/>
+    <path d="M885 568 H928" marker-end="url(#ah)"/>
+    <path d="M1095 568 H1133" marker-end="url(#ah)"/>
     <path d="M180 830 H928" marker-end="url(#ah)"/>
     <path d="M1095 830 H1133" marker-end="url(#ah)"/>
   </g>
@@ -336,6 +339,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
     <text x="206" y="701" text-anchor="middle">answers</text>
     <text x="450" y="619" text-anchor="middle">kept</text>
     <text x="907" y="691" text-anchor="middle">if true</text>
+    <text x="642" y="538" text-anchor="middle">hourly</text>
     <text x="555" y="823" text-anchor="middle">a file on the volume · Esri with the owner's key</text>
   </g>
 
@@ -440,6 +444,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
     <text class="m-mono" x="467" y="398">push_subs: 10 km cells</text>
     <text class="m-mono" x="467" y="416">kv · usage counters</text>
     <text class="m-mono" x="467" y="466">feed.text_en / text_fr</text>
+    <text class="m-mono" x="467" y="534">track_moves (kept)</text>
     <text class="m-mono" x="467" y="552">weather</text>
     <text class="m-mono" x="467" y="572">ai_bulletins (kept)</text>
     <text class="m-mono" x="467" y="588">ai_reports</text>
@@ -464,6 +469,13 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
     <a class="m-link m-step" href="#78-target-tags-151"><text class="m-sub" x="677" y="428"><tspan class="m-n">6</tspan> tags: #n for the night</text></a>
     <a class="m-link m-step" href="#13-storage"><text class="m-sub" x="677" y="456"><tspan class="m-n">7</tspan> log_markers: each mark</text><text class="m-sub" x="691" y="472">once, with its evidence</text></a>
   </g>
+  <a class="m-link" href="#712-the-direction-patterns-155-the-dashboard-only"><g>
+    <rect class="m-box" x="665" y="520" width="220" height="96" rx="6"/>
+    <text class="m-title" x="677" y="542">Direction patterns</text>
+    <text class="m-sub" x="677" y="562">target_points → track_moves</text>
+    <text class="m-sub" x="677" y="580">area by area, each % with</text>
+    <text class="m-sub" x="677" y="598">its range; not in the app</text>
+  </g></a>
   <a class="m-link" href="#711-the-bulletins-154"><g>
     <rect class="m-box" x="665" y="650" width="220" height="96" rx="6"/>
     <text class="m-title" x="677" y="672">The window's record</text>
@@ -495,6 +507,13 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
     <text class="m-sub" x="942" y="386">bridges · alert start / end</text>
     <text class="m-sub" x="942" y="404">VAPID, 32 workers</text>
   </g></a>
+  <a class="m-link" href="#712-the-direction-patterns-155-the-dashboard-only"><g>
+    <rect class="m-box" x="930" y="520" width="165" height="96" rx="6"/>
+    <text class="m-mono m-strong" x="942" y="544">/api/admin/</text>
+    <text class="m-mono m-strong" x="942" y="562">patterns 🔒</text>
+    <text class="m-sub" x="942" y="584">the dashboard only</text>
+    <text class="m-sub" x="942" y="602">moves as CSV</text>
+  </g></a>
   <a class="m-link" href="#711-the-bulletins-154"><g>
     <rect class="m-box" x="930" y="650" width="165" height="96" rx="6"/>
     <text class="m-mono m-strong" x="942" y="674">/api/bulletin</text>
@@ -515,6 +534,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
   <a class="m-link" href="#102-light-light"><text class="m-title" x="1146" y="146">Light</text><text class="m-mono" x="1146" y="162">/light</text></a>
   <a class="m-link" href="#105-the-guide-guide-135"><text class="m-title" x="1146" y="192">Guide</text><text class="m-mono" x="1146" y="208">/guide</text></a>
   <a class="m-link" href="#8c-the-dashboard-132-tabs-and-analytics"><text class="m-title" x="1146" y="238">Dashboard</text><text class="m-mono" x="1146" y="254">/admin 🔒</text></a>
+  <a class="m-link" href="#712-the-direction-patterns-155-the-dashboard-only"><text class="m-title" x="1146" y="562">Patterns</text><text class="m-sub" x="1146" y="580">dashboard</text><text class="m-sub" x="1146" y="596">tab 🔒</text></a>
   <a class="m-link" href="#9-notifications"><text class="m-title" x="1146" y="370">Phones</text><text class="m-sub" x="1146" y="388">push, by a</text><text class="m-sub" x="1146" y="404">~10 km cell</text></a>
   <a class="m-link" href="#711-the-bulletins-154"><text class="m-title" x="1146" y="694">Bulletin</text><text class="m-sub" x="1146" y="712">card in the</text><text class="m-sub" x="1146" y="728">Tactical page</text></a>
   <a class="m-link" href="#101-tactical-m"><text class="m-title" x="1146" y="826">Map layer</text><text class="m-sub" x="1146" y="844">kept on the</text><text class="m-sub" x="1146" y="860">phone a year</text></a>
@@ -599,8 +619,8 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
     <nav class="toc" aria-label="Contents">
       <details id="tocd" open>
         <summary>Contents</summary>
-<p class="grp">Part I · The reference</p><ul><li><a href="#1-what-it-is">1. What it is</a></li><li><a href="#2-principles-the-code-enforces">2. Principles the code enforces</a></li><li><a href="#3-system-overview">3. System overview</a></li><li><a href="#4-repository-layout">4. Repository layout</a></li><li><a href="#5-runtime-configuration-and-secrets">5. Runtime, configuration and secrets</a><ul><li><a href="#51-the-process">5.1 The process</a></li><li><a href="#54-the-live-line-129">5.4 The live line (1.29)</a></li><li><a href="#52-configuration-keys">5.2 Configuration keys</a></li><li><a href="#53-environment-variables">5.3 Environment variables</a></li><li><a href="#55-what-the-process-spends-its-cpu-on-146">5.5 What the process spends its CPU on (1.46)</a></li><li><a href="#56-zooming-the-map-149">5.6 Zooming the map (1.49)</a></li></ul></li><li><a href="#6-official-alert-data">6. Official alert data</a><ul><li><a href="#61-sources-and-precedence">6.1 Sources and precedence</a></li><li><a href="#62-the-official-levels">6.2 The official levels</a></li><li><a href="#63-the-normalised-alert">6.3 The normalised alert</a></li><li><a href="#64-from-an-official-id-to-a-place-on-the-map">6.4 From an official id to a place on the map</a></li><li><a href="#65-reconciliation">6.5 Reconciliation</a></li><li><a href="#66-what-decides-a-colour-page-by-page">6.6 What decides a colour, page by page</a></li></ul></li><li><a href="#7-the-telegram-feed-and-the-map-marks">7. The Telegram feed and the map marks</a><ul><li><a href="#71-the-channels">7.1 The channels</a></li><li><a href="#72-from-page-to-stored-post">7.2 From page to stored post</a></li><li><a href="#73-from-post-to-mark-geopy">7.3 From post to mark (geo.py)</a></li><li><a href="#73b-the-regional-trackers-their-villages-their-russian-143">7.3b The regional trackers: their villages, their Russian (1.43)</a></li><li><a href="#74-scope-chaining-staleness">7.4 Scope, chaining, staleness</a></li><li><a href="#76-the-carriers-take-offs-launches-stand-downs-133">7.6 The carriers: take-offs, launches, stand-downs (1.33)</a></li><li><a href="#75-the-air-forces-summaries-132">7.5 The Air Force&#x27;s summaries (1.32)</a></li><li><a href="#77-the-ai-reader-150-its-facts-in-the-target-tags-since-151-retired-from-the-map-in-154">7.7 The AI reader (1.50; its facts in the target tags since 1.51; retired from the map in 1.54)</a></li><li><a href="#78-target-tags-151">7.8 Target tags (1.51)</a></li><li><a href="#79-the-ai-readers-targets-on-the-map-152-gone-in-154">7.9 The AI reader&#x27;s targets on the map (1.52; gone in 1.54)</a></li><li><a href="#710-the-10-minute-check-153-stopped-in-154-and-the-nights-report">7.10 The 10-minute check (1.53; stopped in 1.54) and the night&#x27;s report</a></li><li><a href="#711-the-bulletins-154">7.11 The bulletins (1.54)</a></li></ul></li><li><a href="#8-translation">8. Translation</a></li><li><a href="#8b-nights-and-weeks-the-dashboards-record">8b. Nights and weeks (the dashboard&#x27;s record)</a></li><li><a href="#8c-the-dashboard-132-tabs-and-analytics">8c. The dashboard (1.32: tabs and Analytics)</a></li><li><a href="#9-notifications">9. Notifications</a></li><li><a href="#9b-the-kyiv-bridges-134">9b. The Kyiv bridges (1.34)</a></li><li><a href="#10-the-two-pages-tactical-and-light">10. The two pages: Tactical and Light</a><ul><li><a href="#101-tactical-m">10.1 Tactical (/m)</a></li><li><a href="#102-light-light">10.2 Light (/light)</a></li><li><a href="#103-the-switch">10.3 The switch</a></li><li><a href="#103e-the-map-first-on-a-phone-1421">10.3e The map first on a phone (1.42.1)</a></li><li><a href="#103d-daylight-and-night-142">10.3d Daylight and night (1.42)</a></li><li><a href="#103b-motion-140">10.3b Motion (1.40)</a></li><li><a href="#103c-the-replay-142">10.3c The replay (1.42)</a></li><li><a href="#104-languages">10.4 Languages</a></li><li><a href="#105-the-guide-guide-135">10.5 The guide (/guide, 1.35)</a></li></ul></li><li><a href="#11-privacy-and-security">11. Privacy and security</a></li><li><a href="#12-http-api">12. HTTP API</a></li><li><a href="#13-storage">13. Storage</a></li><li><a href="#14-testing-and-quality">14. Testing and quality</a></li><li><a href="#15-deployment-and-the-github-repository">15. Deployment and the GitHub repository</a><ul><li><a href="#when-the-app-goes-off">When the app &quot;goes off&quot;</a></li></ul></li><li><a href="#16-maintenance-recipes">16. Maintenance recipes</a></li><li><a href="#17-known-limitations-and-open-items">17. Known limitations and open items</a></li><li><a href="#18-the-patch-checklist">18. The patch checklist</a></li></ul>
-<p class="grp">Part II · The safety rules</p><ul><li><a href="#s-the-app-is-never-the-primary-warning">The app is never the primary warning</a></li><li><a href="#s-no-liberties-with-trajectories">No liberties with trajectories</a></li><li><a href="#s-stale-is-never-shown-as-active">Stale is never shown as active</a></li><li><a href="#s-a-missile-is-not-aged-like-a-drone">A missile is not aged like a drone</a></li><li><a href="#s-a-new-source-is-on-trial-until-a-person-trusts-it">A new source is on trial until a person trusts it</a></li><li><a href="#s-a-village-is-read-only-where-it-is-143">A village is read only where it is (1.43)</a></li><li><a href="#s-a-shared-text-says-what-the-post-said-and-nothing-about-who-shares-it-1549">A shared text says what the post said, and nothing about who shares it (1.54.9)</a></li><li><a href="#s-a-weapon-nobody-named-is-probably-a-drone--never-unknown-never-a-drone-1548">A weapon nobody named is &quot;probably a drone&quot; — never &quot;unknown&quot;, never &quot;a drone&quot; (1.54.8)</a></li><li><a href="#s-two-channels-reports-are-one-target-only-when-they-could-be-1431">Two channels&#x27; reports are one target only when they could be (1.43.1)</a></li><li><a href="#s-a-post-in-russian-says-the-same-thing-143">A post in Russian says the same thing (1.43)</a></li><li><a href="#s-a-regional-warning-is-for-that-oblast-143">A regional warning is for that oblast (1.43)</a></li><li><a href="#s-the-nuclear-event-cannot-be-switched-on-by-accident">The nuclear event cannot be switched on by accident</a></li><li><a href="#s-a-warning-is-only-raised-when-something-was-actually-reported">A warning is only raised when something was actually reported</a></li><li><a href="#s-alert-colours-must-match-the-official-app">Alert colours must match the official app</a></li><li><a href="#s-altitude-is-read-never-guessed">Altitude is read, never guessed</a></li><li><a href="#s-a-threat-type-is-never-invented">A threat type is never invented</a></li><li><a href="#s-a-fire-is-not-an-explosion-and-it-does-not-last-all-night">A fire is not an explosion, and it does not last all night</a></li><li><a href="#s-a-carrier-is-never-a-mark">A carrier is never a mark</a></li><li><a href="#s-a-reply-is-its-own-message">A reply is its own message</a></li><li><a href="#s-what-was-carried-is-as-old-as-where-it-came-from">What was carried is as old as where it came from</a></li><li><a href="#s-a-bridge-with-nothing-reported-is-not-a-safe-bridge">A bridge with nothing reported is not a safe bridge</a></li><li><a href="#s-the-card-says-what-is-known-about-your-place-and-nothing-more">The card says what is known about your place, and nothing more</a></li><li><a href="#s-the-heat-map-is-statistics-and-says-so">The heat map is statistics, and says so</a></li><li><a href="#s-a-ballistic-report-is-not-an-official-alert-and-a-retraction-ends-it">A ballistic report is not an official alert, and a retraction ends it</a></li><li><a href="#s-the-replay-is-the-past-and-looks-like-it">The replay is the past, and looks like it</a></li><li><a href="#s-the-guide-says-what-the-official-guidance-says">The guide says what the official guidance says</a></li><li><a href="#s-the-history-layer-never-buries-the-live-picture">The history layer never buries the live picture</a></li><li><a href="#s-what-was-destroyed-decides-what-it-means">What was destroyed decides what it means</a></li><li><a href="#s-a-press-release-is-not-an-observation-of-the-sky">A press release is not an observation of the sky</a></li><li><a href="#s-a-name-that-merely-starts-the-same-is-not-a-match">A name that merely starts the same is not a match</a></li><li><a href="#s-a-stated-part-of-an-oblast-is-not-the-oblast-centre">A stated part of an oblast is not the oblast centre</a></li><li><a href="#s-a-side-of-a-town-is-not-the-town-1451">A side of a town is not the town (1.45.1)</a></li><li><a href="#s-where-it-is-and-where-it-is-going-are-different-facts">Where it is, and where it is going, are different facts</a></li><li><a href="#s-a-glyph-points-where-the-post-said-or-it-does-not-point-at-all">A glyph points where the post said, or it does not point at all</a></li><li><a href="#s-a-heading-over-a-list-is-not-a-sighting">A heading over a list is not a sighting</a></li><li><a href="#s-the-weapon-belongs-to-the-line-that-names-it">The weapon belongs to the line that names it</a></li><li><a href="#s-a-tally-of-the-night-is-not-a-sky">A tally of the night is not a sky</a></li><li><a href="#s-one-weapon-one-symbol--and-it-never-turns">One weapon, one symbol — and it never turns</a></li><li><a href="#s-an-outcome-with-no-place-named-belongs-to-the-region-not-to-its-centre">An outcome with no place named belongs to the region, not to its centre</a></li><li><a href="#s-an-explosion-is-a-moment-not-a-state">An explosion is a moment, not a state</a></li><li><a href="#s-heading-to-your-village-is-a-thing-the-post-has-to-say">&quot;Heading to your village&quot; is a thing the post has to say</a></li><li><a href="#s-a-push-that-cannot-be-acted-on-costs-the-ones-that-can">A push that cannot be acted on costs the ones that can</a></li><li><a href="#s-the-one-row-that-could-say-where-somebody-sleeps">The one row that could say where somebody sleeps</a></li><li><a href="#s-what-the-app-said-is-kept-not-just-what-it-was-told">What the app said is kept, not just what it was told</a></li><li><a href="#s-high-confidence-says-how-sharply-it-was-read-not-that-it-is-true">&quot;High confidence&quot; says how sharply it was read, not that it is true</a></li><li><a href="#s-nothing-is-drawn-where-the-source-said-it-is-clear">Nothing is drawn where the source said it is clear</a></li><li><a href="#s-overlapping-explosions-are-grouped-never-stacked">Overlapping explosions are grouped, never stacked</a></li><li><a href="#s-every-number-is-traceable">Every number is traceable</a></li><li><a href="#s-the-ai-writes-bulletins-and-puts-nothing-on-the-map-154">The AI writes bulletins, and puts nothing on the map (1.54)</a></li><li><a href="#s-a-language-model-is-a-second-opinion-never-a-source-150">A language model is a second opinion, never a source (1.50)</a></li><li><a href="#s-a-target-only-the-ai-reader-found-152">A target only the AI reader found (1.52)</a></li><li><a href="#s-the-ai-reads-every-10-minutes-and-writes-up-the-night-153">The AI reads every 10 minutes and writes up the night (1.53)</a></li><li><a href="#s-a-targets-tag-is-a-number-not-a-designation-151">A target&#x27;s tag is a number, not a designation (1.51)</a></li><li><a href="#s-operational-security">Operational security</a></li><li><a href="#s-when-in-doubt">When in doubt</a></li></ul>
+<p class="grp">Part I · The reference</p><ul><li><a href="#1-what-it-is">1. What it is</a></li><li><a href="#2-principles-the-code-enforces">2. Principles the code enforces</a></li><li><a href="#3-system-overview">3. System overview</a></li><li><a href="#4-repository-layout">4. Repository layout</a></li><li><a href="#5-runtime-configuration-and-secrets">5. Runtime, configuration and secrets</a><ul><li><a href="#51-the-process">5.1 The process</a></li><li><a href="#54-the-live-line-129">5.4 The live line (1.29)</a></li><li><a href="#52-configuration-keys">5.2 Configuration keys</a></li><li><a href="#53-environment-variables">5.3 Environment variables</a></li><li><a href="#55-what-the-process-spends-its-cpu-on-146">5.5 What the process spends its CPU on (1.46)</a></li><li><a href="#56-zooming-the-map-149">5.6 Zooming the map (1.49)</a></li></ul></li><li><a href="#6-official-alert-data">6. Official alert data</a><ul><li><a href="#61-sources-and-precedence">6.1 Sources and precedence</a></li><li><a href="#62-the-official-levels">6.2 The official levels</a></li><li><a href="#63-the-normalised-alert">6.3 The normalised alert</a></li><li><a href="#64-from-an-official-id-to-a-place-on-the-map">6.4 From an official id to a place on the map</a></li><li><a href="#65-reconciliation">6.5 Reconciliation</a></li><li><a href="#66-what-decides-a-colour-page-by-page">6.6 What decides a colour, page by page</a></li></ul></li><li><a href="#7-the-telegram-feed-and-the-map-marks">7. The Telegram feed and the map marks</a><ul><li><a href="#71-the-channels">7.1 The channels</a></li><li><a href="#72-from-page-to-stored-post">7.2 From page to stored post</a></li><li><a href="#73-from-post-to-mark-geopy">7.3 From post to mark (geo.py)</a></li><li><a href="#73b-the-regional-trackers-their-villages-their-russian-143">7.3b The regional trackers: their villages, their Russian (1.43)</a></li><li><a href="#74-scope-chaining-staleness">7.4 Scope, chaining, staleness</a></li><li><a href="#76-the-carriers-take-offs-launches-stand-downs-133">7.6 The carriers: take-offs, launches, stand-downs (1.33)</a></li><li><a href="#75-the-air-forces-summaries-132">7.5 The Air Force&#x27;s summaries (1.32)</a></li><li><a href="#77-the-ai-reader-150-its-facts-in-the-target-tags-since-151-retired-from-the-map-in-154">7.7 The AI reader (1.50; its facts in the target tags since 1.51; retired from the map in 1.54)</a></li><li><a href="#78-target-tags-151">7.8 Target tags (1.51)</a></li><li><a href="#79-the-ai-readers-targets-on-the-map-152-gone-in-154">7.9 The AI reader&#x27;s targets on the map (1.52; gone in 1.54)</a></li><li><a href="#710-the-10-minute-check-153-stopped-in-154-and-the-nights-report">7.10 The 10-minute check (1.53; stopped in 1.54) and the night&#x27;s report</a></li><li><a href="#711-the-bulletins-154">7.11 The bulletins (1.54)</a></li><li><a href="#712-the-direction-patterns-155-the-dashboard-only">7.12 The direction patterns (1.55; the dashboard only)</a></li></ul></li><li><a href="#8-translation">8. Translation</a></li><li><a href="#8b-nights-and-weeks-the-dashboards-record">8b. Nights and weeks (the dashboard&#x27;s record)</a></li><li><a href="#8c-the-dashboard-132-tabs-and-analytics">8c. The dashboard (1.32: tabs and Analytics)</a></li><li><a href="#9-notifications">9. Notifications</a></li><li><a href="#9b-the-kyiv-bridges-134">9b. The Kyiv bridges (1.34)</a></li><li><a href="#10-the-two-pages-tactical-and-light">10. The two pages: Tactical and Light</a><ul><li><a href="#101-tactical-m">10.1 Tactical (/m)</a></li><li><a href="#102-light-light">10.2 Light (/light)</a></li><li><a href="#103-the-switch">10.3 The switch</a></li><li><a href="#103e-the-map-first-on-a-phone-1421">10.3e The map first on a phone (1.42.1)</a></li><li><a href="#103d-daylight-and-night-142">10.3d Daylight and night (1.42)</a></li><li><a href="#103b-motion-140">10.3b Motion (1.40)</a></li><li><a href="#103c-the-replay-142">10.3c The replay (1.42)</a></li><li><a href="#104-languages">10.4 Languages</a></li><li><a href="#105-the-guide-guide-135">10.5 The guide (/guide, 1.35)</a></li></ul></li><li><a href="#11-privacy-and-security">11. Privacy and security</a></li><li><a href="#12-http-api">12. HTTP API</a></li><li><a href="#13-storage">13. Storage</a></li><li><a href="#14-testing-and-quality">14. Testing and quality</a></li><li><a href="#15-deployment-and-the-github-repository">15. Deployment and the GitHub repository</a><ul><li><a href="#when-the-app-goes-off">When the app &quot;goes off&quot;</a></li></ul></li><li><a href="#16-maintenance-recipes">16. Maintenance recipes</a></li><li><a href="#17-known-limitations-and-open-items">17. Known limitations and open items</a></li><li><a href="#18-the-patch-checklist">18. The patch checklist</a></li></ul>
+<p class="grp">Part II · The safety rules</p><ul><li><a href="#s-the-app-is-never-the-primary-warning">The app is never the primary warning</a></li><li><a href="#s-no-liberties-with-trajectories">No liberties with trajectories</a></li><li><a href="#s-stale-is-never-shown-as-active">Stale is never shown as active</a></li><li><a href="#s-a-missile-is-not-aged-like-a-drone">A missile is not aged like a drone</a></li><li><a href="#s-a-new-source-is-on-trial-until-a-person-trusts-it">A new source is on trial until a person trusts it</a></li><li><a href="#s-a-village-is-read-only-where-it-is-143">A village is read only where it is (1.43)</a></li><li><a href="#s-a-shared-text-says-what-the-post-said-and-nothing-about-who-shares-it-1549">A shared text says what the post said, and nothing about who shares it (1.54.9)</a></li><li><a href="#s-a-weapon-nobody-named-is-probably-a-drone--never-unknown-never-a-drone-1548">A weapon nobody named is &quot;probably a drone&quot; — never &quot;unknown&quot;, never &quot;a drone&quot; (1.54.8)</a></li><li><a href="#s-two-channels-reports-are-one-target-only-when-they-could-be-1431">Two channels&#x27; reports are one target only when they could be (1.43.1)</a></li><li><a href="#s-a-post-in-russian-says-the-same-thing-143">A post in Russian says the same thing (1.43)</a></li><li><a href="#s-a-regional-warning-is-for-that-oblast-143">A regional warning is for that oblast (1.43)</a></li><li><a href="#s-the-nuclear-event-cannot-be-switched-on-by-accident">The nuclear event cannot be switched on by accident</a></li><li><a href="#s-a-warning-is-only-raised-when-something-was-actually-reported">A warning is only raised when something was actually reported</a></li><li><a href="#s-alert-colours-must-match-the-official-app">Alert colours must match the official app</a></li><li><a href="#s-altitude-is-read-never-guessed">Altitude is read, never guessed</a></li><li><a href="#s-a-threat-type-is-never-invented">A threat type is never invented</a></li><li><a href="#s-a-fire-is-not-an-explosion-and-it-does-not-last-all-night">A fire is not an explosion, and it does not last all night</a></li><li><a href="#s-a-carrier-is-never-a-mark">A carrier is never a mark</a></li><li><a href="#s-a-reply-is-its-own-message">A reply is its own message</a></li><li><a href="#s-what-was-carried-is-as-old-as-where-it-came-from">What was carried is as old as where it came from</a></li><li><a href="#s-a-bridge-with-nothing-reported-is-not-a-safe-bridge">A bridge with nothing reported is not a safe bridge</a></li><li><a href="#s-the-card-says-what-is-known-about-your-place-and-nothing-more">The card says what is known about your place, and nothing more</a></li><li><a href="#s-the-heat-map-is-statistics-and-says-so">The heat map is statistics, and says so</a></li><li><a href="#s-a-ballistic-report-is-not-an-official-alert-and-a-retraction-ends-it">A ballistic report is not an official alert, and a retraction ends it</a></li><li><a href="#s-the-replay-is-the-past-and-looks-like-it">The replay is the past, and looks like it</a></li><li><a href="#s-the-guide-says-what-the-official-guidance-says">The guide says what the official guidance says</a></li><li><a href="#s-the-history-layer-never-buries-the-live-picture">The history layer never buries the live picture</a></li><li><a href="#s-what-was-destroyed-decides-what-it-means">What was destroyed decides what it means</a></li><li><a href="#s-a-press-release-is-not-an-observation-of-the-sky">A press release is not an observation of the sky</a></li><li><a href="#s-a-name-that-merely-starts-the-same-is-not-a-match">A name that merely starts the same is not a match</a></li><li><a href="#s-a-stated-part-of-an-oblast-is-not-the-oblast-centre">A stated part of an oblast is not the oblast centre</a></li><li><a href="#s-a-side-of-a-town-is-not-the-town-1451">A side of a town is not the town (1.45.1)</a></li><li><a href="#s-where-it-is-and-where-it-is-going-are-different-facts">Where it is, and where it is going, are different facts</a></li><li><a href="#s-a-glyph-points-where-the-post-said-or-it-does-not-point-at-all">A glyph points where the post said, or it does not point at all</a></li><li><a href="#s-a-heading-over-a-list-is-not-a-sighting">A heading over a list is not a sighting</a></li><li><a href="#s-the-weapon-belongs-to-the-line-that-names-it">The weapon belongs to the line that names it</a></li><li><a href="#s-a-tally-of-the-night-is-not-a-sky">A tally of the night is not a sky</a></li><li><a href="#s-one-weapon-one-symbol--and-it-never-turns">One weapon, one symbol — and it never turns</a></li><li><a href="#s-an-outcome-with-no-place-named-belongs-to-the-region-not-to-its-centre">An outcome with no place named belongs to the region, not to its centre</a></li><li><a href="#s-an-explosion-is-a-moment-not-a-state">An explosion is a moment, not a state</a></li><li><a href="#s-heading-to-your-village-is-a-thing-the-post-has-to-say">&quot;Heading to your village&quot; is a thing the post has to say</a></li><li><a href="#s-a-push-that-cannot-be-acted-on-costs-the-ones-that-can">A push that cannot be acted on costs the ones that can</a></li><li><a href="#s-the-one-row-that-could-say-where-somebody-sleeps">The one row that could say where somebody sleeps</a></li><li><a href="#s-what-the-app-said-is-kept-not-just-what-it-was-told">What the app said is kept, not just what it was told</a></li><li><a href="#s-high-confidence-says-how-sharply-it-was-read-not-that-it-is-true">&quot;High confidence&quot; says how sharply it was read, not that it is true</a></li><li><a href="#s-nothing-is-drawn-where-the-source-said-it-is-clear">Nothing is drawn where the source said it is clear</a></li><li><a href="#s-overlapping-explosions-are-grouped-never-stacked">Overlapping explosions are grouped, never stacked</a></li><li><a href="#s-every-number-is-traceable">Every number is traceable</a></li><li><a href="#s-the-ai-writes-bulletins-and-puts-nothing-on-the-map-154">The AI writes bulletins, and puts nothing on the map (1.54)</a></li><li><a href="#s-a-language-model-is-a-second-opinion-never-a-source-150">A language model is a second opinion, never a source (1.50)</a></li><li><a href="#s-a-target-only-the-ai-reader-found-152">A target only the AI reader found (1.52)</a></li><li><a href="#s-the-ai-reads-every-10-minutes-and-writes-up-the-night-153">The AI reads every 10 minutes and writes up the night (1.53)</a></li><li><a href="#s-a-targets-tag-is-a-number-not-a-designation-151">A target&#x27;s tag is a number, not a designation (1.51)</a></li><li><a href="#s-where-drones-usually-go-is-the-dashboards-not-a-readers-155">Where drones usually go is the dashboard&#x27;s, not a reader&#x27;s (1.55)</a></li><li><a href="#s-operational-security">Operational security</a></li><li><a href="#s-when-in-doubt">When in doubt</a></li></ul>
 <p class="grp">Appendix A</p><ul><li><a href="#deploy">Deployment</a></li></ul>
 <p class="grp">Appendix B</p><ul><li><a href="#i18n">Languages</a></li></ul>
 <p class="grp">Appendix C</p><ul><li><a href="#corpus">The regression corpus</a></li></ul>
@@ -610,7 +630,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
     <div class="doc" id="doc">
 <section class="part" id="tech" data-label="Reference"><p class="partlabel">Part I · The reference</p>
 <h1 id="heimdall--technical-documentation">Heimdall — technical documentation</h1>
-<p><strong>Documented version: 1.54</strong> · last updated 2026-10-10 (1.54.9)</p>
+<p><strong>Documented version: 1.55</strong> · last updated 2026-10-10 (1.55.0)</p>
 <p>Heimdall was called <strong>Clear Sky</strong> until 1.29; the repository, the Fly app (<code>kyiv-air-watch-gb</code>) and some
 internal names still carry the old name.</p>
 <p>This is the complete technical reference: what runs, where the data comes from, how a Telegram post becomes a
@@ -718,7 +738,7 @@ stores a ~10 km cell, never a village; the Light page works out the oblast and r
    1+ per oblast)                    │ ingest(): stored BEFORE it is read                      │
                                      ▼                                                        ▼
                                Store (SQLite on the Fly volume): feed, alerts, events, marker_log, outcomes,
-                               targets, target_points, af_reports, air_reports, weather, ai_bulletins, kv …
+                               targets, target_points, track_moves, af_reports, air_reports, weather, ai_bulletins, kv …
                                      │
                                      ▼
                      State.markers(), re-read on every pass:
@@ -728,7 +748,8 @@ stores a ~10 km cell, never a village; the Light page works out the oblast and r
                        → _tag_marks (#n for the night) → log_markers ──────────▶ /api/markers, /api/stream (SSE)
                                      │                                            /api/replay, /api/trail
                                      ├──▶ Pusher, proximity, bridges ──▶ Web Push ──▶ phones (~10 km cell only)
-                                     └──▶ activity_summary ──▶ bulletins (OpenRouter, 3 languages) ──▶ /api/bulletin
+                                     ├──▶ activity_summary ──▶ bulletins (OpenRouter, 3 languages) ──▶ /api/bulletin
+                                     └──▶ patterns, hourly: target_points → track_moves ──▶ /api/admin/patterns 🔒
  Open-Meteo ──▶ Weather ─────────────┘        Translations (DeepL / Google) ──▶ feed in EN / FR
  Sentinel-2 file on the volume ──▶ /tiles/sat · Esri (owner's key) ──▶ /tiles/esri
                                                                 pages: /m Tactical · /light Light · /guide · /admin 🔒
@@ -887,6 +908,11 @@ real post, and a fix to the rules applies to posts already in the database.</p>
 <td><code>bridges</code></td>
 <td>every 5 s: a Kyiv bridge whose state rose (nothing → near → at, §9b) is written to <code>bridge_events</code> and pushed to the phones that asked for the bridges (topic <code>bridges</code>, in their language), at most once per bridge every 10 min — a &quot;near&quot; turning &quot;at&quot; excepted</td>
 <td>5 s</td>
+</tr>
+<tr>
+<td><code>patterns</code></td>
+<td>1.55 (§7.12): each tagged target's moves, from one reported position to the next (<code>target_points</code> → <code>track_moves</code>, kept for good): the last two days' nights again every hour, and once per <code>MOVES_VERSION</code> every night whose points are all still kept</td>
+<td>90 s after start, then hourly</td>
 </tr>
 <tr>
 <td><code>Weather</code></td>
@@ -2167,6 +2193,51 @@ every 2 minutes; <code>localStorage.bulk</code> remembers the tab).</li>
 cost, each bulletin in three languages with the record it was written from; the readings and checks of 1.50–1.53 are
 folded below.</li>
 </ul>
+<h3 id="712-the-direction-patterns-155-the-dashboard-only">7.12 The direction patterns (1.55; the dashboard only)<a class="anc" href="#712-the-direction-patterns-155-the-dashboard-only" aria-label="Link to this section">#</a></h3>
+<p>The owner (10 Oct 2026): &quot;one crucial detail we need to aggregate through time and accumulate is the pattern of
+direction of the drones — what pattern the typical drone follows depending on its location — proper foundations so we
+can then calculate the % of probability that the drone goes to X, Y or Z. Those data shouldn't be seen yet inside the
+app, but on the admin dashboard.&quot; Nothing of it reaches the app: no page asks for it, and <code>/api/admin/patterns</code> is 🔒.</p>
+<ul>
+<li><strong>A move</strong> is one tagged target's step from a reported position to the next (§7.8: <code>target_points</code>, in time order):
+<code>Patterns.moves_of</code>. A report within <code>MOVE_MIN_KM</code> (2 km) of the last position is the target still there — the move
+starts from its latest sighting there; a report further than the target could have flown (<code>reach_km</code>, the physical
+check of 1.54.7: 350 / 650 km/h, + 8 km for two named places) is another target's and is left out; after a gap of
+more than <code>MOVE_MAX_MIN</code> (120 min) the track starts again. Each move keeps where it was and where the next report put
+it (lon, lat, place), the time of each, km, minutes, the bearing, the heights, the track's <strong>kind</strong> (<code>move_kind</code>:
+<code>drone</code>, <code>jet</code> — a mark of the track flagged jet —, <code>banderol</code>, <code>unstated</code> — a weapon not stated, a probable drone —,
+or a missile's own type, kept but out of the drones' patterns), where a post said it came from (<code>origin</code>, <code>osrc</code>)
+and the builder's version (<code>ver</code>).</li>
+<li><strong>Kept for good</strong> in <code>track_moves</code> (the points go after <code>TAG_KEEP_DAYS</code>, 60 days). The <code>patterns</code> thread rebuilds the
+nights of the last two days every hour (a night still going gets its new moves: its rows are replaced), and once
+per <code>MOVES_VERSION</code> (<code>kv</code> <code>moves_v</code>; <code>moves_at</code>, the last build) every night whose points are all still kept
+(<code>BACKFILL_DAYS</code>, 58). A night older than that keeps the moves its version built.</li>
+<li><strong>The reading</strong> (<code>Patterns.report</code>): over the last <code>days</code> (0: all), for a kind (<code>PATTERN_KINDS</code>: <code>drones</code> — all four
+drone kinds —, <code>drone</code>, <code>jet</code> with the Banderol, <code>unstated</code>), on a grid of <code>MOVE_CELL</code> (0.2° × 0.125°, about
+14 × 14 km) × <code>res</code> (1, 2, 4: ~14, 28, 56 km). For each area with <code>min</code> moves out of it or <code>min</code> stated courses in
+it: its moves, tracks and nights; where <strong>the next report</strong> put the target (places and areas, a share of the
+moves out of it; <code>stay</code>, the moves that stayed in the area); where <strong>the tracks that passed through it were last
+reported</strong> (a share of those tracks); the 8 directions of its moves, their mean bearing and how consistent they are
+(the mean resultant length, 0–1); the <strong>courses the posts stated</strong> there (<code>marker_log</code> <code>heading</code>, town-level
+positions, no approach mark) and the destinations they named (<code>target</code>); where a post <strong>said</strong> these tracks came
+from (<code>osrc</code> rules / ai — a region's &quot;probably&quot; is not counted); the median speed and the median minutes to the next
+report. <strong>Every share comes with its 95% range</strong> (<code>wilson</code>, Wilson's interval): 2 moves of 3 is 67% (21–94%), 200
+of 300 is 67% (61–72%) — the probability's honesty, shown beside every %. The names of an area are the places most
+reported in it.</li>
+<li><strong>These are the channels' reports, not radar</strong>: a target nobody reported between two places is one move between them,
+a channel that names only big towns makes big moves, and an area's shares are only as good as the tracks the chains
+kept together (§7.4). The foundation of a probability, not one: a next-area share is a first-order transition (where
+it went next from here, whatever it did before), and the moves' CSV (<code>raw=1</code>, every move of the window, at most
+50,000) is there for any further model.</li>
+<li><strong>Dashboard → Patterns</strong> (<code>static/admin.html</code>, <code>loadPatterns</code> / <code>drawPatterns</code>): the period (30 / 90 days, a year,
+all), the kind, the area size; the counts (tracks, moves, nights, stated courses, areas) and when the moves were last
+built; a <strong>flow map</strong> — the oblasts (<code>static/ukraine-map.json</code>), each area shaded by the moves out of it (one blue
+ramp, square root), an arrow for its mean direction (longer when more of them go the same way), and from the area
+chosen, lines to the areas the next report put it in (width by share, the top three labelled); the chosen area's
+card — the directions (its moves and the stated courses, % of each, one axis), the next places, the last-reported
+places, the next areas, the destinations named, the origins said, each with its range as a bar; every area in a
+table (click a row, or an area on the map); CSV of the areas and of every move. English and Ukrainian.</li>
+</ul>
 <h2 id="8-translation">8. Translation<a class="anc" href="#8-translation" aria-label="Link to this section">#</a></h2>
 <p>The feed is Ukrainian; EN and FR readers get a translation.</p>
 <ul>
@@ -2201,8 +2272,9 @@ and Ukrainian. The figures are stored with the text (<code>digests</code>), show
 can be checked. Without a key the figures are still stored and shown. The model is only ever called from the
 <code>Digests</code> thread — never in a request path. Cost: a few thousand tokens a night, well under a dollar a month.</p>
 <h2 id="8c-the-dashboard-132-tabs-and-analytics">8c. The dashboard (1.32: tabs and Analytics)<a class="anc" href="#8c-the-dashboard-132-tabs-and-analytics" aria-label="Link to this section">#</a></h2>
-<p><code>/admin</code> has six tabs (the last one opened is remembered, <code>localStorage.admintab</code>): <strong>Live</strong> (online now, the
-admin's message with a preview in the readers' colours, the nuclear event — §9), <strong>Analytics</strong>, <strong>Nights &amp; weeks</strong>
+<p><code>/admin</code> has seven tabs (the last one opened is remembered, <code>localStorage.admintab</code>): <strong>Live</strong> (online now, the
+admin's message with a preview in the readers' colours, the nuclear event — §9), <strong>Analytics</strong>, <strong>Patterns</strong> (1.55,
+§7.12: where the drones go, area by area — the dashboard only), <strong>Nights &amp; weeks</strong>
 (§8b), <strong>Sources</strong> (lead time, official sources, the channels and their controls, translation; a red dot on the
 tab when a source or a channel on the map fails), <strong>AI reader</strong> (1.50, §7.7: the shadow reader's readings beside
 the rules') and <strong>Usage</strong> (the anonymous counters). Each tab loads its own data; only Live, Sources and AI reader
@@ -2919,6 +2991,10 @@ downloading again, and still picks up a new version immediately.</li>
 <td>1.53: one night in full (§7.10): <code>summary</code> (<code>State.night_summary</code>), <code>text</code> (<code>State.night_text</code>), <code>report</code> (the AI's, or null), <code>reports</code> (the nights that have one), <code>writing</code>, <code>report_hour</code></td>
 </tr>
 <tr>
+<td>🔒 <code>GET /api/admin/patterns?days=&amp;kind=&amp;res=&amp;min=&amp;raw=</code></td>
+<td>1.55: the direction patterns (§7.12) — <code>days</code> 0–3650 (0: all; 90), <code>kind</code> <code>drones</code>|<code>drone</code>|<code>jet</code>|<code>unstated</code>, <code>res</code> 1|2|4 (×14 km), <code>min</code> (3): <code>coverage</code> (<code>moves</code>, <code>tracks</code>, <code>nights</code>, <code>first</code>, <code>last</code>, <code>stated</code>, <code>cells</code>, <code>by_kind</code>, <code>built</code>, <code>version</code>), <code>cell_deg</code>, <code>cell_km</code>, <code>cells</code> (≤ 400, busiest first: <code>cell</code>, <code>lon</code>, <code>lat</code>, <code>name</code>, <code>names</code>, <code>moves</code>, <code>tracks</code>, <code>nights</code>, <code>dir</code>, <code>dir_p</code>, <code>mean_bearing</code>, <code>consistency</code>, <code>stay</code>, <code>next</code>, <code>next_places</code>, <code>through</code>, <code>final</code>, <code>final_places</code>, <code>origins</code>, <code>stated</code>, <code>stated_n</code>, <code>said</code>, <code>speed_kmh</code>, <code>gap_min</code>; each share <code>{n, p, lo, hi}</code> in %, Wilson 95%); <code>raw=1</code> adds <code>moves</code> (≤ 50,000, not cached). Cached 5 min</td>
+</tr>
+<tr>
 <td>🔒 <code>POST /api/admin/ai_report</code></td>
 <td>1.53: <code>{night}</code> — asks the <code>night-reports</code> thread to write (again) that night's report</td>
 </tr>
@@ -2980,7 +3056,7 @@ downloading again, and still picks up a new version immediately.</li>
 </tr>
 <tr>
 <td><code>marker_log</code></td>
-<td>every mark as computed, with its evidence; 1.54.8: and what it stated — <code>alt_m</code>, <code>alt_state</code>, <code>speed_kmh</code>, <code>origin</code>, <code>target</code>, <code>likely</code>, <code>tag</code> (night#n), <code>approach</code> (<code>MLOG_EXTRA</code>). Kept 120 days</td>
+<td>every mark as computed, with its evidence; 1.54.8: and what it stated — <code>alt_m</code>, <code>alt_state</code>, <code>speed_kmh</code>, <code>origin</code>, <code>target</code>, <code>likely</code>, <code>tag</code> (night#n), <code>approach</code> (<code>MLOG_EXTRA</code>). Kept for good so far: <code>Store.prune_log(days)</code> exists but nothing calls it — the volume's size is the limit</td>
 </tr>
 <tr>
 <td><code>outcomes</code></td>
@@ -3029,6 +3105,10 @@ downloading again, and still picks up a new version immediately.</li>
 <tr>
 <td><code>target_points</code></td>
 <td>1.52.1: where each report of a tagged track was (<code>report</code>, <code>night</code>, <code>n</code>, <code>ts</code>, <code>lon</code>, <code>lat</code>, <code>place</code>, <code>alt_m</code>) — the tag's path for the night, <code>/api/trail</code>; 60 days</td>
+</tr>
+<tr>
+<td><code>track_moves</code></td>
+<td>1.55: each tagged target's moves (§7.12) — <code>night</code>, <code>n</code>, <code>seq</code>, from / to (<code>ts_*</code>, <code>lon_*</code>, <code>lat_*</code>, <code>place_*</code>, <code>alt_*</code>), <code>km</code>, <code>minutes</code>, <code>bearing</code>, <code>kind</code>, <code>origin</code>, <code>osrc</code>, <code>ver</code>; the direction patterns' foundation, <strong>kept for good</strong> (<code>kv</code> <code>moves_v</code>, <code>moves_at</code>)</td>
 </tr>
 <tr>
 <td><code>ai_reads</code></td>
@@ -3884,6 +3964,17 @@ first; until 1.54 the AI's filled what the rules did not read, marked &quot;AI&q
 <p>A target drawn at the town it is heading for (&quot;2 реактиви у бік Києва з півдня&quot;) is not at that town. Its glyph stands
 off the town on the side the post named, a fixed distance on the screen — not a distance on the ground, which nobody
 stated — and its card says where it is now was not given.</p>
+<h2 id="s-where-drones-usually-go-is-the-dashboards-not-a-readers-155">Where drones usually go is the dashboard's, not a reader's (1.55)<a class="anc" href="#s-where-drones-usually-go-is-the-dashboards-not-a-readers-155" aria-label="Link to this section">#</a></h2>
+<p>The owner wants the foundations of a probability: &quot;the % that a drone goes to X, Y or Z&quot;, area by area, accumulated
+night after night. The dashboard's Patterns tab has it — where the next report put the targets seen in an area, where
+the tracks that passed through it were last reported, each share with its 95% range — and <strong>the app has none of it</strong>,
+by the owner's decision: no page asks for it, the route is 🔒.</p>
+<p>A pattern is what targets did on other nights, not what this one will do. Shown beside a live target it would read as
+its course — the trajectory a post did not state (the first rule of this file). If it ever reaches the app, it is the
+owner's call, said as a history (&quot;on past nights, most targets reported here were next reported over …&quot;), with its
+number of nights and its range, never as an arrow on a target, a destination, an ETA or a reason to stop sheltering.
+And it is the channels' reports, not radar: a move is one report to the next, so a target nobody reported between two
+towns is one straight move between them.</p>
 <h2 id="s-operational-security">Operational security<a class="anc" href="#s-operational-security" aria-label="Link to this section">#</a></h2>
 <p>The app does not encourage publishing air-defence positions or explosion locations during an
 attack — the disclaimer and the top of the feed say so explicitly. The history layer only shows what was
@@ -4262,7 +4353,7 @@ d'alerte ne sont pas des préférences de style.</p>
 </section>
     </div>
   </div>
-  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.54.9, 10 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
+  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.55.0, 10 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
 </main>
 
 <script>

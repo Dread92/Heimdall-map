@@ -425,7 +425,7 @@ def build_id():
 
 # The version the front end shows in its footer, kept here too so /api/version can answer "what is actually
 # running" without anybody reading it off a screenshot. tests/test_version.py pins the two to each other.
-APP_VERSION = "1.54"
+APP_VERSION = "1.55"
 APP_NAME = "Heimdall"
 BUILD = None    # filled at startup
 
@@ -1210,6 +1210,13 @@ class Store:
         c.execute("""CREATE TABLE IF NOT EXISTS target_points(
             report TEXT PRIMARY KEY, night TEXT, n INTEGER, ts TEXT, lon REAL, lat REAL, place TEXT, alt_m INTEGER)""")
         c.execute("CREATE INDEX IF NOT EXISTS ix_tpt_tag ON target_points(night, n)")
+        # 1.55: each tagged target's moves, from one reported position to the next — kept for good (the points go after
+        # TAG_KEEP_DAYS): the foundation of the direction patterns (Patterns, /api/admin/patterns, the dashboard only)
+        c.execute("""CREATE TABLE IF NOT EXISTS track_moves(
+            night TEXT, n INTEGER, seq INTEGER, ts_from TEXT, ts_to TEXT, lon_from REAL, lat_from REAL, lon_to REAL,
+            lat_to REAL, place_from TEXT, place_to TEXT, km REAL, minutes REAL, bearing INTEGER, kind TEXT, origin TEXT,
+            osrc TEXT, alt_from INTEGER, alt_to INTEGER, ver TEXT, PRIMARY KEY(night, n, seq))""")
+        c.execute("CREATE INDEX IF NOT EXISTS ix_tmv_ts ON track_moves(ts_from)")
         c.execute("CREATE INDEX IF NOT EXISTS ix_alerts_started ON alerts(started_at)")
         c.execute("CREATE INDEX IF NOT EXISTS ix_feed_ts ON feed(ts)")
         c.execute("CREATE INDEX IF NOT EXISTS ix_mlog_ts ON marker_log(ts)")
@@ -2256,6 +2263,279 @@ def reach_km(dt_min, jet=False, cap=True):
     is two targets (State._chain, the shared names)."""
     r = VMAX_KMH[bool(jet)] / 60.0 * max(0.0, dt_min) + POS_TOL_KM
     return min(r, REACH_CAP_KM[bool(jet)]) if cap else r
+
+
+# ---------------------------------------------------------------------------
+# 1.55: the direction patterns. The owner (10 Oct 2026): "one crucial detail we need to aggregate through time and
+# accumulate is the pattern of direction of the drones — what pattern the typical drone follows depending on its
+# location — proper foundations so we can then calculate the % of probability that the drone goes to X, Y or Z. Those
+# data should not be seen inside the app yet, but on the admin dashboard."
+#
+# A move is one tagged target's step from a reported position to the next (`target_points`, in time order): where it
+# was, where the next report put it, how far, how long, the bearing. Built every hour from the points (kept
+# TAG_KEEP_DAYS) into `track_moves`, kept for good. The dashboard's Patterns tab reads it cell by cell: where the next
+# report put a target seen in the cell, where the targets that passed through it were last reported, the directions
+# they went and the courses the posts stated — each share with its 95% range. The channels' reports, not radar: a
+# target nobody reported between two places is one move between them. Nothing of it reaches the app.
+# ---------------------------------------------------------------------------
+MOVES_VERSION = "1"
+MOVE_CELL = (0.2, 0.125)        # lon, lat degrees: a cell of about 14 × 14 km at 50° N (× 2, × 4 on the dashboard)
+MOVE_MIN_KM = 2.0               # nearer than this, the last position reported again: the target is still there
+MOVE_MAX_MIN = 120              # two reports of one tag further apart than this: no move between them
+PATTERN_KINDS = {"drones": ("drone", "jet", "unstated", "banderol"), "drone": ("drone",), "jet": ("jet", "banderol"),
+                 "unstated": ("unstated",)}
+
+
+def move_kind(typ, jet):
+    """What a track is counted as: a jet drone (a Banderol is one, kept apart), a drone, a weapon not stated (a probable
+    drone, 1.54.8), or its own type — a missile is kept but is not in the drones' patterns."""
+    if typ == "banderol":
+        return "banderol"
+    if jet:
+        return "jet"
+    if typ == "drones":
+        return "drone"
+    if typ in (None, "", "unknown"):
+        return "unstated"
+    return typ
+
+
+def wilson(k, n, z=1.96):
+    """The 95% range of a share k / n (Wilson's interval) — wide over a few moves, narrow over many: shown beside every
+    %, so that 2 moves of 3 never reads like 200 of 300."""
+    if not n:
+        return 0.0, 0.0
+    p = k / n
+    d = 1 + z * z / n
+    c = p + z * z / (2 * n)
+    h = z * math.sqrt(p * (1 - p) / n + z * z / (4 * n * n))
+    return max(0.0, (c - h) / d), min(1.0, (c + h) / d)
+
+
+def _median(v):
+    v = sorted(x for x in v if x is not None)
+    if not v:
+        return None
+    m = len(v) // 2
+    return v[m] if len(v) % 2 else (v[m - 1] + v[m]) / 2
+
+
+class Patterns(threading.Thread):
+    """Builds `track_moves` every hour (the last two days' nights again: a night still going gets its new moves) and,
+    once per MOVES_VERSION, every night whose points are all still kept. `report()` is the dashboard's reading."""
+    EVERY_S = 3600
+    BACKFILL_DAYS = TAG_KEEP_DAYS - 2         # a night whose reports are all newer than this has all its points
+    COLS = ("night", "n", "seq", "ts_from", "ts_to", "lon_from", "lat_from", "lon_to", "lat_to", "place_from", "place_to",
+            "km", "minutes", "bearing", "kind", "origin", "osrc", "alt_from", "alt_to", "ver")
+
+    def __init__(self, store):
+        super().__init__(daemon=True, name="patterns")
+        self.store, self.last = store, None
+
+    @staticmethod
+    def moves_of(points, kind="drone", jet=False):
+        """One track's points [(ts, lon, lat, place, alt)], oldest first → its moves. A report within MOVE_MIN_KM of
+        the last position is the target still there (the move starts from its latest sighting); one further than it
+        could have flown (`reach_km`, 1.54.7) is another target's and is left out; after a gap of more than
+        MOVE_MAX_MIN the track starts again."""
+        out, a = [], None
+        for ts, lon, lat, place, alt in points:
+            t = parse_iso(ts)
+            if t is None or lon is None or lat is None:
+                continue
+            if a is None:
+                a = {"t": t, "ts": ts, "lon": lon, "lat": lat, "place": place, "alt": alt}
+                continue
+            dt = (t - a["t"]).total_seconds() / 60
+            km = haversine_km(a["lat"], a["lon"], lat, lon)
+            if dt > MOVE_MAX_MIN:
+                a = {"t": t, "ts": ts, "lon": lon, "lat": lat, "place": place, "alt": alt}
+                continue
+            if km < MOVE_MIN_KM:
+                a.update(t=t, ts=ts, alt=alt if alt is not None else a["alt"])
+                continue
+            if km > reach_km(dt, jet, cap=kind != "banderol"):
+                continue
+            brg = geo.bearing(a["lon"], a["lat"], lon, lat) if geo else None
+            out.append({"ts_from": a["ts"], "ts_to": ts, "lon_from": a["lon"], "lat_from": a["lat"], "lon_to": lon, "lat_to": lat,
+                        "place_from": a["place"], "place_to": place, "km": round(km, 1), "minutes": round(dt, 1),
+                        "bearing": None if brg is None else round(brg) % 360, "alt_from": a["alt"], "alt_to": alt})
+            a = {"t": t, "ts": ts, "lon": lon, "lat": lat, "place": place, "alt": alt}
+        return out
+
+    def build(self, nights):
+        """The moves of these nights, from their points: the night's rows are replaced (a track the chains re-cut gets
+        its new moves). Returns how many were written."""
+        nights = sorted({x for x in nights if x})
+        if not nights:
+            return 0
+        q, st = ",".join("?" * len(nights)), self.store
+        with st.lock:
+            pts = st.conn.execute(f"SELECT p.night, p.n, p.ts, p.lon, p.lat, p.place, p.alt_m, m.jet FROM target_points p "
+                                  f"LEFT JOIN marker_log m ON m.id=p.report WHERE p.night IN ({q}) ORDER BY p.night, p.n, p.ts",
+                                  nights).fetchall()
+            tg = {(r[0], r[1]): r[2:] for r in st.conn.execute(f"SELECT night, n, type, origin, osrc FROM targets WHERE night IN ({q})",
+                                                              nights)}
+        by, jets = collections.defaultdict(list), collections.defaultdict(bool)
+        for night, n, ts, lon, lat, place, alt, jet in pts:
+            by[(night, n)].append((ts, lon, lat, place, alt))
+            jets[(night, n)] |= bool(jet)
+        rows = []
+        for key, p in by.items():
+            typ, origin, osrc = tg.get(key, (None, None, None))
+            kind = move_kind(typ, jets[key])
+            for i, mv in enumerate(self.moves_of(p, kind, jets[key])):
+                rows.append((key[0], key[1], i, mv["ts_from"], mv["ts_to"], mv["lon_from"], mv["lat_from"], mv["lon_to"],
+                             mv["lat_to"], mv["place_from"], mv["place_to"], mv["km"], mv["minutes"], mv["bearing"], kind,
+                             origin, osrc, mv["alt_from"], mv["alt_to"], MOVES_VERSION))
+        with st.lock:
+            st.conn.execute(f"DELETE FROM track_moves WHERE night IN ({q})", nights)
+            st.conn.executemany(f"INSERT OR REPLACE INTO track_moves({','.join(self.COLS)}) VALUES({','.join('?' * len(self.COLS))})", rows)
+            st.conn.commit()
+        return len(rows)
+
+    def tick(self, now=None):
+        now = now or datetime.now(timezone.utc)
+        st = self.store
+        full = st.kv_get("moves_v") != MOVES_VERSION
+        since = (now - timedelta(days=self.BACKFILL_DAYS if full else 2)).isoformat()
+        with st.lock:
+            nights = [r[0] for r in st.conn.execute("SELECT DISTINCT night FROM target_points WHERE ts>=?", (since,))]
+        n = self.build(nights)
+        st.kv_set("moves_v", MOVES_VERSION)
+        st.kv_set("moves_at", now.isoformat())
+        self.last = {"at": now.isoformat(), "nights": len(nights), "moves": n, "full": full}
+        if full:
+            log(f"patterns: {n} moves built from {len(nights)} night(s) (version {MOVES_VERSION})")
+        return n
+
+    def run(self):
+        time.sleep(90)
+        while True:
+            try:
+                self.tick()
+            except Exception as e:
+                log("patterns: not built:", e)
+            time.sleep(self.EVERY_S)
+
+    @staticmethod
+    def report(store, days=90, kind="drones", res=1, min_n=3, raw=False, now=None):
+        """The dashboard's patterns, cell by cell (MOVE_CELL × `res`), over the last `days` (0: all of them), for
+        `kind` (PATTERN_KINDS). For each cell with `min_n` moves out of it or `min_n` stated courses in it: the places
+        and cells the next report put the target in, the cells and places the targets passing through it were last
+        reported in, the 8 directions of its moves and of the courses the posts stated (`marker_log`), the destinations
+        the posts named, the median speed and gap — each share with its Wilson 95% range (`lo`, `hi`, in %)."""
+        now = now or datetime.now(timezone.utc)
+        kinds = PATTERN_KINDS.get(kind) or PATTERN_KINDS["drones"]
+        since = (now - timedelta(days=days)).isoformat() if days else ""
+        kq = ",".join("?" * len(kinds))
+        with store.lock:
+            mv = store.conn.execute(f"SELECT night, n, seq, ts_from, ts_to, lon_from, lat_from, lon_to, lat_to, place_from, "
+                                    f"place_to, km, minutes, bearing, kind, origin, osrc FROM track_moves WHERE ts_from>=? "
+                                    f"AND kind IN ({kq}) ORDER BY night, n, seq", (since, *kinds)).fetchall()
+            all_k = dict(store.conn.execute("SELECT kind, COUNT(*) FROM track_moves WHERE ts_from>=? GROUP BY kind", (since,)).fetchall())
+            sc = store.conn.execute("SELECT lon, lat, place, heading, target, type, jet FROM marker_log WHERE ts>=? AND heading IS NOT NULL "
+                                    "AND status IS NULL AND lon IS NOT NULL AND lat IS NOT NULL AND pos_conf IN ('high','medium') "
+                                    "AND (approach IS NULL OR approach=0)", (since,)).fetchall()
+        built = store.kv_get("moves_at")
+        cw, chh = MOVE_CELL[0] * res, MOVE_CELL[1] * res
+        cell = lambda lon, lat: (math.floor(lon / cw), math.floor(lat / chh))      # noqa: E731
+        sector = lambda b: int(((float(b) % 360) + 22.5) // 45) % 8                 # noqa: E731
+        names, snames = collections.defaultdict(collections.Counter), collections.defaultdict(collections.Counter)
+
+        def new():
+            return {"moves": 0, "tracks": set(), "nights": set(), "dir": [0] * 8, "next": collections.Counter(),
+                    "next_pl": collections.Counter(), "stay": 0, "speed": [], "gap": [], "sx": 0.0, "sy": 0.0, "nb": 0,
+                    "through": 0, "final": collections.Counter(), "final_pl": collections.Counter(), "origins": collections.Counter(),
+                    "stated": [0] * 8, "said": collections.Counter()}
+        C = collections.defaultdict(new)
+        tracks = collections.defaultdict(list)
+        for row in mv:
+            night, n, _seq, _tf, _tt, lo1, la1, lo2, la2, pf, pt, km, mins, brg, _k, _o, _os = row
+            a, b = cell(lo1, la1), cell(lo2, la2)
+            names[a][pf] += 1
+            names[b][pt] += 1
+            r = C[a]
+            r["moves"] += 1
+            r["tracks"].add((night, n))
+            r["nights"].add(night)
+            if brg is not None:
+                r["dir"][sector(brg)] += 1
+                r["sx"] += math.sin(math.radians(brg))
+                r["sy"] += math.cos(math.radians(brg))
+                r["nb"] += 1
+            if b == a:
+                r["stay"] += 1
+            else:
+                r["next"][b] += 1
+            r["next_pl"][pt or "?"] += 1
+            if mins and mins >= 3:
+                r["speed"].append(km / mins * 60)
+            r["gap"].append(mins)
+            tracks[(night, n)].append(row)
+        for rows in tracks.values():
+            last = rows[-1]
+            fc, fp = cell(last[7], last[8]), last[10] or "?"
+            org = rows[0][15] if rows[0][16] in ("rules", "ai") else None          # where a post SAID it came from
+            for a in {cell(x[5], x[6]) for x in rows}:
+                r = C[a]
+                r["through"] += 1
+                r["final"][fc] += 1
+                r["final_pl"][fp] += 1
+                if org:
+                    r["origins"][org] += 1
+        stated = 0
+        for lon, lat, place, hdg, target, typ, jet in sc:
+            if move_kind(typ, jet) not in kinds:
+                continue
+            a = cell(lon, lat)
+            snames[a][place] += 1
+            r = C[a]
+            r["stated"][sector(hdg)] += 1
+            if target:
+                r["said"][target] += 1
+            stated += 1
+
+        def label(c):
+            nm = [k for k, _ in (names.get(c) or snames.get(c) or collections.Counter()).most_common(3) if k]
+            return {"cell": f"{c[0]}:{c[1]}", "lon": round((c[0] + .5) * cw, 4), "lat": round((c[1] + .5) * chh, 4),
+                    "name": nm[0] if nm else None, "names": nm}
+
+        def shares(cnt, total, top=8, cells=False):
+            out = []
+            for k, v in cnt.most_common(top):
+                lo, hi = wilson(v, total)
+                out.append({**(label(k) if cells else {"place": k}), "n": v, "p": round(100 * v / total, 1),
+                            "lo": round(100 * lo, 1), "hi": round(100 * hi, 1)})
+            return out
+        cells = []
+        for c, r in C.items():
+            ns = sum(r["stated"])
+            if r["moves"] < min_n and ns < min_n:
+                continue
+            mb = (math.degrees(math.atan2(r["sx"], r["sy"])) + 360) % 360 if r["nb"] else None
+            sp, gp = _median(r["speed"]), _median(r["gap"])
+            cells.append({**label(c), "moves": r["moves"], "tracks": len(r["tracks"]), "nights": len(r["nights"]),
+                          "dir": r["dir"], "dir_p": [round(100 * v / r["nb"], 1) if r["nb"] else 0 for v in r["dir"]],
+                          "mean_bearing": None if mb is None else round(mb), "consistency": round(math.hypot(r["sx"], r["sy"]) / r["nb"], 2) if r["nb"] else None,
+                          "stay": r["stay"], "next": shares(r["next"], r["moves"], cells=True), "next_places": shares(r["next_pl"], r["moves"]),
+                          "through": r["through"], "final": shares(r["final"], r["through"], cells=True),
+                          "final_places": shares(r["final_pl"], r["through"]), "origins": shares(r["origins"], r["through"], 5),
+                          "stated": r["stated"], "stated_n": ns, "said": shares(r["said"], ns, 6) if ns else [],
+                          "speed_kmh": None if sp is None else round(sp), "gap_min": None if gp is None else round(gp)})
+        cells.sort(key=lambda x: (-x["moves"], -x["stated_n"], x["cell"]))
+        nts = sorted({k[0] for k in tracks})
+        out = {"generated": now_iso(), "days": days, "kind": kind, "kinds": list(kinds), "res": res, "min": min_n,
+               "cell_deg": [round(cw, 4), round(chh, 4)], "cell_km": round(chh * 111.2),
+               "coverage": {"moves": len(mv), "tracks": len(tracks), "nights": len(nts), "first": nts[0] if nts else None,
+                            "last": nts[-1] if nts else None, "stated": stated, "cells": len(cells), "by_kind": all_k,
+                            "built": built, "version": MOVES_VERSION},
+               "cells": cells[:400]}
+        if raw:
+            keys = ("night", "n", "seq", "ts_from", "ts_to", "lon_from", "lat_from", "lon_to", "lat_to", "place_from",
+                    "place_to", "km", "minutes", "bearing", "kind", "origin", "osrc")
+            out["moves"] = [dict(zip(keys, row)) for row in mv[-50000:]]
+        return out
 
 class State:
     """In-memory current picture + SSE fan-out."""
@@ -7388,6 +7668,24 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json({"night": night, "summary": d, "text": State.night_text(d), "report": st.store.ai_report(night),
                                    "reports": st.store.ai_report_nights(), "writing": rp.busy if rp else None,
                                    "report_hour": st.cfg.get("ai_report_hour", 9)})
+            # 1.55: the direction patterns, cell by cell — where the next report put a target seen there, where the targets
+            # that passed through were last reported, the directions, each share with its 95% range. Yours alone: the
+            # app shows none of it yet (the owner)
+            if u.path == "/api/admin/patterns":
+                if not self._admin_ok(q):
+                    return self._json({"error": "set ADMIN_KEY to read the patterns"}, 403)
+                try:
+                    days, res, mn = (int(q.get(k, [d])[0]) for k, d in (("days", "90"), ("res", "1"), ("min", "3")))
+                except ValueError:
+                    return self._json({"error": "days, res and min are numbers"}, 400)
+                kind = q.get("kind", ["drones"])[0]
+                if kind not in PATTERN_KINDS or res not in (1, 2, 4) or not 0 <= days <= 3650:
+                    return self._json({"error": "kind=" + "|".join(PATTERN_KINDS) + "&res=1|2|4&days=0..3650"}, 400)
+                mn = max(1, min(mn, 100))
+                if q.get("raw", ["0"])[0] == "1":         # every move of the window, for a study of your own (CSV)
+                    return self._json(Patterns.report(st.store, days, kind, res, mn, raw=True))
+                return self._send_cached(st.cached(f"patterns:{days}:{kind}:{res}:{mn}", 300,
+                                                   lambda: Patterns.report(st.store, days, kind, res, mn)))
             # 1.50: the AI reader's readings beside the rules' (shadow mode, §7.7). Yours alone: it quotes posts.
             if u.path == "/api/ai_reads":
                 if not self._admin_ok(q):
@@ -7818,6 +8116,8 @@ def main():
     if state.pusher.enabled:
         threading.Thread(target=proximity_watch, args=(state,), daemon=True, name="proximity").start()
     threading.Thread(target=bridge_watch, args=(state,), daemon=True, name="bridges").start()
+    state.patterns = Patterns(store)           # 1.55: the direction patterns' moves, built every hour (the dashboard)
+    state.patterns.start()
 
     keyed = False
     if cfg.get("demo"):

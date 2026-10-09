@@ -1,4 +1,4 @@
-<svg class="sysmap" viewBox="0 0 1240 890" role="img" aria-label="Heimdall's system map: official alerts, Telegram channels, weather, imagery and the AI model on the left; the threads that read them; the SQLite store; the reading the server rebuilds on every pass; the routes and pushes it serves; and the devices that use them.">
+<svg class="sysmap" viewBox="0 0 1240 890" role="img" aria-label="Heimdall's system map: official alerts, Telegram channels, weather, imagery and the AI model on the left; the threads that read them; the SQLite store; the reading the server rebuilds on every pass, and the direction patterns it builds every hour for the dashboard; the routes and pushes it serves; and the devices that use them.">
   <defs>
     <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="m-ah" d="M0 0 L10 5 L0 10 z"/></marker>
   </defs>
@@ -39,6 +39,9 @@
     <path d="M380 650 V626 H520 V602" marker-end="url(#ah)"/>
     <path d="M885 698 H928" marker-end="url(#ah)"/>
     <path d="M1095 698 H1133" marker-end="url(#ah)"/>
+    <path d="M620 545 H663" marker-end="url(#ah)"/>
+    <path d="M885 568 H928" marker-end="url(#ah)"/>
+    <path d="M1095 568 H1133" marker-end="url(#ah)"/>
     <path d="M180 830 H928" marker-end="url(#ah)"/>
     <path d="M1095 830 H1133" marker-end="url(#ah)"/>
   </g>
@@ -59,6 +62,7 @@
     <text x="206" y="701" text-anchor="middle">answers</text>
     <text x="450" y="619" text-anchor="middle">kept</text>
     <text x="907" y="691" text-anchor="middle">if true</text>
+    <text x="642" y="538" text-anchor="middle">hourly</text>
     <text x="555" y="823" text-anchor="middle">a file on the volume · Esri with the owner's key</text>
   </g>
 
@@ -163,6 +167,7 @@
     <text class="m-mono" x="467" y="398">push_subs: 10 km cells</text>
     <text class="m-mono" x="467" y="416">kv · usage counters</text>
     <text class="m-mono" x="467" y="466">feed.text_en / text_fr</text>
+    <text class="m-mono" x="467" y="534">track_moves (kept)</text>
     <text class="m-mono" x="467" y="552">weather</text>
     <text class="m-mono" x="467" y="572">ai_bulletins (kept)</text>
     <text class="m-mono" x="467" y="588">ai_reports</text>
@@ -187,6 +192,13 @@
     <a class="m-link m-step" href="#78-target-tags-151"><text class="m-sub" x="677" y="428"><tspan class="m-n">6</tspan> tags: #n for the night</text></a>
     <a class="m-link m-step" href="#13-storage"><text class="m-sub" x="677" y="456"><tspan class="m-n">7</tspan> log_markers: each mark</text><text class="m-sub" x="691" y="472">once, with its evidence</text></a>
   </g>
+  <a class="m-link" href="#712-the-direction-patterns-155-the-dashboard-only"><g>
+    <rect class="m-box" x="665" y="520" width="220" height="96" rx="6"/>
+    <text class="m-title" x="677" y="542">Direction patterns</text>
+    <text class="m-sub" x="677" y="562">target_points → track_moves</text>
+    <text class="m-sub" x="677" y="580">area by area, each % with</text>
+    <text class="m-sub" x="677" y="598">its range; not in the app</text>
+  </g></a>
   <a class="m-link" href="#711-the-bulletins-154"><g>
     <rect class="m-box" x="665" y="650" width="220" height="96" rx="6"/>
     <text class="m-title" x="677" y="672">The window's record</text>
@@ -218,6 +230,13 @@
     <text class="m-sub" x="942" y="386">bridges · alert start / end</text>
     <text class="m-sub" x="942" y="404">VAPID, 32 workers</text>
   </g></a>
+  <a class="m-link" href="#712-the-direction-patterns-155-the-dashboard-only"><g>
+    <rect class="m-box" x="930" y="520" width="165" height="96" rx="6"/>
+    <text class="m-mono m-strong" x="942" y="544">/api/admin/</text>
+    <text class="m-mono m-strong" x="942" y="562">patterns 🔒</text>
+    <text class="m-sub" x="942" y="584">the dashboard only</text>
+    <text class="m-sub" x="942" y="602">moves as CSV</text>
+  </g></a>
   <a class="m-link" href="#711-the-bulletins-154"><g>
     <rect class="m-box" x="930" y="650" width="165" height="96" rx="6"/>
     <text class="m-mono m-strong" x="942" y="674">/api/bulletin</text>
@@ -238,6 +257,7 @@
   <a class="m-link" href="#102-light-light"><text class="m-title" x="1146" y="146">Light</text><text class="m-mono" x="1146" y="162">/light</text></a>
   <a class="m-link" href="#105-the-guide-guide-135"><text class="m-title" x="1146" y="192">Guide</text><text class="m-mono" x="1146" y="208">/guide</text></a>
   <a class="m-link" href="#8c-the-dashboard-132-tabs-and-analytics"><text class="m-title" x="1146" y="238">Dashboard</text><text class="m-mono" x="1146" y="254">/admin 🔒</text></a>
+  <a class="m-link" href="#712-the-direction-patterns-155-the-dashboard-only"><text class="m-title" x="1146" y="562">Patterns</text><text class="m-sub" x="1146" y="580">dashboard</text><text class="m-sub" x="1146" y="596">tab 🔒</text></a>
   <a class="m-link" href="#9-notifications"><text class="m-title" x="1146" y="370">Phones</text><text class="m-sub" x="1146" y="388">push, by a</text><text class="m-sub" x="1146" y="404">~10 km cell</text></a>
   <a class="m-link" href="#711-the-bulletins-154"><text class="m-title" x="1146" y="694">Bulletin</text><text class="m-sub" x="1146" y="712">card in the</text><text class="m-sub" x="1146" y="728">Tactical page</text></a>
   <a class="m-link" href="#101-tactical-m"><text class="m-title" x="1146" y="826">Map layer</text><text class="m-sub" x="1146" y="844">kept on the</text><text class="m-sub" x="1146" y="860">phone a year</text></a>

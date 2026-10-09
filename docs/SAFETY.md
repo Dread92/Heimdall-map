@@ -713,6 +713,20 @@ A target drawn at the town it is heading for ("2 реактиви у бік Ки
 off the town on the side the post named, a fixed distance on the screen — not a distance on the ground, which nobody
 stated — and its card says where it is now was not given.
 
+## Where drones usually go is the dashboard's, not a reader's (1.55)
+
+The owner wants the foundations of a probability: "the % that a drone goes to X, Y or Z", area by area, accumulated
+night after night. The dashboard's Patterns tab has it — where the next report put the targets seen in an area, where
+the tracks that passed through it were last reported, each share with its 95% range — and **the app has none of it**,
+by the owner's decision: no page asks for it, the route is 🔒.
+
+A pattern is what targets did on other nights, not what this one will do. Shown beside a live target it would read as
+its course — the trajectory a post did not state (the first rule of this file). If it ever reaches the app, it is the
+owner's call, said as a history ("on past nights, most targets reported here were next reported over …"), with its
+number of nights and its range, never as an arrow on a target, a destination, an ETA or a reason to stop sheltering.
+And it is the channels' reports, not radar: a move is one report to the next, so a target nobody reported between two
+towns is one straight move between them.
+
 ## Operational security
 
 The app does not encourage publishing air-defence positions or explosion locations during an

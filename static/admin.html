@@ -218,6 +218,27 @@ table.aivt{max-width:440px;margin:0 0 16px}
 table.airtab td,table.airtab th{font-size:12.5px;padding:5px 4px;white-space:nowrap}table.airtab td.n,table.airtab th:nth-child(4),table.airtab th:nth-child(6){padding-right:16px}
 .hml.bins{flex-wrap:wrap;gap:4px 5px}.hml.bins span{margin-right:6px}
 .hy{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:4px}.hct{font:600 11px var(--mono);color:var(--ink2);text-align:right;align-self:center}.hxt{text-align:right}
+/* 1.55: the direction patterns */
+.ptbar{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center;margin:0 0 12px}
+.ptmap{width:100%;height:auto;display:block;max-height:66vh;background:#0e1117;border:1px solid var(--line)}
+.ptmap .ob{fill:#151a22;stroke:#2c3340;stroke-width:1;vector-effect:non-scaling-stroke}.ptmap .ob.k{fill:#1b212b}
+.ptmap .cl{stroke:#0e1117;stroke-width:1.5;vector-effect:non-scaling-stroke;cursor:pointer}.ptmap .cl:hover{stroke:#e8e6df}
+.ptmap .cl.sel{stroke:var(--ua-yellow);stroke-width:2.5}
+.ptmap .ar{stroke:#e8e6df;stroke-width:1.6;stroke-linecap:round;vector-effect:non-scaling-stroke;fill:none;pointer-events:none}
+.ptmap .ah{fill:#e8e6df;pointer-events:none}
+.ptmap .fl{stroke:#199e70;stroke-linecap:round;vector-effect:non-scaling-stroke;opacity:.9;fill:none;pointer-events:none}
+.ptmap text{fill:#e8e6df;stroke:#0b0d11;paint-order:stroke;stroke-linejoin:round;pointer-events:none;font-family:var(--sans);font-weight:600}
+.ptmap text.mut{fill:#a9a79f;font-weight:500}.ptmap .kv{fill:#e8e6df;stroke:#0b0d11;vector-effect:non-scaling-stroke}
+.ptlg{display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px;font:12px var(--sans);color:var(--ink2);margin:8px 0 2px}
+.ptlg .sq{display:inline-flex;gap:2px;align-items:center}.ptlg .sq i{display:inline-block;width:14px;height:10px;border-radius:2px}
+.ptlg .ln{display:inline-block;width:18px;height:3px;border-radius:2px;vertical-align:3px;margin-right:6px}
+table.ptt td,table.ptt th{font-size:12.5px;padding:5px 4px}table.ptt td.nm{max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+table.ptt tr[data-cell]{cursor:pointer}table.ptt tr[data-cell]:hover td{background:#161a22}table.ptt tr.sel td{background:rgba(255,213,0,.07)}
+.ptci{position:relative;display:inline-block;width:96px;height:10px;background:#171b23;border-radius:2px;vertical-align:-1px;margin-right:6px}
+.ptci i{position:absolute;top:3px;height:4px;background:#2a78d6;border-radius:2px}.ptci b{position:absolute;top:0;width:2px;height:10px;background:#e8e6df;margin-left:-1px}
+.ptr{font:11.5px var(--mono);color:var(--ink3);white-space:nowrap}
+.ptg{display:grid;grid-template-columns:1fr 1fr;gap:4px 18px}@media (max-width:760px){.ptg{grid-template-columns:1fr}}
+.pth{font:600 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink2);margin:12px 0 4px}
 .antip{position:fixed;z-index:50;pointer-events:none;background:#1b2029;border:1px solid #333a47;color:var(--ink);font:12.5px/1.45 var(--sans);padding:7px 10px;border-radius:4px;box-shadow:0 6px 18px rgba(0,0,0,.45);max-width:300px}
 .antip[hidden]{display:none}.antip b{font-weight:600}
 @media (prefers-reduced-motion:reduce){.ntprev.lv-alert,.onl .dot{animation:none}}
@@ -232,6 +253,7 @@ table.airtab td,table.airtab th{font-size:12.5px;padding:5px 4px;white-space:now
 <nav class="tabs" id="tabs" role="tablist">
   <button data-tab="live" role="tab" data-tr="tab_live">Live</button>
   <button data-tab="analytics" role="tab" data-tr="tab_an">Analytics</button>
+  <button data-tab="patterns" role="tab" data-tr="tab_pat">Patterns</button>
   <button data-tab="nights" role="tab" data-tr="tab_nights">Nights &amp; weeks</button>
   <button data-tab="sources" role="tab" data-tr="tab_sources">Sources</button>
   <button data-tab="ai" role="tab" data-tr="tab_ai">AI reader</button>
@@ -296,6 +318,14 @@ table.airtab td,table.airtab th{font-size:12.5px;padding:5px 4px;white-space:now
   <div class="anbar"><div class="seg" id="anr"><button data-d="7">7 d</button><button data-d="30">30 d</button><button data-d="90">90 d</button><button data-d="365">1 y</button></div><span class="angen" id="an_gen"></span></div>
   <div id="an"></div>
 </section>
+<!-- 1.55: the direction patterns — the dashboard only, the app shows none of it -->
+<section class="tabsec" id="tab-patterns" hidden>
+  <div class="ptbar"><div class="seg" id="pt_d"><button data-v="30">30 d</button><button data-v="90">90 d</button><button data-v="365">1 y</button><button data-v="0" data-tr="pt_all">All</button></div>
+    <div class="seg" id="pt_k"><button data-v="drones" data-tr="pt_kind_drones">All drones</button><button data-v="drone" data-tr="pt_kind_drone">Propeller</button><button data-v="jet" data-tr="pt_kind_jet">Jet</button><button data-v="unstated" data-tr="pt_kind_unst">Not stated</button></div>
+    <div class="seg" id="pt_r"><button data-v="1">≈14 km</button><button data-v="2">≈28 km</button><button data-v="4">≈56 km</button></div>
+    <span class="angen" id="pt_gen"></span></div>
+  <div id="pt"></div>
+</section>
 <section class="tabsec" id="tab-nights" hidden><div id="digests"></div></section>
 <section class="tabsec" id="tab-sources" hidden><div id="health"></div></section>
 <section class="tabsec" id="tab-ai" hidden><div id="aiv"></div></section>
@@ -310,6 +340,19 @@ const $=i=>document.getElementById(i);
 // ---------------------------------------------------------------------------------------------------
 const T={
  en:{title:'Heimdall — dashboard',
+  tab_pat:'Patterns',pt_all:'All',pt_kind_drones:'All drones',pt_kind_drone:'Propeller',pt_kind_jet:'Jet',pt_kind_unst:'Not stated',
+  pt_note:'Where the drones go, area by area — from the channels’ reports of each tagged target, in order: not radar. A move is one report to the next; a % is a share of those moves, with its 95% range — over a few moves the range is wide, so trust a % only when its range is narrow. The dashboard only: the app shows none of it.',
+  pt_n_tracks:'tracks followed',pt_n_moves:'moves',pt_n_nights:'nights',pt_n_stated:'courses stated',pt_n_cells:'areas',pt_built:'moves built {0}',
+  pt_nodata:'No moves in this period yet. They are built every hour from the tagged targets’ points (the first build takes the last {0} days).',
+  pt_map:'Flow map',pt_map_sub:'Each square is an area of about {0} km: its shade, the moves out of it; the arrow, their mean direction — longer when more of them go the same way. Click an area.',
+  pt_lg_lo:'fewer moves',pt_lg_hi:'more',pt_lg_arrow:'mean direction',pt_lg_next:'where the next report put it, from the chosen area',
+  pt_cell:'From {0}',pt_cell_sub:'{0} moves out of it — {1} tracks, {2} nights · median {3} min to the next report · median {4} km/h',
+  pt_dir:'Directions',pt_dir_obs:'moves (where the next report put it)',pt_dir_st:'courses the posts stated',
+  pt_next:'The next report put it in',pt_next_c:'Next area',pt_final:'Tracks through here were last reported in',pt_said:'Posts said it was heading for',pt_orig:'Posts said these tracks came from',
+  pt_h_place:'Place',pt_h_area:'Area',pt_h_n:'n',pt_h_p:'%',pt_h_ci:'95% range',pt_h_moves:'Moves',pt_h_tracks:'Tracks',pt_h_dir:'Main direction',pt_h_next:'Next report, most often',pt_h_final:'Last reported, most often',pt_h_speed:'km/h',
+  pt_stay:'still in the area: {0}',pt_cells:'All areas',pt_cells_sub:'Areas with at least {0} moves out of them or {0} stated courses. Click a row to see it.',
+  pt_csv_moves:'All moves (CSV)',pt_compass:'N,NE,E,SE,S,SW,W,NW',pt_err:'Could not load the patterns: {0}',pt_kyiv:'Kyiv',pt_none:'—',pt_km:'km',
+  pt_o:'belarus:Belarus,russia:Russia,sea:the sea,crimea:Crimea,occupied:the occupied areas,n:the north,nw:the north-west,ne:the north-east,e:the east,se:the south-east,s:the south,sw:the south-west,w:the west',
   tab_live:'Live',tab_an:'Analytics',tab_nights:'Nights & weeks',tab_sources:'Sources',tab_usage:'Usage',
   nt_prevh:'Message from the system admin',nt_prev0:'The message shows here in the colour readers will see: green for information, red for urgent.',
   nk_h:'Nuclear event — danger zone',
@@ -439,6 +482,19 @@ const T={
   ch_map_q:'Put @{0} on the map? Its posts will place marks, can raise banners and send alerts to phones.',
   ch_modes:'<b>Map</b> — its posts place marks and can raise banners and alerts. <b>Trial</b> — its posts only show in the feed, flagged “on trial”: judge a new channel by what it posts and the share of it the app can read (“Read 7 d”) before trusting it. <b>Off</b> — not read, and its posts leave the feed. The default channels can be switched off but not removed.'},
  uk:{title:'Heimdall — панель',
+  tab_pat:'Закономірності',pt_all:'Усе',pt_kind_drones:'Усі дрони',pt_kind_drone:'Гвинтові',pt_kind_jet:'Реактивні',pt_kind_unst:'Тип не вказано',
+  pt_note:'Куди летять дрони, район за районом — за повідомленнями каналів про кожну позначену ціль, по черзі: не радар. Переміщення — від одного повідомлення до наступного; % — частка цих переміщень із 95% діапазоном. Для кількох переміщень діапазон широкий: довіряйте % лише тоді, коли діапазон вузький. Лише для панелі: у застосунку цього немає.',
+  pt_n_tracks:'цілей простежено',pt_n_moves:'переміщень',pt_n_nights:'ночей',pt_n_stated:'вказаних курсів',pt_n_cells:'районів',pt_built:'переміщення оновлено {0}',
+  pt_nodata:'За цей період переміщень ще немає. Вони будуються щогодини з точок позначених цілей (перший раз — за останні {0} днів).',
+  pt_map:'Мапа потоків',pt_map_sub:'Кожен квадрат — район близько {0} км: відтінок — переміщення з нього; стрілка — їхній середній напрямок, довша, коли більше їх летить в один бік. Натисніть на район.',
+  pt_lg_lo:'менше переміщень',pt_lg_hi:'більше',pt_lg_arrow:'середній напрямок',pt_lg_next:'куди поставило наступне повідомлення, з обраного району',
+  pt_cell:'З району: {0}',pt_cell_sub:'{0} переміщень із нього — {1} цілей, {2} ночей · медіана {3} хв до наступного повідомлення · медіана {4} км/год',
+  pt_dir:'Напрямки',pt_dir_obs:'переміщення (куди поставило наступне повідомлення)',pt_dir_st:'курси, вказані в дописах',
+  pt_next:'Наступне повідомлення поставило її в',pt_next_c:'Наступний район',pt_final:'Цілі, що пролетіли тут, востаннє повідомлені в',pt_said:'Дописи казали, що вона летить на',pt_orig:'Дописи казали, звідки ці цілі',
+  pt_h_place:'Місце',pt_h_area:'Район',pt_h_n:'к-сть',pt_h_p:'%',pt_h_ci:'95% діапазон',pt_h_moves:'Переміщ.',pt_h_tracks:'Цілі',pt_h_dir:'Основний напрямок',pt_h_next:'Наступне повідомлення, найчастіше',pt_h_final:'Востаннє повідомлена, найчастіше',pt_h_speed:'км/год',
+  pt_stay:'ще в районі: {0}',pt_cells:'Усі райони',pt_cells_sub:'Райони щонайменше з {0} переміщеннями або {0} вказаними курсами. Натисніть рядок, щоб переглянути.',
+  pt_csv_moves:'Усі переміщення (CSV)',pt_compass:'Пн,ПнСх,Сх,ПдСх,Пд,ПдЗх,Зх,ПнЗх',pt_err:'Не вдалося завантажити закономірності: {0}',pt_kyiv:'Київ',pt_none:'—',pt_km:'км',
+  pt_o:'belarus:Білорусь,russia:Росія,sea:море,crimea:Крим,occupied:окуповані території,n:північ,nw:північний захід,ne:північний схід,e:схід,se:південний схід,s:південь,sw:південний захід,w:захід',
   tab_live:'Наживо',tab_an:'Аналітика',tab_nights:'Ночі й тижні',tab_sources:'Джерела',tab_usage:'Використання',
   nt_prevh:'Повідомлення від системного адміністратора',nt_prev0:'Тут повідомлення показано кольором, який бачитимуть читачі: зелений — інформація, червоний — терміново.',
   nk_h:'Ядерна подія — небезпечна зона',
@@ -981,6 +1037,7 @@ function showTab(t){ TAB=t; try{localStorage.setItem('admintab',t);}catch(e){}
   if(on&&(on.offsetLeft<nv.scrollLeft||on.offsetLeft+on.offsetWidth>nv.scrollLeft+nv.clientWidth)) nv.scrollLeft=on.offsetLeft-12;
   document.querySelectorAll('.tabsec').forEach(s=>s.hidden=s.id!=='tab-'+t);
   if(t==='analytics'&&!AN) loadAnalytics();
+  if(t==='patterns'&&!PT) loadPatterns();
   if(t==='ai') loadAI(); }
 $('tabs').addEventListener('click',e=>{ const b=e.target.closest('button[data-tab]'); if(b) showTab(b.dataset.tab); });
 
@@ -1250,7 +1307,7 @@ $('anr').addEventListener('click',e=>{ const b=e.target.closest('button[data-d]'
 // CSV for Excel: UTF-8 with its mark, ';' between columns (what Excel expects in Ukrainian and French settings)
 function csvDownload(name,rows){ const txt='﻿'+rows.map(r=>r.map(v=>{ const s=v==null?'':String(v); return /[;"\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; }).join(';')).join('\r\n');
   const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([txt],{type:'text/csv;charset=utf-8'})); a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500); }
-document.addEventListener('click',e=>{ const b=e.target.closest('.csvb'); if(!b||!AN) return; const k=b.dataset.csv, A=AN, tag=`${A.from}_${A.to}`;
+document.addEventListener('click',e=>{ const b=e.target.closest('.csvb'); if(!b||!AN||!b.dataset.csv) return; const k=b.dataset.csv, A=AN, tag=`${A.from}_${A.to}`;
   if(k==='af'){ const T=['drones','jet','banderol','missiles',...MT]; csvDownload(`heimdall-air-force-${tag}.csv`,[['date','summaries',...T.map(x=>'launched_'+x),'used_without_number',...['total','drones','jet','banderol',...MT].map(x=>'down_'+x),'hit_locations','debris_locations'],
       ...A.af.map(r=>[r.date,r.periods.join('+'),...T.map(x=>(r.launched||{})[x]),(r.used||[]).join(' '),...['total','drones','jet','banderol',...MT].map(x=>(r.down||{})[x]),r.periods.length?r.impacts:'',r.periods.length?r.debris:''])]); }
   if(k==='kyiv') csvDownload(`heimdall-kyiv-alerts-${tag}.csv`,[['date','kyiv_city_minutes','kyiv_oblast_minutes','kyiv_city_alerts'],...A.kyiv.map(r=>[r.date,r.city_min,r.oblast_min,r.city_alerts])]);
@@ -1260,10 +1317,124 @@ document.addEventListener('click',e=>{ const b=e.target.closest('.csvb'); if(!b|
   if(k==='targets') csvDownload(`heimdall-target-tags-${tag}.csv`,[['night','N','E','S','W','not_said','origin_read_by_ai','total','followed_2_places'],...(A.targets||[]).map(r=>[r.date,r.N,r.E,r.S,r.W,r['?'],r.ai,r.total,r.paths])]);
   if(k==='reports'){ const keys=[...new Set(A.reports.flatMap(r=>Object.keys(r)).filter(x=>x!=='date'))].sort(); csvDownload(`heimdall-kyiv-reports-${tag}.csv`,[['date',...keys],...A.reports.map(r=>[r.date,...keys.map(x=>r[x]||0)])]); } });
 
+// ---- 1.55: the direction patterns — where the drones go, area by area (the dashboard only) -------------------------
+// The owner: "the pattern of direction of the drones depending on its location — foundations to calculate the % of
+// probability that a drone goes to X, Y or Z; not in the app yet, on the dashboard". From /api/admin/patterns: each area's
+// moves (a tagged target's step from one report to the next), each share with its Wilson 95% range.
+let PT=null, PT_ERR='', PT_SEL=null, PT_MAP=null, PTO={days:90,kind:'drones',res:2};
+try{ const v=JSON.parse(localStorage.getItem('ptopt')||'null'); if(v&&typeof v==='object') Object.assign(PTO,v); }catch(e){}
+const ptQ=()=>`days=${PTO.days}&kind=${PTO.kind}&res=${PTO.res}&min=3`+KEYQ;
+async function loadPatterns(){ PT_ERR=''; $('pt').innerHTML=`<div style="color:var(--ink3)">${escA(tr('an_loading'))}</div>`; ptSegs();
+  try{ const [d,m]=await Promise.all([fetch('/api/admin/patterns?'+ptQ()).then(r=>r.json()),
+      PT_MAP?Promise.resolve(PT_MAP):fetch('/static/ukraine-map.json').then(r=>r.json()).catch(()=>null)]);
+    if(d.error) throw new Error(d.error); PT=d; PT_MAP=m; }
+  catch(e){ PT=null; PT_ERR=String(e.message||e); }
+  if(PT&&!PT.cells.some(c=>c.cell===PT_SEL)) PT_SEL=(PT.cells.find(c=>c.moves)||PT.cells[0]||{}).cell||null;
+  drawPatterns(); }
+function ptSegs(){ for(const [id,k] of [['pt_d','days'],['pt_k','kind'],['pt_r','res']]) $(id).querySelectorAll('button').forEach(b=>b.classList.toggle('on',String(PTO[k])===b.dataset.v));
+  $('pt_r').querySelectorAll('button').forEach(b=>b.textContent='≈'+14*b.dataset.v+' '+tr('pt_km')); }
+const ptOrg=k=>{ const m=Object.fromEntries(tr('pt_o').split(',').map(x=>x.split(':'))); return m[k]||k; };
+const ptDir=i=>tr('pt_compass').split(',')[i];
+const ptName=c=>c&&(c.names&&c.names.length?c.names.slice(0,2).join(' · '):(c.name||c.place||'?'));
+const ptPct=v=>(v==null?'—':(Math.round(v*10)/10).toLocaleString(L==='uk'?'uk-UA':'en-GB')+'%');
+function ptProj(lon,lat){ const p=PT_MAP.proj; return [p.x[0]*lon+p.x[1]*lat+p.x[2], p.y[0]*lon+p.y[1]*lat+p.y[2]]; }
+function ptMap(P){
+  if(!PT_MAP||!PT_MAP.proj) return '';
+  const [cw,chh]=P.cell_deg, cells=P.cells, byId={}; cells.forEach(c=>byId[c.cell]=c);
+  const corners=id=>{ const [i,j]=id.split(':').map(Number); return [[i,j],[i+1,j],[i+1,j+1],[i,j+1]].map(([a,b])=>ptProj(a*cw,b*chh)); };
+  const sel=byId[PT_SEL];
+  let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9; const grow=id=>corners(id).forEach(([x,y])=>{ x0=Math.min(x0,x); y0=Math.min(y0,y); x1=Math.max(x1,x); y1=Math.max(y1,y); });
+  cells.forEach(c=>grow(c.cell)); if(sel) (sel.next||[]).forEach(n=>grow(n.cell));
+  let W=Math.max((x1-x0)*1.12,110), H=Math.max((y1-y0)*1.12,70); if(W/H<1.5) W=H*1.5; else H=Math.max(H,W/2.2);
+  const vx=(x0+x1)/2-W/2, vy=(y0+y1)/2-H/2, k=W/CHW;          // k: map units per pixel
+  const mx=Math.max(1,...cells.map(c=>c.moves));
+  let g=PT_MAP.oblasts.map(o=>`<path class="ob${o.uid==='31'?' k':''}" d="${o.path}"/>`).join('');
+  const ch=chh*79.72;                                          // a cell's height in map units
+  cells.filter(c=>c.moves).forEach(c=>{ const pts=corners(c.cell).map(p=>p.map(v=>v.toFixed(2)).join(',')).join(' ');
+    const fill=SEQ[Math.min(SEQ.length-1,Math.floor(Math.sqrt(c.moves/mx)*(SEQ.length-1)))];
+    const top=(c.next_places||[])[0], d=c.mean_bearing==null?'':`<br>${escA(tr('pt_h_dir'))}: <b>${escA(ptDir(Math.round(c.mean_bearing/45)%8))}</b> (${c.mean_bearing}°)`;
+    const tipH=`<b>${escA(ptName(c))}</b><br>${escA(tr('pt_h_moves'))}: <b>${c.moves}</b> · ${escA(tr('pt_h_tracks'))}: <b>${c.tracks}</b>${d}`
+      +(top?`<br>${escA(tr('pt_h_next'))}: <b>${escA(top.place)}</b> ${ptPct(top.p)} (${ptPct(top.lo)}–${ptPct(top.hi)})`:'');
+    g+=`<polygon class="cl${c.cell===PT_SEL?' sel':''}" points="${pts}" fill="${fill}" data-pcell="${c.cell}" data-tip="${escA(tipH)}"/>`; });
+  cells.filter(c=>c.moves>=2&&c.mean_bearing!=null&&c.consistency).forEach(c=>{
+    const [x,y]=ptProj(c.lon,c.lat), L0=Math.max(.25,c.consistency)*ch*.95, b=c.mean_bearing*Math.PI/180;
+    const ex=x+Math.sin(b)*L0, ey=y-Math.cos(b)*L0, hl=Math.min(ch*.3,6*k), hw=hl*.55;
+    const bx=ex-Math.sin(b)*hl, by=ey+Math.cos(b)*hl;
+    g+=`<line class="ar" x1="${x.toFixed(2)}" y1="${y.toFixed(2)}" x2="${bx.toFixed(2)}" y2="${by.toFixed(2)}"/>`
+      +`<polygon class="ah" points="${ex.toFixed(2)},${ey.toFixed(2)} ${(bx+Math.cos(b)*hw).toFixed(2)},${(by+Math.sin(b)*hw).toFixed(2)} ${(bx-Math.cos(b)*hw).toFixed(2)},${(by-Math.sin(b)*hw).toFixed(2)}"/>`; });
+  if(sel){ const [sx,sy]=ptProj(sel.lon,sel.lat);
+    (sel.next||[]).forEach((n,i)=>{ const [nx,ny]=ptProj(n.lon,n.lat);
+      g+=`<line class="fl" x1="${sx.toFixed(2)}" y1="${sy.toFixed(2)}" x2="${nx.toFixed(2)}" y2="${ny.toFixed(2)}" stroke-width="${(1.5+n.p/100*9).toFixed(1)}"/>`;
+      if(i<3) g+=`<text x="${nx.toFixed(2)}" y="${(ny+4*k).toFixed(2)}" text-anchor="middle" font-size="${(11*k).toFixed(2)}" stroke-width="${(3*k).toFixed(2)}">${escA(ptPct(n.p))}</text>`; }); }
+  const lab=cells.filter(c=>c.moves).slice(0,6); if(sel&&!lab.includes(sel)) lab.push(sel);
+  lab.forEach(c=>{ const [x,y]=ptProj(c.lon,c.lat); g+=`<text class="${c===sel?'':'mut'}" x="${x.toFixed(2)}" y="${(y-ch*.62).toFixed(2)}" text-anchor="middle" font-size="${(11.5*k).toFixed(2)}" stroke-width="${(3*k).toFixed(2)}">${escA(c.name||'?')}</text>`; });
+  const [kx,ky]=ptProj(30.52,50.45); g+=`<circle class="kv" cx="${kx.toFixed(2)}" cy="${ky.toFixed(2)}" r="${(3*k).toFixed(2)}" stroke-width="1"/><text x="${(kx+5*k).toFixed(2)}" y="${(ky+12*k).toFixed(2)}" font-size="${(10.5*k).toFixed(2)}" stroke-width="${(3*k).toFixed(2)}" class="mut">${escA(tr('pt_kyiv'))}</text>`;
+  return `<svg class="ptmap" viewBox="${vx.toFixed(2)} ${vy.toFixed(2)} ${W.toFixed(2)} ${H.toFixed(2)}" role="img" aria-label="${escA(tr('pt_map'))}">${g}</svg>`
+    +`<div class="ptlg"><span>${escA(tr('pt_lg_lo'))} <span class="sq">${[0,2,4,6,8].map(i=>`<i style="background:${SEQ[i]}"></i>`).join('')}</span> ${escA(tr('pt_lg_hi'))}</span>`
+    +`<span><svg width="22" height="10" style="vertical-align:-1px;margin-right:6px"><line x1="1" y1="5" x2="15" y2="5" stroke="#e8e6df" stroke-width="1.6"/><polygon points="21,5 14,1.5 14,8.5" fill="#e8e6df"/></svg>${escA(tr('pt_lg_arrow'))}</span>`
+    +`<span><i class="ln" style="background:#199e70"></i>${escA(tr('pt_lg_next'))}</span></div>`; }
+// the 8 directions: the moves' and the stated courses', in % of each (two series, one axis)
+function ptDirChart(c){ const W=CHW/2-20,H=170,pl=36,pr=6,pt=8,pb=22, gw=(W-pl-pr)/8, bw=Math.min(16,(gw-6)/2);
+  const st=c.stated_n?c.stated.map(v=>Math.round(v/c.stated_n*1000)/10):null;
+  const top=nice(Math.max(10,...c.dir_p,...(st||[0]))); const y=v=>pt+(H-pt-pb)*(1-v/top); let g='';
+  for(let i=0;i<=4;i++){ const v=top*i/4, yy=y(v); g+=`<line x1="${pl}" x2="${W-pr}" y1="${yy}" y2="${yy}" class="${i?'gl':'gl0'}"/><text x="${pl-5}" y="${yy+4}" class="ax" text-anchor="end">${Math.round(v)}%</text>`; }
+  for(let i=0;i<8;i++){ const x=pl+i*gw+(gw-(st?2*bw+2:bw))/2;
+    const bar=(xx,v,col)=>{ const h=Math.max(0,y(0)-y(v)), r=Math.min(3,bw/2,h); return h<=0?'':`<path d="M${xx},${y(0)}v${-(h-r)}q0,${-r} ${r},${-r}h${bw-2*r}q${r},0 ${r},${r}v${h-r}z" fill="${col}"/>`; };
+    g+=bar(x,c.dir_p[i],C[0])+(st?bar(x+bw+2,st[i],C[1]):'');
+    const tp=`<b>${escA(ptDir(i))}</b><br>${escA(tr('pt_dir_obs'))}: <b>${c.dir[i]}</b> (${ptPct(c.dir_p[i])})`+(st?`<br>${escA(tr('pt_dir_st'))}: <b>${c.stated[i]}</b> (${ptPct(st[i])})`:'');
+    g+=`<rect x="${pl+i*gw}" y="${pt}" width="${gw}" height="${H-pt-pb}" fill="transparent" data-tip="${escA(tp)}"/><text x="${pl+i*gw+gw/2}" y="${H-6}" class="ax" text-anchor="middle">${escA(ptDir(i))}</text>`; }
+  return legend([[tr('pt_dir_obs'),C[0]]].concat(st?[[tr('pt_dir_st'),C[1]]]:[]))+`<svg viewBox="0 0 ${W} ${H}" class="ch" role="img">${g}</svg>`; }
+function ptShares(rows,head,cells){ if(!rows||!rows.length) return `<div class="nodata">${escA(tr('an_nodata'))}</div>`;
+  return `<table class="ptt"><tr><th>${escA(head)}</th><th class="n">${escA(tr('pt_h_n'))}</th><th class="n">${escA(tr('pt_h_p'))}</th><th>${escA(tr('pt_h_ci'))}</th></tr>`
+    +rows.map(r=>`<tr${cells&&PT.cells.some(c=>c.cell===r.cell)?` data-cell="${r.cell}"`:''}><td class="nm">${escA(cells?ptName(r):r.place)}</td><td class="n">${r.n}</td><td class="n">${ptPct(r.p)}</td>`
+      +`<td><span class="ptci"><i style="left:${r.lo}%;width:${Math.max(1,r.hi-r.lo)}%"></i><b style="left:${r.p}%"></b></span><span class="ptr">${ptPct(r.lo)}–${ptPct(r.hi)}</span></td></tr>`).join('')+'</table>'; }
+function ptCell(c){ if(!c) return '';
+  const sub=tr('pt_cell_sub',c.moves,c.tracks,c.nights,c.gap_min==null?'—':c.gap_min,c.speed_kmh==null?'—':c.speed_kmh)+(c.stay?' · '+tr('pt_stay',c.stay):'');
+  return card('ptc',tr('pt_cell',ptName(c)),sub,`<div class="ptg"><div><div class="pth">${escA(tr('pt_dir'))}</div>${ptDirChart(c)}</div>`
+    +`<div><div class="pth">${escA(tr('pt_next'))}</div>${ptShares(c.next_places,tr('pt_h_place'))}</div>`
+    +`<div><div class="pth">${escA(tr('pt_final'))}</div>${ptShares(c.final_places,tr('pt_h_place'))}</div>`
+    +`<div><div class="pth">${escA(tr('pt_next_c'))}</div>${ptShares(c.next,tr('pt_h_area'),true)}</div>`
+    +(c.said&&c.said.length?`<div><div class="pth">${escA(tr('pt_said'))}</div>${ptShares(c.said,tr('pt_h_place'))}</div>`:'')
+    +(c.origins&&c.origins.length?`<div><div class="pth">${escA(tr('pt_orig'))}</div>${ptShares(c.origins.map(o=>Object.assign({},o,{place:ptOrg(o.place)})),tr('pt_h_place'))}</div>`:'')+'</div>'); }
+function drawPatterns(){ ptSegs(); const box=$('pt');
+  if(PT_ERR){ box.innerHTML=`<div class="err">${escA(tr('pt_err',PT_ERR))}</div>`; return; }
+  if(!PT) return; const P=PT, V=P.coverage||{};
+  $('pt_gen').textContent=V.built?tr('pt_built',new Date(V.built).toLocaleString(L==='uk'?'uk-UA':'en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})):'';
+  let h=`<div class="annote">${escA(tr('pt_note'))}</div><div class="kpis">`
+    +[[V.tracks,'pt_n_tracks'],[V.moves,'pt_n_moves'],[V.nights,'pt_n_nights'],[V.stated,'pt_n_stated'],[V.cells,'pt_n_cells']].map(([v,l])=>`<div class="kpi"><div class="kv">${fmt(v)}</div><div class="kl">${escA(tr(l))}</div></div>`).join('')+'</div>';
+  if(!P.cells.length){ box.innerHTML=h+`<div class="nodata">${escA(tr('pt_nodata',58))}</div>`; return; }
+  const sel=P.cells.find(c=>c.cell===PT_SEL);
+  h+=card('ptm',tr('pt_map'),tr('pt_map_sub',P.cell_km),ptMap(P))+ptCell(sel);
+  const cn=ptDir;
+  h+=card('ptl',tr('pt_cells'),tr('pt_cells_sub',P.min),`<div class="tscroll"><table class="ptt"><tr><th>${escA(tr('pt_h_area'))}</th><th class="n">${escA(tr('pt_h_moves'))}</th><th class="n">${escA(tr('pt_h_tracks'))}</th><th>${escA(tr('pt_h_dir'))}</th><th>${escA(tr('pt_h_next'))}</th><th>${escA(tr('pt_h_final'))}</th><th class="n">${escA(tr('pt_h_speed'))}</th></tr>`
+    +P.cells.map(c=>{ const nx=(c.next_places||[])[0], fn=(c.final_places||[])[0];
+      return `<tr data-cell="${c.cell}"${c.cell===PT_SEL?' class="sel"':''}><td class="nm">${escA(ptName(c))}</td><td class="n">${c.moves}</td><td class="n">${c.tracks}</td>`
+        +`<td>${c.mean_bearing==null?escA(tr('pt_none')):escA(cn(Math.round(c.mean_bearing/45)%8))+` <span class="ptr">${c.mean_bearing}° · ${c.consistency}</span>`}</td>`
+        +`<td>${nx?escA(nx.place)+` <span class="ptr">${ptPct(nx.p)} (${ptPct(nx.lo)}–${ptPct(nx.hi)})</span>`:escA(tr('pt_none'))}</td>`
+        +`<td>${fn?escA(fn.place)+` <span class="ptr">${ptPct(fn.p)}</span>`:escA(tr('pt_none'))}</td><td class="n">${c.speed_kmh==null?'—':c.speed_kmh}</td></tr>`; }).join('')
+    +`</table></div><div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"><button class="csvb" data-pcsv="cells">CSV</button><button class="csvb" data-pcsv="moves">${escA(tr('pt_csv_moves'))}</button></div>`);
+  box.innerHTML=h; }
+$('tab-patterns').addEventListener('click',async e=>{
+  const sb=e.target.closest('.seg button[data-v]');
+  if(sb){ const k={pt_d:'days',pt_k:'kind',pt_r:'res'}[sb.parentNode.id]; if(!k) return; PTO[k]=k==='kind'?sb.dataset.v:+sb.dataset.v;
+    try{ localStorage.setItem('ptopt',JSON.stringify(PTO)); }catch(err){} PT_SEL=null; loadPatterns(); return; }
+  const cl=e.target.closest('[data-pcell],tr[data-cell]');
+  if(cl&&PT){ PT_SEL=cl.dataset.pcell||cl.dataset.cell; drawPatterns(); const c=$('ptc'); if(c&&cl.tagName==='TR') c.scrollIntoView({behavior:'smooth',block:'start'}); return; }
+  const b=e.target.closest('button[data-pcsv]'); if(!b||!PT) return; const tag=`${PTO.kind}_${PTO.days||'all'}d_${PT.cell_km}km`;
+  if(b.dataset.pcsv==='cells') csvDownload(`heimdall-patterns-areas-${tag}.csv`,[['area','lon','lat','moves','tracks','nights',...[0,1,2,3,4,5,6,7].map(i=>'moves_'+'N,NE,E,SE,S,SW,W,NW'.split(',')[i]),
+      ...[0,1,2,3,4,5,6,7].map(i=>'stated_'+'N,NE,E,SE,S,SW,W,NW'.split(',')[i]),'mean_bearing','consistency','next_place','next_pct','next_lo','next_hi','last_place','last_pct','last_lo','last_hi','median_kmh','median_gap_min'],
+    ...PT.cells.map(c=>{ const nx=(c.next_places||[])[0]||{}, fn=(c.final_places||[])[0]||{};
+      return [ptName(c),c.lon,c.lat,c.moves,c.tracks,c.nights,...c.dir,...c.stated,c.mean_bearing,c.consistency,nx.place,nx.p,nx.lo,nx.hi,fn.place,fn.p,fn.lo,fn.hi,c.speed_kmh,c.gap_min]; })]);
+  if(b.dataset.pcsv==='moves'){ b.disabled=true;
+    try{ const d=await fetch('/api/admin/patterns?raw=1&'+ptQ()).then(r=>r.json()); if(d.error) throw new Error(d.error);
+      const K=['night','n','seq','ts_from','ts_to','lon_from','lat_from','lon_to','lat_to','place_from','place_to','km','minutes','bearing','kind','origin','osrc'];
+      csvDownload(`heimdall-moves-${tag}.csv`,[K,...(d.moves||[]).map(m=>K.map(x=>m[x]))]); }
+    catch(err){ b.title=tr('pt_err',err.message||err); b.style.borderColor='var(--red)'; } b.disabled=false; } });
+
 $('langsw').addEventListener('click',e=>{
   const b=e.target.closest('button'); if(!b) return;
   L=b.dataset.l; try{localStorage.setItem('adminlang',L);}catch(err){}
-  drawAll(); drawOps(); drawHealth(); drawDigests(); if(AN) drawAnalytics(); drawAI();
+  drawAll(); drawOps(); drawHealth(); drawDigests(); if(AN) drawAnalytics(); drawAI(); if(PT||PT_ERR) drawPatterns();
 });
 
 (async()=>{

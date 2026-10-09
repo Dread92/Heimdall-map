@@ -2,6 +2,31 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.55.0 — 2026-10-10
+
+### Added
+- **Where the drones go, area by area — on the dashboard only** — the owner: "the pattern of direction of the
+  drones, aggregated through time, depending on its location — proper foundations to calculate the % of probability
+  that the drone goes to X, Y or Z; not in the app yet, on the admin dashboard". Every tagged target's moves, from one
+  reported position to the next (where it was, where the next report put it, how far, how long, the bearing, its kind,
+  where a post said it came from), are built every hour into a new table kept for good (`track_moves`; the points it
+  is built from go after 60 days); the first build takes the last 58 days. A move keeps the physical check of 1.54.7:
+  a report the target could not have reached is another target's.
+- **Dashboard → Patterns**: for each area of about 14, 28 or 56 km, over 30 / 90 days, a year or all of it, for all
+  drones, propeller, jet or weapon not stated — where the next report put the target, where the tracks that passed
+  through it were last reported, the directions of its moves beside the courses the posts stated, the destinations
+  the posts named and where they said the tracks came from, the median speed and gap. **Every % comes with its 95%
+  range** (Wilson): 2 moves of 3 is 67% (21–94%), 200 of 300 is 67% (61–72%). A flow map (each area shaded by its
+  moves, an arrow for their mean direction, lines from the chosen area to where the next report put it), every area
+  in a table, and the areas and every move as CSV for any further model. English and Ukrainian. `GET
+  /api/admin/patterns` (🔒); no page of the app asks for it.
+
+### Docs
+- TECHNICAL.md §7.12 (the patterns), §5.1 (the `patterns` thread), §8c, §12, §13; `marker_log` is in fact kept for
+  good — `Store.prune_log` exists but nothing calls it (the table said 120 days). SAFETY.md: where drones usually go is
+  the dashboard's, not a reader's — a pattern is what targets did on other nights, never this one's course. The system
+  map has the new thread, table and route.
+
 ## 1.54.9 — 2026-10-10
 
 ### Fixed
