@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.47** · last updated 2026-10-08 (1.47)
+**Documented version: 1.47** · last updated 2026-10-09 (1.47.1)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -914,8 +914,10 @@ Ukraine only (`#tiles` is clipped to the oblasts' outlines, `#uaclip`). (1.45 la
 computer, neighbours included; zoomed out, the map was unreadable, and 1.45.1 took it back.)
 
 **The satellite layer (1.47).** Layers → "Satellite imagery (Sentinel-2, 2021)", under everything, inside Ukraine
-only (`#uaclip`), at every zoom; on by default on a computer (`IS_DESK`: a fine pointer that hovers, no phone or
-tablet browser), off on a phone. The imagery is the **ESA WorldCover Sentinel-2 composite of 2021** — the median of a
+only (`#uaclip`), at every zoom, on by default on every device (1.47.1; it was off on phones). It and the OSM streets
+are **one choice or the other** (1.47.1): checking one unchecks the other — under the satellite, zooming in fell back
+to the streets every time. A saved choice was moved to the satellite once (`layers_v3`); with the satellite chosen
+and no imagery on the server, the streets are drawn in its place (`updateOsm`). The imagery is the **ESA WorldCover Sentinel-2 composite of 2021** — the median of a
 year of cloud-free Sentinel-2 pixels, 10 m, one processing for the whole country, so the tiles join without seams;
 CC BY 4.0, credited on the map whenever it is drawn (`SAT_ATTR` in `#attrib`: "© ESA WorldCover 2021 · contains
 modified Copernicus Sentinel data (2021)"). `scripts/build_imagery.py` reads it once from the public bucket
@@ -931,7 +933,7 @@ part of the country a reader looks at, and nothing is paid per tile. The tiles n
 page asks with the layer's version (`?v=SAT_V`) and the answer is cached a year (`immutable`). The page offers the
 layer only when the server has the file (`state.config.sat`); a new file put in place is read within ten seconds,
 no restart. With the layer drawn the map is "tiled" like under the OSM streets (outlines over the picture, our own
-roads and rivers hidden); the OSM streets, when on and zoomed in, are drawn over it. Darkened by mode (`#sat`
+roads and rivers hidden). Darkened by mode (`#sat`
 filter: standard, day, night). Why this source and not a commercial one: a paid product cannot use the
 non-commercial tiers, and the commercial imagery services (Esri, Mapbox, Google) bill per tile and forbid keeping
 their tiles — a one-off build of open data costs nothing per reader.

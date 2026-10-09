@@ -2,6 +2,14 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.47.1 — 2026-10-09
+
+### Changed
+- **The satellite imagery stays when you zoom in**: it and the OSM streets are now one choice or the other in Layers
+  (it is the default) — zooming in used to fall back to the streets every time.
+- **On phones too**: the satellite layer is on by default on every device (its tiles are ~7 KB). A saved choice of
+  layers is moved to it once; the streets remain one tap away.
+
 ## 1.47.0 — 2026-10-08
 
 ### Added

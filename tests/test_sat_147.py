@@ -79,7 +79,11 @@ def test_the_server_sends_tiles_the_browser_keeps(tmp_path, monkeypatch):
 
 def test_the_page_draws_it_inside_ukraine_under_the_streets():
     assert '<g id="sat" clip-path="url(#uaclip)"></g>\n    <g id="tiles" clip-path="url(#uaclip)"></g>' in PAGE
-    assert "const LAYERS={sat:IS_DESK," in PAGE                                 # on by default on a computer only
+    assert "const LAYERS={sat:true,tiles:false," in PAGE                        # 1.47.1: the default on every device
+    # 1.47.1: one picture or the other — zooming in no longer falls back to the OSM streets
+    assert "if(cb.checked&&cb.dataset.l==='sat')LAYERS.tiles=false; if(cb.checked&&cb.dataset.l==='tiles')LAYERS.sat=false;" in PAGE
+    assert "const want=LAYERS.tiles||(LAYERS.sat&&SAT_KNOWN&&!SAT_OK);" in PAGE   # no imagery on the server: the streets
+    assert "if(!localStorage.getItem('layers_v3')){LAYERS.sat=true;LAYERS.tiles=false;" in PAGE   # once, for the saved choices
     assert '<label hidden><input type="checkbox" data-l="sat">' in PAGE         # offered once the server has the tiles
     assert "satAvail(S.config&&S.config.sat);" in PAGE
     assert "placeTiles(g,Math.max(5,Math.min(12,tileZoom())),(z,x,y)=>`/tiles/sat/${z}/${x}/${y}.webp?v=${SAT_V}`,160);" in PAGE

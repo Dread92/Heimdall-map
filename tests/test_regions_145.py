@@ -152,7 +152,7 @@ def test_the_rings_are_around_the_readers_oblast_capital():
 def test_the_tiles_only_once_zoomed_in_on_every_device():
     # 1.45.1: 1.45 put them under the whole country on a computer, and zoomed out the map was unreadable
     assert "DESKTOP" not in PAGE and "TILE_MAXW" not in PAGE and "tfar" not in PAGE
-    assert "const on=LAYERS.tiles&&VB.w<=150&&MAP" in PAGE and "placeTiles(g,Math.max(8,Math.min(18,tileZoom())),TILE_URL,120);" in PAGE   # 1.47: shared placement
+    assert "const on=want&&VB.w<=150&&MAP" in PAGE and "placeTiles(g,Math.max(8,Math.min(18,tileZoom())),TILE_URL,120);" in PAGE   # 1.47: shared placement
     assert "svg.tiled .road,svg.tiled .roadlbl,svg.tiled .river" in PAGE
     assert "always on a computer" not in PAGE and "always on a computer" not in _read("static/i18n.js")
     # and only inside Ukraine: Moldova, Romania, Belarus and Russia are not drawn under the map
