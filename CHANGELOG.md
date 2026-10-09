@@ -21,6 +21,11 @@ Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md
 - **The bulletins are kept** — every one for 90 days with the record it was written from, then for good one an hour and
   one a day (the night); it was 30 days.
 
+### Docs
+- TECHNICAL.md's overview (§1, §3) brought up to date: 23 channels, three of them through the Telegram API, the Air
+  Force's figures, the carriers and the weather, the AI's bulletins, and the system diagram as it runs now. A web page
+  of the whole manual, with a map of the system, is built from these files.
+
 ## 1.54.7 — 2026-10-10
 
 ### Fixed

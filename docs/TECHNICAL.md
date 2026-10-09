@@ -42,14 +42,19 @@ regression corpus: [CORPUS.md](CORPUS.md). French quick start: [DEMARRAGE-FR.md]
 
 ## 1. What it is
 
-An **unofficial** air-raid and drone tracker for **Kyiv city, Kyiv oblast and the oblasts around it**
-(Zhytomyr, Chernihiv, Sumy, Poltava, Cherkasy, Vinnytsia). One Python process — standard library only, plus
-`cryptography` for Web Push — reads:
+An **unofficial** air-raid and drone tracker for **Kyiv city and Kyiv oblast first**, and the oblasts switched on
+around them (the six around Kyiv, then Odesa, Kharkiv, Dnipro, Mykolaiv and, since 1.45, seven more — §7.1). One
+Python process — standard library only, plus `cryptography` for Web Push — reads:
 
-- the **official «Повітряна тривога» alert data** (which raions are under alert, at which level), and
-- **six public Telegram channels** that report where drones and missiles are,
+- the **official «Повітряна тривога» alert data** (which raions are under alert, at which level),
+- **23 public Telegram channels** that report where drones and missiles are: the three Kyiv live trackers, three
+  country-wide channels (the Air Force among them) and one live tracker per oblast (§7.1) — most through their
+  `t.me/s/` previews, three through the Telegram API,
+- the Air Force's summaries and the carriers' take-offs and launches, read from those posts (§7.5, §7.6), and the
+  nights' weather (Open-Meteo, §7.6),
 
-and serves two web pages from the same data:
+and serves its pages from the same data — and, with the owner's key, has an AI model write a bulletin of the last
+hour and the last 24 hours from what it recorded (§7.11):
 
 | Page | Address | For |
 |---|---|---|
@@ -84,24 +89,31 @@ Summarised here, argued in [SAFETY.md](SAFETY.md), and each pinned by tests:
 ## 3. System overview
 
 ```
- official data                              app/server.py                                  browser
- ─────────────                              ─────────────                                  ───────
- siren.pp.ua (keyless proxy) ─┐
-   or api.ukrainealarm.com    ├─▶ UkraineAlarm ──┐
- alerts.in.ua (token) ────────┤─▶ AlertsInUa ────┤  apply_snapshot()
- ubilling mirror (stand-in) ──┘─▶ Ubilling ──────┤        │
-                                                 ▼        ▼
- 5 Telegram channels ──▶ Telegram ──▶ Store ◀── State ──▶ /api/state ─────────▶ kyiv.html (/m)
-   (t.me/s previews)       │  ingest()        (SQLite)     /api/markers ───────▶ light.html (/light)
- chyste_nebo ──▶ TelegramAPI ─┘ (Telegram API, preview off)
-                           │  is_relevant                  /api/feed?lang=
-                           │  translate_offline            /api/stream (SSE) ──▶ both
-                           ▼                               /api/version (ping)
-                     geo.parse_for_channel                        │
-                           │                                      ▼
-                     markers(): scope → chain → prune      Pusher / proximity_watch ──▶ Web Push ──▶ phone
-                           │
-                     Translations worker (DeepL / Google, on demand) ──▶ 'tr' event
+ sources                          app/server.py (one process)                                 out
+ ───────                          ───────────────────────────                                 ───
+ official alerts ─────────▶ UkraineAlarm / AlertsInUa / Ubilling ──apply_snapshot──┐
+  (siren.pp.ua or ukrainealarm,       every 10–30 s                                 │
+   alerts.in.ua, ubilling mirror)                                                   ▼
+                                                                         State: alerts → level by raion ──▶ /api/state
+ 23 Telegram channels ────▶ Telegram (t.me/s previews, 30 s; 10 s in a missile threat)        │
+  (3 Kyiv trackers, 3 country, ─▶ TelegramAPI (chyste_nebo …, 15 s; polls, never subscribes)  │
+   1+ per oblast)                    │ ingest(): stored BEFORE it is read                      │
+                                     ▼                                                        ▼
+                               Store (SQLite on the Fly volume): feed, alerts, events, marker_log, outcomes,
+                               targets, target_points, af_reports, air_reports, weather, ai_bulletins, kv …
+                                     │
+                                     ▼
+                     State.markers(), re-read on every pass:
+                       geo.parse_for_channel (gazetteer + villages of the oblast)
+                       → _marks_from_posts (the channel's report before / after: shared names, a height alone)
+                       → _chain_and_prune (one target only at a speed it can fly: 350 / 650 km/h)
+                       → _tag_marks (#n for the night) → log_markers ──────────▶ /api/markers, /api/stream (SSE)
+                                     │                                            /api/replay, /api/trail
+                                     ├──▶ Pusher, proximity, bridges ──▶ Web Push ──▶ phones (~10 km cell only)
+                                     └──▶ activity_summary ──▶ bulletins (OpenRouter, 3 languages) ──▶ /api/bulletin
+ Open-Meteo ──▶ Weather ─────────────┘        Translations (DeepL / Google) ──▶ feed in EN / FR
+ Sentinel-2 file on the volume ──▶ /tiles/sat · Esri (owner's key) ──▶ /tiles/esri
+                                                                pages: /m Tactical · /light Light · /guide · /admin 🔒
 ```
 
 Everything that arrives is **stored before it is interpreted**: a parsing bug is always replayable against the
