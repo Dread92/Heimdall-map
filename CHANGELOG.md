@@ -2,6 +2,20 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.56.3 — 2026-10-10
+
+### Fixed
+- **In Chernihiv oblast a drone faces into Ukraine** — the owner, two drones near Liubech drawn heading north-west: "by
+  default the drones must always face into Ukraine when no direction is given; it is extremely unlikely that a drone
+  goes back to Belarus or Russia". A drone there with no stated course faces towards Kyiv (the icon only — no course,
+  no ray, no countdown; the card says why). The north-west course came from two different targets: the previous
+  post's drone near Kiptiv and this post's near Liubech. A course is now worked out from a tracker's two reports only
+  when each reported one target, and never when it points back across the border.
+- **Hnidyn — and 81 other places — where they are** — "Hnidyn is never reported". The hand-written gazetteer put
+  Hnidyn 5.8 km east of the village; checked against OpenStreetMap, 82 places were more than 1.5 km off (Berezan 11 km,
+  Olshanytsia 12, Myhalky 14, Kotelva 19) and are now where OSM puts them.
+- The patterns' "courses stated" no longer count the courses worked out from two reports.
+
 ## 1.56.2 — 2026-10-10
 
 ### Fixed

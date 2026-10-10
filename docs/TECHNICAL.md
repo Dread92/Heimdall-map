@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.56** · last updated 2026-10-10 (1.56.2)
+**Documented version: 1.56** · last updated 2026-10-10 (1.56.3)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -568,6 +568,10 @@ block for every value:
   and strategic aviation, MiG-31K. No type word → `unknown` (drawn as an upright ⚠, never guessed).
 - **Position** — the gazetteer with declension-aware stems (hyphen lookbehind: `Коцюбинське` ≠
   `Михайло-Коцюбинське`); aliases like "Велика Димерка" ← "димерк"; a stated part of an oblast is not its centre.
+  1.56.3: the core gazetteer's coordinates (`geo.PLACES`, written by hand) checked against OpenStreetMap's settlements
+  (`static/streets/`): 82 of 379 matched names were more than 1.5 km off and are where OSM puts them now — Гнідин was
+  5.8 km east of the village (the owner: "Hnidyn is never reported there"), Березань 11 km, Ольшаниця 12, Мигалки 14,
+  Котельва 19; Красилівка and Ясногородка, several of each, are the one near Brovary and the one near Makariv.
 - **Heading** — "курсом на", compass words, "→", "A - B" routes (`bearing()`); a heading is marked *stated*
   only when the post stated it. A compass word after "з / зі / від" is where it comes **from** ("з півночі" = flying
   south), also after the destination (`_FROM_COMPASS`).
@@ -737,7 +741,11 @@ countdown on a guess could be late. While missiles are reported it is the red �
    position (`last_by_channel`, at most 8 min old). 1.38: that position keeps **its own** time — the mark carries
    `pos_ts`, and a carried position never restarts the clock (only a newly named place does); the channel's own
    down / lost / clear line ends it; and the official all-clear for Kyiv city ends every position held inside the
-   city (`State.kyiv_city_all_clears`: an end of the city's air-raid alert that left no other source's alert running);
+   city (`State.kyiv_city_all_clears`: an end of the city's air-raid alert that left no other source's alert running).
+   A live tracker's bare place with no course gets the bearing from its previous report (`last_by_channel`, ≤ 8 min,
+   ≥ 0.4 km) — 1.56.3: only when that post and this one each report **one** target (`n_here`, the ctx's 4th field: the
+   previous post's Kiptiv → this post's Liubech drew a target heading NW, back to Belarus — two targets, not a course),
+   and never one that points back across the border (`outward`, below);
 2. drops what is outside the scope: `in_scope()` = oblast uid in `SCOPE_UIDS` (1.43: the oblasts switched on —
    Kyiv, the six around it, Odesa, Kharkiv, Dnipro, 1.44 Mykolaiv, 1.45 seven more by default) or, with no oblast, within `SCOPE_KM = 330` km of
    Kyiv. `REGION_UIDS` (Kyiv and the six around it) still decides the feed's "region" tag;
@@ -1241,7 +1249,8 @@ app, but on the admin dashboard." Nothing of it reaches the app: no page asks fo
   moves out of it; `stay`, the moves that stayed in the area); where **the tracks that passed through it were last
   reported** (a share of those tracks); the 8 directions of its moves, their mean bearing and how consistent they are
   (the mean resultant length, 0–1); the **courses the posts stated** there (`marker_log` `heading`, town-level
-  positions, no approach mark) and the destinations they named (`target`); where a post **said** these tracks came
+  positions, no approach mark; 1.56.3: not a course worked out from two of a channel's reports) and the destinations they
+  named (`target`); where a post **said** these tracks came
   from (`osrc` rules / ai — a region's "probably" is not counted); the median speed and the median minutes to the next
   report. **Every share comes with its 95% range** (`wilson`, Wilson's interval): 2 moves of 3 is 67% (21–94%), 200
   of 300 is 67% (61–72%) — the probability's honesty, shown beside every %. The names of an area are the places most
@@ -1654,6 +1663,13 @@ of dozen elsewhere — on an Odesa or Lviv view they did nothing. Now:
 Main parts:
 
 - `render()` — official colours (raions, oblasts, banner band, raion chips, alerts tab);
+- **1.56.3, a drone faces into Ukraine** (the owner: "in the Chernihiv region the drones must always face into Ukraine
+  when no direction is given — it is extremely unlikely that a drone goes back to Belarus or Russia"): in an `INWARD`
+  oblast (Chernihiv, `"25"` → towards Kyiv, where its drones go — the patterns: south-west, south) a drone or an
+  unstated weapon with no course is drawn facing that way (`inward_face`, the mark's `face`: `orientOf`, Light's
+  `markOrient`) — the glyph only: no course ray, no heading in the card or the tooltip, no ETA, and the card says why
+  (`face_note`); a course worked out from two reports that is more than `INWARD_MAX_DEG` (100°) off the way in is not
+  kept (`outward`; a course a post stated always is). Elsewhere a mark with no course stays upright, as before;
 - `tick()` — marks: silhouettes per weapon (`G`, `GLYPH_BY_TYPE` from `static/glyphs.js`), turned only to a stated course (`orientOf`),
   uncertainty ring up to 25 km, 5-minute tail, labels (1.53.3: no off-screen edge indicators any more — the owner: the map has too much on it now; a target off the screen is in the Near list);
 - `threatStrip()` — the banner stack, coloured by `officialLevel()`; `idleLine()` when calm;

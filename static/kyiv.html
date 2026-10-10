@@ -2276,9 +2276,11 @@ function orientOf(m){
   // upright, and the orange course ray beside it — drawn separately, from the same reported heading — is
   // what turns.
   if(m.type==='unknown'&&!asDrone(m)) return 0;
-  if(m.heading==null) return 0;
+  // 1.56.3: no course stated — in Chernihiv oblast a drone faces into Ukraine (`face`, the server's), elsewhere north
+  const fc=m.face!=null?m.face:0;
+  if(m.heading==null) return fc;
   const ev=m.evidence&&m.evidence.heading;
-  if(!ev||!ev.confidence||ev.confidence==='none') return 0;
+  if(!ev||!ev.confidence||ev.confidence==='none') return fc;
   return m.heading;
 }
 const upright=()=>0;   // kept for outcome marks, which have no course at all
@@ -2665,6 +2667,7 @@ function openSheet(id){
       return `<div class="kv1">${zl}${el}</div>`; })()}
     ${m.type==='unknown'&&!m.status?(mslCtx()?`<div class="kv1 yellow sec">${esc(t('unk_note_mix'))}${m.likely==='drones'?' '+esc(m.alt&&m.alt.m?t('alt_likely'):t('unk_likely_l')):''}</div>`
       :`<div class="kv1 yellow sec">${esc(t('unk_note_dr'))}${m.alt&&m.alt.m?' '+esc(t('alt_likely')):''}</div>`):''}
+    ${m.face!=null&&m.heading==null&&!m.status?`<div class="kv1 muted sec" style="font-size:12px">${esc(t('face_note'))}</div>`:''}
     ${mk?`<div class="kv1 muted sec" style="font-size:12px">${esc(m.type==='ballistic_missiles'?t('msl_bal'):m.type==='banderol_missiles'?t('msl_band'):t('msl_cru'))}</div>`:''}
     ${m._gone?`<div class="kv1 yellow"><b>${esc(t('msl_gone'))}</b> — ${esc(t('msl_seen',placeEn,fmtT(m.ts)))}</div>`:''}
     ${(m._reach>0)?`<div class="kv1 yellow"><b>${esc(t('msl_reach',Math.round(m._reach)))}</b> — ${esc(t('msl_seen',placeEn,fmtT(m.ts)))}<div style="color:var(--muted);font-size:11.5px;margin-top:3px">${esc(t('msl_note',mk.v))}</div></div>`:''}

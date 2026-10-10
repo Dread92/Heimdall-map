@@ -2516,6 +2516,8 @@ class Patterns(threading.Thread):
             st_first = store.conn.execute("SELECT MIN(ts) FROM marker_log WHERE ts>=? AND heading IS NOT NULL", (since,)).fetchone()[0]
             sc = store.conn.execute("SELECT lon, lat, place, heading, target, type, jet FROM marker_log WHERE ts>=? AND heading IS NOT NULL "
                                     "AND status IS NULL AND lon IS NOT NULL AND lat IS NOT NULL AND pos_conf IN ('high','medium') "
+                                    # 1.56.3: a course a post stated — not one worked out from two of a channel's reports
+                                    "AND (evidence IS NULL OR evidence NOT LIKE '%bearing between the two latest reports%') "
                                     "AND (approach IS NULL OR approach=0)", (since,)).fetchall()
         built = store.kv_get("moves_at")
         cw, chh = MOVE_CELL[0] * res, MOVE_CELL[1] * res
@@ -2674,6 +2676,38 @@ class Patterns(threading.Thread):
                    f"курсів, вказаних у дописах від {sf or '—'}. Це повідомлення каналів, не радар: ціль, про яку повідомили знову, "
                    "рахується знову.")
         return {"en": [head_en] + [f[2] for f in found[:top]], "uk": [head_uk] + [f[3] for f in found[:top]], "found": len(found)}
+
+# 1.56.3, the owner: "in the Chernihiv region, by default the drones must always face into Ukraine when no direction is
+# given — it is extremely unlikely that a drone goes back to Belarus or Russia". A drone there with no course stated is
+# drawn facing INWARD's point (`face`: the glyph only — no course, no ray, no ETA, and the card says why); a course
+# worked out from two reports (never one a post stated) that points back across the border — more than INWARD_MAX_DEG
+# off the way in — is not kept.
+INWARD = {"25": (30.52, 50.45)}            # Chernihiv oblast → towards Kyiv, where its drones go (the patterns: SW, S)
+INWARD_MAX_DEG = 100
+
+
+def _inward_bearing(m):
+    pt = INWARD.get(str(m.get("oblast_uid") or ""))
+    if not pt or m.get("lon") is None or m.get("lat") is None or not geo:
+        return None
+    return geo.bearing(m["lon"], m["lat"], pt[0], pt[1])
+
+
+def outward(m, brg):
+    """Does this course point back across the border, out of Ukraine (an INWARD oblast only)?"""
+    b = _inward_bearing(m)
+    return b is not None and abs((brg - b + 540) % 360 - 180) > INWARD_MAX_DEG
+
+
+def inward_face(m):
+    """`face` for a drone of an INWARD oblast with no course: the way into Ukraine. Nothing for any other mark."""
+    m.pop("face", None)
+    if m.get("status") or m.get("heading") is not None or m.get("type") not in ("drones", "unknown"):
+        return
+    b = _inward_bearing(m)
+    if b is not None:
+        m["face"] = round(b)
+
 
 class State:
     """In-memory current picture + SSE fan-out."""
@@ -3085,6 +3119,8 @@ class State:
         # only if it sits close enough to still be about Kyiv.
         out = [m for m in out if in_scope(m)]
         out = self._chain_and_prune(out, ttl, kyiv_ends)
+        for m in out:
+            inward_face(m)                       # 1.56.3: a drone in Chernihiv oblast faces into Ukraine by default
         try:
             self._tag_marks(out)                 # 1.51: N-07, S-12 …
         except Exception as e:
@@ -3236,6 +3272,7 @@ class State:
                 ctx = None
                 last_by_channel.pop(p["channel"], None)
             fixed = []
+            n_here = sum(1 for m in ms if not m.get("status"))      # 1.56.3: how many targets this post reports
             for m in ms:
                 m = dict(m)
                 if m.get("candidates"):
@@ -3326,15 +3363,21 @@ class State:
                                              "method": "from the previous report toward the destination the post named"}
                             m["evidence"] = ev
                 elif m.get("live"):
-                    if ctx and pts and (pts - ctx[0]).total_seconds() <= 8 * 60 and m.get("heading") is None:
+                    # 1.56.3: only when this post and the one before each report one target — "1 біля Кіптів / 1 Любеч /
+                    # 1 Сеньківка" is three, and the previous post's Kiptiv → this one's Liubech drew a target heading NW,
+                    # back to Belarus (the owner): two targets, not a course; nor a course worked out this way that points
+                    # back across the border (`outward`)
+                    multi = n_here > 1 or (ctx and len(ctx) > 3 and ctx[3] > 1)
+                    if ctx and pts and not multi and (pts - ctx[0]).total_seconds() <= 8 * 60 and m.get("heading") is None:
                         d = math.hypot((m["lon"] - ctx[1]["lon"]) * 70.7, (m["lat"] - ctx[1]["lat"]) * 111)
-                        if d >= 0.4:
-                            m["heading"] = round(geo.bearing(ctx[1]["lon"], ctx[1]["lat"], m["lon"], m["lat"]))
+                        brg = round(geo.bearing(ctx[1]["lon"], ctx[1]["lat"], m["lon"], m["lat"])) if d >= 0.4 else None
+                        if brg is not None and not outward(m, brg):
+                            m["heading"] = brg
                             ev = dict(m.get("evidence") or {}); ev["heading"] = {"matched": f"{ctx[1].get('place')} → {m.get('place')}", "method": "bearing between the two latest reports of this live-tracking channel", "confidence": "medium"}
                             m["evidence"] = ev
                 if m.get("lon") is not None and not m.get("status") and not m.get("approach"):
                     # a carried position keeps the time it was reported at; only a newly named place resets the clock
-                    last_by_channel[p["channel"]] = ctx if (m.get("pos_ts") and ctx) else (pts, m, p["ts"])
+                    last_by_channel[p["channel"]] = ctx if (m.get("pos_ts") and ctx) else (pts, m, p["ts"], n_here)
                 fixed.append(m)
             ms = fixed
             if pts:

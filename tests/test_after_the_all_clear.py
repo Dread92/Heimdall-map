@@ -123,7 +123,7 @@ def test_the_rules_are_in_the_code_where_they_belong():
     i = SRC.index("    def markers(self):")
     body = SRC[i:SRC.index("    def _chain_and_prune", i)]
     assert "kyiv_ends = self.kyiv_city_all_clears(ttl)" in body
-    assert 'last_by_channel[p["channel"]] = ctx if (m.get("pos_ts") and ctx) else (pts, m, p["ts"])' in body
+    assert 'last_by_channel[p["channel"]] = ctx if (m.get("pos_ts") and ctx) else (pts, m, p["ts"], n_here)' in body   # 1.56.3: and how many targets that post reported
     assert 'm.get("status") in ("down", "lost", "clear")' in body
     assert 'tp = parse_iso(m.get("pos_ts") or m["ts"])' in SRC
     assert "Лисянка" in geo.PLACES and geo.PLACES["Лисянка"][2] == "24"

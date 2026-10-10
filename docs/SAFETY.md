@@ -544,6 +544,16 @@ already finished, and a burst that is still drawn reads as *still happening ther
 belongs to the history layer — which is where you go to ask what happened, not what is happening. A fire keeps
 its hour, because a fire really does last.
 
+## In Chernihiv oblast a drone faces into Ukraine (1.56.3)
+
+A course the posts did not give is not drawn: no ray, no heading, no ETA. But a silhouette has to point somewhere,
+and upright means north — near Liubech, back to Belarus. The owner: "by default the drones must always face into
+Ukraine when no direction is given — it is extremely unlikely that a drone goes back to Belarus or Russia". So in
+Chernihiv oblast a drone with no course faces towards Kyiv, and its card says so ("drawn facing into Ukraine: no course
+was stated"). A course worked out from two of a channel's reports is kept only when each report was of one target
+(two lines of two posts are two targets, not a course), and never when it points back across the border. A course a
+post states is always drawn as stated.
+
 ## "Heading to your village" is a thing the post has to say
 
 The priority location alert used to mean "the reported course passes within 25° of it". From 80 km away a 25°
