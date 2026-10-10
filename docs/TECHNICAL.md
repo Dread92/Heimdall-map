@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.56** · last updated 2026-10-10 (1.56.0)
+**Documented version: 1.56** · last updated 2026-10-10 (1.56.1)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -199,7 +199,7 @@ clear-sky/
 | `Watchdog` | the database and alert-state locks must be free within 15 s; a held lock logs every thread's stack, five in a row (~2 min) → exit, Fly restarts it; a starved process is only logged (load, not a deadlock) | 20 s |
 | `Digests` | each night (18:00–08:00 Kyiv) after `digest_hour`, and each Monday for the week: the figures (`State.digest_facts`), and with `ANTHROPIC_API_KEY` a written summary in EN + UK; stored in `digests` | 5 min check |
 | `Translations` | machine-translates feed posts into a language somebody reads | on demand, ~3 calls/s max |
-| `bulletins` | 1.54, with `OPENROUTER_API_KEY`: the AI's bulletins (§7.11) — on the clock, the last hour every `ai_bulletin_minutes` (20) and the last 24 hours every hour, only while there is activity, one call each in three languages → `ai_bulletins`; or one the dashboard asks for. (Until 1.53 an `ai-reader` thread read the posts — §7.7; retired) | 20 s; ≤ `ai_reader_monthly_usd` a month |
+| `bulletins` | 1.54, with `OPENROUTER_API_KEY`: the AI's bulletins (§7.11) — on the clock, the last hour and the last 24 hours once an hour at :00 (1.56.1; the last hour was every 20 minutes), only while there is activity, one call each in three languages → `ai_bulletins`; or one the dashboard asks for. (Until 1.53 an `ai-reader` thread read the posts — §7.7; retired) | 20 s; ≤ `ai_reader_monthly_usd` a month |
 | `night-reports` | 1.53: after `ai_report_hour` (Kyiv), the AI's report on the night before (§7.10) → `ai_reports`; or a night the dashboard asks for | 5 min |
 | `Pusher` | sends Web Push: one notification at a time, each to all its phones at once through `push.Sender` (32 workers, one kept-open HTTPS connection per push service per worker, VAPID signed once an hour per service) | queue |
 | `streams` | **every open page's live line** (`StreamHub`, §5.4): one thread, non-blocking sockets (epoll), the data sent as changes | events + every 15 / 5 / 2 s |
@@ -302,7 +302,6 @@ the committed template.
 | `ai_reader` | `true` | `false` keeps the AI off even with a key. |
 | `ai_reader_model` | `"anthropic/claude-haiku-5.5"` | Its model on OpenRouter (any model that takes a strict JSON schema). |
 | `ai_reader_monthly_usd` | `10` | What it may spend in a calendar month (UTC), counted from OpenRouter's own cost of each call; past it, it stops until the 1st. |
-| `ai_bulletin_minutes` | `20` | 1.54: the last hour's bulletin, every N minutes on the clock (10–60), while there is activity (§7.11). (`ai_reader_mode` and `ai_check_minutes`, 1.53, went with the check.) |
 | `ai_report_hour` | `9` | 1.53: the Kyiv hour after which the AI writes its report on the night that began the day before at 12:00. |
 | `demo` | `false` | Fake alerts and posts. |
 
@@ -1153,8 +1152,8 @@ top left (`#fmchip`, mirroring the band `#kyiv`; a tap, Escape or the phone's Ba
 ### 7.11 The bulletins (1.54)
 
 The owner: "instead of all that on the map, summaries of the activity of the last hour / the last 24 hours, a bit like
-a weather bulletin". The `bulletins` thread (`Bulletins`) writes two, on the clock: **the last hour** every
-`ai_bulletin_minutes` (20: at :00, :20, :40) and **the last 24 hours** every hour (:00).
+a weather bulletin". The `bulletins` thread (`Bulletins`) writes two, on the clock: **the last hour** and
+**the last 24 hours**, both once an hour at :00 — 1.56.1, the owner: "instead of a bulletin every 20 minutes, really only one an hour" (the last hour was every `ai_bulletin_minutes`, 20, gone with it).
 
 - **The record.** `State.activity_summary(since, until)` reads what the server itself recorded over the oblasts the map
   covers (`scope_uids`): the official air-raid alerts by oblast (minutes in the window, on now, started, ended, whole
@@ -1201,7 +1200,7 @@ a weather bulletin". The `bulletins` thread (`Bulletins`) writes two, on the clo
 - **In the app** (`GET /api/bulletin`): only while the dashboard's switch is on (`kv` `ai_bulletin_public` = "1"), the
   latest bulletin of each kind — and only while the server still stands by it: each turn that finds the latest still
   true (nothing new, the same record) sets `kv` `bul_checked:<kind>`, and a bulletin neither written nor checked within
-  35 minutes (the hour) or 75 minutes (24 h) is not shown — when the AI cannot write (off, no key, out of budget) it goes
+  75 minutes is not shown (the hour's was 35 until 1.56.1) — when the AI cannot write (off, no key, out of budget) it goes
   stale and leaves the app. The Tactical page shows it over the Near list (`#bul` in the drawer on a phone, `#bulL` in
   the left column on a computer): "Bulletin · AI", the last hour / 24 hours, the text in the reader's language, the time
   it was written and "written by AI from the channels' posts and the official alerts — not radar" (`loadBulletin`,
@@ -1242,6 +1241,26 @@ app, but on the admin dashboard." Nothing of it reaches the app: no page asks fo
   report. **Every share comes with its 95% range** (`wilson`, Wilson's interval): 2 moves of 3 is 67% (21–94%), 200
   of 300 is 67% (61–72%) — the probability's honesty, shown beside every %. The names of an area are the places most
   reported in it.
+- **1.56.1: from the first night the posts are kept.** The tags began on 9 Oct 2026 and the posts are kept since
+  18 Sep: every night before the first tagged one is **read again from its posts** with today's rules
+  (`Patterns.build_replay`: `State._replay_tracks`, the replay's own tracks, 12:00 to 12:00 Kyiv time) and its moves
+  are written with `src` "replay" (a tag's are "tag"; a replayed track is numbered `REPLAY_N` + its order: no origin,
+  no height — the replay keeps neither). At most `REPLAY_PER_TICK` (6) nights an hour, `REPLAY_PAUSE_S` (10 s) apart,
+  and none while Kyiv or its oblast is under an air-raid alert or a missile threat is up (`busy`) — the live map comes
+  first; a night once done (for this `MOVES_VERSION`) is not done again (`replay_nights`). Two reports of one track
+  less than `MOVE_MIN_MIN` (2 min) apart are no move (two places reported at once: a quarter of the first build's moves
+  were 0 minutes); a Banderol (`banderol_missiles`) is counted with the jet drones (it was left out); an area is named
+  by the places most reported in it, the marks' and the moves' together (the cell of Kyiv is "Київ", not a village one
+  track passed); the destinations the posts named are a share of the courses that named one. `MOVES_VERSION` 2: every
+  kept night is built again.
+- **In plain words** (1.56.1, the owner: "see whether you can identify patterns, in plain English"):
+  `Patterns.plain(report)` turns the figures into sentences, English and Ukrainian (`plain` in the answer), only where
+  they say something — an area with `PLAIN_MIN` courses stated (30), moves out of it (8) or tracks through it (8),
+  whose main course, next place or last place holds a share whose 95% range starts at `PLAIN_LO` or more (30%, 25%,
+  25%): "Славутич: of the 526 courses the posts gave here, 53% were south and 31% north (95% range for the first:
+  49–57%)". Strongest first (the bottom of the range), 12 at most, after one line on what it is built from (tracks,
+  nights, live and replayed moves, courses stated and since when, "the channels' reports, not radar"). What was
+  reported — never a forecast.
 - **These are the channels' reports, not radar**: a target nobody reported between two places is one move between them,
   a channel that names only big towns makes big moves, and an area's shares are only as good as the tracks the chains
   kept together (§7.4). The foundation of a probability, not one: a next-area share is a first-order transition (where
@@ -1249,7 +1268,7 @@ app, but on the admin dashboard." Nothing of it reaches the app: no page asks fo
   50,000) is there for any further model.
 - **Dashboard → Patterns** (`static/admin.html`, `loadPatterns` / `drawPatterns`): the period (30 / 90 days, a year,
   all), the kind, the area size; the counts (tracks, moves, nights, stated courses, areas) and when the moves were last
-  built; a **flow map** — the oblasts (`static/ukraine-map.json`), each area shaded by the moves out of it (one blue
+  built; **in plain words** (the sentences of `Patterns.plain`, or why there are none yet); a **flow map** — the oblasts (`static/ukraine-map.json`), each area shaded by the moves out of it (one blue
   ramp, square root), an arrow for its mean direction (longer when more of them go the same way), and from the area
   chosen, lines to the areas the next report put it in (width by share, the top three labelled); the chosen area's
   card — the directions (its moves and the stated courses, % of each, one axis), the next places, the last-reported
@@ -1297,7 +1316,7 @@ can be checked. Without a key the figures are still stored and shown. The model 
 
 `/admin` has seven tabs (the last one opened is remembered, `localStorage.admintab`): **Live** (online now, the
 admin's message with a preview in the readers' colours, the nuclear event — §9), **Analytics**, **Patterns** (1.55,
-§7.12: where the drones go, area by area — the dashboard only), **Nights & weeks**
+§7.12: where the drones go, area by area, and since 1.56.1 in plain words — the dashboard only), **Nights & weeks**
 (§8b), **Sources** (lead time, official sources, the channels and their controls, translation; a red dot on the
 tab when a source or a channel on the map fails), **AI reader** (1.50, §7.7: the shadow reader's readings beside
 the rules') and **Usage** (the anonymous counters). Each tab loads its own data; only Live, Sources and AI reader
@@ -1977,7 +1996,7 @@ All JSON unless stated. Public unless marked 🔒 (`ADMIN_KEY`).
 | 🔒 `POST /api/admin/channel` | `{action: add|set|delete, name, mode: map|trial|off, via: web|api, home}` — the channels read (§7.1); `home` is the compartment (an oblast uid, `31`, `ua`, or `""`); `add` checks `t.me/s/<name>` for readable posts and starts it on trial |
 | 🔒 `POST /api/admin/ai` | `{reader: bool}` — the AI at all (every call stops); 1.54 (§7.11): `{bulletin_public: bool}` — the bulletins in the app; `{bulletin_now: "1h"\|"24h"}` — asks the `bulletins` thread to write one now. (`live`, `mode`, `check_now` went with the AI's reading in 1.54) |
 | 🔒 `GET /api/admin/night?night=YYYY-MM-DD` | 1.53: one night in full (§7.10): `summary` (`State.night_summary`), `text` (`State.night_text`), `report` (the AI's, or null), `reports` (the nights that have one), `writing`, `report_hour` |
-| 🔒 `GET /api/admin/patterns?days=&kind=&res=&min=&raw=` | 1.55: the direction patterns (§7.12) — `days` 0–3650 (0: all; 90), `kind` `drones`\|`drone`\|`jet`\|`unstated`, `res` 1\|2\|4 (×14 km), `min` (3): `coverage` (`moves`, `tracks`, `nights`, `first`, `last`, `stated`, `cells`, `by_kind`, `built`, `version`), `cell_deg`, `cell_km`, `cells` (≤ 400, busiest first: `cell`, `lon`, `lat`, `name`, `names`, `moves`, `tracks`, `nights`, `dir`, `dir_p`, `mean_bearing`, `consistency`, `stay`, `next`, `next_places`, `through`, `final`, `final_places`, `origins`, `stated`, `stated_n`, `said`, `speed_kmh`, `gap_min`; each share `{n, p, lo, hi}` in %, Wilson 95%); `raw=1` adds `moves` (≤ 50,000, not cached). Cached 5 min |
+| 🔒 `GET /api/admin/patterns?days=&kind=&res=&min=&raw=` | 1.55: the direction patterns (§7.12) — `days` 0–3650 (0: all; 90), `kind` `drones`\|`drone`\|`jet`\|`unstated`, `res` 1\|2\|4 (×14 km), `min` (3): `coverage` (`moves`, `tracks`, `nights`, `first`, `last`, `stated`, `cells`, `by_kind`, 1.56.1 `by_src`, `stated_first`, `built`, `version`), 1.56.1 `plain` (`en`, `uk`: the sentences, the first on what they are built from; `found`), `cell_deg`, `cell_km`, `cells` (≤ 400, busiest first: `cell`, `lon`, `lat`, `name`, `names`, `moves`, `tracks`, `nights`, `dir`, `dir_p`, `mean_bearing`, `consistency`, `stay`, `next`, `next_places`, `through`, `final`, `final_places`, `origins`, `stated`, `stated_n`, `said`, `speed_kmh`, `gap_min`; each share `{n, p, lo, hi}` in %, Wilson 95%); `raw=1` adds `moves` (≤ 50,000, not cached). Cached 5 min |
 | 🔒 `POST /api/admin/ai_report` | 1.53: `{night}` — asks the `night-reports` thread to write (again) that night's report |
 | 🔒 `POST /api/admin/region` | `{id, on}` — an oblast on or off as a whole (1.43, §7.1): its place on the map and its channels; `31` is always on |
 | 🔒 `POST /api/admin/notice` | `{text: {uk, en, fr}, level: info|warn|alert, hours: 0–168 (0 = until removed), push: bool}` or `{clear: true}` — the team's message (§9) |
@@ -2010,7 +2029,7 @@ SQLite in WAL mode (`DB_PATH`; on Fly, the volume). Tables:
 | `targets` | 1.51: each target tag (§7.8) — `night`, `n`, the letter, origin, whose reading (`osrc`), its words, the post, first / last time, type. Kept 60 days |
 | `target_reports` | 1.51: which tag each report of a track belongs to (`report` = the mark id) — how a tag survives the window and a restart |
 | `target_points` | 1.52.1: where each report of a tagged track was (`report`, `night`, `n`, `ts`, `lon`, `lat`, `place`, `alt_m`) — the tag's path for the night, `/api/trail`; 60 days |
-| `track_moves` | 1.55: each tagged target's moves (§7.12) — `night`, `n`, `seq`, from / to (`ts_*`, `lon_*`, `lat_*`, `place_*`, `alt_*`), `km`, `minutes`, `bearing`, `kind`, `origin`, `osrc`, `ver`; the direction patterns' foundation, **kept for good** (`kv` `moves_v`, `moves_at`) |
+| `track_moves` | 1.55: each tagged target's moves (§7.12) — `night`, `n`, `seq`, from / to (`ts_*`, `lon_*`, `lat_*`, `place_*`, `alt_*`), `km`, `minutes`, `bearing`, `kind`, `origin`, `osrc`, `ver`, 1.56.1 `src` ("tag", or "replay": a night read again from its posts); the direction patterns' foundation, **kept for good** (`kv` `moves_v`, `moves_at`) |
 | `ai_reads` | 1.50: the AI reader's reading of each post it read (§7.7) — when, the post, whether the rules stored it, model, prompt version, ms, tokens, cost, verdict, the rules' reading and its own (JSON), facts dropped, error. Kept 90 days; the month's spend is `kv` `ai_usd:YYYY-MM`. 1.53: `chk`, the check that read it (its `ai` then holds the findings: `targets` with `f`, `findings`) |
 | `ai_checks` | 1.53: each 10-minute check (§7.10) — `id` (its UTC time), the posts' first and last time, how many, the oblasts, model, prompt version, ms, tokens, cost, `findings` (by kind), `notes` (per oblast), `uncertain`, `error` |
 | `ai_reports` | 1.53: the AI's report on each night (§7.10) — `night`, when, up to when, model, tokens, cost, `text`, `error` |

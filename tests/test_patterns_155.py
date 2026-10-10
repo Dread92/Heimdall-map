@@ -75,9 +75,9 @@ def test_the_moves_are_built_every_hour_and_kept_for_good():
     pat = server.Patterns(st)
     assert pat.tick() == 5 and st.kv_get("moves_v") == server.MOVES_VERSION
     rows = st.conn.execute("SELECT n, seq, place_from, place_to, kind, origin, ver FROM track_moves ORDER BY n, seq").fetchall()
-    assert rows == [(1, 0, "Чернігів", "Козелець", "drone", "belarus", "1"), (1, 1, "Козелець", "Бровари", "drone", "belarus", "1"),
-                    (1, 2, "Бровари", "Київ", "drone", "belarus", "1"), (2, 0, "Козелець", "Бобровиця", "unstated", None, "1"),
-                    (3, 0, "Чернігів", "Козелець", "jet", None, "1")]
+    assert rows == [(1, 0, "Чернігів", "Козелець", "drone", "belarus", server.MOVES_VERSION), (1, 1, "Козелець", "Бровари", "drone", "belarus", server.MOVES_VERSION),
+                    (1, 2, "Бровари", "Київ", "drone", "belarus", server.MOVES_VERSION), (2, 0, "Козелець", "Бобровиця", "unstated", None, server.MOVES_VERSION),
+                    (3, 0, "Чернігів", "Козелець", "jet", None, server.MOVES_VERSION)]
     assert pat.tick() == 5 and st.conn.execute("SELECT COUNT(*) FROM track_moves").fetchone()[0] == 5      # rebuilt, not doubled
     # an old night: its points go after TAG_KEEP_DAYS, its moves stay
     old = _track(st, 9, [("Бровари", 100), ("Київ", 80)], base=80 * 1440)

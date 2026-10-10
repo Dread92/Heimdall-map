@@ -2,6 +2,26 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.56.1 — 2026-10-10
+
+### Changed
+- **One AI bulletin an hour** — the owner: "instead of a bulletin every 20 minutes, really only one an hour". The last
+  hour and the last 24 hours are both written at :00 (the last hour was at :00, :20 and :40); `ai_bulletin_minutes` is
+  gone. A bulletin stays shown 75 minutes unchecked, so the hourly one never drops out between two hours.
+- **The patterns start from the first night the posts are kept** — the tags began on 9 Oct, the posts are kept since
+  18 Sep: every night before the first tagged one is read again from its posts with today's rules, six nights an hour
+  at most and none while Kyiv is under alert, and its moves are kept with the others (marked "replay").
+- **Fixes to the patterns' figures**: two places reported at the same moment are no move (a quarter of the first moves
+  were 0 minutes long); the Banderol is counted with the jet drones; an area is named by the places most reported in
+  it (the Kyiv square is "Київ", not a village one track passed); the destinations the posts named are a share of the
+  posts that named one (they read 0%).
+
+### Added
+- **The patterns in plain words** — "see whether you can identify patterns, in plain English": the Patterns tab says
+  what the figures show, in English and Ukrainian, only where they show something — "Славутич: of the 526 courses the
+  posts gave here, 53% were south and 31% north (95% range for the first: 49–57%)" — strongest first, after a line on
+  what it is built from. What was reported, never a forecast.
+
 ## 1.56.0 — 2026-10-10
 
 ### Added

@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Heimdall (Kyiv Air Watch) — the full technical documentation, with a map of the system.">
-<meta name="heimdall-version" content="1.56.0">
-<meta name="heimdall-docs" content="db6a5c4362647fc3">
+<meta name="heimdall-version" content="1.56.1">
+<meta name="heimdall-docs" content="c35723d7cb702117">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Heimdall Technical Manual</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -237,7 +237,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
 <header class="top">
   <div class="wrap">
     <a class="brand" href="#top"><b>Heimdall</b><span>Technical manual</span></a>
-    <span class="ver">1.56.0</span>
+    <span class="ver">1.56.1</span>
     <nav class="nav" aria-label="Sections">
       <a href="#map">Map</a><a href="#journeys">Journeys</a><a href="#rules">Rules</a><a href="#reference">Reference</a><a href="#safety">Safety</a>
     </nav>
@@ -256,7 +256,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
       <h1 class="title">How Heimdall works</h1>
       <p class="lead">An unofficial air-threat map for Kyiv and the oblasts around it. One Python process reads the official
       alert data and the channels that track drones and missiles, stores every post before it reads it, rebuilds the map
-      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.56.0, 10 October 2026:
+      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.56.1, 10 October 2026:
       the map first, then everything in full.</p>
     </div>
     <dl class="facts">
@@ -424,7 +424,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
   <a class="m-link" href="#711-the-bulletins-154"><g>
     <rect class="m-box" x="230" y="650" width="180" height="96" rx="6"/>
     <text class="m-title" x="242" y="672">Bulletins · night report</text>
-    <text class="m-sub" x="242" y="692">1 h every 20 min, 24 h</text>
+    <text class="m-sub" x="242" y="692">the last 1 h and 24 h,</text>
     <text class="m-sub" x="242" y="710">hourly, only with activity</text>
     <text class="m-sub" x="242" y="728">one call, three languages</text>
   </g></a>
@@ -632,7 +632,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
     <div class="doc" id="doc">
 <section class="part" id="tech" data-label="Reference"><p class="partlabel">Part I · The reference</p>
 <h1 id="heimdall--technical-documentation">Heimdall — technical documentation</h1>
-<p><strong>Documented version: 1.56</strong> · last updated 2026-10-10 (1.56.0)</p>
+<p><strong>Documented version: 1.56</strong> · last updated 2026-10-10 (1.56.1)</p>
 <p>Heimdall was called <strong>Clear Sky</strong> until 1.29; the repository, the Fly app (<code>kyiv-air-watch-gb</code>) and some
 internal names still carry the old name.</p>
 <p>This is the complete technical reference: what runs, where the data comes from, how a Telegram post becomes a
@@ -876,7 +876,7 @@ real post, and a fix to the rules applies to posts already in the database.</p>
 </tr>
 <tr>
 <td><code>bulletins</code></td>
-<td>1.54, with <code>OPENROUTER_API_KEY</code>: the AI's bulletins (§7.11) — on the clock, the last hour every <code>ai_bulletin_minutes</code> (20) and the last 24 hours every hour, only while there is activity, one call each in three languages → <code>ai_bulletins</code>; or one the dashboard asks for. (Until 1.53 an <code>ai-reader</code> thread read the posts — §7.7; retired)</td>
+<td>1.54, with <code>OPENROUTER_API_KEY</code>: the AI's bulletins (§7.11) — on the clock, the last hour and the last 24 hours once an hour at :00 (1.56.1; the last hour was every 20 minutes), only while there is activity, one call each in three languages → <code>ai_bulletins</code>; or one the dashboard asks for. (Until 1.53 an <code>ai-reader</code> thread read the posts — §7.7; retired)</td>
 <td>20 s; ≤ <code>ai_reader_monthly_usd</code> a month</td>
 </tr>
 <tr>
@@ -1137,11 +1137,6 @@ the committed template.</p>
 <td><code>ai_reader_monthly_usd</code></td>
 <td><code>10</code></td>
 <td>What it may spend in a calendar month (UTC), counted from OpenRouter's own cost of each call; past it, it stops until the 1st.</td>
-</tr>
-<tr>
-<td><code>ai_bulletin_minutes</code></td>
-<td><code>20</code></td>
-<td>1.54: the last hour's bulletin, every N minutes on the clock (10–60), while there is activity (§7.11). (<code>ai_reader_mode</code> and <code>ai_check_minutes</code>, 1.53, went with the check.)</td>
 </tr>
 <tr>
 <td><code>ai_report_hour</code></td>
@@ -2141,8 +2136,8 @@ data (<code>/api/…</code>) is never kept.</p>
 top left (<code>#fmchip</code>, mirroring the band <code>#kyiv</code>; a tap, Escape or the phone's Back leaves).</p>
 <h3 id="711-the-bulletins-154">7.11 The bulletins (1.54)<a class="anc" href="#711-the-bulletins-154" aria-label="Link to this section">#</a></h3>
 <p>The owner: &quot;instead of all that on the map, summaries of the activity of the last hour / the last 24 hours, a bit like
-a weather bulletin&quot;. The <code>bulletins</code> thread (<code>Bulletins</code>) writes two, on the clock: <strong>the last hour</strong> every
-<code>ai_bulletin_minutes</code> (20: at :00, :20, :40) and <strong>the last 24 hours</strong> every hour (:00).</p>
+a weather bulletin&quot;. The <code>bulletins</code> thread (<code>Bulletins</code>) writes two, on the clock: <strong>the last hour</strong> and
+<strong>the last 24 hours</strong>, both once an hour at :00 — 1.56.1, the owner: &quot;instead of a bulletin every 20 minutes, really only one an hour&quot; (the last hour was every <code>ai_bulletin_minutes</code>, 20, gone with it).</p>
 <ul>
 <li><strong>The record.</strong> <code>State.activity_summary(since, until)</code> reads what the server itself recorded over the oblasts the map
 covers (<code>scope_uids</code>): the official air-raid alerts by oblast (minutes in the window, on now, started, ended, whole
@@ -2189,7 +2184,7 @@ far less on a quiet one; the dashboard shows a record up to 30,000 characters.</
 <li><strong>In the app</strong> (<code>GET /api/bulletin</code>): only while the dashboard's switch is on (<code>kv</code> <code>ai_bulletin_public</code> = &quot;1&quot;), the
 latest bulletin of each kind — and only while the server still stands by it: each turn that finds the latest still
 true (nothing new, the same record) sets <code>kv</code> <code>bul_checked:&lt;kind&gt;</code>, and a bulletin neither written nor checked within
-35 minutes (the hour) or 75 minutes (24 h) is not shown — when the AI cannot write (off, no key, out of budget) it goes
+75 minutes is not shown (the hour's was 35 until 1.56.1) — when the AI cannot write (off, no key, out of budget) it goes
 stale and leaves the app. The Tactical page shows it over the Near list (<code>#bul</code> in the drawer on a phone, <code>#bulL</code> in
 the left column on a computer): &quot;Bulletin · AI&quot;, the last hour / 24 hours, the text in the reader's language, the time
 it was written and &quot;written by AI from the channels' posts and the official alerts — not radar&quot; (<code>loadBulletin</code>,
@@ -2229,6 +2224,26 @@ from (<code>osrc</code> rules / ai — a region's &quot;probably&quot; is not co
 report. <strong>Every share comes with its 95% range</strong> (<code>wilson</code>, Wilson's interval): 2 moves of 3 is 67% (21–94%), 200
 of 300 is 67% (61–72%) — the probability's honesty, shown beside every %. The names of an area are the places most
 reported in it.</li>
+<li><strong>1.56.1: from the first night the posts are kept.</strong> The tags began on 9 Oct 2026 and the posts are kept since
+18 Sep: every night before the first tagged one is <strong>read again from its posts</strong> with today's rules
+(<code>Patterns.build_replay</code>: <code>State._replay_tracks</code>, the replay's own tracks, 12:00 to 12:00 Kyiv time) and its moves
+are written with <code>src</code> &quot;replay&quot; (a tag's are &quot;tag&quot;; a replayed track is numbered <code>REPLAY_N</code> + its order: no origin,
+no height — the replay keeps neither). At most <code>REPLAY_PER_TICK</code> (6) nights an hour, <code>REPLAY_PAUSE_S</code> (10 s) apart,
+and none while Kyiv or its oblast is under an air-raid alert or a missile threat is up (<code>busy</code>) — the live map comes
+first; a night once done (for this <code>MOVES_VERSION</code>) is not done again (<code>replay_nights</code>). Two reports of one track
+less than <code>MOVE_MIN_MIN</code> (2 min) apart are no move (two places reported at once: a quarter of the first build's moves
+were 0 minutes); a Banderol (<code>banderol_missiles</code>) is counted with the jet drones (it was left out); an area is named
+by the places most reported in it, the marks' and the moves' together (the cell of Kyiv is &quot;Київ&quot;, not a village one
+track passed); the destinations the posts named are a share of the courses that named one. <code>MOVES_VERSION</code> 2: every
+kept night is built again.</li>
+<li><strong>In plain words</strong> (1.56.1, the owner: &quot;see whether you can identify patterns, in plain English&quot;):
+<code>Patterns.plain(report)</code> turns the figures into sentences, English and Ukrainian (<code>plain</code> in the answer), only where
+they say something — an area with <code>PLAIN_MIN</code> courses stated (30), moves out of it (8) or tracks through it (8),
+whose main course, next place or last place holds a share whose 95% range starts at <code>PLAIN_LO</code> or more (30%, 25%,
+25%): &quot;Славутич: of the 526 courses the posts gave here, 53% were south and 31% north (95% range for the first:
+49–57%)&quot;. Strongest first (the bottom of the range), 12 at most, after one line on what it is built from (tracks,
+nights, live and replayed moves, courses stated and since when, &quot;the channels' reports, not radar&quot;). What was
+reported — never a forecast.</li>
 <li><strong>These are the channels' reports, not radar</strong>: a target nobody reported between two places is one move between them,
 a channel that names only big towns makes big moves, and an area's shares are only as good as the tracks the chains
 kept together (§7.4). The foundation of a probability, not one: a next-area share is a first-order transition (where
@@ -2236,7 +2251,7 @@ it went next from here, whatever it did before), and the moves' CSV (<code>raw=1
 50,000) is there for any further model.</li>
 <li><strong>Dashboard → Patterns</strong> (<code>static/admin.html</code>, <code>loadPatterns</code> / <code>drawPatterns</code>): the period (30 / 90 days, a year,
 all), the kind, the area size; the counts (tracks, moves, nights, stated courses, areas) and when the moves were last
-built; a <strong>flow map</strong> — the oblasts (<code>static/ukraine-map.json</code>), each area shaded by the moves out of it (one blue
+built; <strong>in plain words</strong> (the sentences of <code>Patterns.plain</code>, or why there are none yet); a <strong>flow map</strong> — the oblasts (<code>static/ukraine-map.json</code>), each area shaded by the moves out of it (one blue
 ramp, square root), an arrow for its mean direction (longer when more of them go the same way), and from the area
 chosen, lines to the areas the next report put it in (width by share, the top three labelled); the chosen area's
 card — the directions (its moves and the stated courses, % of each, one axis), the next places, the last-reported
@@ -2279,7 +2294,7 @@ can be checked. Without a key the figures are still stored and shown. The model 
 <h2 id="8c-the-dashboard-132-tabs-and-analytics">8c. The dashboard (1.32: tabs and Analytics)<a class="anc" href="#8c-the-dashboard-132-tabs-and-analytics" aria-label="Link to this section">#</a></h2>
 <p><code>/admin</code> has seven tabs (the last one opened is remembered, <code>localStorage.admintab</code>): <strong>Live</strong> (online now, the
 admin's message with a preview in the readers' colours, the nuclear event — §9), <strong>Analytics</strong>, <strong>Patterns</strong> (1.55,
-§7.12: where the drones go, area by area — the dashboard only), <strong>Nights &amp; weeks</strong>
+§7.12: where the drones go, area by area, and since 1.56.1 in plain words — the dashboard only), <strong>Nights &amp; weeks</strong>
 (§8b), <strong>Sources</strong> (lead time, official sources, the channels and their controls, translation; a red dot on the
 tab when a source or a channel on the map fails), <strong>AI reader</strong> (1.50, §7.7: the shadow reader's readings beside
 the rules') and <strong>Usage</strong> (the anonymous counters). Each tab loads its own data; only Live, Sources and AI reader
@@ -3036,7 +3051,7 @@ downloading again, and still picks up a new version immediately.</li>
 </tr>
 <tr>
 <td>🔒 <code>GET /api/admin/patterns?days=&amp;kind=&amp;res=&amp;min=&amp;raw=</code></td>
-<td>1.55: the direction patterns (§7.12) — <code>days</code> 0–3650 (0: all; 90), <code>kind</code> <code>drones</code>|<code>drone</code>|<code>jet</code>|<code>unstated</code>, <code>res</code> 1|2|4 (×14 km), <code>min</code> (3): <code>coverage</code> (<code>moves</code>, <code>tracks</code>, <code>nights</code>, <code>first</code>, <code>last</code>, <code>stated</code>, <code>cells</code>, <code>by_kind</code>, <code>built</code>, <code>version</code>), <code>cell_deg</code>, <code>cell_km</code>, <code>cells</code> (≤ 400, busiest first: <code>cell</code>, <code>lon</code>, <code>lat</code>, <code>name</code>, <code>names</code>, <code>moves</code>, <code>tracks</code>, <code>nights</code>, <code>dir</code>, <code>dir_p</code>, <code>mean_bearing</code>, <code>consistency</code>, <code>stay</code>, <code>next</code>, <code>next_places</code>, <code>through</code>, <code>final</code>, <code>final_places</code>, <code>origins</code>, <code>stated</code>, <code>stated_n</code>, <code>said</code>, <code>speed_kmh</code>, <code>gap_min</code>; each share <code>{n, p, lo, hi}</code> in %, Wilson 95%); <code>raw=1</code> adds <code>moves</code> (≤ 50,000, not cached). Cached 5 min</td>
+<td>1.55: the direction patterns (§7.12) — <code>days</code> 0–3650 (0: all; 90), <code>kind</code> <code>drones</code>|<code>drone</code>|<code>jet</code>|<code>unstated</code>, <code>res</code> 1|2|4 (×14 km), <code>min</code> (3): <code>coverage</code> (<code>moves</code>, <code>tracks</code>, <code>nights</code>, <code>first</code>, <code>last</code>, <code>stated</code>, <code>cells</code>, <code>by_kind</code>, 1.56.1 <code>by_src</code>, <code>stated_first</code>, <code>built</code>, <code>version</code>), 1.56.1 <code>plain</code> (<code>en</code>, <code>uk</code>: the sentences, the first on what they are built from; <code>found</code>), <code>cell_deg</code>, <code>cell_km</code>, <code>cells</code> (≤ 400, busiest first: <code>cell</code>, <code>lon</code>, <code>lat</code>, <code>name</code>, <code>names</code>, <code>moves</code>, <code>tracks</code>, <code>nights</code>, <code>dir</code>, <code>dir_p</code>, <code>mean_bearing</code>, <code>consistency</code>, <code>stay</code>, <code>next</code>, <code>next_places</code>, <code>through</code>, <code>final</code>, <code>final_places</code>, <code>origins</code>, <code>stated</code>, <code>stated_n</code>, <code>said</code>, <code>speed_kmh</code>, <code>gap_min</code>; each share <code>{n, p, lo, hi}</code> in %, Wilson 95%); <code>raw=1</code> adds <code>moves</code> (≤ 50,000, not cached). Cached 5 min</td>
 </tr>
 <tr>
 <td>🔒 <code>POST /api/admin/ai_report</code></td>
@@ -3152,7 +3167,7 @@ downloading again, and still picks up a new version immediately.</li>
 </tr>
 <tr>
 <td><code>track_moves</code></td>
-<td>1.55: each tagged target's moves (§7.12) — <code>night</code>, <code>n</code>, <code>seq</code>, from / to (<code>ts_*</code>, <code>lon_*</code>, <code>lat_*</code>, <code>place_*</code>, <code>alt_*</code>), <code>km</code>, <code>minutes</code>, <code>bearing</code>, <code>kind</code>, <code>origin</code>, <code>osrc</code>, <code>ver</code>; the direction patterns' foundation, <strong>kept for good</strong> (<code>kv</code> <code>moves_v</code>, <code>moves_at</code>)</td>
+<td>1.55: each tagged target's moves (§7.12) — <code>night</code>, <code>n</code>, <code>seq</code>, from / to (<code>ts_*</code>, <code>lon_*</code>, <code>lat_*</code>, <code>place_*</code>, <code>alt_*</code>), <code>km</code>, <code>minutes</code>, <code>bearing</code>, <code>kind</code>, <code>origin</code>, <code>osrc</code>, <code>ver</code>, 1.56.1 <code>src</code> (&quot;tag&quot;, or &quot;replay&quot;: a night read again from its posts); the direction patterns' foundation, <strong>kept for good</strong> (<code>kv</code> <code>moves_v</code>, <code>moves_at</code>)</td>
 </tr>
 <tr>
 <td><code>ai_reads</code></td>
@@ -4408,7 +4423,7 @@ d'alerte ne sont pas des préférences de style.</p>
 </section>
     </div>
   </div>
-  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.56.0, 10 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
+  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.56.1, 10 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
 </main>
 
 <script>

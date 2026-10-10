@@ -166,20 +166,21 @@ def test_the_app_sees_the_latest_still_checked_and_only_with_the_switch_on():
     st.store.kv_set("ai_bulletin_public", "1")
     p = bl.public()
     assert p["on"] and p["h1"]["quiet"] == 1 and set(p["h1"]) == {"at", "since", "until", "quiet", "uk", "en", "fr"} and p["h24"] is None
-    old = (NOW - timedelta(minutes=50)).isoformat()
+    old = (NOW - timedelta(minutes=80)).isoformat()
     st.store.conn.execute("UPDATE ai_bulletins SET at=?", (old,))
     st.store.kv_set("bul_checked:1h", old)
-    assert bl.public()["h1"] is None                                # neither written nor checked for 35 minutes
+    assert bl.public()["h1"] is None                                # neither written nor checked for 75 minutes (1.56.1)
     st.store.kv_set("bul_checked:1h", server.now_iso())
     assert bl.public()["h1"]["quiet"] == 1
 
 
 def test_on_the_clock():
+    # 1.56.1, the owner: "instead of a bulletin every 20 minutes, really only one an hour" — both kinds on the hour
     bl = server.Bulletins(server.State(server.Store(":memory:"), {}), {"ai_bulletin_minutes": 20})
     t = 1_000_000_200.0
-    assert bl.every("1h") == 20 and bl.every("24h") == 60
-    assert bl.slot("1h", t) != bl.slot("1h", t + 1200) and bl.slot("1h", t - (t % 1200)) == bl.slot("1h", t - (t % 1200) + 1199)
-    assert server.Bulletins(None, {"ai_bulletin_minutes": 1}).every("1h") == 10
+    assert bl.every("1h") == 60 == bl.every("24h") and "ai_bulletin_minutes" not in server.DEFAULT_CONFIG
+    assert bl.slot("1h", t) != bl.slot("1h", t + 3600) and bl.slot("1h", t - (t % 3600)) == bl.slot("1h", t - (t % 3600) + 3599)
+    assert bl.slot("1h", t) == bl.slot("24h", t) and bl.FRESH["1h"] > timedelta(minutes=60)
 
 
 # ---- the model's answer ----------------------------------------------------------------------------------------------

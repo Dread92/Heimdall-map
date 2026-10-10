@@ -106,7 +106,6 @@ DEFAULT_CONFIG = {
     "ai_reader": True,                # false: the AI stays off even with a key
     "ai_reader_model": "anthropic/claude-haiku-5.5",   # its model on OpenRouter; or env AI_READER_MODEL
     "ai_reader_monthly_usd": 10,      # what it may spend in a month (OpenRouter's own cost of each call); past it, it stops
-    "ai_bulletin_minutes": 20,        # 1.54: the last hour's bulletin, every N minutes on the clock (10–60) while there is activity
     "ai_report_hour": 9,              # 1.53: Kyiv hour after which the AI writes its report on the night that began the day before at 12:00
     "demo": False,
 }
@@ -1215,7 +1214,9 @@ class Store:
         c.execute("""CREATE TABLE IF NOT EXISTS track_moves(
             night TEXT, n INTEGER, seq INTEGER, ts_from TEXT, ts_to TEXT, lon_from REAL, lat_from REAL, lon_to REAL,
             lat_to REAL, place_from TEXT, place_to TEXT, km REAL, minutes REAL, bearing INTEGER, kind TEXT, origin TEXT,
-            osrc TEXT, alt_from INTEGER, alt_to INTEGER, ver TEXT, PRIMARY KEY(night, n, seq))""")
+            osrc TEXT, alt_from INTEGER, alt_to INTEGER, ver TEXT, src TEXT, PRIMARY KEY(night, n, seq))""")
+        if "src" not in [r[1] for r in c.execute("PRAGMA table_info(track_moves)").fetchall()]:
+            c.execute("ALTER TABLE track_moves ADD COLUMN src TEXT")      # 1.56.1: 'tag' (the live tags) or 'replay'
         c.execute("CREATE INDEX IF NOT EXISTS ix_tmv_ts ON track_moves(ts_from)")
         c.execute("CREATE INDEX IF NOT EXISTS ix_alerts_started ON alerts(started_at)")
         c.execute("CREATE INDEX IF NOT EXISTS ix_feed_ts ON feed(ts)")
@@ -2277,11 +2278,15 @@ def reach_km(dt_min, jet=False, cap=True):
 # report put a target seen in the cell, where the targets that passed through it were last reported, the directions
 # they went and the courses the posts stated — each share with its 95% range. The channels' reports, not radar: a
 # target nobody reported between two places is one move between them. Nothing of it reaches the app.
+# 1.56.1: the nights before the first tagged one are read again from their posts (`State._replay_tracks`, the replay's
+# own tracks) — the posts are kept since 18 Sep 2026, the tags only since 9 Oct; two reports of one track at the same
+# moment are not a move (it was 0 minutes, a quarter of the moves); and the dashboard says what it finds in words.
 # ---------------------------------------------------------------------------
-MOVES_VERSION = "1"
+MOVES_VERSION = "2"
 MOVE_CELL = (0.2, 0.125)        # lon, lat degrees: a cell of about 14 × 14 km at 50° N (× 2, × 4 on the dashboard)
 MOVE_MIN_KM = 2.0               # nearer than this, the last position reported again: the target is still there
 MOVE_MAX_MIN = 120              # two reports of one tag further apart than this: no move between them
+MOVE_MIN_MIN = 2.0              # 1.56.1: closer in time than this, two places reported at once — no move between them
 PATTERN_KINDS = {"drones": ("drone", "jet", "unstated", "banderol"), "drone": ("drone",), "jet": ("jet", "banderol"),
                  "unstated": ("unstated",)}
 
@@ -2289,7 +2294,7 @@ PATTERN_KINDS = {"drones": ("drone", "jet", "unstated", "banderol"), "drone": ("
 def move_kind(typ, jet):
     """What a track is counted as: a jet drone (a Banderol is one, kept apart), a drone, a weapon not stated (a probable
     drone, 1.54.8), or its own type — a missile is kept but is not in the drones' patterns."""
-    if typ == "banderol":
+    if typ in ("banderol", "banderol_missiles"):          # the marks' type is banderol_missiles (1.56.1: it was missed)
         return "banderol"
     if jet:
         return "jet"
@@ -2326,11 +2331,14 @@ class Patterns(threading.Thread):
     EVERY_S = 3600
     BACKFILL_DAYS = TAG_KEEP_DAYS - 2         # a night whose reports are all newer than this has all its points
     COLS = ("night", "n", "seq", "ts_from", "ts_to", "lon_from", "lat_from", "lon_to", "lat_to", "place_from", "place_to",
-            "km", "minutes", "bearing", "kind", "origin", "osrc", "alt_from", "alt_to", "ver")
+            "km", "minutes", "bearing", "kind", "origin", "osrc", "alt_from", "alt_to", "ver", "src")
+    REPLAY_N = 100000                         # a replayed track's number: 100000 + its order in the night (tags are < it)
+    REPLAY_PAUSE_S = 10                       # between two nights read again: the live map comes first
+    REPLAY_PER_TICK = 6                       # at most this many nights an hour, and none while Kyiv is under alert
 
-    def __init__(self, store):
+    def __init__(self, store, state=None):
         super().__init__(daemon=True, name="patterns")
-        self.store, self.last = store, None
+        self.store, self.state, self.last = store, state, None
 
     @staticmethod
     def moves_of(points, kind="drone", jet=False):
@@ -2354,7 +2362,7 @@ class Patterns(threading.Thread):
             if km < MOVE_MIN_KM:
                 a.update(t=t, ts=ts, alt=alt if alt is not None else a["alt"])
                 continue
-            if km > reach_km(dt, jet, cap=kind != "banderol"):
+            if dt < MOVE_MIN_MIN or km > reach_km(dt, jet, cap=kind != "banderol"):
                 continue
             brg = geo.bearing(a["lon"], a["lat"], lon, lat) if geo else None
             out.append({"ts_from": a["ts"], "ts_to": ts, "lon_from": a["lon"], "lat_from": a["lat"], "lon_to": lon, "lat_to": lat,
@@ -2387,14 +2395,72 @@ class Patterns(threading.Thread):
             for i, mv in enumerate(self.moves_of(p, kind, jets[key])):
                 rows.append((key[0], key[1], i, mv["ts_from"], mv["ts_to"], mv["lon_from"], mv["lat_from"], mv["lon_to"],
                              mv["lat_to"], mv["place_from"], mv["place_to"], mv["km"], mv["minutes"], mv["bearing"], kind,
-                             origin, osrc, mv["alt_from"], mv["alt_to"], MOVES_VERSION))
+                             origin, osrc, mv["alt_from"], mv["alt_to"], MOVES_VERSION, "tag"))
         with st.lock:
             st.conn.execute(f"DELETE FROM track_moves WHERE night IN ({q})", nights)
             st.conn.executemany(f"INSERT OR REPLACE INTO track_moves({','.join(self.COLS)}) VALUES({','.join('?' * len(self.COLS))})", rows)
             st.conn.commit()
         return len(rows)
 
-    def tick(self, now=None):
+    def busy(self):
+        """Kyiv or its oblast under an air-raid alert, or a missile threat: reading old nights again can wait."""
+        state = self.state
+        try:
+            if state.missile_active():
+                return True
+            with state.lock:
+                return any((a.get("oblast_uid") in ("31", "14")) and a.get("alert_type", "air_raid") == "air_raid"
+                           for a in state.active.values())
+        except Exception:
+            return False
+
+    def replay_nights(self, now=None):
+        """The nights to read again from their posts: from the first stored post's night to the night before the first
+        tagged one (a tagged night is the tags': its tracks are what the map showed), less the ones done already."""
+        now = now or datetime.now(timezone.utc)
+        st = self.store
+        with st.lock:
+            first = st.conn.execute("SELECT MIN(ts) FROM feed").fetchone()[0]
+            tagged = st.conn.execute("SELECT MIN(night) FROM target_points").fetchone()[0]
+            done = {r[0] for r in st.conn.execute("SELECT DISTINCT night FROM track_moves WHERE src='replay' AND ver=?", (MOVES_VERSION,))}
+        f = tag_night(first) if first else None
+        if not f:
+            return []
+        last = tagged or tag_night((now - timedelta(hours=36)).isoformat())
+        d, out = datetime.fromisoformat(f).date(), []
+        while d.isoformat() < last:
+            if d.isoformat() not in done:
+                out.append(d.isoformat())
+            d += timedelta(days=1)
+        return out
+
+    def build_replay(self, night):
+        """One night read again from its posts with today's rules (`State._replay_tracks`, the replay's tracks), its
+        moves written as src 'replay' (no origin, no height: the replay keeps neither). Returns how many."""
+        st, state = self.store, self.state
+        if state is None:
+            return 0
+        tz = kyiv_tz()
+        d = datetime.fromisoformat(night)
+        start = datetime(d.year, d.month, d.day, 12, tzinfo=tz).astimezone(timezone.utc)
+        end = start + timedelta(hours=24)
+        tracks = state._replay_tracks(start, end, state._replay_alerts(start, end))
+        rows = []
+        for i, tr in enumerate(tracks):
+            kind = move_kind(tr.get("ty"), tr.get("jet"))
+            pts = [(datetime.fromtimestamp(p[0], timezone.utc).isoformat(), p[1], p[2], p[3], None) for p in tr.get("p") or []]
+            pts = [x for x in pts if start.isoformat() <= x[0] < end.isoformat()]
+            for k, mv in enumerate(self.moves_of(pts, kind, bool(tr.get("jet")))):
+                rows.append((night, self.REPLAY_N + i, k, mv["ts_from"], mv["ts_to"], mv["lon_from"], mv["lat_from"], mv["lon_to"],
+                             mv["lat_to"], mv["place_from"], mv["place_to"], mv["km"], mv["minutes"], mv["bearing"], kind,
+                             None, None, None, None, MOVES_VERSION, "replay"))
+        with st.lock:
+            st.conn.execute("DELETE FROM track_moves WHERE night=? AND src='replay'", (night,))
+            st.conn.executemany(f"INSERT OR REPLACE INTO track_moves({','.join(self.COLS)}) VALUES({','.join('?' * len(self.COLS))})", rows)
+            st.conn.commit()
+        return len(rows)
+
+    def tick(self, now=None, replay=True):
         now = now or datetime.now(timezone.utc)
         st = self.store
         full = st.kv_get("moves_v") != MOVES_VERSION
@@ -2407,6 +2473,17 @@ class Patterns(threading.Thread):
         self.last = {"at": now.isoformat(), "nights": len(nights), "moves": n, "full": full}
         if full:
             log(f"patterns: {n} moves built from {len(nights)} night(s) (version {MOVES_VERSION})")
+        if replay and self.state is not None and not self.busy():
+            todo, r = self.replay_nights(now)[:self.REPLAY_PER_TICK], 0
+            for night in todo:
+                try:
+                    r += self.build_replay(night)
+                except Exception as e:
+                    log(f"patterns: night {night} not read again:", type(e).__name__, e)
+                time.sleep(self.REPLAY_PAUSE_S)
+            if todo:
+                log(f"patterns: {r} moves from {len(todo)} night(s) read again from their posts")
+            self.last["replayed"] = len(todo)
         return n
 
     def run(self):
@@ -2431,9 +2508,12 @@ class Patterns(threading.Thread):
         kq = ",".join("?" * len(kinds))
         with store.lock:
             mv = store.conn.execute(f"SELECT night, n, seq, ts_from, ts_to, lon_from, lat_from, lon_to, lat_to, place_from, "
-                                    f"place_to, km, minutes, bearing, kind, origin, osrc FROM track_moves WHERE ts_from>=? "
+                                    f"place_to, km, minutes, bearing, kind, origin, osrc, src FROM track_moves WHERE ts_from>=? "
                                     f"AND kind IN ({kq}) ORDER BY night, n, seq", (since, *kinds)).fetchall()
             all_k = dict(store.conn.execute("SELECT kind, COUNT(*) FROM track_moves WHERE ts_from>=? GROUP BY kind", (since,)).fetchall())
+            by_src = dict(store.conn.execute(f"SELECT COALESCE(src,'tag'), COUNT(*) FROM track_moves WHERE ts_from>=? AND kind IN ({kq}) "
+                                             f"GROUP BY 1", (since, *kinds)).fetchall())
+            st_first = store.conn.execute("SELECT MIN(ts) FROM marker_log WHERE ts>=? AND heading IS NOT NULL", (since,)).fetchone()[0]
             sc = store.conn.execute("SELECT lon, lat, place, heading, target, type, jet FROM marker_log WHERE ts>=? AND heading IS NOT NULL "
                                     "AND status IS NULL AND lon IS NOT NULL AND lat IS NOT NULL AND pos_conf IN ('high','medium') "
                                     "AND (approach IS NULL OR approach=0)", (since,)).fetchall()
@@ -2451,7 +2531,7 @@ class Patterns(threading.Thread):
         C = collections.defaultdict(new)
         tracks = collections.defaultdict(list)
         for row in mv:
-            night, n, _seq, _tf, _tt, lo1, la1, lo2, la2, pf, pt, km, mins, brg, _k, _o, _os = row
+            night, n, _seq, _tf, _tt, lo1, la1, lo2, la2, pf, pt, km, mins, brg, _k, _o, _os, _src = row
             a, b = cell(lo1, la1), cell(lo2, la2)
             names[a][pf] += 1
             names[b][pt] += 1
@@ -2497,7 +2577,9 @@ class Patterns(threading.Thread):
             stated += 1
 
         def label(c):
-            nm = [k for k, _ in (names.get(c) or snames.get(c) or collections.Counter()).most_common(3) if k]
+            # 1.56.1: the places most reported there, the marks' and the moves' together (the Kyiv cell is Київ, not the
+            # village one track passed)
+            nm = [k for k, _ in (names.get(c, collections.Counter()) + snames.get(c, collections.Counter())).most_common(3) if k]
             return {"cell": f"{c[0]}:{c[1]}", "lon": round((c[0] + .5) * cw, 4), "lat": round((c[1] + .5) * chh, 4),
                     "name": nm[0] if nm else None, "names": nm}
 
@@ -2521,7 +2603,7 @@ class Patterns(threading.Thread):
                           "stay": r["stay"], "next": shares(r["next"], r["moves"], cells=True), "next_places": shares(r["next_pl"], r["moves"]),
                           "through": r["through"], "final": shares(r["final"], r["through"], cells=True),
                           "final_places": shares(r["final_pl"], r["through"]), "origins": shares(r["origins"], r["through"], 5),
-                          "stated": r["stated"], "stated_n": ns, "said": shares(r["said"], ns, 6) if ns else [],
+                          "stated": r["stated"], "stated_n": ns, "said": shares(r["said"], sum(r["said"].values()), 6) if r["said"] else [],
                           "speed_kmh": None if sp is None else round(sp), "gap_min": None if gp is None else round(gp)})
         cells.sort(key=lambda x: (-x["moves"], -x["stated_n"], x["cell"]))
         nts = sorted({k[0] for k in tracks})
@@ -2529,13 +2611,69 @@ class Patterns(threading.Thread):
                "cell_deg": [round(cw, 4), round(chh, 4)], "cell_km": round(chh * 111.2),
                "coverage": {"moves": len(mv), "tracks": len(tracks), "nights": len(nts), "first": nts[0] if nts else None,
                             "last": nts[-1] if nts else None, "stated": stated, "cells": len(cells), "by_kind": all_k,
-                            "built": built, "version": MOVES_VERSION},
+                            "by_src": by_src, "stated_first": st_first, "built": built, "version": MOVES_VERSION},
                "cells": cells[:400]}
+        out["plain"] = Patterns.plain(out)
         if raw:
             keys = ("night", "n", "seq", "ts_from", "ts_to", "lon_from", "lat_from", "lon_to", "lat_to", "place_from",
-                    "place_to", "km", "minutes", "bearing", "kind", "origin", "osrc")
+                    "place_to", "km", "minutes", "bearing", "kind", "origin", "osrc", "src")
             out["moves"] = [dict(zip(keys, row)) for row in mv[-50000:]]
         return out
+
+    DIRS = {"en": ("north", "north-east", "east", "south-east", "south", "south-west", "west", "north-west"),
+            "uk": ("на північ", "на північний схід", "на схід", "на південний схід", "на південь", "на південний захід",
+                   "на захід", "на північний захід")}
+    PLAIN_MIN = {"stated": 30, "moves": 8, "through": 8}      # what an area needs before a sentence is said of it
+    PLAIN_LO = {"stated": 0.30, "next": 0.25, "final": 0.25}   # and the bottom of the share's 95% range
+
+    @classmethod
+    def plain(cls, rep, top=12):
+        """1.56.1, the owner: "see whether you can identify patterns, in plain English". What the figures say, in
+        sentences (English and Ukrainian), only where they say something: an area with PLAIN_MIN courses stated, moves
+        out of it or tracks through it, whose main course, next place or last place holds a share whose 95% range starts
+        at PLAIN_LO or more. Strongest first (the bottom of the range), `top` at most, after one line on what it is
+        built from. The figures' own words — "reported", "the posts gave" — never a forecast."""
+        V, D, found = rep["coverage"], cls.DIRS, []
+        for c in rep["cells"]:
+            nm = " / ".join(c["names"][:2]) or "?"
+            n = c["stated_n"]
+            if n >= cls.PLAIN_MIN["stated"]:
+                o = sorted(range(8), key=lambda i: -c["stated"][i])
+                k1, k2 = c["stated"][o[0]], c["stated"][o[1]]
+                lo, hi = wilson(k1, n)
+                if lo >= cls.PLAIN_LO["stated"]:
+                    p1, p2, r = round(100 * k1 / n), round(100 * k2 / n), f"{round(100 * lo)}–{round(100 * hi)}%"
+                    en = (f"{nm}: of the {n} courses the posts gave here, {p1}% were {D['en'][o[0]]}"
+                          + (f" and {p2}% {D['en'][o[1]]}" if p2 >= 15 else "") + f" (95% range for the first: {r}).")
+                    uk = (f"{nm}: із {n} курсів, які тут вказали дописи, {p1}% — {D['uk'][o[0]]}"
+                          + (f", {p2}% — {D['uk'][o[1]]}" if p2 >= 15 else "") + f" (95% діапазон для першого: {r}).")
+                    found.append((lo, n, en, uk))
+            x = (c.get("next_places") or [None])[0]
+            if c["moves"] >= cls.PLAIN_MIN["moves"] and x and x["lo"] >= 100 * cls.PLAIN_LO["next"] and x["place"] not in c["names"][:1]:
+                r = f"{x['p']:.0f}%, 95% range {x['lo']:.0f}–{x['hi']:.0f}%"
+                found.append((x["lo"] / 100, c["moves"],
+                              f"{nm}: the next report put the target in {x['place']} {x['n']} times out of {c['moves']} ({r}).",
+                              f"{nm}: наступне повідомлення — {x['place']}: {x['n']} із {c['moves']} переміщень "
+                              f"({x['p']:.0f}%, 95% діапазон {x['lo']:.0f}–{x['hi']:.0f}%)."))
+            x = (c.get("final_places") or [None])[0]
+            if c["through"] >= cls.PLAIN_MIN["through"] and x and x["lo"] >= 100 * cls.PLAIN_LO["final"] and x["place"] not in c["names"][:1]:
+                found.append((x["lo"] / 100, c["through"],
+                              f"{nm}: {x['n']} of the {c['through']} tracks that passed here were last reported in {x['place']} "
+                              f"({x['p']:.0f}%, 95% range {x['lo']:.0f}–{x['hi']:.0f}%).",
+                              f"{nm}: {x['n']} із {c['through']} цілей, що пролетіли тут, востаннє повідомлено — {x['place']} "
+                              f"({x['p']:.0f}%, 95% діапазон {x['lo']:.0f}–{x['hi']:.0f}%)."))
+        found.sort(key=lambda f: (-f[0], -f[1]))
+        sf = (V.get("stated_first") or "")[:10]
+        bs = V.get("by_src") or {}
+        head_en = (f"Built from {V['tracks']} followed tracks over {V['nights']} nights ({V['first'] or '—'} to {V['last'] or '—'}; "
+                   f"{bs.get('tag', 0)} moves from the live tags, {bs.get('replay', 0)} from nights read again from their posts) and "
+                   f"{V['stated']} courses stated in the posts since {sf or '—'}. These are the channels' reports, not radar: a target "
+                   "reported again is counted again.")
+        head_uk = (f"З {V['tracks']} простежених цілей (ночей: {V['nights']}, {V['first'] or '—'} – {V['last'] or '—'}; "
+                   f"{bs.get('tag', 0)} переміщень із живих міток, {bs.get('replay', 0)} — з ночей, перечитаних із дописів) і {V['stated']} "
+                   f"курсів, вказаних у дописах від {sf or '—'}. Це повідомлення каналів, не радар: ціль, про яку повідомили знову, "
+                   "рахується знову.")
+        return {"en": [head_en] + [f[2] for f in found[:top]], "uk": [head_uk] + [f[3] for f in found[:top]], "found": len(found)}
 
 class State:
     """In-memory current picture + SSE fan-out."""
@@ -6302,7 +6440,8 @@ class NightReports(threading.Thread):
 
 class Bulletins(threading.Thread):
     """1.54: the AI's bulletins — the owner: "summaries of the activity of the last hour / the last 24 hours, a bit like a
-    weather bulletin". On the clock — the last hour at :00, :20 and :40 (`ai_bulletin_minutes`), the last 24 hours at :00
+    weather bulletin". On the clock — 1.56.1, the owner: "only one an hour, not every 20 minutes": the last hour and the
+    last 24 hours at :00
     — the window's record (State.activity_summary) is written up by the AI in Ukrainian, English and French in one call
     (ai_reader.BULLETIN_SYSTEM), and only while there is something in it: a window with nothing in it gets the server's
     own one-line bulletin, once, without a call. The same record is never written twice; the 24 hours are written again
@@ -6311,7 +6450,7 @@ class Bulletins(threading.Thread):
     the AI cannot write (off, no key, out of budget) a bulletin goes stale and the app stops showing it. The dashboard can
     ask for one now."""
     WINDOW = {"1h": timedelta(hours=1), "24h": timedelta(hours=24)}
-    FRESH = {"1h": timedelta(minutes=35), "24h": timedelta(minutes=75)}     # how long the app shows one unchecked
+    FRESH = {"1h": timedelta(minutes=75), "24h": timedelta(minutes=75)}     # how long the app shows one unchecked
     QUIET = {"1h": {"uk": "За останню годину канали не повідомляли про цілі в районі, який показує Heimdall, і офіційних повітряних тривог там не було.",
                     "en": "Over the last hour the channels reported no targets in the area Heimdall covers, and there was no official air-raid alert there.",
                     "fr": "Au cours de la dernière heure, les canaux n'ont signalé aucune cible dans la zone couverte par Heimdall, et aucune alerte aérienne officielle n'y a été donnée."},
@@ -6330,12 +6469,9 @@ class Bulletins(threading.Thread):
         self.why = {}            # kind → why the last turn wrote nothing (the dashboard)
 
     def every(self, kind):
-        if kind == "24h":
-            return 60
-        try:
-            return max(10, min(60, int(self.cfg.get("ai_bulletin_minutes", 20))))
-        except (TypeError, ValueError):
-            return 20
+        """Minutes between two turns of a kind: 60 for both since 1.56.1 (the last hour was every 20 minutes,
+        `ai_bulletin_minutes`, gone)."""
+        return 60
 
     def slot(self, kind, t=None):
         return int((t if t is not None else time.time()) // (self.every(kind) * 60))
@@ -8116,7 +8252,7 @@ def main():
     if state.pusher.enabled:
         threading.Thread(target=proximity_watch, args=(state,), daemon=True, name="proximity").start()
     threading.Thread(target=bridge_watch, args=(state,), daemon=True, name="bridges").start()
-    state.patterns = Patterns(store)           # 1.55: the direction patterns' moves, built every hour (the dashboard)
+    state.patterns = Patterns(store, state)    # 1.55: the direction patterns' moves, built every hour (the dashboard)
     state.patterns.start()
 
     keyed = False
