@@ -546,8 +546,8 @@ function paint(){
     // its number in the list below, and how many
     q+=`<text class="no" x="3.2" y="-2.2">${r.no}${m.count&&m.count>1?`<tspan fill="${c}"> ×${m.count}</tspan>`:''}</text>`;
     // the stated height under it; ↓ in crimson when a post said it is descending or reported it lower
-    { const tr=altTrend(m), dsc=(m.alt&&m.alt.state==='descending')||(tr&&tr.dir==='down');
-      const v=m.alt&&m.alt.m!=null?fmtAlt(m.alt.m):'', txt=(dsc?'↓':'')+(v||((m.alt&&m.alt.state&&!dsc)?(ALTL[m.alt.state]||''):''));
+    { const tr=altTrend(m), A=altNow(m), dsc=(A&&A.state==='descending')||(tr&&tr.dir==='down');     // 1.56.2: 4 minutes at most
+      const v=A&&A.m!=null?fmtAlt(A.m):'', txt=(dsc?'↓':'')+(v||((A&&A.state&&!dsc)?(ALTL[A.state]||''):''));
       if(txt) q+=`<text class="altl${dsc?' dsc':''}" x="3.2" y="2.6">${esc(txt)}</text>`; }
     g+=q+'</g>';
   }
@@ -563,11 +563,11 @@ function paint(){
     if(statedCourse(m)) bits.push(esc(t('lt_course',DIRS[Math.round(m.heading/45)%8])));
     // Height, only when a post stated it — a low or falling drone can be diving. Shown on the row itself,
     // not behind a tap: descending in crimson; a run of stated heights as "↓ 2,2 км → 800 м".
-    const tr=altTrend(m);
-    if(m.alt&&m.alt.state==='descending') bits.push(`<b class="dsc">↓ ${esc(t('alt_desc_l'))}${m.alt.m!=null?' · '+esc(fmtAlt(m.alt.m)):''}</b>`);
+    const tr=altTrend(m), A=altNow(m);
+    if(A&&A.state==='descending') bits.push(`<b class="dsc">↓ ${esc(t('alt_desc_l'))}${A.m!=null?' · '+esc(fmtAlt(A.m)):''}</b>`);
     else if(tr) bits.push(`<b class="${tr.dir==='down'?'dsc':'alt'}">${esc(tr.text)}</b>`);
-    else if(m.alt&&m.alt.m!=null) bits.push(`<b class="alt">${esc(t('lt_alt_at',fmtAlt(m.alt.m)))}</b>`);
-    else if(m.alt&&m.alt.state) bits.push(`<b class="alt">${esc(ALTL[m.alt.state]||m.alt.state)}</b>`);
+    else if(A&&A.m!=null) bits.push(`<b class="alt">${esc(t('lt_alt_at',fmtAlt(A.m)))}</b>`);
+    else if(A&&A.state) bits.push(`<b class="alt">${esc(ALTL[A.state]||A.state)}</b>`);
     bits.push(m.stale?`${esc(t('lt_lost'))} · ${esc(t('tp_ago',m.stale))}`:esc(t('tp_ago',agoMin(m.ts))));
     const said=LANG==='uk'?m.text:((LANG==='fr'&&m.text_fr)||m.text_en||m.text);
     const track=(m.history||[]).filter(h=>h.place).slice(-4).map(h=>`${esc(pn(h.place))} ${fmtT(h.ts)}`);

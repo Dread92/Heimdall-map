@@ -54,7 +54,8 @@ def test_a_track_keeps_the_height_each_report_stated():
 def test_the_trend_is_only_stated_numbers():
     body = I18N[I18N.index("function altTrend(m)"):I18N.index("\n", I18N.index("return {hs"))]
     assert "h.alt_m" in body and "m.alt.m" in body
-    assert "hs.length<2" in body.replace(" ", ""), "one height is not a trend"
+    assert "all.length<2" in body.replace(" ", ""), "one height is not a trend"
+    assert "!altFresh(all[all.length-1][1])" in body.replace(" ", ""), "1.56.2: nor one whose last height is past 4 minutes"
 
 
 def test_light_shows_the_height_on_the_row_and_beside_the_mark():

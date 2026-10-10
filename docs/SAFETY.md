@@ -221,6 +221,13 @@ A descending drone is the most dangerous state there is: it is diving at somethi
 shot down". It is now a live target, and a post has to say `збито` / `знищено` before anything is called a
 shoot-down. `tests/test_geo.py` pins both halves of that.
 
+**A height is shown for 4 minutes at most** (1.56.2). The owner: "a drone at 900 m whose altitude was last reported
+10 minutes ago is probably already down, has struck a target, has climbed again or has changed path" — Kyiv INFO,
+15:48 "900 m Shahed drone", 15:50 "explosions, close by", and the map still said 900 m at 15:59. A height, a descent
+and a run of heights are drawn on the maps and in the lists only while the report that stated them is at most four
+minutes old; after that the target has no height on the map. The card still tells it, as history: "900 m: «…» —
+reported 11 min ago, too old to be its height now", and its track keeps each report's height with its time.
+
 ## A threat type is never invented
 
 If the post does not say what is flying, the map does not say it either: the marker is an amber warning triangle

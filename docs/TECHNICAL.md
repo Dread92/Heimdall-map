@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.56** · last updated 2026-10-10 (1.56.1)
+**Documented version: 1.56** · last updated 2026-10-10 (1.56.2)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -986,8 +986,13 @@ in the AI's view of the map (`ai_map`, `ai_context` send no origin). It is not a
 - **The bottom line**: the height and the speed the track's **latest** report stated — the rules' (`alt`,
   `geo.parse_speed`) or, where they read none, the AI's for that report (`alt.s` / `spd.s` = `ai`); and `vs`, its
   vertical state (descending…), the rules' or the AI's. Height and descent are **always shown when given** (the
-  owner's priority): at every zoom, still after the mark goes stale (the arrow; not the red highlight), and on the
-  chip of a target reported for a whole oblast ("↓2200", `oblAlt`). **1.54.9: outlined, not a pill** (1.54.6 drew a
+  owner's priority): at every zoom, and on the chip of a target reported for a whole oblast ("↓2200", `oblAlt`) —
+  **1.56.2: for 4 minutes at most** (`ALT_MAX_MIN` in `i18n.js`, `altNow`, `altFresh`; the owner: "never more than 4
+  minutes — a drone at 900 m last reported 10 minutes ago is down, has hit, has climbed again or has turned"): the map's
+  height and arrow, an earlier report's height with its age, the oblast chip, the card's height chip, Light's mark and
+  row, and `altTrend` (a run of heights whose last one is older) all go when the report that stated them is older; the
+  card's source line then says "reported N min ago — too old to be its height now" (`alt_old`), and its track keeps
+  every report's height with its time. **1.54.9: outlined, not a pill** (1.54.6 drew a
   filled pill; the owner: "not a filled bullet — just make the characters more visible, with an outline"): 12 px, heavy,
   sky blue (#5cc8ff; red #ff4d6a while it descends) on a dark outline (`paint-order: stroke`); the card's height chip is
   coloured text in a coloured frame (`.chip.alt`, `.chip.desc`), a region-wide report's height light blue (`.obalt`).
@@ -1010,7 +1015,7 @@ no post says where a target came from, the oblast its **first** report was in (`
 it probably — `TAG_REGION`: Chernihiv oblast `n` (Belarus), Cherkasy oblast `s` (the south or the east) — in **lower
 case** (`n-07`), `os` = `region`, and the card says "probably from …, first reported in …; no post said so". A stated
 origin, the rules' or the AI's, always wins. The height on the bottom line is the latest the track stated (`alt.cur`
-false: an earlier report's, shown with its age "2900 м (4′)"). In daylight the tag, the height and the region outline
+false: an earlier report's, shown with its age "2900 м (3′)" — 1.56.2: never past 4 minutes, `ALT_MAX_MIN`). In daylight the tag, the height and the region outline
 take dark colours (`body.m-day`).
 
 **The path of a tapped target** (1.52, `drawSelPath`, layer `#selpath`): the places the posts reported it at, oldest

@@ -2,6 +2,17 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.56.2 — 2026-10-10
+
+### Fixed
+- **A height is never shown more than 4 minutes after it was reported** — the owner: "a drone at low altitude (900 m)
+  whose altitude was last reported 10 minutes ago is probably already down, has struck a target, has regained altitude
+  or has changed path". Kyiv INFO: 15:48 "900 m Shahed", 15:50 explosions close by — and the map kept "900 m" for
+  11 minutes. The height and the descent arrow on the map, an earlier report's height "(3′)", a whole oblast's chip, the
+  card's height chip, Light's mark and row and a run of heights ("↓ 2,2 км → 900 м") all go once the report that stated
+  them is more than 4 minutes old. The card still shows it as history: "reported 11 min ago — too old to be its height
+  now", and its track keeps each report's height with its time.
+
 ## 1.56.1 — 2026-10-10
 
 ### Changed

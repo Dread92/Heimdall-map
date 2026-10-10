@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Heimdall (Kyiv Air Watch) — the full technical documentation, with a map of the system.">
-<meta name="heimdall-version" content="1.56.1">
-<meta name="heimdall-docs" content="c35723d7cb702117">
+<meta name="heimdall-version" content="1.56.2">
+<meta name="heimdall-docs" content="5569ce8812d97de8">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Heimdall Technical Manual</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -237,7 +237,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
 <header class="top">
   <div class="wrap">
     <a class="brand" href="#top"><b>Heimdall</b><span>Technical manual</span></a>
-    <span class="ver">1.56.1</span>
+    <span class="ver">1.56.2</span>
     <nav class="nav" aria-label="Sections">
       <a href="#map">Map</a><a href="#journeys">Journeys</a><a href="#rules">Rules</a><a href="#reference">Reference</a><a href="#safety">Safety</a>
     </nav>
@@ -256,7 +256,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
       <h1 class="title">How Heimdall works</h1>
       <p class="lead">An unofficial air-threat map for Kyiv and the oblasts around it. One Python process reads the official
       alert data and the channels that track drones and missiles, stores every post before it reads it, rebuilds the map
-      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.56.1, 10 October 2026:
+      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.56.2, 10 October 2026:
       the map first, then everything in full.</p>
     </div>
     <dl class="facts">
@@ -632,7 +632,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
     <div class="doc" id="doc">
 <section class="part" id="tech" data-label="Reference"><p class="partlabel">Part I · The reference</p>
 <h1 id="heimdall--technical-documentation">Heimdall — technical documentation</h1>
-<p><strong>Documented version: 1.56</strong> · last updated 2026-10-10 (1.56.1)</p>
+<p><strong>Documented version: 1.56</strong> · last updated 2026-10-10 (1.56.2)</p>
 <p>Heimdall was called <strong>Clear Sky</strong> until 1.29; the repository, the Fly app (<code>kyiv-air-watch-gb</code>) and some
 internal names still carry the old name.</p>
 <p>This is the complete technical reference: what runs, where the data comes from, how a Telegram post becomes a
@@ -1986,8 +1986,13 @@ one of the track's places, or the only target of a post the rules also read as o
 <li><strong>The bottom line</strong>: the height and the speed the track's <strong>latest</strong> report stated — the rules' (<code>alt</code>,
 <code>geo.parse_speed</code>) or, where they read none, the AI's for that report (<code>alt.s</code> / <code>spd.s</code> = <code>ai</code>); and <code>vs</code>, its
 vertical state (descending…), the rules' or the AI's. Height and descent are <strong>always shown when given</strong> (the
-owner's priority): at every zoom, still after the mark goes stale (the arrow; not the red highlight), and on the
-chip of a target reported for a whole oblast (&quot;↓2200&quot;, <code>oblAlt</code>). <strong>1.54.9: outlined, not a pill</strong> (1.54.6 drew a
+owner's priority): at every zoom, and on the chip of a target reported for a whole oblast (&quot;↓2200&quot;, <code>oblAlt</code>) —
+<strong>1.56.2: for 4 minutes at most</strong> (<code>ALT_MAX_MIN</code> in <code>i18n.js</code>, <code>altNow</code>, <code>altFresh</code>; the owner: &quot;never more than 4
+minutes — a drone at 900 m last reported 10 minutes ago is down, has hit, has climbed again or has turned&quot;): the map's
+height and arrow, an earlier report's height with its age, the oblast chip, the card's height chip, Light's mark and
+row, and <code>altTrend</code> (a run of heights whose last one is older) all go when the report that stated them is older; the
+card's source line then says &quot;reported N min ago — too old to be its height now&quot; (<code>alt_old</code>), and its track keeps
+every report's height with its time. <strong>1.54.9: outlined, not a pill</strong> (1.54.6 drew a
 filled pill; the owner: &quot;not a filled bullet — just make the characters more visible, with an outline&quot;): 12 px, heavy,
 sky blue (#5cc8ff; red #ff4d6a while it descends) on a dark outline (<code>paint-order: stroke</code>); the card's height chip is
 coloured text in a coloured frame (<code>.chip.alt</code>, <code>.chip.desc</code>), a region-wide report's height light blue (<code>.obalt</code>).
@@ -2009,7 +2014,7 @@ no post says where a target came from, the oblast its <strong>first</strong> rep
 it probably — <code>TAG_REGION</code>: Chernihiv oblast <code>n</code> (Belarus), Cherkasy oblast <code>s</code> (the south or the east) — in <strong>lower
 case</strong> (<code>n-07</code>), <code>os</code> = <code>region</code>, and the card says &quot;probably from …, first reported in …; no post said so&quot;. A stated
 origin, the rules' or the AI's, always wins. The height on the bottom line is the latest the track stated (<code>alt.cur</code>
-false: an earlier report's, shown with its age &quot;2900 м (4′)&quot;). In daylight the tag, the height and the region outline
+false: an earlier report's, shown with its age &quot;2900 м (3′)&quot; — 1.56.2: never past 4 minutes, <code>ALT_MAX_MIN</code>). In daylight the tag, the height and the region outline
 take dark colours (<code>body.m-day</code>).</p>
 <p><strong>The path of a tapped target</strong> (1.52, <code>drawSelPath</code>, layer <code>#selpath</code>): the places the posts reported it at, oldest
 first, joined in red dots, each with its time — the path the posts put it on, not a flight path; cleared when the
@@ -3640,6 +3645,12 @@ shows nothing at all otherwise — never a default, never an estimate, never &qu
 <code>зниження</code> was matched by the <em>shoot-down</em> keywords, so a drone in its attack dive was drawn green as &quot;confirmed
 shot down&quot;. It is now a live target, and a post has to say <code>збито</code> / <code>знищено</code> before anything is called a
 shoot-down. <code>tests/test_geo.py</code> pins both halves of that.</p>
+<p><strong>A height is shown for 4 minutes at most</strong> (1.56.2). The owner: &quot;a drone at 900 m whose altitude was last reported
+10 minutes ago is probably already down, has struck a target, has climbed again or has changed path&quot; — Kyiv INFO,
+15:48 &quot;900 m Shahed drone&quot;, 15:50 &quot;explosions, close by&quot;, and the map still said 900 m at 15:59. A height, a descent
+and a run of heights are drawn on the maps and in the lists only while the report that stated them is at most four
+minutes old; after that the target has no height on the map. The card still tells it, as history: &quot;900 m: «…» —
+reported 11 min ago, too old to be its height now&quot;, and its track keeps each report's height with its time.</p>
 <h2 id="s-a-threat-type-is-never-invented">A threat type is never invented<a class="anc" href="#s-a-threat-type-is-never-invented" aria-label="Link to this section">#</a></h2>
 <p>If the post does not say what is flying, the map does not say it either: the marker is an amber warning triangle
 labelled <em>type not stated</em>, counted apart from drones and missiles. &quot;Васильків увага ‼️&quot; tells you where to worry,
@@ -4423,7 +4434,7 @@ d'alerte ne sont pas des préférences de style.</p>
 </section>
     </div>
   </div>
-  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.56.1, 10 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
+  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.56.2, 10 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
 </main>
 
 <script>
