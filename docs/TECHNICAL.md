@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.55** · last updated 2026-10-10 (1.55.0)
+**Documented version: 1.56** · last updated 2026-10-10 (1.56.0)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -141,6 +141,8 @@ clear-sky/
 │   ├── map-ua.json         rivers, main roads, airports and power plants of the whole country (built, 1.45)
 │   ├── towns-ua.json       raion centres and towns of 10,000+ of every oblast, for finding one's way (built, 1.49)
 │   ├── kyiv-districts.json the 10 city districts of Kyiv (OSM)
+│   ├── streets/            1.56: every settlement and named street of each oblast, `<uid>.json` (OSM, built; LICENSE.md: ODbL)
+│   ├── streets.js          1.56: their search, on the phone — loaded by both pages' pin pickers when they open (§10.6)
 │   ├── ukraine-map.json    oblast outlines in an affine lon/lat projection (Light page fallback lookup)
 │   ├── admin.html          private dashboard: usage, source health, channels, lead time (/admin, ADMIN_KEY)
 │   ├── index.html, mobile.html   older desktop / mobile views (/desktop, /ua)
@@ -160,6 +162,7 @@ clear-sky/
 │   ├── build_extra_places.py rebuilds data/extra_places.json from GeoNames (1.52)
 │   ├── build_mapdata.py    rebuilds static/map-ua.json from Natural Earth (1.45)
 │   ├── build_towns.py      rebuilds static/towns-ua.json from GeoNames (1.49)
+│   ├── build_streets.py    rebuilds static/streets/ from the 27 regional OSM extracts (pyosmium, shapely; 1.56)
 │   ├── build_imagery.py    builds the satellite layer (imagery/sat-ua.mbtiles) from ESA WorldCover / Sentinel-2 (1.47)
 │   ├── upload-imagery.bat  puts imagery/sat-ua.mbtiles on the Fly volume (1.47)
 │   ├── set-esri-key.bat    one-time: the owner's Esri key for the closest zooms, into Fly's secrets (1.48)
@@ -1640,6 +1643,10 @@ Main parts:
 - **a pin dropped on the map**: press and hold on open map (a ring fills while the finger stays; a drag only starts past
   `HOLD_SLOP_PX` = 10 screen px; the browser's long-press menu is suppressed) — the fourth pin, as before; or a pin's
   "on the map" (`PIN_FOR`), banner with Cancel, a tap where it goes (`dropPin`). A pin put on the map is named by its pin;
+- **a pin on a street** (1.56, §10.6): the sheet's search finds every street and village of the oblast chosen; a street
+  sets the pin at the street's point (`hsPick`), zooms the map to the street (`setView`, the street's reach), and arms
+  the pin (`armPin(true, id, true)`: "Pin 2 is on the street — tap your exact spot to move it") — a tap moves it and it
+  keeps the street's name (`PIN_KEEP`); on the plain background the street map is shown for it (not saved);
 - **the place search above the keyboard** (1.54.9, the owner: "on a phone the keyboard overlaps the suggestions"): the
   page asks to be resized by the keyboard (`interactive-widget=resizes-content`, Android); where it is not (iPhone),
   `vvSync` keeps the visual viewport in `--kb` / `--vvh`, the sheet stands on the keyboard, and while it is up
@@ -1874,9 +1881,45 @@ then `localStorage.lang` (shared with the two pages; the УКР / EN / FR button
 - Linked from the Tactical More panel (About, `m_guide`), the card (What to do →, and the ballistic warning's button), the top of the help sheet (`.gdl`), the Light footer (`#gdl`)
   and the nuclear-event banner (`/guide#rad`, `static/nuke.js`). The page asks the server for nothing.
 
+### 10.6 The streets and villages of Ukraine (1.56)
+
+The owner (10 Oct 2026): "for the district / village etc. it would be good to have a complete registry of the streets
+within the city / oblast so the user can set the pin accurately" — then "all the towns and streets of Ukraine".
+
+- **The data**: OpenStreetMap, © OpenStreetMap contributors, ODbL 1.0 (`static/streets/LICENSE.md`; credited in the list
+  wherever a street or a village from it is shown). `scripts/build_streets.py DIR` reads the 27 regional extracts of
+  download.openstreetmap.fr (`EXTRACTS`: one per oblast of the app, Kyiv and Sevastopol included; ~1 GB, not in git)
+  with pyosmium and shapely — build-time tools, not the server's — and writes one file per oblast,
+  `static/streets/<uid>.json` (format 1, described in the script): the **settlements** (every place = city / town /
+  village / hamlet named in OSM inside the oblast's boundary — admin_level 4 —, streets or not, with its raion,
+  admin_level 6) and the **streets** (every named way of a street's kind: residential, living street, the primary to
+  tertiary roads, unclassified, pedestrian; a service road or a track only when its name is a street's — `STREET_WORD`
+  —; never a road between towns, "Київ — Чоп", `ROAD_NAME`). A street belongs to the settlement whose boundary its
+  middle is in (admin_level 9 — Ukraine's settlement boundaries — or a place area), or else to the nearest settlement
+  node within that kind's reach (`REACH_KM`: 10 km for a city, 4 a town, 2 a village, 1 a hamlet); ways of one name in
+  one settlement are one street: its point (the vertex nearest their centre), how far its ways reach, another name it
+  is known by (`old_name` — the renamed streets: "Московський проспект" finds Bandera Avenue — or the Russian `name`
+  where a `name:uk` was used, in Crimea), and in Kyiv its district (admin_level 10). The Ukrainian name (`name:uk`)
+  first. 2026-10-10: 30,215 settlements, 230,814 streets; 15.8 MB, 3.9 MB gzipped (the server gzips them once, `_GZ`);
+  Kyiv 2,710 streets (51 KB on the wire), Kyiv oblast 18,051 in 1,195 settlements (283 KB).
+- **The search, on the phone** (`static/streets.js`, `HS`): the Tactical sheet (`#homesheet`) and Light's picker
+  (`#pick`) load it when they open (`hsOpen`), and it adds a "Streets & villages in" choice under the search — "Kyiv
+  and Kyiv oblast" (`31,14`), or any oblast (`localStorage.hs_obl`; the oblast of the pin being set first). It
+  downloads that oblast's list once (`HS.load`), and after the page's own places it lists the **streets** (up to 50)
+  and the **settlements** the page does not already have (up to 20). Every word typed starts a word of the street or of
+  its settlement, one at least of the street: "шевченка бровари" is Shevchenko Street in Brovary; an apostrophe or none
+  (лук'янівка, лукянівка); Latin typed against the Cyrillic names (`SK`: khreshchatyk). The settlement named first,
+  then the bigger settlement, Kyiv before its oblast, the shorter name. A row: the street, its old name (uk) or its
+  transliteration (en, fr), its settlement and (a village) its raion or (Kyiv) its district.
+- **What is typed never leaves the phone**: the one request is the oblast's file — the server sees only which oblast's
+  list was opened, the way it sees the map tiles a phone shows.
+
 ## 11. Privacy and security
 
 - The four places never leave the phone; the Light page's requests carry no place (checked in the render tests).
+- 1.56: a street or a village is searched on the phone (`static/streets.js`); the server sees only which oblast's list
+  was opened (`/static/streets/<uid>.json`, the Kyiv pair by default) — what the map tiles a phone shows already say,
+  and less — never what is typed, nor the street chosen.
 - Push subscriptions: a ~10 km cell only; older stored homes are coarsened at start.
 - The Telegram session (`TG_SESSION`) is a key to a whole Telegram account. It is created on the owner's PC by
   `scripts/telegram-login.bat` and goes straight into Fly's secret store (`fly secrets import`, read from stdin):
@@ -2062,6 +2105,11 @@ Four causes look the same from a phone, and the dashboard (Live → **Server**, 
 recent logs and 20 timed pings to `diag\fly-diag.txt` (git-ignored): no key, no token, nobody's address.
 
 ## 16. Maintenance recipes
+
+**Rebuild the streets** (1.56, §10.6): download the 27 extracts of https://download.openstreetmap.fr/extracts/europe/ukraine/
+(`kiev.osm.pbf`, `kiev_oblast.osm.pbf`, … — `EXTRACTS` in the script) into a folder outside the repository, then
+`pip install osmium shapely` and `python scripts/build_streets.py THAT_FOLDER` (or name the extracts or uids to rebuild
+only those); about 10 minutes on two cores. Raise `V` in `static/streets.js` when the format changes.
 
 **Rebuild the geography** (after an administrative change, or when the log says "not in ua_regions.json"):
 `python scripts/build_geo.py` — downloads the official region list, rewrites `data/ua_regions.json` and

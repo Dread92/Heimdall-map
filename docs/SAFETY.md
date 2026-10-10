@@ -713,6 +713,15 @@ A target drawn at the town it is heading for ("2 реактиви у бік Ки
 off the town on the side the post named, a fixed distance on the screen — not a distance on the ground, which nobody
 stated — and its card says where it is now was not given.
 
+## A pin on a street, found on the phone (1.56)
+
+The pin pickers search every street and village of Ukraine (OpenStreetMap, © its contributors, ODbL) so that a pin
+can be set where its owner really is — a street in Brovary, not the town's centre 3 km away, which can put a 10 km
+zone on the wrong side of a village. The search runs on the phone: the server sends the oblast's whole list and never
+learns what is typed or which street was chosen — only which oblast's list was opened, which the map tiles a phone
+shows already say. The list is OpenStreetMap's, not an official register: a street missing or misplaced there is
+missing or misplaced here, so the pin is shown on the map at the street and its owner can move it to the exact spot.
+
 ## Where drones usually go is the dashboard's, not a reader's (1.55)
 
 The owner wants the foundations of a probability: "the % that a drone goes to X, Y or Z", area by area, accumulated

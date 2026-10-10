@@ -730,7 +730,11 @@ async function openPick(slot){ PICK=slot; $('pick').classList.add('show');
   $('pickq').placeholder=t('lt_search'); $('pickq').value=''; $('pickloc').textContent=t('lt_locate');
   if(!PLACES){ try{ PLACES=(await (await fetch('/api/places?oblast=scope')).json()).places
       .filter(x=>!/громада|берег|столиця|водосховище|море|АЕС|ГЕС|траса|шосе|проспект/i.test(x.name)); }catch(e){ PLACES=[]; } }
-  listPick(''); setTimeout(()=>$('pickq').focus(),80); }
+  listPick(''); setTimeout(()=>$('pickq').focus(),80); hsOpen(); }
+// 1.56: every street and village of an oblast (OpenStreetMap), searched on this phone (static/streets.js)
+function hsOpen(){ const go=()=>HS.mount({q:$('pickq'),list:$('pickres'),style:'light',obl:()=>(SLOTS[PICK]||{}).obl,places:()=>PLACES,
+  pick:p=>setPlace({name:p.uk,uk:p.uk,lon:p.lon,lat:p.lat,obl:p.obl})});
+  if(window.HS) return go(); if(hsOpen.l) return; hsOpen.l=1; const s=document.createElement('script'); s.src='/static/streets.js?v=1'; s.onload=go; s.onerror=()=>{ hsOpen.l=0; }; document.head.appendChild(s); }
 function listPick(q){ const s=q.trim().toLowerCase();
   const r=(PLACES||[]).filter(x=>!s||x.name.toLowerCase().includes(s)).slice(0,60);
   $('pickres').innerHTML=r.map((x,i)=>`<button data-i="${PLACES.indexOf(x)}">${esc(x.name)}<small>${esc(OBL_N[x.oblast_uid]?(typeof oblFull==='function'?oblFull(x.oblast_uid):''):'')}</small></button>`).join(''); }

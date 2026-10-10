@@ -60,8 +60,10 @@ def test_it_stays_light():
     # a missile is reported — never "type not stated" alone.
     # 1.54.9 raised it by 0.3 KB: four pins named by their owner, the picker kept above the keyboard, and an unstated
     # threat drawn as a drone outside a missile context.
-    assert page < 25_000, f"the light page is no longer light ({page} B gzipped)"
-    assert page + extra < 66_000, f"page + map data = {page + extra} B gzipped"
+    # 1.56 raised it by 0.2 KB: the streets and villages of every oblast in the picker — the few lines that load
+    # static/streets.js when the picker opens (the search and the oblast's list are not part of the page)
+    assert page < 25_200, f"the light page is no longer light ({page} B gzipped)"
+    assert page + extra < 66_200, f"page + map data = {page + extra} B gzipped"
     # 1.29: the live line is allowed — the light variant only (alerts and marks, no feed, no raw events). An open
     # line costs the server nothing any more (one thread holds them all) and the phone ~100 bytes every 15 s,
     # against ~8 KB every 15 s for asking.

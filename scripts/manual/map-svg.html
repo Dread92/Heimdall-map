@@ -1,4 +1,4 @@
-<svg class="sysmap" viewBox="0 0 1240 890" role="img" aria-label="Heimdall's system map: official alerts, Telegram channels, weather, imagery and the AI model on the left; the threads that read them; the SQLite store; the reading the server rebuilds on every pass, and the direction patterns it builds every hour for the dashboard; the routes and pushes it serves; and the devices that use them.">
+<svg class="sysmap" viewBox="0 0 1240 910" role="img" aria-label="Heimdall's system map: official alerts, Telegram channels, weather, imagery and the AI model on the left; the threads that read them; the SQLite store; the reading the server rebuilds on every pass, and the direction patterns it builds every hour for the dashboard; the routes and pushes it serves; and the devices that use them.">
   <defs>
     <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="m-ah" d="M0 0 L10 5 L0 10 z"/></marker>
   </defs>
@@ -63,7 +63,7 @@
     <text x="450" y="619" text-anchor="middle">kept</text>
     <text x="907" y="691" text-anchor="middle">if true</text>
     <text x="642" y="538" text-anchor="middle">hourly</text>
-    <text x="555" y="823" text-anchor="middle">a file on the volume · Esri with the owner's key</text>
+    <text x="555" y="823" text-anchor="middle">a file on the volume · Esri with the owner's key · OSM, built once</text>
   </g>
 
   <!-- sources -->
@@ -105,10 +105,11 @@
     <text class="m-sub" x="22" y="730">never a reader's data</text>
   </g></a>
   <a class="m-link" href="#101-tactical-m"><g>
-    <rect class="m-box" x="10" y="790" width="170" height="80" rx="6"/>
-    <text class="m-title" x="22" y="812">Satellite imagery</text>
+    <rect class="m-box" x="10" y="790" width="170" height="100" rx="6"/>
+    <text class="m-title" x="22" y="812">Imagery · OpenStreetMap</text>
     <text class="m-sub" x="22" y="832">Sentinel-2 2021 (ESA)</text>
     <text class="m-sub" x="22" y="850">Esri World Imagery ≥ z14</text>
+    <text class="m-sub" x="22" y="870">OSM: streets, villages (ODbL)</text>
   </g></a>
 
   <!-- threads -->
@@ -245,14 +246,15 @@
     <text class="m-sub" x="942" y="730">the server stands by it</text>
   </g></a>
   <a class="m-link" href="#101-tactical-m"><g>
-    <rect class="m-box" x="930" y="790" width="165" height="80" rx="6"/>
+    <rect class="m-box" x="930" y="790" width="165" height="100" rx="6"/>
     <text class="m-mono m-strong" x="942" y="814">/tiles/sat</text>
     <text class="m-mono" x="942" y="832">/tiles/esri</text>
-    <text class="m-sub" x="942" y="852">one picture per address</text>
+    <text class="m-mono" x="942" y="850">/static/streets/</text>
+    <text class="m-sub" x="942" y="872">files: searched on the phone</text>
   </g></a>
 
   <!-- devices -->
-  <rect class="m-box m-dev" x="1135" y="70" width="95" height="800" rx="6"/>
+  <rect class="m-box m-dev" x="1135" y="70" width="95" height="820" rx="6"/>
   <a class="m-link" href="#101-tactical-m"><text class="m-title" x="1146" y="100">Tactical</text><text class="m-mono" x="1146" y="116">/m</text></a>
   <a class="m-link" href="#102-light-light"><text class="m-title" x="1146" y="146">Light</text><text class="m-mono" x="1146" y="162">/light</text></a>
   <a class="m-link" href="#105-the-guide-guide-135"><text class="m-title" x="1146" y="192">Guide</text><text class="m-mono" x="1146" y="208">/guide</text></a>
@@ -260,5 +262,5 @@
   <a class="m-link" href="#712-the-direction-patterns-155-the-dashboard-only"><text class="m-title" x="1146" y="562">Patterns</text><text class="m-sub" x="1146" y="580">dashboard</text><text class="m-sub" x="1146" y="596">tab 🔒</text></a>
   <a class="m-link" href="#9-notifications"><text class="m-title" x="1146" y="370">Phones</text><text class="m-sub" x="1146" y="388">push, by a</text><text class="m-sub" x="1146" y="404">~10 km cell</text></a>
   <a class="m-link" href="#711-the-bulletins-154"><text class="m-title" x="1146" y="694">Bulletin</text><text class="m-sub" x="1146" y="712">card in the</text><text class="m-sub" x="1146" y="728">Tactical page</text></a>
-  <a class="m-link" href="#101-tactical-m"><text class="m-title" x="1146" y="826">Map layer</text><text class="m-sub" x="1146" y="844">kept on the</text><text class="m-sub" x="1146" y="860">phone a year</text></a>
+  <a class="m-link" href="#101-tactical-m"><text class="m-title" x="1146" y="826">Map layer</text><text class="m-sub" x="1146" y="844">kept on the</text><text class="m-sub" x="1146" y="860">phone a year;</text><text class="m-sub" x="1146" y="876">pins by street</text></a>
 </svg>

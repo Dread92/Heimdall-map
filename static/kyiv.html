@@ -1163,7 +1163,7 @@ body.lite #mycard,body.lite .panel{background:#000;border-color:#666}body.lite .
   <button class="mi" id="supbtn" type="button" data-t="m_support">Support the project</button>
   <a class="mi" id="tgbtn" data-t="m_tg" target="_blank" rel="noopener" hidden>Community on Telegram</a>
   <button class="mi" id="aboutbtn" type="button" data-t="m_about">About · disclaimer</button>
-  <div class="mi bt" id="buildtag">v1.55</div>
+  <div class="mi bt" id="buildtag">v1.56</div>
 </div>
 <div class="panel" id="lay" hidden role="dialog" aria-labelledby="layh"><div class="pgrab"></div>
   <div class="ph"><b id="layh" data-t="m_layers">Map layers</b><button type="button" class="px" data-close="lay" data-t-aria="btn_close" aria-label="Close">✕</button></div>
@@ -1789,13 +1789,15 @@ let PIN_ARM=false;
 function pinRing(on,px,py){ const el=$('pinhold'); if(!el) return; el.classList.remove('on'); if(!on) return;
   const r=wrap.getBoundingClientRect(); el.style.left=(px-r.left)+'px'; el.style.top=(py-r.top)+'px'; void el.offsetWidth; el.classList.add('on'); }
 let PIN_FOR='pin';   // 1.54.9: the pin the next tap on the map puts down (a long press on open map: the fourth, as before)
-function armPin(on,id){ PIN_ARM=!!on; PIN_FOR=(on&&id)||'pin'; wrap.classList.toggle('arm',PIN_ARM); const b=$('pinarm'); if(b){ b.hidden=!PIN_ARM;
-  const sp=b.querySelector('span'); if(sp) sp.textContent=PIN_ARM?t('sl_arm_n',slotName(PIN_FOR)):t('sl_pin_arm'); } }
+let PIN_KEEP=null;   // 1.56: a pin put on a street keeps the street's name when it is moved to the exact spot
+function armPin(on,id,st){ PIN_ARM=!!on; PIN_FOR=(on&&id)||'pin'; if(!on||!st) PIN_KEEP=null; wrap.classList.toggle('arm',PIN_ARM); const b=$('pinarm'); if(b){ b.hidden=!PIN_ARM;
+  const sp=b.querySelector('span'); if(sp) sp.textContent=PIN_ARM?t(st?'sl_arm_st':'sl_arm_n',slotName(PIN_FOR)):t('sl_pin_arm'); } }
 function dropPin(px,py){
   const [cx,cy]=toSvg(px,py); const lon=+(C[0]+cx/KX).toFixed(4), lat=+(C[1]-cy/KY).toFixed(4);
-  const id=PIN_ARM?PIN_FOR:'pin'; armPin(false);
-  // A dropped pin stores no label at all — it is named at paint time, so it follows the language.
-  setSlot(id,{lon,lat,dropped:true});
+  const id=PIN_ARM?PIN_FOR:'pin', keep=PIN_ARM&&PIN_KEEP; armPin(false);
+  // A dropped pin stores no label at all — it is named at paint time, so it follows the language (1.56: one moved
+  // along the street it was put on keeps the street's name)
+  setSlot(id,keep?Object.assign({lon,lat},keep):{lon,lat,dropped:true});
   if(navigator.vibrate&&vibOn) navigator.vibrate(40);
   notify('📍 '+slotName(id),t('sl_pin_b'),'end'); }
 $('pinarmx').onclick=()=>armPin(false);
@@ -2020,7 +2022,15 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape') closePanels(); });
 $('homebtn').onclick=async()=>{closePanels();if(!PLACES_ALL.length)await loadPlacesList();renderHomeList('');$('homeq').value='';
   const id=SLOT_PICKING||ACTIVE; $('homet').textContent='📍 '+slotName(id); $('homed').textContent=t('sl_hint');
   $('homen').value=String(slotNames()[id]||''); $('homen').placeholder=t('sl_n',SLOT_ORDER.indexOf(id)+1)+' — '+t('sl_name');
-  $('homesheet').classList.add('show');setTimeout(()=>$('homeq').focus(),100);};
+  $('homesheet').classList.add('show');setTimeout(()=>$('homeq').focus(),100);hsOpen();};
+// 1.56: every street and village of the oblast chosen (OpenStreetMap), searched on this phone (static/streets.js)
+function hsOpen(){ const go=()=>HS.mount({q:$('homeq'),list:$('homelist'),style:'tac',obl:()=>(SLOTS[SLOT_PICKING||ACTIVE]||{}).obl,places:()=>PLACES_ALL,pick:hsPick});
+  if(window.HS) return go(); if(hsOpen.l) return; hsOpen.l=1; const s=document.createElement('script'); s.src='/static/streets.js?v='+APP_VERSION; s.onload=go; s.onerror=()=>{ hsOpen.l=0; }; document.head.appendChild(s); }
+function hsPick(p){ const slot=SLOT_PICKING||ACTIVE; SLOT_PICKING=null; const pl={name:p.name,uk:p.uk,lon:p.lon,lat:p.lat,obl:p.obl};
+  setSlot(slot,pl); $('homesheet').classList.remove('show'); notify(t('n_home',homeName()),t('n_home_b'),'end');
+  const [x,y]=proj(p.lon,p.lat); setView(x,y,Math.max(p.street?1.6:4,p.km*2.6));
+  if(p.street){ PIN_KEEP={name:p.name,uk:p.uk,obl:p.obl}; armPin(true,slot,true);
+    if(!LAYERS.sat&&!LAYERS.tiles){ LAYERS.tiles=true; applyLayers(); } } }   // the plain background shows no street: the map, for now
 // 1.54.9: the pin's own name, as it is typed — on this phone only
 $('homen').addEventListener('input',e=>{ setSlotName(SLOT_PICKING||ACTIVE,e.target.value); paintSlots(); $('homet').textContent='📍 '+slotName(SLOT_PICKING||ACTIVE); });
 (function vvSync(){ const vv=window.visualViewport; if(!vv) return; const r=document.documentElement;
@@ -3434,7 +3444,7 @@ function renderStats(){ if(!STATS) return; const el=$('stats'); if(!el) return; 
 // =====================================================================================
 // ---------------------------------------------------------------------------------------------------
 // The contacts (CONTACT) and the footer (footerHTML, shareApp) are in static/i18n.js since 1.39, shared with Light.
-const APP_VERSION='1.55';
+const APP_VERSION='1.56';
 const DONATE=CONTACT.ngo;
 const ls=(k,v)=>{try{return v===undefined?localStorage.getItem(k):(localStorage.setItem(k,v),v);}catch(e){return null;}};
 

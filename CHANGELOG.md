@@ -2,6 +2,25 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.56.0 — 2026-10-10
+
+### Added
+- **Every street and village of Ukraine in the pin pickers** — the owner: "a complete registry of the streets within
+  the city / oblast, so the user can set the pin accurately — all the towns and streets of Ukraine". 30,215 settlements
+  and 230,814 named streets from OpenStreetMap, one file per oblast. Under the search, "Streets & villages in": Kyiv and
+  Kyiv oblast by default, or any oblast. Type "шевченка бровари", "Хрещатик", "khreshchatyk", "лукянівка" or a street's
+  old name ("Московський проспект" finds Bandera Avenue): the streets and the villages the list did not have appear
+  under the places, each with its town and raion (in Kyiv its district).
+- **A pin on a street** (Tactical): the pin goes to the street, the map zooms to it and asks for the exact spot — a tap
+  moves the pin there and it keeps the street's name; the street map is shown for it on the plain background. Light
+  sets the place on the street.
+- **On the phone only**: the list is downloaded once and searched on the phone — what is typed and the street chosen
+  never reach the server, which sees only which oblast's list was opened. Data © OpenStreetMap contributors, ODbL.
+  `scripts/build_streets.py` rebuilds it from the OSM extracts.
+
+### Changed
+- The search's hint names a village or a street ("Search: Obolon, Bucha, a village, a street…").
+
 ## 1.55.0 — 2026-10-10
 
 ### Added

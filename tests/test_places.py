@@ -78,9 +78,12 @@ def test_switching_place_does_not_replay_old_alerts():
 
 def test_a_dropped_pin_carries_no_frozen_name():
     """Stored with t('...') baked in, its label stayed in whichever language was active when it was dropped."""
-    i = PAGE.index("setSlot(id,{lon,lat,")
+    # 1.56: a pin moved along the street it was put on keeps the street's name (`keep`, a proper name in Ukrainian and
+    # its transliteration — no t()); one dropped anywhere else has none
+    i = PAGE.index("setSlot(id,keep?")
     line = PAGE[i:PAGE.index("\n", i)]
-    assert "name:" not in line and "dropped:true" in line.replace(" ", "")
+    assert "name:" not in line and line.endswith(":{lon,lat,dropped:true});")
+    assert "PIN_KEEP={name:p.name,uk:p.uk,obl:p.obl};" in PAGE and "t(" not in PAGE[PAGE.index("PIN_KEEP={"):PAGE.index("PIN_KEEP={") + 60]
 
 
 def test_a_dropped_pin_can_never_be_named_by_a_post():
