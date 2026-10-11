@@ -399,7 +399,7 @@ def parse_iso(s):
 
 
 BUILD_FILES = ("static/kyiv.html", "static/light.html", "static/light-map.json", "static/glyphs.js", "static/i18n.js", "static/live.js",
-               "static/nuke.js", "static/sw.js", "app/server.py", "app/geo.py", "app/push.py",
+               "static/nuke.js", "static/sw.js", "static/shelters.js", "app/server.py", "app/geo.py", "app/push.py",
                "static/light-map-x.json", "data/regional_places.json", "static/map-ua.json")
 
 
@@ -424,7 +424,7 @@ def build_id():
 
 # The version the front end shows in its footer, kept here too so /api/version can answer "what is actually
 # running" without anybody reading it off a screenshot. tests/test_version.py pins the two to each other.
-APP_VERSION = "1.56"
+APP_VERSION = "1.57"
 APP_NAME = "Heimdall"
 BUILD = None    # filled at startup
 

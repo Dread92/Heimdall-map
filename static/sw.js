@@ -14,7 +14,9 @@ const CACHE = 'heimdall-shell-3';
 const TILES = 'heimdall-tiles-2';
 const TILES_MAX = 5000;
 // the map's drawing (borders, towns, districts): answered from here at once, then refreshed for the next opening
-const FAST = ['/static/kyiv-map.json', '/static/map-ua.json', '/static/ukraine-map.json', '/static/light-map.json', '/static/kyiv-districts.json', '/static/towns-ua.json'];
+// 1.57: and the city's shelters (static/shelters.js), so the nearest one is still found with no network
+const FAST = ['/static/kyiv-map.json', '/static/map-ua.json', '/static/ukraine-map.json', '/static/light-map.json', '/static/kyiv-districts.json', '/static/towns-ua.json',
+  '/static/shelters.js', '/static/shelters.json'];
 const GUIDE = ['/guide', '/static/glyphs.js', '/static/heimdall-64.png'];
 // downloaded at install: small, and shared by both pages
 const SHELL = ['/static/i18n.js', '/static/live.js', '/static/heimdall-192.png', '/static/logo-64.png'];

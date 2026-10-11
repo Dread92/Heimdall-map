@@ -2,6 +2,28 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.57.0 — 2026-10-11
+
+### Added
+- **The shelters Kyiv city lists, on the map and on the pin's card** — the owner's colleague: "a layer of the official
+  shelters, the government's data only, baked into the app so it works offline"; the owner chose every shelter the
+  city lists, each labelled with what it is. 3,878 points from the city's own shelter map (KMDA, ІАС «Майно»,
+  gis.kyivcity.gov.ua/shelter, data of 11 Oct 2026): 171 metro stations and entrances, 293 underpasses, 52 civil-defence
+  shelters, 476 dual-use structures (parkings, basements), 2,882 simplest shelters (basements, parkings), 4 modular ones.
+  - **On the card**, while an alert or a warning concerns a pin in Kyiv city (or the layer is on): the nearest metro,
+    underpass or civil-defence shelter within 2 km, with its address and who may come in when — and the nearest of any
+    kind when it is nearer. A tap lists the three nearest of the strong kinds and the three nearest basements, parkings and others; a tap on one
+    shows it on the map. Light: the same line under the place's status; a tap lists more.
+  - **On the map** (Layers → Shelters): a square per shelter, filled for the strong kinds; every kind from 24 km across.
+  - **What the city writes is what is shown**: "for the school's pupils and staff during the school day" (841),
+    "for them only" (144, never offered as the nearest), "under repair" (7, nor these), the hours where they are given.
+  - **Worked out on the phone**, from a file the service worker keeps (it works with no network): no pin leaves it. A
+    distance is a straight line — never a route, a walking time or a time to get there — and nothing says a place is
+    safe: "Heimdall does not check shelters: one may be closed, locked or full", and outside is dangerous during an
+    attack — "two walls between you and the street, away from windows".
+  - The city's firewall refuses a script: the owner saves the city's list from a browser and
+    `scripts/build_shelters.py` turns it into `static/shelters.json` (§16).
+
 ## 1.56.6 — 2026-10-11
 
 ### Fixed

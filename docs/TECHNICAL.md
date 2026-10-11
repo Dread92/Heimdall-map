@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.56** · last updated 2026-10-11 (1.56.6)
+**Documented version: 1.57** · last updated 2026-10-11 (1.57.0)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -143,6 +143,8 @@ clear-sky/
 │   ├── kyiv-districts.json the 10 city districts of Kyiv (OSM)
 │   ├── streets/            1.56: every settlement and named street of each oblast, `<uid>.json` (OSM, built; LICENSE.md: ODbL)
 │   ├── streets.js          1.56: their search, on the phone — loaded by both pages' pin pickers when they open (§10.6)
+│   ├── shelters.json       1.57: the shelters Kyiv city lists (KMDA, ІАС «Майно»; built by scripts/build_shelters.py)
+│   ├── shelters.js         1.57: the nearest ones, on the phone — loaded by both pages for a pin in Kyiv (§10.7)
 │   ├── ukraine-map.json    oblast outlines in an affine lon/lat projection (Light page fallback lookup)
 │   ├── admin.html          private dashboard: usage, source health, channels, lead time (/admin, ADMIN_KEY)
 │   ├── index.html, mobile.html   older desktop / mobile views (/desktop, /ua)
@@ -163,6 +165,7 @@ clear-sky/
 │   ├── build_mapdata.py    rebuilds static/map-ua.json from Natural Earth (1.45)
 │   ├── build_towns.py      rebuilds static/towns-ua.json from GeoNames (1.49)
 │   ├── build_streets.py    rebuilds static/streets/ from the 27 regional OSM extracts (pyosmium, shapely; 1.56)
+│   ├── build_shelters.py   rebuilds static/shelters.json from the city's shelter list saved in a browser (1.57)
 │   ├── build_imagery.py    builds the satellite layer (imagery/sat-ua.mbtiles) from ESA WorldCover / Sentinel-2 (1.47)
 │   ├── upload-imagery.bat  puts imagery/sat-ua.mbtiles on the Fly volume (1.47)
 │   ├── set-esri-key.bat    one-time: the owner's Esri key for the closest zooms, into Fly's secrets (1.48)
@@ -1984,12 +1987,56 @@ within the city / oblast so the user can set the pin accurately" — then "all t
 - **What is typed never leaves the phone**: the one request is the oblast's file — the server sees only which oblast's
   list was opened, the way it sees the map tiles a phone shows.
 
+### 10.7 The shelters Kyiv city lists (1.57)
+
+The owner's colleague: "a layer of the official shelters — only the government's data: metro, official shelters,
+underpasses — baked into the app so the nearest one is found offline; no parking garages". The owner chose **every
+shelter the city lists, each labelled with what it is** — the city's own list includes 2,882 "simplest shelters"
+(basements, parkings), and keeping only ~520 would put the nearest one 1–2 km away for many pins.
+
+- **The data**: the city's shelter map, https://gis.kyivcity.gov.ua/shelter/ (KMDA, ІАС «Майно»), an ArcGIS web app
+  whose layer `public_protection/Укриття_редактор` (MapServer/0) holds the shelters; the map shows those with
+  `actual = 1` (4,192 on 11 Oct 2026). The service states no licence: the source is credited on every list, and the
+  owner asks KMDA. Its firewall refuses a script, so **the owner saves the list from a browser** — the query
+  `…/MapServer/0/query?where=actual%3D1&outFields=guid,type,kind,type_building,address,district,working_time,invalid,tel,description&returnGeometry=true&outSR=4326&f=json`
+  — and `scripts/build_shelters.py FILE` turns it into `static/shelters.json` (format 1, described in the script):
+  `[lon, lat, category, kind, ramp, address, access, phone, note]`, 360 KB, 69 KB gzipped. Nothing is fetched by the
+  server; Heimdall never calls the city's service.
+- **Category and kind** (`classify`) from the city's "Тип укриття" and "Вид укриття": `metro` (stations, entrances),
+  `underpass`, `shelter` (the type "Укриття" — a civil-defence structure — and the anti-radiation ones, ПРУ) — the three
+  the pages call the strong kinds (`SH.STRONG`) —, `dual` (dual-use structures: parkings, basements, a ground floor),
+  `simple` (the simplest shelters) and `mobile` (modular ones). A pair the rules do not know is a simplest shelter of no
+  stated kind, never ranked higher than the city ranked it, and the build lists it. Several shelters of one category at
+  one point and address (374 points) are one point — the one anybody may enter. 85 metro entrances are written
+  "Вхід в станцію метро" with no station: the station within 350 m is named, as "біля ст. …" (`_name_entrances`).
+- **Who may come in** (`_access`), from the city's "Режим роботи" and note, never guessed: round the clock; the hours
+  where given ("10:00–18:00" — also when the hours say round the clock and the note says otherwise); `s` a school's,
+  for its pupils and staff during the school day (841); `S` for them only (144); `r` under repair (7); `?` not stated.
+  `S` and `r` are drawn dimmed and never offered as "the nearest" (`SH.closed`). A ramp: "з пандусом", or "В наявності".
+- **On the phone** (`static/shelters.js`, `SH`, its words in its own three languages): loaded by the Tactical page for a
+  pin in Kyiv city while an alert or a warning concerns it (`shCard`: `LEVEL >= 1`, the place's status not green, or
+  the layer on) or when the layer is on (`shLoad`), by Light under an alert (`lShel` → `SH.light`, which also carries
+  Light's look, so the page stays light). The service worker keeps both files (`FAST`). **The card** (`#mysh`): the
+  nearest of the strong kinds within 2 km (`LINE_STRONG_KM`), its address and access, and the nearest of any kind
+  within 1 km when nearer (`SH.line`). A tap: within 3 km, the three nearest of the strong kinds and the three nearest
+  of the others — basements, parkings — (`openShelters`, `SH.listHTML`, `SH.near` with `strong` / `weak`), each with its
+  access and ramp; a tap on one shows it on the map (`shShow`). **The layer**
+  (`LAYERS.shelters`, off by default; `drawShelters`, `#shelg`): a square per shelter — filled for the strong kinds,
+  ringed for the pin's nearest —, the strong kinds from 80 km across and every kind from 24 km (1,500 at most); a tap
+  opens its card (`openShelter`, `SH.oneHTML`: address, access, distance from the pin, phone, the city's note).
+- **What it never says**: a distance is a straight line ("відстань по прямій") — never a route, a walking time or a
+  time to get there; a place is never "safe" — every list ends with "Heimdall does not check shelters: one may be
+  closed, locked or full", the source and its date, and "Outside is dangerous during an attack. If you cannot get
+  there in time: two walls between you and the street, away from windows." No shelter is offered outside Kyiv city.
+
 ## 11. Privacy and security
 
 - The four places never leave the phone; the Light page's requests carry no place (checked in the render tests).
 - 1.56: a street or a village is searched on the phone (`static/streets.js`); the server sees only which oblast's list
   was opened (`/static/streets/<uid>.json`, the Kyiv pair by default) — what the map tiles a phone shows already say,
   and less — never what is typed, nor the street chosen.
+- 1.57: the nearest shelter is found on the phone (`static/shelters.js`), from one file that is the same for everyone
+  (`/static/shelters.json`): no pin and no position is in any request.
 - Push subscriptions: a ~10 km cell only; older stored homes are coarsened at start.
 - The Telegram session (`TG_SESSION`) is a key to a whole Telegram account. It is created on the owner's PC by
   `scripts/telegram-login.bat` and goes straight into Fly's secret store (`fly secrets import`, read from stdin):
@@ -2180,6 +2227,10 @@ recent logs and 20 timed pings to `diag\fly-diag.txt` (git-ignored): no key, no 
 (`kiev.osm.pbf`, `kiev_oblast.osm.pbf`, … — `EXTRACTS` in the script) into a folder outside the repository, then
 `pip install osmium shapely` and `python scripts/build_streets.py THAT_FOLDER` (or name the extracts or uids to rebuild
 only those); about 10 minutes on two cores. Raise `V` in `static/streets.js` when the format changes.
+
+**Refresh the shelters** (1.57, §10.7): open the city's query (§10.7) in a browser, save it as
+`imagery/shelters-kyiv.json` (not committed), then `python scripts/build_shelters.py imagery/shelters-kyiv.json`. It
+refuses a list of under 1,000 shelters (a page of the answer) and names any type/kind pair the rules do not know.
 
 **Rebuild the geography** (after an administrative change, or when the log says "not in ua_regions.json"):
 `python scripts/build_geo.py` — downloads the official region list, rewrites `data/ua_regions.json` and

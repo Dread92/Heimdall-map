@@ -170,6 +170,17 @@ everyone too. An unstated target is "drone or missile" only when a missile is re
 missile warning stands for the reader's own oblast. The official alerts are never filtered: they come oblast by
 oblast already, and only the official data sets an alert.
 
+## A shelter is the city's, a distance is a straight line (1.57)
+
+The shelters on the map and on the card are the ones Kyiv city lists (KMDA), as the city describes them — not a list
+Heimdall made, checked or ranks by how safe it is. So: every shelter says what it is (metro, underpass, civil-defence
+shelter, dual-use structure, simplest shelter — a basement or a parking) and who may come in when, in the city's
+words: a school's shelter that is for its pupils and staff only, or one under repair, is never offered as "the nearest".
+A distance is a straight line, never a route or a walking time, and there is no countdown to reach it: going outside
+during an attack can be more dangerous than staying in, so every list ends with "Heimdall does not check shelters: one
+may be closed, locked or full" and "if you cannot get there in time: two walls between you and the street, away from
+windows". The nearest one is worked out on the phone; no pin leaves it.
+
 ## The nuclear event cannot be switched on by accident
 
 The dashboard can cover the map on every page with the radiation symbol (1.32). A false one would be the worst

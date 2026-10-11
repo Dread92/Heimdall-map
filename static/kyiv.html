@@ -917,6 +917,15 @@ body.lite .mk.inbound .lbl2,body.lite .mk.tohome .lbl2{fill:#ff9ab0}
 .slotrow button.on{color:var(--ink);border-color:#5a6478;background:#262d3b}
 .slotrow button i{flex:none;width:10px;height:10px;border-radius:50%;border:1.5px dashed var(--ink3)}
 .slotrow button i.R{background:var(--red);border:0}.slotrow button i.Y{background:var(--yellow);border:0}.slotrow button i.H{border:2px solid var(--yellow)}.slotrow button i.G{background:var(--green);border:0}.slotrow button i.U{border:1.5px solid var(--ink3)}
+/* 1.57: the city's shelters — a square; filled for metro, underpasses and civil-defence shelters; the nearest to the pin ringed */
+#shelg .shl{cursor:pointer}#shelg .shl rect{fill:#0d1a2b;stroke:#5aa9ff;stroke-width:1.4px;vector-effect:non-scaling-stroke}
+#shelg .shl.st rect{fill:#5aa9ff;stroke:#fff}#shelg .shl.nr rect,#shelg .shl.sel rect{stroke:#fff;stroke-width:3px}
+#shelg .shl.no{opacity:.4}#shelg .shl rect.hit{fill:transparent;stroke:none}svg.no-shelters #shelg{display:none}
+.mych.mysh{border-left-color:#5aa9ff;min-height:48px}.mysh .shg{flex:none;width:40px;font-size:24px;text-align:center}.mysh .km{font-size:19px}
+.shh{font:700 12px/1.6 var(--mono);letter-spacing:.04em;text-transform:uppercase;color:var(--ink3);margin-top:12px}
+.shi{display:block;width:100%;text-align:left;background:var(--panel);border:1px solid var(--line);border-left:3px solid #2e4f78;border-radius:8px;padding:7px 10px;margin-top:5px;color:var(--ink);cursor:pointer}
+.shi.st{border-left-color:#5aa9ff}.shi b{display:block;font:650 14.5px/1.3 var(--sans)}.shi small{display:block;font:500 13px/1.35 var(--sans);color:var(--ink2);margin-top:2px}
+.shi .hx,.sheet .hx,.shout{color:#ffd166}
 .mych{display:flex;align-items:center;gap:10px;min-height:56px;padding:8px 10px;border-radius:10px;background:var(--panel2);border-left:4px solid var(--orange);cursor:pointer}
 .mych[hidden]{display:none}.mych>div{flex:1;min-width:0}
 .mych svg{width:40px;height:40px;flex:none}
@@ -1124,6 +1133,7 @@ body.lite #mycard,body.lite .panel{background:#000;border-color:#666}body.lite .
     <div class="band N" id="kyiv"><div class="dot N"></div><div><div class="big" data-t="loading">Loading…</div><div class="small"></div></div></div>
     <div class="tstrip" id="tstrip" hidden></div>
     <div class="mych" id="mych" hidden></div>
+    <div class="mych mysh" id="mysh" hidden role="button" tabindex="0"></div>
     <div class="brgbar" id="brgbar" hidden role="alert"></div>
     <div class="mcfoot" id="mcfoot"><span class="upd" id="upd">—</span><span class="srcs" id="srcs"></span><button type="button" class="mcun" id="mcun" data-t="mc_unoff">unofficial · not radar</button><a class="mcwhat" href="/guide" data-t="mc_what">What to do →</a><button type="button" class="mcfold" id="mcfold" data-t-aria="mc_fold" aria-label="Fold the card">▴</button></div>
     <button type="button" class="mcmini" id="mcmini" hidden></button>
@@ -1163,11 +1173,11 @@ body.lite #mycard,body.lite .panel{background:#000;border-color:#666}body.lite .
   <button class="mi" id="supbtn" type="button" data-t="m_support">Support the project</button>
   <a class="mi" id="tgbtn" data-t="m_tg" target="_blank" rel="noopener" hidden>Community on Telegram</a>
   <button class="mi" id="aboutbtn" type="button" data-t="m_about">About · disclaimer</button>
-  <div class="mi bt" id="buildtag">v1.56</div>
+  <div class="mi bt" id="buildtag">v1.57</div>
 </div>
 <div class="panel" id="lay" hidden role="dialog" aria-labelledby="layh"><div class="pgrab"></div>
   <div class="ph"><b id="layh" data-t="m_layers">Map layers</b><button type="button" class="px" data-close="lay" data-t-aria="btn_close" aria-label="Close">✕</button></div>
-  <div class="layermenu" id="layerbox"><div class="lbase" id="lbase" role="radiogroup"><span class="lbh" data-t="l_base">Background</span><div class="lbopts"><label data-b="sat" hidden><input type="radio" name="lbase" value="sat"> <span data-t="l_sat">Satellite</span></label><label data-b="map"><input type="radio" name="lbase" value="map"> <span data-t="l_map">Map</span></label><label data-b="none"><input type="radio" name="lbase" value="none"> <span data-t="l_plain">Plain</span></label></div></div><label><input type="checkbox" data-l="heat"> <span data-t="l_heat">Heat map: where drones were reported (not live)</span></label><label><input type="checkbox" data-l="trails"> <span data-t="l_trails">Tracks</span></label><label><input type="checkbox" data-l="selpath"> <span data-t="l_selpath">Path of a tapped target (red dots)</span></label><label><input type="checkbox" data-l="cones"> <span data-t="l_cones">Course rays</span></label><label><input type="checkbox" data-l="rivers"> <span data-t="l_rivers">Rivers</span></label><label><input type="checkbox" data-l="roads"> <span data-t="l_roads">Roads</span></label><label><input type="checkbox" data-l="infra"> <span data-t="l_infra">Airports / plants</span></label><label><input type="checkbox" data-l="rings"> <span data-t="l_rings">Rings</span></label><label><input type="checkbox" data-l="towns"> <span data-t="l_towns">Main towns of every oblast</span></label><label><input type="checkbox" data-l="minor"> <span data-t="l_minor">Villages &amp; small towns (off by default — clutters the phone)</span></label></div>
+  <div class="layermenu" id="layerbox"><div class="lbase" id="lbase" role="radiogroup"><span class="lbh" data-t="l_base">Background</span><div class="lbopts"><label data-b="sat" hidden><input type="radio" name="lbase" value="sat"> <span data-t="l_sat">Satellite</span></label><label data-b="map"><input type="radio" name="lbase" value="map"> <span data-t="l_map">Map</span></label><label data-b="none"><input type="radio" name="lbase" value="none"> <span data-t="l_plain">Plain</span></label></div></div><label><input type="checkbox" data-l="shelters"> <span data-t="l_shel">Shelters — Kyiv city's list</span></label><label><input type="checkbox" data-l="heat"> <span data-t="l_heat">Heat map: where drones were reported (not live)</span></label><label><input type="checkbox" data-l="trails"> <span data-t="l_trails">Tracks</span></label><label><input type="checkbox" data-l="selpath"> <span data-t="l_selpath">Path of a tapped target (red dots)</span></label><label><input type="checkbox" data-l="cones"> <span data-t="l_cones">Course rays</span></label><label><input type="checkbox" data-l="rivers"> <span data-t="l_rivers">Rivers</span></label><label><input type="checkbox" data-l="roads"> <span data-t="l_roads">Roads</span></label><label><input type="checkbox" data-l="infra"> <span data-t="l_infra">Airports / plants</span></label><label><input type="checkbox" data-l="rings"> <span data-t="l_rings">Rings</span></label><label><input type="checkbox" data-l="towns"> <span data-t="l_towns">Main towns of every oblast</span></label><label><input type="checkbox" data-l="minor"> <span data-t="l_minor">Villages &amp; small towns (off by default — clutters the phone)</span></label></div>
   <button class="mi" id="rpmenu" type="button" data-t="rp_open">Replay — the last 7 days</button>
   <button class="mi tg" id="zcity2" type="button"><span class="lb" data-t="m_city">Kyiv city map (10 districts) — toggle</span></button>
   <button class="mi tg" id="est" type="button" style="display:none!important"><span class="lb" data-t="m_est">Estimate motion along heading (EST)</span></button>
@@ -1191,6 +1201,7 @@ body.lite #mycard,body.lite .panel{background:#000;border-color:#666}body.lite .
     <g id="kdistg"></g>
     <g id="heatg"></g>
     <g id="bridgeg"></g>
+    <g id="shelg"></g>
     <g id="rings"></g>
     <g id="zones"></g>
     <g id="homeg"></g>
@@ -1529,6 +1540,7 @@ async function loadMap(){
   $('towns').innerHTML=TOWNS.map(([n,lo,la,big])=>{const [x,y]=proj(lo,la);const rg=big===2,ua=big===3;return `<circle class="towndot${rg?' rg':''}${ua?' uac':''}" data-n="${n}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${big===1?1.6:.9}" style="r:calc(var(--k,1)*${big===1?4:2.5}px)"/><text class="town ${big===1?'big':''}${rg?' rg':''}${ua?' uac':''}" data-n="${n}" x="${(x+2).toFixed(1)}" y="${(y+1.5).toFixed(1)}">${townName(n)}</text>`;}).join('')
     +'<g id="twng"></g><g id="minorg"></g><g id="villg"></g>';
   if(LAYERS.towns) loadTownsUA();
+  if(LAYERS.shelters) shLoad().then(drawShelters).catch(()=>{});
   if(LAYERS.minor) loadVillages();
   const ua=await uaP; if(ua) drawUA(ua);
 }
@@ -1613,7 +1625,7 @@ function fastVB(){ const r=SR(); if(!r.width||!svg.viewBox||!svg.viewBox.baseVal
   clearTimeout(VBT); VBT=setTimeout(()=>applyVB(),150); }
 function applyVB(fast){ if(fast){ fastVB(); return; }
   if(VBC){ VBC=null; clearTimeout(VBT); VBT=null; svg.style.transform=''; svg.classList.remove('zoomg'); }
-  svg.setAttribute('viewBox',`${VB.x} ${VB.y} ${VB.w} ${VB.h}`);if(typeof drawHome==='function'&&HOME){setTimeout(drawHome,0);if(typeof drawZones==='function')setTimeout(drawZones,0);}const r=SR();KPX=r.width?VB.w/r.width:1;KDIG=Math.max(2,Math.ceil(-Math.log10(KPX||1))+3);if(typeof placeBrgLabels==='function')placeBrgLabels();svg.style.setProperty('--k',KPX);if(window.RP&&RP.on&&RP.frame)RP.frame();svg.classList.toggle('far',VB.w>90);svg.classList.toggle('close',VB.w<40);svg.classList.toggle('vclose',VB.w<22);svg.classList.toggle('veryfar',VB.w>230);svg.classList.toggle('vilfar',VB.w>300);svg.classList.toggle('ua',VB.w>900);svg.classList.toggle('wide',VB.w>520);svg.classList.toggle('deep',KPX<0.011);if(typeof applySelOblast==='function'&&(VB.w<=300)!==applyVB._zin){applyVB._zin=VB.w<=300;applySelOblast();}{const kz=document.querySelector('.kozak'); if(kz){kz.querySelector('.kz').setAttribute('transform',`scale(${kx(2.2*KPX)})`); const ts=kz.querySelectorAll('text'); ts[0].setAttribute('y',kx(14*KPX)); ts[1].setAttribute('y',kx(25*KPX));}}clearTimeout(applyVB._t);applyVB._t=setTimeout(()=>{applyVB._t=null;if(typeof LAYERS!=='undefined'&&LAYERS.heat&&typeof drawHeat==='function')drawHeat();if(typeof updateTiles==='function'){updateTiles();layoutTownLabels();}},120);}
+  svg.setAttribute('viewBox',`${VB.x} ${VB.y} ${VB.w} ${VB.h}`);if(typeof drawHome==='function'&&HOME){setTimeout(drawHome,0);if(typeof drawZones==='function')setTimeout(drawZones,0);}const r=SR();KPX=r.width?VB.w/r.width:1;KDIG=Math.max(2,Math.ceil(-Math.log10(KPX||1))+3);if(typeof placeBrgLabels==='function')placeBrgLabels();svg.style.setProperty('--k',KPX);if(window.RP&&RP.on&&RP.frame)RP.frame();svg.classList.toggle('far',VB.w>90);svg.classList.toggle('close',VB.w<40);svg.classList.toggle('vclose',VB.w<22);svg.classList.toggle('veryfar',VB.w>230);svg.classList.toggle('vilfar',VB.w>300);svg.classList.toggle('ua',VB.w>900);svg.classList.toggle('wide',VB.w>520);svg.classList.toggle('deep',KPX<0.011);if(typeof applySelOblast==='function'&&(VB.w<=300)!==applyVB._zin){applyVB._zin=VB.w<=300;applySelOblast();}{const kz=document.querySelector('.kozak'); if(kz){kz.querySelector('.kz').setAttribute('transform',`scale(${kx(2.2*KPX)})`); const ts=kz.querySelectorAll('text'); ts[0].setAttribute('y',kx(14*KPX)); ts[1].setAttribute('y',kx(25*KPX));}}clearTimeout(applyVB._t);applyVB._t=setTimeout(()=>{applyVB._t=null;if(typeof LAYERS!=='undefined'&&LAYERS.heat&&typeof drawHeat==='function')drawHeat();if(typeof updateTiles==='function'){updateTiles();layoutTownLabels();}if(typeof drawShelters==='function')drawShelters();},120);}
 function setView(cx,cy,w){VB.w=Math.max(1,Math.min(1500,w));VB.h=VB.w*ASPECT();VB.x=cx-VB.w/2;VB.y=cy-VB.h/2;applyVB();}
 function zoomAt(f,cx,cy,fast){const nw=Math.max(1,Math.min(1500,VB.w/f)),nh=nw*ASPECT();VB.x=cx-(cx-VB.x)*(nw/VB.w);VB.y=cy-(cy-VB.y)*(nh/VB.h);VB.w=nw;VB.h=nh;applyVB(fast);}
 function toSvg(px,py){const r=SR();return [VB.x+(px-r.left)/r.width*VB.w, VB.y+(py-r.top)/r.height*VB.h];}
@@ -1624,14 +1636,14 @@ $('zin').onclick=()=>zoomAt(1.5,VB.x+VB.w/2,VB.y+VB.h/2); $('zout').onclick=()=>
 // 1.49: Layers → Background: Satellite (LAYERS.sat), Map (LAYERS.tiles) or Plain (neither) — three radio buttons.
 // 1.49.1: the towns of every oblast are a layer of their own — on a computer by default, off on a phone (unreadable there)
 // 1.54.3: `selpath` — the red dots joining a tapped target's reports (1.52), now a switch of its own (the owner)
-const LAYERS={sat:true,tiles:false,trails:false,selpath:true,cones:true,rivers:false,roads:true,infra:true,rings:true,towns:window.innerWidth>=1000,minor:false,heat:false};
+const LAYERS={sat:true,tiles:false,trails:false,selpath:true,cones:true,rivers:false,roads:true,infra:true,rings:true,towns:window.innerWidth>=1000,minor:false,heat:false,shelters:false};
 try{Object.assign(LAYERS,JSON.parse(localStorage.getItem('layers')||'{}')); if(!localStorage.getItem('layers_v2')){LAYERS.minor=false;localStorage.setItem('layers_v2','1');localStorage.setItem('layers',JSON.stringify(LAYERS));}
   if(!localStorage.getItem('layers_v3')){LAYERS.sat=true;LAYERS.tiles=false;localStorage.setItem('layers_v3','1');localStorage.setItem('layers',JSON.stringify(LAYERS));}}catch(e){}
 LAYERS.heat=false;   // 1.33: the heat map is never remembered — every opening starts on the live picture
 function applyLayers(){for(const [l,on] of Object.entries(LAYERS)){svg.classList.toggle('no-'+l,!on);const cb=document.querySelector(`#layerbox input[data-l="${l}"]`);if(cb)cb.checked=on;}
   {const b=LAYERS.sat?'sat':LAYERS.tiles?'map':'none'; const rb=document.querySelector(`#lbase input[value="${b}"]`); if(rb) rb.checked=true;}if(typeof updateTiles==='function')updateTiles();if(typeof drawHeat==='function')drawHeat();}
 const saveLayers=()=>{try{localStorage.setItem('layers',JSON.stringify(Object.assign({},LAYERS,{heat:false})))}catch(e){}};
-document.querySelectorAll('#layerbox input[data-l]').forEach(cb=>cb.onchange=()=>{LAYERS[cb.dataset.l]=cb.checked;if(cb.dataset.l==='minor'&&cb.checked)loadVillages();if(cb.dataset.l==='towns'&&cb.checked)loadTownsUA();
+document.querySelectorAll('#layerbox input[data-l]').forEach(cb=>cb.onchange=()=>{LAYERS[cb.dataset.l]=cb.checked;if(cb.dataset.l==='minor'&&cb.checked)loadVillages();if(cb.dataset.l==='shelters'){if(cb.checked)shLoad().then(()=>{drawShelters();paintCard(true);}).catch(()=>{});else{drawShelters();paintCard(true);}}if(cb.dataset.l==='towns'&&cb.checked)loadTownsUA();
   saveLayers();   // 1.48: 1.47.1 had left this line inside a comment
   applyLayers();});
 document.querySelectorAll('#lbase input').forEach(rb=>rb.onchange=()=>{ if(!rb.checked) return;
@@ -1808,7 +1820,7 @@ let downMk=null,downXY=null,downOb=null,downCh=null;
 wrap.addEventListener('pointerdown',e=>{if(!e.target.closest('svg#map')) return;
   if(e.pointerType==='pen'&&e.buttons===0&&!e.pressure) return;   /* pen hovering above the glass, not touching it */
   /* buttons / chips on top of the map keep their own clicks (pointer capture would swallow them) */
-  touches[e.pointerId]=[e.clientX,e.clientY];moved=false;downMk=e.target.closest?e.target.closest('g.mk,g.imp'):null;downCh=e.target.closest?e.target.closest('g.oblevtchip'):null;downOb=e.target.closest?(e.target.closest('path.ob,path.nb')||{}).dataset?.o:null;downXY=[e.clientX,e.clientY];wrap.setPointerCapture(e.pointerId);
+  touches[e.pointerId]=[e.clientX,e.clientY];moved=false;downMk=e.target.closest?e.target.closest('g.mk,g.imp,g.shl'):null;downCh=e.target.closest?e.target.closest('g.oblevtchip'):null;downOb=e.target.closest?(e.target.closest('path.ob,path.nb')||{}).dataset?.o:null;downXY=[e.clientX,e.clientY];wrap.setPointerCapture(e.pointerId);
   // Press and hold on open map = drop the 📍 pin there. Not over a marker (that is a tap to open it), not
   // with a second finger down (that is a pinch), and cancelled the moment the map is dragged.
   clearTimeout(holdPin); holdPin=null; pinRing(false);
@@ -1833,7 +1845,7 @@ wrap.addEventListener('pointerup',e=>{const mk=downMk,xy=downXY,ob=downOb,ch=dow
   const tap=xy&&Math.hypot(e.clientX-xy[0],e.clientY-xy[1])<=HOLD_SLOP_PX&&Object.keys(touches).length===0;
   if(PIN_ARM&&tap){ dropPin(e.clientX,e.clientY); return; }
   if(mk&&tap){$('tip').hidden=true;
-    openSheet(mk.dataset.id);}
+    if(mk.classList.contains('shl')) openShelter(+mk.dataset.i); else openSheet(mk.dataset.id);}
   // 1.54.2, the owner: "I can't click the little badge to see the detail on desktop" — the map holds the pointer from the
   // press (pointer capture), so the badge never got its click; it is a tap like a mark's
   else if(ch&&tap){ $('tip').hidden=true; oblEventSheet(ch.dataset.o); }
@@ -3137,6 +3149,36 @@ function escLevel(rows){ let lv=0;
   return lv; }
 // The card's channel block: the one target that matters most for the watched place — one a post says is heading
 // for it, else the nearest within 30 km — or, when there is none, the sentence the Light page also says.
+// 1.57: the shelters Kyiv city lists (KMDA, ІАС «Майно»; static/shelters.js) — on the pin's card the nearest one while an
+// alert or a warning concerns the place (or the layer is on), all of them as a layer. Worked out on this phone, from the
+// file the service worker keeps: no pin leaves it. A distance is a straight line — never a route, a walking time or an
+// arrival time — and nothing says a place is safe (docs/SAFETY.md).
+function shLoad(){ if(window.SH) return SH.load(); if(shLoad.p) return shLoad.p;
+  shLoad.p=new Promise((ok,ko)=>{ const s=document.createElement('script'); s.src='/static/shelters.js?v='+APP_VERSION; s.onload=()=>SH.load().then(ok,ko); s.onerror=()=>{ shLoad.p=null; ko(new Error('shelters.js')); }; document.head.appendChild(s); });
+  return shLoad.p; }
+const shIn=p=>!!p&&p.lon>30.2&&p.lon<30.85&&p.lat>50.2&&p.lat<50.6;   // Kyiv city: the only place the list covers
+let SHXY=null, SHSEL=null;
+function drawShelters(){ const g=$('shelg'); if(!g) return;
+  if(!LAYERS.shelters||!window.SH||!SH.D||!MAP||VB.w>80){ if(g.innerHTML) g.innerHTML=''; return; }
+  if(!SHXY) SHXY=SH.D.s.map(s=>proj(s[0],s[1]));
+  // the strong kinds (metro, underpasses, civil-defence shelters) from 80 km across; every kind from 24 km
+  const all=VB.w<=24, x1=VB.x+VB.w, y1=VB.y+VB.h, r=5*KPX, hr=12*KPX;
+  const nr=shIn(HOME)?(SH.near(HOME.lon,HOME.lat,{strong:true,max:SH.LINE_STRONG_KM})[0]||[])[0]:null;
+  let h='', n=0;
+  SH.D.s.forEach((s,i)=>{ if(n>=1500||(!all&&s[2]>=SH.STRONG&&i!==SHSEL)) return; const [x,y]=SHXY[i]; if(x<VB.x||x>x1||y<VB.y||y>y1) return; n++;
+    h+=`<g class="shl${s[2]<SH.STRONG?' st':''}${SH.closed(i)?' no':''}${i===nr?' nr':''}${i===SHSEL?' sel':''}" data-i="${i}"><rect class="hit" x="${kx(x-hr)}" y="${kx(y-hr)}" width="${kx(2*hr)}" height="${kx(2*hr)}"/><rect x="${kx(x-r)}" y="${kx(y-r)}" width="${kx(2*r)}" height="${kx(2*r)}" rx="${kx(r*.3)}"/></g>`; });
+  g.innerHTML=h; }
+function shCard(pk){ const el=$('mysh'); if(!el) return;
+  if(!HOME||!shIn(HOME)||!(LEVEL>=1||pk!=='G'||LAYERS.shelters)){ el.hidden=true; return; }
+  if(!window.SH||!SH.D){ el.hidden=true; shLoad().then(()=>paintCard(true)).catch(()=>{}); return; }
+  const h=SH.lineHTML(HOME.lon,HOME.lat,LANG); if(el._h!==h){ el._h=h; el.innerHTML=h; } el.hidden=!h; }
+function openShelters(){ if(!HOME) return; shLoad().then(()=>{ $('sheetbody').innerHTML=SH.listHTML(HOME.lon,HOME.lat,LANG,homeName());
+  $('sheetbody').querySelectorAll('[data-sh]').forEach(b=>b.onclick=()=>shShow(+b.dataset.sh)); $('tip').hidden=true; $('sheet').classList.add('show'); }).catch(()=>{}); }
+function openShelter(i){ if(!window.SH||!SH.D||!SH.D.s[i]) return; const d=HOME?SH.km(HOME.lon,HOME.lat,SH.D.s[i]):null;
+  $('sheetbody').innerHTML=SH.oneHTML(i,LANG,d,HOME?homeName():''); $('sheet').classList.add('show'); }
+function shShow(i){ const s=SH.D.s[i]; if(!s) return; SHSEL=i; if(!LAYERS.shelters){ LAYERS.shelters=true; saveLayers(); applyLayers(); }
+  closeSheet(); const [x,y]=proj(s[0],s[1]); setView(x,y,3); drawShelters(); }
+$('mysh').onclick=openShelters; $('mysh').onkeydown=e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openShelters(); } };
 let CARD_SIG='', CARD_T=0, NEAR_ROWS=[];
 function paintCard(force){
   if(!force&&Date.now()-CARD_T<1000) return; CARD_T=Date.now();
@@ -3150,6 +3192,7 @@ function paintCard(force){
   const sig=[LANG,LEVEL,ACTIVE,HOME?HOME.lon+','+HOME.lat:'',pk,top?[top.m.id,Math.round(top.d),top.n,top.chs,Math.round(agoMin(top.m.ts)),top.hi.inbound].join(','):'',
     n30,rows.map(r=>r.m.id+':'+Math.round(r.d)+':'+Math.round(agoMin(r.m.ts))+':'+r.n+(r.m.stale?'s':'')).join('|'),
     tw?tw.className+(tw.firstChild?tw.firstChild.textContent:''):'',$('kyiv').querySelector('.dur')?.textContent||''].join('#');
+  shCard(pk);
   if(sig===CARD_SIG&&!force) return; CARD_SIG=sig;
   const card=$('mycard'); card.className=(card.classList.contains('mini')?'mini ':'')+'lv'+LEVEL+(HOME?' hasplace':'');
   const bd=$('bdot'); if(bd) bd.className='bdot'+(LEVEL?' l'+LEVEL:'');
@@ -3459,7 +3502,7 @@ function renderStats(){ if(!STATS) return; const el=$('stats'); if(!el) return; 
 // =====================================================================================
 // ---------------------------------------------------------------------------------------------------
 // The contacts (CONTACT) and the footer (footerHTML, shareApp) are in static/i18n.js since 1.39, shared with Light.
-const APP_VERSION='1.56';
+const APP_VERSION='1.57';
 const DONATE=CONTACT.ngo;
 const ls=(k,v)=>{try{return v===undefined?localStorage.getItem(k):(localStorage.setItem(k,v),v);}catch(e){return null;}};
 
