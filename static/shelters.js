@@ -9,7 +9,7 @@ const T={
   uk:{c:['Метро','Підземний перехід','Захисна споруда','Споруда подвійного призначення','Найпростіше укриття','Мобільне укриття'],
     k:['','станція','вхід','','протирадіаційне укриття','підвал','цокольний поверх','перший поверх','паркінг','заклад освіти','наземна будівля'],
     strong:'Метро, переходи, захисні споруди',any:'Підвали, паркінги та інші укриття',h24:'цілодобово',hq:'режим не вказано',
-    chk:'перевірте, чи відчинено',ramp:'пандус',line:'відстань по прямій',short:'по прямій',m:'м',km:'км',title:'Укриття навколо мене',within:'у радіусі {0} км',nopin:'Поставте мітку в Києві: показуються укриття в радіусі {0} км від неї.',from:'від: {0}',
+    chk:'перевірте, чи відчинено',ramp:'пандус',line:'відстань по прямій',short:'по прямій',m:'м',km:'км',title:'Укриття навколо мене',close:'Закрити',within:'у радіусі {0} км',nopin:'Поставте мітку в Києві: показуються укриття в радіусі {0} км від неї.',from:'від: {0}',
     none:'У переліку міста немає укриття ближче {0} км — перелік охоплює лише місто Київ.',
     note:'Перелік міста Києва (КМДА, ІАС «Майно»), дані на {0}. Heimdall укриттів не перевіряє: укриття може бути зачинене чи переповнене.',
     out:'Під час атаки на вулиці небезпечно. Якщо не встигаєте дійти — правило двох стін, подалі від вікон.',
@@ -18,7 +18,7 @@ const T={
   en:{c:['Metro','Underpass','Civil-defence shelter','Dual-use structure','Simplest shelter','Modular shelter'],
     k:['','station','entrance','','anti-radiation shelter','basement','semi-basement','ground floor','parking garage','school building','above-ground building'],
     strong:'Metro, underpasses, civil-defence shelters',any:'Basements, parkings and other shelters',h24:'24/7',hq:'hours not stated',
-    chk:'check it is open',ramp:'ramp',line:'straight-line distance',short:'straight line',m:'m',km:'km',title:'Shelters around me',within:'within {0} km',nopin:'Set a pin in Kyiv: the shelters within {0} km of it are shown.',from:'from {0}',
+    chk:'check it is open',ramp:'ramp',line:'straight-line distance',short:'straight line',m:'m',km:'km',title:'Shelters around me',close:'Close',within:'within {0} km',nopin:'Set a pin in Kyiv: the shelters within {0} km of it are shown.',from:'from {0}',
     none:'No shelter on the city\'s list within {0} km — the list covers Kyiv city only.',
     note:'Kyiv city\'s list (KMDA, «Майно» system), data of {0}. Heimdall does not check shelters: one may be closed, locked or full.',
     out:'Outside is dangerous during an attack. If you cannot get there in time: two walls between you and the street, away from windows.',
@@ -27,7 +27,7 @@ const T={
   fr:{c:['Métro','Passage souterrain','Abri de protection civile','Ouvrage à double usage','Abri sommaire','Abri modulaire'],
     k:['','station','entrée','','abri antiradiation','sous-sol','demi-sous-sol','rez-de-chaussée','parking','bâtiment scolaire','bâtiment hors sol'],
     strong:'Métro, passages, abris de protection civile',any:'Sous-sols, parkings et autres abris',h24:'24 h/24',hq:'horaires non indiqués',
-    chk:'vérifiez qu\'il est ouvert',ramp:'rampe',line:'distance à vol d\'oiseau',short:'à vol d\'oiseau',m:'m',km:'km',title:'Abris autour de moi',within:'dans un rayon de {0} km',nopin:'Placez un repère dans Kyiv : les abris à moins de {0} km s\'affichent.',from:'depuis {0}',
+    chk:'vérifiez qu\'il est ouvert',ramp:'rampe',line:'distance à vol d\'oiseau',short:'à vol d\'oiseau',m:'m',km:'km',title:'Abris autour de moi',close:'Fermer',within:'dans un rayon de {0} km',nopin:'Placez un repère dans Kyiv : les abris à moins de {0} km s\'affichent.',from:'depuis {0}',
     none:'Aucun abri de la liste de la ville à moins de {0} km — elle ne couvre que la ville de Kyiv.',
     note:'Liste de la ville de Kyiv (KMDA, système « Майно »), données du {0}. Heimdall ne vérifie pas les abris : un abri peut être fermé, verrouillé ou plein.',
     out:'Dehors, pendant une attaque, c\'est dangereux. Si vous ne pouvez pas y arriver à temps : deux murs entre vous et la rue, loin des fenêtres.',
@@ -39,6 +39,7 @@ const LIGHT_CSS='.lsh{display:flex;align-items:center;gap:8px;margin:8px 14px 0;
   +'.lsh[hidden]{display:none}.lsh>div{flex:1;min-width:0}.lsh .shg{font-size:20px}.lsh b,.lsh small,.shi b,.shi small{display:block}.lsh small,.shi small{color:var(--ink2)}'
   +'.lsh .km{font:700 17px monospace;text-align:right}.lsh .km small{font:12px sans-serif}.lsh:has(.type){display:block}.lsh .type{font-weight:800;font-size:17px}'
   +'.shi{display:block;width:100%;margin-top:5px;padding:6px 8px;text-align:left;color:inherit;font:inherit;background:none;border:1px solid var(--line);border-left:3px solid #2e4f78}.shi.st{border-left-color:#5aa9ff}'
+  +'.lsh .shx{float:right;width:44px;height:44px;margin:-2px -4px 4px 8px;border:1px solid var(--line);border-radius:4px;background:var(--panel2);color:var(--ink);font-size:18px}'
   +'.shh{margin-top:10px;font-weight:700;font-size:13px;color:var(--ink3)}.lsh .kv1{margin-top:6px;font-size:14px}.lsh .muted{color:var(--ink3)}.lsh a{color:#8fb4ff}.lsh .hx,.lsh .shout{color:#ffd166}';
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const L=lang=>T[lang]||T.en;
@@ -103,7 +104,9 @@ const SH={D:null,P:null,T,STRONG,RADIUS_KM,
     if(!SH.D){ e.hidden=true; SH.load().then(paint,()=>{}); return; }
     if(!SH.light.css){ SH.light.css=1; const st=document.createElement('style'); st.textContent=LIGHT_CSS; document.head.appendChild(st);
       e.addEventListener('click',ev=>{ if(ev.target.closest('a')) return; e.o=!e.o; paint(); }); }
-    const h=e.o?SH.listHTML(p.lon,p.lat,lang,place):SH.lineHTML(p.lon,p.lat,lang); if(e._h!==h){ e._h=h; e.innerHTML=h; } e.hidden=!h; },
+    // 1.57.4: the open list has its ✕ (a tap anywhere on it closes it too)
+    const h=e.o?`<button type="button" class="shx" aria-label="${esc(L(lang).close)}">✕</button>`+SH.listHTML(p.lon,p.lat,lang,place):SH.lineHTML(p.lon,p.lat,lang);
+    if(e._h!==h){ e._h=h; e.innerHTML=h; } e.hidden=!h; },
   asof(lang){ try{ return new Date(SH.D.asof+'T12:00:00Z').toLocaleDateString({uk:'uk-UA',fr:'fr-FR'}[lang]||'en-GB',{day:'numeric',month:'long',year:'numeric'}).replace(/\s*р\.$/,''); }catch(e){ return SH.D.asof; } },
   footHTML(lang){ const t=L(lang);
     return `<div class="kv1 shout">${esc(t.out)}</div><div class="kv1 muted">${esc(fmt(t.note,SH.asof(lang)))} <a href="${esc(SH.D.url)}" target="_blank" rel="noopener">${esc(t.map)}</a></div>`; }};

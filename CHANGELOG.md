@@ -2,6 +2,17 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.57.4 — 2026-10-11
+
+### Fixed
+- **Every popup can be closed** — the owner, the shelter list open on his phone: "there is currently no way to quit this
+  popup". Every sheet has a ✕ at the top right, always in view while it scrolls; the shelter sheets end with a Close
+  button too; on Light the open shelter list has its ✕.
+- **The phone's back button closes what is open** (a card, the shelters, the place sheet, a panel) instead of leaving
+  the app; Escape too, on a computer.
+- **"What to do" has a back button** — "← Back", always in view at the top: to the page the reader came from (Light or
+  the map), or to the map when the guide was opened on its own.
+
 ## 1.57.3 — 2026-10-11
 
 ### Added

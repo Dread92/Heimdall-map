@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.57** · last updated 2026-10-11 (1.57.3)
+**Documented version: 1.57** · last updated 2026-10-11 (1.57.4)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -1952,6 +1952,11 @@ What to do, weapon by weapon. One self-contained `static/guide.html`; its conten
 the sources in `#gsrc` ([publisher, title, URL]). The script draws it, so the page reads `?lang=` (not stored),
 then `localStorage.lang` (shared with the two pages; the УКР / EN / FR buttons store it), then the phone's language.
 
+**The way back** (1.57.4, the owner: "in the what to do section we need a back button"): the header is sticky and starts
+with "← Back" (`#back`, `back` in each language, 44 px): to the app page the reader came from (`history.back()` when the
+referrer is one of ours), to Light when it was Light, else to the map (`/m`) — the guide opened from a link or a
+notification. Not printed.
+
 - **Five rules** that always apply; **weapon cards** (`shahed`, `jet`, `cruise`, `ballistic`, `kab`, `debris`):
   the usual warning time as a chip, how you notice it, what to do — with the map's own silhouette and colour
   (`static/glyphs.js`, `ICON` in the page); **situations** (`car` — the bridges, `out`, `home`, `kids`, `after`,
@@ -1972,6 +1977,21 @@ then `localStorage.lang` (shared with the two pages; the УКР / EN / FR button
 - **Print**: `@media print` — black on white, no buttons, cards kept whole, three columns; two A4 pages in each language.
 - Linked from the Tactical More panel (About, `m_guide`), the card (What to do →, and the ballistic warning's button), the top of the help sheet (`.gdl`), the Light footer (`#gdl`)
   and the nuclear-event banner (`/guide#rad`, `static/nuke.js`). The page asks the server for nothing.
+
+### 10.5b A way back from everything (1.57.4)
+
+The owner, the shelter list open on his phone: "there is currently no way to quit this popup" — "overall we need clear
+return-to-home buttons in the app, simple and accessible".
+
+- **Every sheet has its ✕** (`.shx`, the first thing in `#sheet` and `#homesheet`): top right, sticky while the sheet
+  scrolls, 44 px, labelled in the reader's language (`btn_close`). The shelter sheets end with a Close button too
+  (`SH_CLOSE`), like every other sheet.
+- **The phone's back button closes what is open** — a target's card, the shelters, the place sheet, the bell, more or
+  layers panel — instead of leaving the app: while one is open the page holds one history entry (`backSync`, watching
+  their `class` / `hidden`); the back button pops it and closes them all (`closeAll`); closed by its ✕, a tap or
+  Escape, the entry is taken back 300 ms later (a card replaced by another stays one entry). Escape closes it all.
+- **Light**: the target's card had its ✕ (`#rcx`); the open shelter list now has one too (`SH.light`).
+- **The guide**: "← Back" (§10.5).
 
 ### 10.6 The streets and villages of Ukraine (1.56)
 

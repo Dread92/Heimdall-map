@@ -354,6 +354,10 @@ body.lite #drawer .dchev{background:#111;border-color:#fff;color:#fff}
   body.m-day #sheet{border-color:#c3c8d0;border-top-color:var(--ua-yellow);box-shadow:0 14px 40px rgba(0,0,0,.22)}
 }
 .sheet.show{transform:none}
+/* 1.57.4, the owner: "there is currently no way to quit this popup" — every sheet has its ✕, always in view (top right,
+   sticky while it scrolls), 44 px, like the panels' */
+.sheet .shx{position:sticky;top:0;float:right;z-index:3;width:44px;height:44px;margin:-6px -6px 4px 8px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);color:var(--ink);font:600 18px var(--sans);cursor:pointer}
+body.m-day .sheet .shx{background:#eef0f3;color:#12161c;border-color:#9aa1ac}
 .sheet .grab{display:none}
 .shmore{display:none;align-items:center;gap:4px;margin-top:6px;background:transparent;border:1px solid var(--line);color:var(--ink2);border-radius:8px;padding:5px 10px;font:600 12.5px var(--sans);cursor:pointer}
 .sheet .type{font:800 22px/1.05 var(--cond);letter-spacing:.03em;text-transform:uppercase;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
@@ -1245,13 +1249,13 @@ body.lite #mycard,body.lite .panel{background:#000;border-color:#666}body.lite .
   </div>
 </aside>
 
-<div class="sheet" id="homesheet"><div class="grab"></div><div class="type" id="homet" data-t="h_title">Priority location</div><div id="homed" style="color:var(--ink3);font:12px var(--mono);margin:6px 0 10px" data-t="h_desc">Your district or village.</div>
+<div class="sheet" id="homesheet"><div class="grab"></div><button type="button" class="shx" data-t-aria="btn_close" aria-label="Close">✕</button><div class="type" id="homet" data-t="h_title">Priority location</div><div id="homed" style="color:var(--ink3);font:12px var(--mono);margin:6px 0 10px" data-t="h_desc">Your district or village.</div>
 <div class="pinrow"><input id="homen" maxlength="24" autocomplete="off" data-t-ph="sl_name" placeholder="Name — kept only on this phone" aria-label="Name"><button class="tgl" id="homemap" type="button" data-t="sl_onmap">📍 Put it on the map</button></div>
 <input id="homeq" data-t-ph="h_ph" placeholder="Search: Troieshchyna, Bucha, Boryspil, Obolon…" autocomplete="off" enterkeyhint="search">
 <div id="homelist"></div>
 <div style="margin-top:8px;display:flex;justify-content:space-between"><button class="tgl" id="homeclear" data-t="btn_clear">Clear</button><button class="tgl" onclick="$('homesheet').classList.remove('show')" data-t="btn_close">Close</button></div></div>
 <div id="fmchip" role="button" tabindex="0" data-t-title="m_full_exit" title="Exit full screen"></div>
-<div class="sheet" id="sheet"><div class="grab"></div><div id="sheetbody"></div></div>
+<div class="sheet" id="sheet"><div class="grab"></div><button type="button" class="shx" data-t-aria="btn_close" aria-label="Close">✕</button><div id="sheetbody"></div></div>
 <div class="toast" id="toast"></div>
 <div class="modal" id="disc" hidden><div class="mbox"><img class="dlogo" src="/static/heimdall-full.webp" alt="Heimdall" width="170" height="157" loading="lazy"><div class="type dtitle" data-t="d_title">IMPORTANT INFORMATION</div><div class="dlangrow"><select class="lsel" id="dlang" aria-label="Language"></select></div>
   <p data-t-html="d_p1"></p>
@@ -2037,7 +2041,22 @@ $('laybtn').onclick=e=>{e.stopPropagation();togglePanel('lay');};
 document.querySelectorAll('.panel [data-close]').forEach(b=>b.onclick=()=>closePanels());
 document.addEventListener('pointerdown',e=>{ if(PANELS.some(id=>{const p=$(id);return p&&!p.hidden&&p.contains(e.target);})) return;
   if(e.target.closest&&e.target.closest('#bellbtn,#menubtn,#laybtn')) return; closePanels(); });
-document.addEventListener('keydown',e=>{ if(e.key==='Escape') closePanels(); });
+// 1.57.4, the owner: "there is currently no way to quit this popup" — "we need clear return-to-home buttons, simple and
+// accessible". Every sheet has its ✕ (`.shx`); and the phone's back button (or the browser's) closes what is open — a
+// card, the place sheet, a panel — instead of leaving the app. One history entry while something is open (`backArm`),
+// taken back when it closes by its own ✕ (`backDisarm`); Escape closes it too.
+function closeAll(){ closeSheet(); $('homesheet').classList.remove('show'); closePanels(); }
+$('sheet').querySelector('.shx').onclick=()=>closeSheet();
+$('homesheet').querySelector('.shx').onclick=()=>$('homesheet').classList.remove('show');
+const OPEN_NOW=()=>!!document.querySelector('.sheet.show')||PANELS.some(id=>panelOpen($(id)));
+let BACK_ON=false, BACK_T=null;
+function backSync(){ clearTimeout(BACK_T);
+  if(OPEN_NOW()){ if(!BACK_ON){ try{ history.pushState({hdo:1},''); BACK_ON=true; }catch(e){} } return; }
+  // closed by its ✕, a tap or Escape: the entry goes, a moment later (a card replaced by another stays one entry)
+  BACK_T=setTimeout(()=>{ if(BACK_ON&&!OPEN_NOW()){ BACK_ON=false; try{ if(history.state&&history.state.hdo) history.back(); }catch(e){} } },300); }
+window.addEventListener('popstate',()=>{ if(!BACK_ON) return; BACK_ON=false; clearTimeout(BACK_T); closeAll(); });
+try{ const mo=new MutationObserver(backSync); for(const el of [$('sheet'),$('homesheet'),...PANELS.map(id=>$(id))]) if(el) mo.observe(el,{attributes:true,attributeFilter:['class','hidden']}); }catch(e){}
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeAll(); });
 $('homebtn').onclick=async()=>{closePanels();if(!PLACES_ALL.length)await loadPlacesList();renderHomeList('');$('homeq').value='';
   const id=SLOT_PICKING||ACTIVE; $('homet').textContent='📍 '+slotName(id); $('homed').textContent=t('sl_hint');
   $('homen').value=String(slotNames()[id]||''); $('homen').placeholder=t('sl_n',SLOT_ORDER.indexOf(id)+1)+' — '+t('sl_name');
@@ -3180,10 +3199,11 @@ function shCard(pk){ const el=$('mysh'); if(!el) return;
   if(!HOME||!shIn(HOME)||!(LEVEL>=1||pk!=='G'||LAYERS.shelters)){ el.hidden=true; return; }
   if(!window.SH||!SH.D){ el.hidden=true; shLoad().then(()=>paintCard(true)).catch(()=>{}); return; }
   const h=SH.lineHTML(HOME.lon,HOME.lat,LANG); if(el._h!==h){ el._h=h; el.innerHTML=h; } el.hidden=!h; }
-function openShelters(){ if(!HOME) return; shLoad().then(()=>{ $('sheetbody').innerHTML=SH.listHTML(HOME.lon,HOME.lat,LANG,homeName());
+const SH_CLOSE=()=>`<div style="margin-top:10px;text-align:right"><button class="tgl" onclick="closeSheet()">${esc(t('btn_close'))}</button></div>`;
+function openShelters(){ if(!HOME) return; shLoad().then(()=>{ $('sheetbody').innerHTML=SH.listHTML(HOME.lon,HOME.lat,LANG,homeName())+SH_CLOSE();
   $('sheetbody').querySelectorAll('[data-sh]').forEach(b=>b.onclick=()=>shShow(+b.dataset.sh)); $('tip').hidden=true; $('sheet').classList.add('show'); }).catch(()=>{}); }
 function openShelter(i){ if(!window.SH||!SH.D||!SH.D.s[i]) return; const d=HOME?SH.km(HOME.lon,HOME.lat,SH.D.s[i]):null;
-  $('sheetbody').innerHTML=SH.oneHTML(i,LANG,d,HOME?homeName():''); $('sheet').classList.add('show'); }
+  $('sheetbody').innerHTML=SH.oneHTML(i,LANG,d,HOME?homeName():'')+SH_CLOSE(); $('sheet').classList.add('show'); }
 function shShow(i){ const s=SH.D.s[i]; if(!s) return; SHSEL=i; if(!LAYERS.shelters){ LAYERS.shelters=true; saveLayers(); applyLayers(); }
   closeSheet(); const [x,y]=proj(s[0],s[1]); setView(x,y,3); drawShelters(); }
 $('mysh').onclick=openShelters; $('mysh').onkeydown=e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openShelters(); } };
