@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.57** · last updated 2026-10-11 (1.57.4)
+**Documented version: 1.57** · last updated 2026-10-11 (1.57.5)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -1708,6 +1708,13 @@ Main parts:
   `markOrient`) — the glyph only: no course ray, no heading in the card or the tooltip, no ETA, and the card says why
   (`face_note`); a course worked out from two reports that is more than `INWARD_MAX_DEG` (100°) off the way in is not
   kept (`outward`; a course a post stated always is). Elsewhere a mark with no course stays upright, as before;
+- **1.57.5, a mark faces the way its reports moved** (the owner, a jet drone at Obolon drawn facing north while its
+  reported path came down from above the reservoir: "the drone should face downward when it is possible to guess"):
+  with no course stated, `track_face` gives `face` the bearing from the last earlier report of the mark's own track
+  (`history`) at least `TRACK_FACE_MIN_KM` (1.5 km) away and at most `TRACK_FACE_MAX_MIN` (45 min) older, to this one,
+  and `face_by: "track"`; it comes before the way into Ukraine (`face_of`: `track_face`, else `inward_face`), and never
+  points back across the border (`outward`). The glyph only, as above — no ray, no heading, no ETA — and the card says
+  why (`face_track`). The replay keeps its own rule: a stated course or upright;
 - `tick()` — marks: silhouettes per weapon (`G`, `GLYPH_BY_TYPE` from `static/glyphs.js`), turned only to a stated course (`orientOf`),
   uncertainty ring up to 25 km, 5-minute tail, labels (1.53.3: no off-screen edge indicators any more — the owner: the map has too much on it now; a target off the screen is in the Near list);
 - `threatStrip()` — the banner stack, coloured by `officialLevel()`; `idleLine()` when calm;

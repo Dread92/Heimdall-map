@@ -342,7 +342,7 @@ const lDr=m=>m.type==='unknown'&&!m.status&&!lMsl(m);
 const silKey=m=>(m.type==='drones'||lDr(m))?(m.jet?'jetdrone':'drone'):(GLYPH_BY_TYPE[m.type]||'missile');
 const silCls=m=>'sil'+((m.type==='drones'&&m.jet)?' jet':'')+(m.type==='ballistic_missiles'?' bal':'')+(m.type==='supersonic_missiles'?' sup':'');
 // It turns only to a course the post reported. No course, or nobody said what it is: upright.
-// 1.56.3: no stated course — `face` (into Ukraine in Chernihiv oblast), or north
+// no stated course: `face` (its track, or into Ukraine), or north
 const markOrient=m=>(m.type!=='unknown'||lDr(m))?(statedCourse(m)?m.heading:m.face||0):0;
 const icoSvg=(m,c)=>`<svg viewBox="-13 -13 26 26" aria-hidden="true"><g class="${silCls(m)}" style="--c:${c}">${G[silKey(m)]||''}</g></svg>`;
 

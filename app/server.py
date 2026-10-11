@@ -2743,11 +2743,52 @@ def outward(m, brg):
 def inward_face(m):
     """`face` for a drone of an INWARD oblast with no course: the way into Ukraine. Nothing for any other mark."""
     m.pop("face", None)
+    m.pop("face_by", None)
     if m.get("status") or m.get("heading") is not None or m.get("type") not in ("drones", "unknown"):
         return
     b = _inward_bearing(m)
     if b is not None:
         m["face"] = round(b)
+
+
+# 1.57.5, the owner — a jet drone at Obolon drawn facing north while its reported path came down from the north over the
+# reservoir: "the drone should face downward when it is possible to guess". With no course stated, the icon faces the
+# way its own reports moved: from the last earlier report of its track at least TRACK_FACE_MIN_KM away (nearer, two
+# reports are one place — a tracker's jitter) and at most TRACK_FACE_MAX_MIN old, to this one. The icon only — no
+# course, no ray, no countdown, no heading in the card — and never back across the border (`outward`).
+TRACK_FACE_MIN_KM = 1.5
+TRACK_FACE_MAX_MIN = 45
+
+
+def track_face(m):
+    """The bearing of the last leg of a mark's reported track, for its icon — or None."""
+    if m.get("status") or m.get("heading") is not None or m.get("lon") is None or m.get("lat") is None or not geo:
+        return None
+    try:
+        now = datetime.fromisoformat(m["ts"])
+    except Exception:
+        return None
+    for h in reversed(m.get("history") or []):
+        if h.get("lon") is None or h.get("lat") is None:
+            continue
+        try:
+            if (now - datetime.fromisoformat(h["ts"])).total_seconds() > TRACK_FACE_MAX_MIN * 60:
+                return None
+        except Exception:
+            return None
+        if geo._km((h["lon"], h["lat"]), (m["lon"], m["lat"])) >= TRACK_FACE_MIN_KM:
+            b = geo.bearing(h["lon"], h["lat"], m["lon"], m["lat"])
+            return None if outward(m, b) else round(b)
+    return None
+
+
+def face_of(m):
+    """The way a mark's icon faces when no course was stated: along its reported track, else (Chernihiv oblast) into
+    Ukraine, else north (no `face`)."""
+    inward_face(m)
+    f = track_face(m)
+    if f is not None:
+        m["face"], m["face_by"] = f, "track"
 
 
 class State:
@@ -3161,7 +3202,7 @@ class State:
         out = [m for m in out if in_scope(m)]
         out = self._chain_and_prune(out, ttl, kyiv_ends)
         for m in out:
-            inward_face(m)                       # 1.56.3: a drone in Chernihiv oblast faces into Ukraine by default
+            face_of(m)                           # 1.57.5: along its reported track; 1.56.3: else into Ukraine (Chernihiv)
         try:
             self._tag_marks(out)                 # 1.51: N-07, S-12 …
         except Exception as e:

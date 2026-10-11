@@ -2,6 +2,16 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.57.5 — 2026-10-11
+
+### Changed
+- **A target faces the way its reports moved** — the owner, a jet drone at Obolon drawn facing north while its path
+  came down from above the reservoir: "the drone should face downward when it is possible to guess". With no course
+  stated, the icon now turns along the last leg of its own reported track (from the last report at least 1.5 km away,
+  within 45 minutes) — on the map and on Light. The icon only: no course ray, no heading, no countdown; the card says
+  "drawn facing the way its reports moved: no course was stated". Never back across the border; with no track, a drone
+  in Chernihiv oblast still faces into Ukraine, and any other mark north.
+
 ## 1.57.4 — 2026-10-11
 
 ### Fixed

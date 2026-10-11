@@ -577,6 +577,11 @@ was stated"). A course worked out from two of a channel's reports is kept only w
 (two lines of two posts are two targets, not a course), and never when it points back across the border. A course a
 post states is always drawn as stated.
 
+1.57.5: a mark whose own reports moved — 10 km from the north over the reservoir, then Obolon — faces the way they
+moved (from the last earlier report of its track at least 1.5 km away, at most 45 minutes old). That is where it was
+reported to have come from, not where it is going: the icon turns, nothing else — no ray, no heading, no time — and the
+card says "drawn facing the way its reports moved: no course was stated".
+
 ## "Heading to your village" is a thing the post has to say
 
 The priority location alert used to mean "the reported course passes within 25° of it". From 80 km away a 25°
