@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Heimdall (Kyiv Air Watch) — the full technical documentation, with a map of the system.">
-<meta name="heimdall-version" content="1.56.4">
-<meta name="heimdall-docs" content="fe5c3cdb45da4511">
+<meta name="heimdall-version" content="1.56.5">
+<meta name="heimdall-docs" content="34841bdb845de168">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Heimdall Technical Manual</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -237,7 +237,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
 <header class="top">
   <div class="wrap">
     <a class="brand" href="#top"><b>Heimdall</b><span>Technical manual</span></a>
-    <span class="ver">1.56.4</span>
+    <span class="ver">1.56.5</span>
     <nav class="nav" aria-label="Sections">
       <a href="#map">Map</a><a href="#journeys">Journeys</a><a href="#rules">Rules</a><a href="#reference">Reference</a><a href="#safety">Safety</a>
     </nav>
@@ -256,7 +256,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
       <h1 class="title">How Heimdall works</h1>
       <p class="lead">An unofficial air-threat map for Kyiv and the oblasts around it. One Python process reads the official
       alert data and the channels that track drones and missiles, stores every post before it reads it, rebuilds the map
-      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.56.4, 11 October 2026:
+      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.56.5, 11 October 2026:
       the map first, then everything in full.</p>
     </div>
     <dl class="facts">
@@ -632,7 +632,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
     <div class="doc" id="doc">
 <section class="part" id="tech" data-label="Reference"><p class="partlabel">Part I · The reference</p>
 <h1 id="heimdall--technical-documentation">Heimdall — technical documentation</h1>
-<p><strong>Documented version: 1.56</strong> · last updated 2026-10-11 (1.56.4)</p>
+<p><strong>Documented version: 1.56</strong> · last updated 2026-10-11 (1.56.5)</p>
 <p>Heimdall was called <strong>Clear Sky</strong> until 1.29; the repository, the Fly app (<code>kyiv-air-watch-gb</code>) and some
 internal names still carry the old name.</p>
 <p>This is the complete technical reference: what runs, where the data comes from, how a Telegram post becomes a
@@ -1977,6 +1977,12 @@ carries the same state (<code>ai_reader</code>). Readings are kept 90 days.</p>
 switch for its facts in the target tags — <code>State.ai_live()</code>; the marks are recomputed at the next ask (≤ 10 s). Both
 on unless switched off.</p>
 <h3 id="78-target-tags-151">7.8 Target tags (1.51)<a class="anc" href="#78-target-tags-151" aria-label="Link to this section">#</a></h3>
+<p><strong>1.56.5: not shown in the app, for now</strong> — the owner: &quot;let's disable the target IDs for now, it doesn't work and it's
+very unreliable&quot;. <code>TAGS_SHOWN</code> (<code>i18n.js</code>, false) keeps every number out of the pages: the map's label and its compact
+tag, a whole oblast's chip, the tooltip, the card's tag line and its explanation (<code>tg_what</code>), the replay's label, and
+the night's path built from a tag (<code>loadTrail</code>, <code>trailLine</code>: no <code>/api/trail</code> request). The server still works them
+out — the patterns (§7.12), the night's record and the bulletins' record, a height or a speed an earlier report of the
+track gave (<code>tag.alt</code>, <code>tag.spd</code>, still shown) — and <code>/api/markers</code> still carries <code>tag</code>. <code>true</code> brings them all back.</p>
 <p>Every target in the air carries <code>tag</code> in <code>/api/markers</code>: <code>{id: &quot;#07&quot;, n, p, night, o, os, oq, oc, ot, alt, spd}</code> —
 Heimdall's own number for the night. <strong>1.53.2, the owner: &quot;remove the direction altogether for now — it gets it wrong
 almost all the time&quot;</strong> (a drone from Belarus over Chernihiv oblast was &quot;E-82&quot;: its track had taken &quot;з брянської&quot; from
@@ -4052,6 +4058,10 @@ there to find patterns and to fix the rules, not to tell anyone what to do.</p>
 <p>A tag no longer changes under a target being followed: a track keeps the number it was last shown with, and a second
 channel's report of the same target at the same time takes the same number.</p>
 <h2 id="s-a-targets-tag-is-a-number-not-a-designation-151">A target's tag is a number, not a designation (1.51)<a class="anc" href="#s-a-targets-tag-is-a-number-not-a-designation-151" aria-label="Link to this section">#</a></h2>
+<p><strong>1.56.5: no number is shown in the app for now.</strong> The owner: &quot;it doesn't work and it's very unreliable&quot; (in 1.53
+already: &quot;the ID number changes during the course&quot;). A number that is wrong is worse than none — it makes two drones
+look like one, or one look like two. The pages show none (<code>TAGS_SHOWN</code>); what follows describes them as the
+server still keeps them, for the dashboard and the record.</p>
 <p>1.53.2: the tag is the number alone — &quot;#07&quot;. Where a target came from is no longer shown anywhere a reader sees: read
 from the posts, it was wrong too often (a track takes the first origin any of its reports stated, often another
 target's), and a wrong &quot;from the east&quot; over a drone coming from Belarus is worse than nothing. What follows describes
@@ -4465,7 +4475,7 @@ d'alerte ne sont pas des préférences de style.</p>
 </section>
     </div>
   </div>
-  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.56.4, 11 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
+  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.56.5, 11 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
 </main>
 
 <script>

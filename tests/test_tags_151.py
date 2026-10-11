@@ -238,7 +238,7 @@ def test_the_strings_exist_in_three_languages():
 
 
 def test_the_replay_and_the_dashboard():
-    assert "lb.textContent=(tr.tg?tr.tg+' ':'')" in REPLAY
+    assert "lb.textContent=(tr.tg&&typeof TAGS_SHOWN!=='undefined'&&TAGS_SHOWN?tr.tg+' ':'')" in REPLAY   # 1.56.5: shown only with TAGS_SHOWN
     assert "card('c13',tr('an_c_tags')" in ADMIN and "if(k==='targets') csvDownload(" in ADMIN
     assert "sw('bulletin_public',!!BL.public,tr('sw_bul'))" in ADMIN and "fetch('/api/admin/ai'" in ADMIN and "sw('live'" not in ADMIN
 
@@ -277,7 +277,7 @@ def test_a_region_wide_target_is_outlined_and_says_somewhere_in_the_oblast():
     # it, and the border glows from the inside; "somewhere in the oblast" under the badge from the regional view in
     assert "<text class=\"obtxt obwhere\" text-anchor=\"middle\"" in chip and "svg.veryfar #oblevt .obwhere{display:none}" in PAGE
     assert "obhatch" not in PAGE and "obhp" not in PAGE and "3fe0ff" not in PAGE
-    assert "tid=en[k]===1&&m.tag?m.tag.id:''" in chip                                   # its tag, when it is one report
+    assert "tid=TAGS_SHOWN&&en[k]===1&&m.tag?m.tag.id:''" in chip                                   # its tag, when it is one report
     assert "#oblevt .obring.live{fill:none;stroke:#f4f1e8;" in PAGE                   # never the alerts' amber or red
     assert '<g class="obglow" clip-path="url(#obclip${uid})">' in chip and "e.classList.toggle('hot',hot.has(e.dataset.o))" in chip
     assert "#oblevt .obglow{pointer-events:none}" in PAGE and "obbreath" not in PAGE        # 1.54.3: the glow is still

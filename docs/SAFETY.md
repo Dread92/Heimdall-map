@@ -710,6 +710,11 @@ channel's report of the same target at the same time takes the same number.
 
 ## A target's tag is a number, not a designation (1.51)
 
+**1.56.5: no number is shown in the app for now.** The owner: "it doesn't work and it's very unreliable" (in 1.53
+already: "the ID number changes during the course"). A number that is wrong is worse than none — it makes two drones
+look like one, or one look like two. The pages show none (`TAGS_SHOWN`); what follows describes them as the
+server still keeps them, for the dashboard and the record.
+
 1.53.2: the tag is the number alone — "#07". Where a target came from is no longer shown anywhere a reader sees: read
 from the posts, it was wrong too often (a track takes the first origin any of its reports stated, often another
 target's), and a wrong "from the east" over a drone coming from Belarus is worse than nothing. What follows describes

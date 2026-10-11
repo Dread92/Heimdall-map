@@ -2145,7 +2145,7 @@ function paintOblEvents(){
       // 1.51: a height or a descent the post gave is shown here too — "Реактивний на Київщині, висота 2200"
       // and its tag when the kind is one target — the same tag as in the list and the card
       const c=n>1?'×'+n:'';
-      const al=oblAlt(m), al2=al?al+(/\d$/.test(al)?' '+t('m_unit'):''):'', tid=en[k]===1&&m.tag?m.tag.id:'';
+      const al=oblAlt(m), al2=al?al+(/\d$/.test(al)?' '+t('m_unit'):''):'', tid=TAGS_SHOWN&&en[k]===1&&m.tag?m.tag.id:'';
       const gk=((m.type==='drones'||asDrone(m))&&m.jet)?'jetdrone':asDrone(m)?'drone':(GLYPH_BY_TYPE[m.type]||'missile');
       if(tid) seg(`<text class="obtxt obtid" dominant-baseline="central">${esc(tid)}</text>`,tid.length*7.6);
       seg(`<g class="sil${m.type==='drones'&&m.jet?' jet':''}" style="--c:${KIND_COL(m)};transform:translate(${px(8*S)},0px) scale(calc(var(--k,1)*${(.72*S).toFixed(3)}))">${G[gk]||''}</g>`,Math.round(16*S),1);
@@ -2440,7 +2440,7 @@ function tick(){
     const name=m.status?(({down:t('mk_down'),impact:t('mk_impact'),lost:t('mk_lost'),clear:t('mk_clear'),damage:t('mk_damage'),fire:t('mk_fire')})[m.status]||statusName(m.status)+((m.cluster||1)>1?` ×${m.cluster}`:m.count>1?` ×${m.count}`:'')):kind+((m.csum||m.count||1)>1?` ×${m.csum||m.count}`:'');
     // 1.51: the target's tag at the head of its label — S-07: Heimdall's number for tonight, the letter where a post
     // said it came from (never worked out); set only when it changes
-    {const l1=b.g.querySelector('.lbl'), tg=(!m.status&&!m.endedBy)?m.tag:null, lk=(tg?tg.id:'')+'|'+name;
+    {const l1=b.g.querySelector('.lbl'), tg=(TAGS_SHOWN&&!m.status&&!m.endedBy)?m.tag:null, lk=(tg?tg.id:'')+'|'+name;   // 1.56.5: off
      if(l1.dataset.k!==lk){ l1.dataset.k=lk; if(tg){ l1.innerHTML=`<tspan class="tid">${esc(tg.id)}</tspan> ${esc(name)}`; } else l1.textContent=name; }
      // the compact tag (zoomed out) too
      const ct=tg?tg.id:'';
@@ -2595,7 +2595,7 @@ function phaseLadder(m){ const L=m.phase_ladder; if(!m.phase||!L||!L.length) ret
 function showTip(m,e){
   const cur=MK.find(x=>x.id===m.id)||m; const [x,y]=posOf(cur,Date.now()); const info=inboundInfo(cur,x,y);
   const th=THREAT[cur.type]||THREAT.unknown;
-  const title=cur.status?`${statusIco(cur.status)} ${statusName(cur.status)}`:`${cur.tag?`<span class="tagid">${esc(cur.tag.id)}</span> `:''}${th[0]} ${cur.type==='drones'&&cur.jet?t('k_jet'):th[1]}${cur.count>1?' ×'+cur.count:''}`;
+  const title=cur.status?`${statusIco(cur.status)} ${statusName(cur.status)}`:`${TAGS_SHOWN&&cur.tag?`<span class="tagid">${esc(cur.tag.id)}</span> `:''}${th[0]} ${cur.type==='drones'&&cur.jet?t('k_jet'):th[1]}${cur.count>1?' ×'+cur.count:''}`;
   const where=cur.place==='область'?oblWhere(cur):pn(cur.place);
   const ev=cur.evidence||{};
   // 1.50.2: a mark drawn at the town it is heading for was "spotted near" that town — "2 реактиви у бік Києва з півдня"
@@ -2632,7 +2632,7 @@ function moveTip(e){const w=$('mapwrap').getBoundingClientRect(); const tip=$('t
 // it wrong almost all the time"), and a speed a post stated
 function tagLine(m){ const tg=m.tag; if(!tg||m.status||m.endedBy) return '';
   const tel=[tg.spd?`${t('tg_spd_l',tg.spd.kmh)} <span style="color:var(--muted)">«${esc(tg.spd.q||'')}»</span>`:''].filter(Boolean);
-  return `<div class="kv1 tagl"><b class="tagid">${esc(tg.id)}</b><span style="color:var(--muted)">${esc(t('tg_num'))}</span></div>${tel.map(x=>`<div class="kv1" style="font-size:12.5px">${x}</div>`).join('')}`; }
+  return `${TAGS_SHOWN?`<div class="kv1 tagl"><b class="tagid">${esc(tg.id)}</b><span style="color:var(--muted)">${esc(t('tg_num'))}</span></div>`:''}${tel.map(x=>`<div class="kv1" style="font-size:12.5px">${x}</div>`).join('')}`; }
 function openSheet(id){
   const m=MK.find(x=>x.id===id); if(!m) return; SELP=id; const sp=$('selpath'); if(sp) sp._sig=''; setTimeout(drawSelPath,0); setTimeout(()=>loadTrail(m),0); $('tip').hidden=true; const [x,y,x0,y0]=posOf(m,Date.now()); const info=inboundInfo(m,x,y);
   const th=THREAT[m.type]||THREAT.unknown; const appr=!!m.approach&&!m.status&&!m.endedBy; const placeEn=(m.place==='область'||relOf(m))?oblWhere(m):pn(m.place);
@@ -2680,7 +2680,7 @@ function openSheet(id){
       <div class="kv" style="margin-top:6px">${evRow(t('ev_type'),ev.type)}${evRow(t('ev_pos'),ev.position,null,accTxt('pos',ev.position,m))}${m.status?'':evRow(t('ev_hdg'),ev.heading,t('tp_nr'),accTxt('hdg',ev.heading,m))}${evRow(t('ev_count'),ev.count,t('ev_count_fb'))}
       ${cor.length?`<span>${t('ev_others')}</span><b style="font-weight:500">${cor.map(o=>`${esc(CH[o.channel]||o.channel)} ${fmtT(o.ts)}`).join(', ')} ${t('ev_within')}</b>`:''}</div>
       <div style="font-size:11px;color:var(--muted);margin-top:6px">${t('sh_note',STALE)}</div>
-      ${m.tag?`<div style="font-size:11px;color:var(--muted);margin-top:6px">${esc(t('tg_what'))}</div>`:''}
+      ${TAGS_SHOWN&&m.tag?`<div style="font-size:11px;color:var(--muted);margin-top:6px">${esc(t('tg_what'))}</div>`:''}
     </details>
     ${alt?`<div class="kv1 muted sec" style="font-size:11.5px">${esc(alt.state?(ALTL[alt.state]||alt.state):(alt.m+' m'))}: “${esc(alt.matched)}” — ${esc(altF?t('alt_src'):t('alt_old',Math.round(agoMin(m.ts))))}</div>`:''}
     ${(()=>{const gsd=groundSpeed(m); return gsd?`<div class="kv1 muted sec" style="font-size:11.5px">${esc(t('tel_gs',gsd.kmh))} — ${esc(t('tel_gs_src',gsd.mins))}</div>`:'';})()}
@@ -2716,13 +2716,13 @@ var SELP=null;      // var: tick() may run before this line is reached
 // 45 minutes, drawn fainter, before the ones still on it
 var TRAIL=null;
 function loadTrail(m){ TRAIL=null; const tg=m.tag; const box=$('shtrail'); if(box) box.innerHTML='';
-  if(!tg||!tg.night||m.status) return;
+  if(!TAGS_SHOWN||!tg||!tg.night||m.status) return;          // 1.56.5: a night's path is a tag's — off with them
   fetch(`/api/trail?night=${encodeURIComponent(tg.night)}&n=${tg.n}`).then(r=>r.ok?r.json():null).then(d=>{
     if(!d||SELP!==m.id) return; TRAIL={id:m.id,pts:(d.points||[]).filter(p=>p.lon!=null&&p.lat!=null)};
     const sp=$('selpath'); if(sp) sp._sig=''; drawSelPath(); trailLine(m); }).catch(()=>{}); }
 function trailOld(m){ const first=m.history&&m.history.length?m.history[0].ts:m.ts;
   return TRAIL&&TRAIL.id===m.id?TRAIL.pts.filter(p=>p.ts<first):[]; }
-function trailLine(m){ const box=$('shtrail'); if(!box) return; const old=trailOld(m); if(!old.length){ box.innerHTML=''; return; }
+function trailLine(m){ const box=$('shtrail'); if(!box||!TAGS_SHOWN) return; const old=trailOld(m); if(!old.length){ box.innerHTML=''; return; }
   const all=[...old.map(p=>({pl:p.place,ts:p.ts,alt:p.alt})),...(m.history||[]).map(h=>({pl:h.place,ts:h.ts,alt:h.alt_m})),{pl:m.place,ts:m.ts,alt:m.alt&&m.alt.m,cur:1}];
   const one=o=>`${esc(o.pl==='область'?oblWhere(m):pn(o.pl||'?'))} ${fmtT(o.ts)}${o.alt!=null?' ('+esc(fmtAlt(o.alt))+')':''}`;
   const seq=all.length>5?[...all.slice(0,2).map(one),'…',...all.slice(-2,-1).map(one)]:all.slice(0,-1).map(one);

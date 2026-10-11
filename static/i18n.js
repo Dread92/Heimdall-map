@@ -409,6 +409,11 @@ const fmtAlt=v=>v==null?'':v>=1000?`${(v/1000).toFixed(v%1000?1:0).replace('.',L
 // 15:50 explosions — the map kept the 900 m for 11 minutes). A height, a descent and a run of heights are shown on the maps
 // and in the lists only while the report that stated them is at most ALT_MAX_MIN old; the card's track keeps them, timed.
 const ALT_MAX_MIN=4;
+// 1.56.5, the owner: "let's disable the target IDs for now — it doesn't work and it's very unreliable". The tags (#158)
+// are still worked out by the server (the dashboard's patterns, the night's record, a height or a speed a track's earlier
+// report gave) but the app shows none: no number on the map, in the tooltip, the card or the replay, and no night's
+// path built from them (/api/trail). true brings them all back.
+const TAGS_SHOWN=false;
 // 1.56.4: where an approach mark is said to be heading — every place of the post's list, as written ("Київ / Ірпінь /
 // Буча"); the mark itself stands at the one approach_pick chose (geo.py)
 const apprTo=m=>(m.targets&&m.targets.length>1?m.targets:[m.target||m.place||'']).map(pn).join(' / ');

@@ -2,6 +2,14 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.56.5 — 2026-10-11
+
+### Changed
+- **No target numbers in the app, for now** — the owner: "let's disable the target IDs for now — it doesn't work and
+  it's very unreliable". No "#158" on the map, in the tooltip, the card, a whole oblast's chip or the replay, and no
+  night's path built from a number. The server still works them out for the dashboard's patterns and the record;
+  one switch (`TAGS_SHOWN` in `i18n.js`) brings them back.
+
 ## 1.56.4 — 2026-10-11
 
 ### Fixed

@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.56** · last updated 2026-10-11 (1.56.4)
+**Documented version: 1.56** · last updated 2026-10-11 (1.56.5)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -976,6 +976,13 @@ switch for its facts in the target tags — `State.ai_live()`; the marks are rec
 on unless switched off.
 
 ### 7.8 Target tags (1.51)
+
+**1.56.5: not shown in the app, for now** — the owner: "let's disable the target IDs for now, it doesn't work and it's
+very unreliable". `TAGS_SHOWN` (`i18n.js`, false) keeps every number out of the pages: the map's label and its compact
+tag, a whole oblast's chip, the tooltip, the card's tag line and its explanation (`tg_what`), the replay's label, and
+the night's path built from a tag (`loadTrail`, `trailLine`: no `/api/trail` request). The server still works them
+out — the patterns (§7.12), the night's record and the bulletins' record, a height or a speed an earlier report of the
+track gave (`tag.alt`, `tag.spd`, still shown) — and `/api/markers` still carries `tag`. `true` brings them all back.
 
 Every target in the air carries `tag` in `/api/markers`: `{id: "#07", n, p, night, o, os, oq, oc, ot, alt, spd}` —
 Heimdall's own number for the night. **1.53.2, the owner: "remove the direction altogether for now — it gets it wrong
