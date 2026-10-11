@@ -28,7 +28,9 @@ def test_the_default_channels_and_only_them():
         "chernihiv_nebo", "monitoringodesa", "chyste_nebocherkasy", "radar_kharkov", "RadarDnepr",
         "kabusumy", "air_alert_mk", "PoltavaRadar", "vinnytsiappo", "zt_radar",
         # 1.45: Kherson, Kirovohrad, Khmelnytskyi, Ternopil, Rivne, Lviv, Volyn
-        "kherson_monitoring", "controlkrop", "radarhmel", "radarofternopil", "rivne_radar", "ppoualviv", "lutsk_radar"}
+        "kherson_monitoring", "controlkrop", "radarhmel", "radarofternopil", "rivne_radar", "ppoualviv", "lutsk_radar",
+        # 1.57.3: a fourth Kyiv tracker, the owner's choice
+        "vseok450"}
     assert set(server.CHANNEL_HOME_DEFAULT) == set(server.AUTHORITATIVE_CHANNELS)
 
 

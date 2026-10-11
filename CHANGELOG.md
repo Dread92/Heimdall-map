@@ -2,6 +2,16 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.57.3 — 2026-10-11
+
+### Added
+- **"4.5.0" (@vseok450), a live tracker of Kyiv and its oblast** — the owner: "we also add this channel as a source for
+  Kyiv and the oblast; it comes from a trustworthy source". Read like the Kyiv trackers (`parse_kyiv_airdef`), in the
+  Kyiv compartment, and **on trial** until the owner puts it on the map from the dashboard: its posts are in the feed,
+  flagged, and raise nothing. Its posts are short lists of places and counts with no weapon named; on 11 Oct the rules
+  read its bare lists ("Яготин / Богуслав") and "1-й до Чабанів", not yet its counts ("3 Чернігівська"), "з півдня"
+  after a pair of places, or a list under a sentence — taught from its posts while it is on trial.
+
 ## 1.57.2 — 2026-10-11
 
 ### Added

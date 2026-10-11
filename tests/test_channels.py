@@ -30,7 +30,9 @@ def test_a_channel_name_is_read_from_what_people_paste():
 def test_the_defaults_then_the_dashboard_changes_survive_a_restart():
     st = _state()
     assert [e["name"] for e in st.channel_list] == server.AUTHORITATIVE_CHANNELS
-    assert all(e["mode"] == "map" and e["builtin"] for e in st.channel_list)
+    # every default is on the map — but a new tracker, on trial until the owner puts it there (1.57.3)
+    assert all(e["mode"] == server.CHANNEL_MODE_DEFAULT.get(e["name"], "map") and e["builtin"] for e in st.channel_list)
+    assert st.channel_mode("vseok450") == "trial"
     assert st.channels_read("api") == ["chyste_nebo"]
     ok, _ = st.channel_update("add", "@new_tracker")
     assert ok and st.channel_mode("new_tracker") == "trial"             # a new channel starts on trial

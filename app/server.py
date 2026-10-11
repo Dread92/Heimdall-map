@@ -208,7 +208,9 @@ AUTHORITATIVE_CHANNELS = ["kyiv_airdef", "chyste_nebo", "kievinfo_kyiv", "war_mo
                           "kabusumy", "air_alert_mk", "PoltavaRadar", "vinnytsiappo", "zt_radar",
                           # 1.45: Kherson, Kirovohrad, Khmelnytskyi, Ternopil, Rivne, Lviv, Volyn
                           "kherson_monitoring", "controlkrop", "radarhmel", "radarofternopil", "rivne_radar", "ppoualviv",
-                          "lutsk_radar"]
+                          "lutsk_radar",
+                          # 1.57.3, the owner: "4.5.0" (@vseok450), a live tracker of Kyiv and its oblast — on trial first
+                          "vseok450"]
 
 # 1.43: the dashboard groups the channels by the oblast they speak for, and switches an oblast on or off as a whole.
 # "31" is Kyiv — the city and its oblast, always on; "ua" the channels that cover the whole country. A channel's
@@ -219,7 +221,10 @@ CHANNEL_HOME_DEFAULT = {"kyiv_airdef": "31", "chyste_nebo": "31", "kievinfo_kyiv
                         "radar_kharkov": "22", "RadarDnepr": "9",
                         "kabusumy": "20", "air_alert_mk": "17", "PoltavaRadar": "19", "vinnytsiappo": "4", "zt_radar": "10",
                         "kherson_monitoring": "23", "controlkrop": "15", "radarhmel": "3", "radarofternopil": "21",
-                        "rivne_radar": "5", "ppoualviv": "27", "lutsk_radar": "8"}
+                        "rivne_radar": "5", "ppoualviv": "27", "lutsk_radar": "8", "vseok450": "31"}
+# 1.57.3: a channel's mode until the dashboard sets one — a new tracker is on trial (its posts in the feed, flagged; no
+# mark, no warning, no push) until its posts have been read against the rules and the owner puts it on the map
+CHANNEL_MODE_DEFAULT = {"vseok450": "trial"}
 # The preview of the "Чисте небо" network's channels is switched off: with the Telegram API configured, read that way.
 # 1.44: so is @kabusumy's (Sumy).
 CHANNEL_VIA_DEFAULT = {"chyste_nebocherkasy": "api", "kabusumy": "api"}
@@ -2801,7 +2806,7 @@ class State:
         for c in AUTHORITATIVE_CHANNELS:
             e = by.pop(c.lower(), {})
             dflt_via = "api" if (c.lower() in api or (tga and CHANNEL_VIA_DEFAULT.get(c) == "api")) else "web"
-            out.append({"name": c, "builtin": True, "mode": e.get("mode") if e.get("mode") in self.CHANNEL_MODES else "map",
+            out.append({"name": c, "builtin": True, "mode": e.get("mode") if e.get("mode") in self.CHANNEL_MODES else CHANNEL_MODE_DEFAULT.get(c, "map"),
                         "via": e.get("via") if e.get("via") in ("web", "api") else dflt_via,
                         "home": self._home_ok(e.get("home")) or CHANNEL_HOME_DEFAULT.get(c, "")})
         for e in by.values():

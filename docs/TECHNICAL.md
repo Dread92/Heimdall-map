@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.57** · last updated 2026-10-11 (1.57.2)
+**Documented version: 1.57** · last updated 2026-10-11 (1.57.3)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -47,7 +47,7 @@ around them (the six around Kyiv, then Odesa, Kharkiv, Dnipro, Mykolaiv and, sin
 Python process — standard library only, plus `cryptography` for Web Push — reads:
 
 - the **official «Повітряна тривога» alert data** (which raions are under alert, at which level),
-- **23 public Telegram channels** that report where drones and missiles are: the three Kyiv live trackers, three
+- **24 public Telegram channels** that report where drones and missiles are: the four Kyiv live trackers, three
   country-wide channels (the Air Force among them) and one live tracker per oblast (§7.1) — most through their
   `t.me/s/` previews, three through the Telegram API,
 - the Air Force's summaries and the carriers' take-offs and launches, read from those posts (§7.5, §7.6), and the
@@ -95,7 +95,7 @@ Summarised here, argued in [SAFETY.md](SAFETY.md), and each pinned by tests:
   (siren.pp.ua or ukrainealarm,       every 10–30 s                                 │
    alerts.in.ua, ubilling mirror)                                                   ▼
                                                                          State: alerts → level by raion ──▶ /api/state
- 23 Telegram channels ────▶ Telegram (t.me/s previews, 30 s; 10 s in a missile threat)        │
+ 24 Telegram channels ────▶ Telegram (t.me/s previews, 30 s; 10 s in a missile threat)        │
   (3 Kyiv trackers, 3 country, ─▶ TelegramAPI (chyste_nebo …, 15 s; polls, never subscribes)  │
    1+ per oblast)                    │ ingest(): stored BEFORE it is read                      │
                                      ▼                                                        ▼
@@ -517,6 +517,10 @@ event of a Trial post carries `tags: ["trial"]` only. Both readers take the list
 | `rivne_radar` | live tracker of Rivne oblast; follows its targets into the next oblast (1.45) | `_parse_live(·, "5")`, with `near` (§7.3b); its raion alert notices ("Тривога — Вараський район") are not marks |
 | `ppoualviv` | live tracker of Lviv oblast (1.45) | `_parse_live(·, "27")` |
 | `lutsk_radar` | live tracker of Volyn oblast (1.45) | `_parse_live(·, "8")` |
+| `vseok450` | "4.5.0", live tracker of Kyiv and its oblast, 12K readers (1.57.3, the owner's choice) — **on trial by default** (`CHANNEL_MODE_DEFAULT`): its posts in the feed, flagged, nothing on the map, until the owner puts it on the map from the dashboard | `parse_kyiv_airdef`; its posts are short lists of places and counts ("Яготин / Богуслав / 3 Чернігівська", "1-й до Чабанів", "Обухів/Українка 2 з півдня"), no weapon named (read as "probably a drone"), "Відбій" (never ends an alert), "Цього нема." (the previous one is gone). On 11 Oct the rules read the places of a bare list and "до X" but not yet the counts, "з півдня" after a pair of places, or a list under a sentence — to be taught from its posts on trial |
+
+**A channel's mode until the dashboard sets one** (1.57.3): `map`, or `CHANNEL_MODE_DEFAULT` — a new tracker starts on
+trial; the dashboard's choice, once made, is kept (`kv.channels`).
 
 **The oblasts as compartments (1.43).** Every channel belongs to the compartment of the oblast it speaks for (its
 `home`): an oblast uid, `31` (Kyiv city and Kyiv oblast) or `ua` (the country-wide channels) —

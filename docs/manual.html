@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Heimdall (Kyiv Air Watch) — the full technical documentation, with a map of the system.">
-<meta name="heimdall-version" content="1.57.2">
-<meta name="heimdall-docs" content="2b6cf01052820711">
+<meta name="heimdall-version" content="1.57.3">
+<meta name="heimdall-docs" content="f0f1908259683dca">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Heimdall Technical Manual</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -237,7 +237,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
 <header class="top">
   <div class="wrap">
     <a class="brand" href="#top"><b>Heimdall</b><span>Technical manual</span></a>
-    <span class="ver">1.57.2</span>
+    <span class="ver">1.57.3</span>
     <nav class="nav" aria-label="Sections">
       <a href="#map">Map</a><a href="#journeys">Journeys</a><a href="#rules">Rules</a><a href="#reference">Reference</a><a href="#safety">Safety</a>
     </nav>
@@ -256,12 +256,12 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
       <h1 class="title">How Heimdall works</h1>
       <p class="lead">An unofficial air-threat map for Kyiv and the oblasts around it. One Python process reads the official
       alert data and the channels that track drones and missiles, stores every post before it reads it, rebuilds the map
-      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.57.2, 11 October 2026:
+      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.57.3, 11 October 2026:
       the map first, then everything in full.</p>
     </div>
     <dl class="facts">
       <dt>Runs</dt><dd>One process on Fly.io, standard library plus <code style="font:12.5px var(--mono)">cryptography</code></dd>
-      <dt>Reads</dt><dd>3 official alert feeds, 23 Telegram channels, Open-Meteo</dd>
+      <dt>Reads</dt><dd>3 official alert feeds, 24 Telegram channels, Open-Meteo</dd>
       <dt>Keeps</dt><dd>SQLite on a 1 GB volume, beside the Sentinel-2 tiles</dd>
       <dt>Serves</dt><dd>Tactical <code style="font:12.5px var(--mono)">/m</code>, Light <code style="font:12.5px var(--mono)">/light</code>, the guide, the dashboard</dd>
       <dt>Sends</dt><dd>Web Push to a ~10 km cell, never a place</dd>
@@ -354,7 +354,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
   <a class="m-link" href="#71-the-channels"><g>
     <rect class="m-box" x="10" y="196" width="170" height="214" rx="6"/>
     <text class="m-title" x="22" y="218">Telegram channels</text>
-    <text class="m-sub" x="22" y="240">23 public channels</text>
+    <text class="m-sub" x="22" y="240">24 public channels</text>
     <text class="m-sub" x="22" y="262">3 Kyiv live trackers</text>
     <text class="m-sub" x="22" y="280">3 country-wide</text>
     <text class="m-sub" x="22" y="298">(the Air Force among them)</text>
@@ -401,7 +401,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
   <a class="m-link" href="#72-from-page-to-stored-post"><g>
     <rect class="m-box" x="230" y="196" width="180" height="98" rx="6"/>
     <text class="m-title" x="242" y="218">Telegram</text>
-    <text class="m-sub" x="242" y="238">t.me/s/ previews, 20 channels</text>
+    <text class="m-sub" x="242" y="238">t.me/s/ previews, 21 channels</text>
     <text class="m-sub" x="242" y="256">every 30 s; 10 s while</text>
     <text class="m-sub" x="242" y="274">a missile threat is open</text>
   </g></a>
@@ -634,7 +634,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
     <div class="doc" id="doc">
 <section class="part" id="tech" data-label="Reference"><p class="partlabel">Part I · The reference</p>
 <h1 id="heimdall--technical-documentation">Heimdall — technical documentation</h1>
-<p><strong>Documented version: 1.57</strong> · last updated 2026-10-11 (1.57.2)</p>
+<p><strong>Documented version: 1.57</strong> · last updated 2026-10-11 (1.57.3)</p>
 <p>Heimdall was called <strong>Clear Sky</strong> until 1.29; the repository, the Fly app (<code>kyiv-air-watch-gb</code>) and some
 internal names still carry the old name.</p>
 <p>This is the complete technical reference: what runs, where the data comes from, how a Telegram post becomes a
@@ -674,7 +674,7 @@ around them (the six around Kyiv, then Odesa, Kharkiv, Dnipro, Mykolaiv and, sin
 Python process — standard library only, plus <code>cryptography</code> for Web Push — reads:</p>
 <ul>
 <li>the <strong>official «Повітряна тривога» alert data</strong> (which raions are under alert, at which level),</li>
-<li><strong>23 public Telegram channels</strong> that report where drones and missiles are: the three Kyiv live trackers, three
+<li><strong>24 public Telegram channels</strong> that report where drones and missiles are: the four Kyiv live trackers, three
 country-wide channels (the Air Force among them) and one live tracker per oblast (§7.1) — most through their
 <code>t.me/s/</code> previews, three through the Telegram API,</li>
 <li>the Air Force's summaries and the carriers' take-offs and launches, read from those posts (§7.5, §7.6), and the
@@ -737,7 +737,7 @@ stores a ~10 km cell, never a village; the Light page works out the oblast and r
   (siren.pp.ua or ukrainealarm,       every 10–30 s                                 │
    alerts.in.ua, ubilling mirror)                                                   ▼
                                                                          State: alerts → level by raion ──▶ /api/state
- 23 Telegram channels ────▶ Telegram (t.me/s previews, 30 s; 10 s in a missile threat)        │
+ 24 Telegram channels ────▶ Telegram (t.me/s previews, 30 s; 10 s in a missile threat)        │
   (3 Kyiv trackers, 3 country, ─▶ TelegramAPI (chyste_nebo …, 15 s; polls, never subscribes)  │
    1+ per oblast)                    │ ingest(): stored BEFORE it is read                      │
                                      ▼                                                        ▼
@@ -1546,8 +1546,15 @@ event of a Trial post carries <code>tags: [&quot;trial&quot;]</code> only. Both 
 <td>live tracker of Volyn oblast (1.45)</td>
 <td><code>_parse_live(·, &quot;8&quot;)</code></td>
 </tr>
+<tr>
+<td><code>vseok450</code></td>
+<td>&quot;4.5.0&quot;, live tracker of Kyiv and its oblast, 12K readers (1.57.3, the owner's choice) — <strong>on trial by default</strong> (<code>CHANNEL_MODE_DEFAULT</code>): its posts in the feed, flagged, nothing on the map, until the owner puts it on the map from the dashboard</td>
+<td><code>parse_kyiv_airdef</code>; its posts are short lists of places and counts (&quot;Яготин / Богуслав / 3 Чернігівська&quot;, &quot;1-й до Чабанів&quot;, &quot;Обухів/Українка 2 з півдня&quot;), no weapon named (read as &quot;probably a drone&quot;), &quot;Відбій&quot; (never ends an alert), &quot;Цього нема.&quot; (the previous one is gone). On 11 Oct the rules read the places of a bare list and &quot;до X&quot; but not yet the counts, &quot;з півдня&quot; after a pair of places, or a list under a sentence — to be taught from its posts on trial</td>
+</tr>
 </tbody>
 </table></div>
+<p><strong>A channel's mode until the dashboard sets one</strong> (1.57.3): <code>map</code>, or <code>CHANNEL_MODE_DEFAULT</code> — a new tracker starts on
+trial; the dashboard's choice, once made, is kept (<code>kv.channels</code>).</p>
 <p><strong>The oblasts as compartments (1.43).</strong> Every channel belongs to the compartment of the oblast it speaks for (its
 <code>home</code>): an oblast uid, <code>31</code> (Kyiv city and Kyiv oblast) or <code>ua</code> (the country-wide channels) —
 <code>CHANNEL_HOME_DEFAULT</code> for the defaults, chosen when a channel is added, changed from the dashboard. The dashboard
@@ -4581,7 +4588,7 @@ d'alerte ne sont pas des préférences de style.</p>
 </section>
     </div>
   </div>
-  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.57.2, 11 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
+  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.57.3, 11 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
 </main>
 
 <script>

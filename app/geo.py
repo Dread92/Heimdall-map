@@ -2337,7 +2337,7 @@ def parse_eradar(text):
 
 # kievinfo_kyiv and chyste_nebo post the same way kyiv_airdef does: a place, sometimes a route, an outcome word.
 CHANNEL_PARSER = {"povitryanatrivogaaa": parse_arrows, "kyiv_airdef": parse_kyiv_airdef, "eRadarrua": parse_eradar,
-                  "kievinfo_kyiv": parse_kyiv_airdef, "chyste_nebo": parse_kyiv_airdef,
+                  "kievinfo_kyiv": parse_kyiv_airdef, "chyste_nebo": parse_kyiv_airdef, "vseok450": parse_kyiv_airdef,
                   "cherkasy_monitor": lambda t: _parse_live(t, "24"), "sumy_alerts": lambda t: _parse_live(t, "20"),
                   "xydessa_live": lambda t: _parse_live(t, "18")}
 
