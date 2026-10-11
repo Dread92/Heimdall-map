@@ -9,7 +9,7 @@ const T={
   uk:{c:['Метро','Підземний перехід','Захисна споруда','Споруда подвійного призначення','Найпростіше укриття','Мобільне укриття'],
     k:['','станція','вхід','','протирадіаційне укриття','підвал','цокольний поверх','перший поверх','паркінг','заклад освіти','наземна будівля'],
     strong:'Метро, переходи, захисні споруди',any:'Підвали, паркінги та інші укриття',h24:'цілодобово',hq:'режим не вказано',
-    chk:'перевірте, чи відчинено',ramp:'пандус',line:'відстань по прямій',short:'по прямій',m:'м',km:'км',title:'Укриття поруч',from:'від: {0}',
+    chk:'перевірте, чи відчинено',ramp:'пандус',line:'відстань по прямій',short:'по прямій',m:'м',km:'км',title:'Укриття навколо мене',within:'у радіусі {0} км',nopin:'Поставте мітку в Києві: показуються укриття в радіусі {0} км від неї.',from:'від: {0}',
     none:'У переліку міста немає укриття ближче {0} км — перелік охоплює лише місто Київ.',
     note:'Перелік міста Києва (КМДА, ІАС «Майно»), дані на {0}. Heimdall укриттів не перевіряє: укриття може бути зачинене чи переповнене.',
     out:'Під час атаки на вулиці небезпечно. Якщо не встигаєте дійти — правило двох стін, подалі від вікон.',
@@ -18,7 +18,7 @@ const T={
   en:{c:['Metro','Underpass','Civil-defence shelter','Dual-use structure','Simplest shelter','Modular shelter'],
     k:['','station','entrance','','anti-radiation shelter','basement','semi-basement','ground floor','parking garage','school building','above-ground building'],
     strong:'Metro, underpasses, civil-defence shelters',any:'Basements, parkings and other shelters',h24:'24/7',hq:'hours not stated',
-    chk:'check it is open',ramp:'ramp',line:'straight-line distance',short:'straight line',m:'m',km:'km',title:'Shelters nearby',from:'from {0}',
+    chk:'check it is open',ramp:'ramp',line:'straight-line distance',short:'straight line',m:'m',km:'km',title:'Shelters around me',within:'within {0} km',nopin:'Set a pin in Kyiv: the shelters within {0} km of it are shown.',from:'from {0}',
     none:'No shelter on the city\'s list within {0} km — the list covers Kyiv city only.',
     note:'Kyiv city\'s list (KMDA, «Майно» system), data of {0}. Heimdall does not check shelters: one may be closed, locked or full.',
     out:'Outside is dangerous during an attack. If you cannot get there in time: two walls between you and the street, away from windows.',
@@ -27,14 +27,14 @@ const T={
   fr:{c:['Métro','Passage souterrain','Abri de protection civile','Ouvrage à double usage','Abri sommaire','Abri modulaire'],
     k:['','station','entrée','','abri antiradiation','sous-sol','demi-sous-sol','rez-de-chaussée','parking','bâtiment scolaire','bâtiment hors sol'],
     strong:'Métro, passages, abris de protection civile',any:'Sous-sols, parkings et autres abris',h24:'24 h/24',hq:'horaires non indiqués',
-    chk:'vérifiez qu\'il est ouvert',ramp:'rampe',line:'distance à vol d\'oiseau',short:'à vol d\'oiseau',m:'m',km:'km',title:'Abris à proximité',from:'depuis {0}',
+    chk:'vérifiez qu\'il est ouvert',ramp:'rampe',line:'distance à vol d\'oiseau',short:'à vol d\'oiseau',m:'m',km:'km',title:'Abris autour de moi',within:'dans un rayon de {0} km',nopin:'Placez un repère dans Kyiv : les abris à moins de {0} km s\'affichent.',from:'depuis {0}',
     none:'Aucun abri de la liste de la ville à moins de {0} km — elle ne couvre que la ville de Kyiv.',
     note:'Liste de la ville de Kyiv (KMDA, système « Майно »), données du {0}. Heimdall ne vérifie pas les abris : un abri peut être fermé, verrouillé ou plein.',
     out:'Dehors, pendant une attaque, c\'est dangereux. Si vous ne pouvez pas y arriver à temps : deux murs entre vous et la rue, loin des fenêtres.',
     map:'La carte des abris de la ville ↗',show:'Voir sur la carte',tel:'tél.',one:'Un abri de la liste de la ville',any1:'le plus proche, tout type :',
     sday:'les jours d\'école, réservé aux élèves et au personnel',sonly:'réservé aux élèves et au personnel de l\'établissement',repair:'en travaux — peut être fermé'}};
 const STRONG=3;                 // categories 0–2: metro, underpasses, civil-defence shelters
-const LINE_STRONG_KM=2, LINE_ANY_KM=1, LIST_KM=3;
+const RADIUS_KM=5;                  // the owner: "shelters around me", within 5 km of the pin — the card, the list and the layer
 const LIGHT_CSS='.lsh{display:flex;align-items:center;gap:8px;margin:8px 14px 0;padding:8px 10px;border:1px solid var(--line);border-left:4px solid #5aa9ff;border-radius:4px;background:var(--panel);cursor:pointer}'
   +'.lsh[hidden]{display:none}.lsh>div{flex:1;min-width:0}.lsh .shg{font-size:20px}.lsh b,.lsh small,.shi b,.shi small{display:block}.lsh small,.shi small{color:var(--ink2)}'
   +'.lsh .km{font:700 17px monospace;text-align:right}.lsh .km small{font:12px sans-serif}.lsh:has(.type){display:block}.lsh .type{font-weight:800;font-size:17px}'
@@ -43,7 +43,7 @@ const LIGHT_CSS='.lsh{display:flex;align-items:center;gap:8px;margin:8px 14px 0;
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const L=lang=>T[lang]||T.en;
 const fmt=(s,...a)=>s.replace(/\{(\d)\}/g,(_,i)=>a[+i]);
-const SH={D:null,P:null,T,STRONG,LINE_STRONG_KM,LINE_ANY_KM,LIST_KM,
+const SH={D:null,P:null,T,STRONG,RADIUS_KM,
   // Kyiv city and a margin: outside it there is nothing to load
   inCity:(lon,lat)=>lon>30.2&&lon<30.85&&lat>50.2&&lat<50.6,
   load(){ if(SH.D) return Promise.resolve(SH.D); if(SH.P) return SH.P;
@@ -53,10 +53,10 @@ const SH={D:null,P:null,T,STRONG,LINE_STRONG_KM,LINE_ANY_KM,LIST_KM,
     return SH.P; },
   km(lon,lat,s){ const k=Math.cos(lat*Math.PI/180)*111.32; return Math.hypot((s[0]-lon)*k,(s[1]-lat)*110.57); },
   // the n nearest — of the strong categories, of the others (weak), or of any — within max km: [[index, km], …], nearest first
-  // — never one for a school's pupils and staff only, or one under repair (`closed`)
-  near(lon,lat,o){ o=o||{}; const n=o.n||1, max=o.max||LIST_KM, strong=!!o.strong, weak=!!o.weak, out=[]; if(!SH.D) return out;
+  // — never one for a school's pupils and staff only, or one under repair (`closed`), unless `all` (the layer draws them, dimmed)
+  near(lon,lat,o){ o=o||{}; const n=o.n||1, max=o.max||RADIUS_KM, strong=!!o.strong, weak=!!o.weak, out=[]; if(!SH.D) return out;
     const dLat=max/110.57, dLon=max/(Math.cos(lat*Math.PI/180)*111.32);
-    SH.D.s.forEach((s,i)=>{ if((strong&&s[2]>=STRONG)||(weak&&s[2]<STRONG)||SH.closed(i)) return; if(Math.abs(s[1]-lat)>dLat||Math.abs(s[0]-lon)>dLon) return;
+    SH.D.s.forEach((s,i)=>{ if((strong&&s[2]>=STRONG)||(weak&&s[2]<STRONG)||(!o.all&&SH.closed(i))) return; if(Math.abs(s[1]-lat)>dLat||Math.abs(s[0]-lon)>dLon) return;
       const d=SH.km(lon,lat,s); if(d<=max) out.push([i,d]); });
     return out.sort((a,b)=>a[1]-b[1]).slice(0,n); },
   name(i,lang){ const s=SH.D.s[i], t=L(lang), k=t.k[s[3]]||''; return t.c[s[2]]+(k?' · '+k:''); },
@@ -71,9 +71,9 @@ const SH={D:null,P:null,T,STRONG,LINE_STRONG_KM,LINE_ANY_KM,LIST_KM,
   row(i,d,lang){ const s=SH.D.s[i], t=L(lang);
     return `<button type="button" class="shi${s[2]<STRONG?' st':''}" data-sh="${i}"><b>${esc(SH.name(i,lang))} · ${esc(SH.dist(d,lang))}</b>`
       +`<small>${esc(s[5]||'—')} · <span class="${SH.open24(i)?'h24':'hx'}">${esc(SH.hours(i,lang))}</span>${s[4]?' · ♿ '+esc(t.ramp):''}</small></button>`; },
-  // the line of a pin's card: the nearest of the strong kind (2 km at most), and the nearest of any kind when nearer
+  // the line of a pin's card: the nearest of the strong kinds within 5 km, and the nearest of any kind when nearer
   line(lon,lat,lang){ if(!SH.D||!SH.inCity(lon,lat)) return null;
-    const st=SH.near(lon,lat,{strong:true,max:LINE_STRONG_KM})[0]||null, an=SH.near(lon,lat,{max:LINE_ANY_KM})[0]||null;
+    const st=SH.near(lon,lat,{strong:true})[0]||null, an=SH.near(lon,lat)[0]||null;
     if(!st&&!an) return null;
     return {st,an:an&&(!st||(an[0]!==st[0]&&an[1]<st[1]-0.1))?an:null}; },
   lineHTML(lon,lat,lang){ const l=SH.line(lon,lat,lang); if(!l) return ''; const t=L(lang), a=l.st||l.an, i=a[0];
@@ -84,8 +84,8 @@ const SH={D:null,P:null,T,STRONG,LINE_STRONG_KM,LINE_ANY_KM,LIST_KM,
     // one row per address: a station's three entrances are one place to go
     const uniq=a=>{ const seen=new Set(); return a.filter(([i])=>{ const k=SH.D.s[i][5]||i; if(seen.has(k)) return false; seen.add(k); return true; }).slice(0,3); };
     const st=uniq(SH.near(lon,lat,{strong:true,n:12})), an=uniq(SH.near(lon,lat,{weak:true,n:12}));
-    let h=`<div class="type">🛡 ${esc(t.title)}</div>`+(place?`<div class="kv1 muted">${esc(fmt(t.from,place))} · ${esc(t.line)}</div>`:'');
-    if(!st.length&&!an.length) h+=`<div class="kv1">${esc(fmt(t.none,LIST_KM))}</div>`;
+    let h=`<div class="type">🛡 ${esc(t.title)}</div>`+`<div class="kv1 muted">${place?esc(fmt(t.from,place))+' · ':''}${esc(fmt(t.within,RADIUS_KM))} · ${esc(t.line)}</div>`;
+    if(!st.length&&!an.length) h+=`<div class="kv1">${esc(fmt(t.none,RADIUS_KM))}</div>`;
     if(st.length) h+=`<div class="shh">${esc(t.strong)}</div>`+st.map(([i,d])=>SH.row(i,d,lang)).join('');
     if(an.length) h+=`<div class="shh">${esc(t.any)}</div>`+an.map(([i,d])=>SH.row(i,d,lang)).join('');
     return h+SH.footHTML(lang); },

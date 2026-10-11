@@ -121,8 +121,12 @@ def test_the_pages():
     assert "closest('g.mk,g.imp,g.shl')" in PAGE and "openShelter(+mk.dataset.i)" in PAGE
     assert "heat:false,shelters:false};" in PAGE                                    # off by default
     assert "SH.light($('lsh'),p,k,LANG,placeName(p),paint)" in LIGHT and "lShel(p,s.k);" in LIGHT
-    for lang in ("Shelters — Kyiv city", "Укриття — перелік міста Києва", "Abris — liste de la ville de Kyiv"):
+    for lang in ("Shelters around me (5 km)", "Укриття навколо мене (5 км)", "Abris autour de moi (5 km)"):
         assert lang in _read("static/i18n.js")
+    # 1.57.1, the owner: "shelters around me", within 5 km of the pin — the card, the list and the layer
+    assert "const RADIUS_KM=5;" in MOD and "max=o.max||RADIUS_KM" in MOD and "LIST_KM" not in MOD
+    assert "if(!LAYERS.shelters||!window.SH||!SH.D||!MAP||!shIn(HOME)||VB.w>120)" in PAGE
+    assert 'r="${SH.RADIUS_KM}"' in PAGE and "SH.near(HOME.lon,HOME.lat,{n:1e5,all:true})" in PAGE and "shNoPin();" in PAGE
 
 
 @pytest.mark.skipif(not NODE, reason="node not installed")
@@ -130,7 +134,8 @@ def test_the_nearest():
     prog = r"""global.window={}; require(process.argv[1]); const SH=window.SH; SH.D=require(process.argv[2]);
 const out={}; const P=[30.5390,50.4270];   // Pechersk
 out.st=SH.near(P[0],P[1],{strong:true,n:3}).map(([i,d])=>[SH.D.cat[SH.D.s[i][2]],+d.toFixed(3)]);
-out.closed=SH.near(P[0],P[1],{n:400,max:3}).filter(([i])=>SH.closed(i)).length;
+out.closed=SH.near(P[0],P[1],{n:4000}).filter(([i])=>SH.closed(i)).length;
+out.all=SH.near(P[0],P[1],{n:4000,all:true}).filter(([i])=>SH.closed(i)).length; out.max=Math.max(...SH.near(P[0],P[1],{n:4000}).map(a=>a[1]));
 out.line=SH.line(P[0],P[1],'en'); out.far=SH.line(31.5,49.5,'en'); out.irpin=SH.line(30.25,50.52,'en');
 out.html=['uk','en','fr'].map(l=>SH.listHTML(P[0],P[1],l,'Дім'));
 out.dist=[SH.dist(0.004,'en'),SH.dist(0.437,'uk'),SH.dist(1.26,'fr'),SH.dist(12.4,'en')];
@@ -141,11 +146,13 @@ process.stdout.write(JSON.stringify(out));"""
     o = json.loads(p.stdout)
     assert len(o["st"]) == 3 and all(c in ("metro", "underpass", "shelter") for c, _ in o["st"])
     assert [d for _, d in o["st"]] == sorted(d for _, d in o["st"]) and o["st"][0][1] < 0.5
-    assert o["closed"] == 0                                          # a school's own, or one under repair: never offered
+    assert o["closed"] == 0 and o["all"] > 0                          # a school's own, or one under repair: never offered
+    assert 4.5 < o["max"] <= 5                                        # within 5 km of the pin
     assert o["line"]["st"] and o["far"] is None                      # outside Kyiv city: nothing
     assert o["dist"] == ["10 m", "440 м", "1,3 km", "12 km"]
-    for h, words in zip(o["html"], (("по прямій", "КМДА", "двох стін"), ("straight-line", "KMDA", "two walls"),
-                                    ("vol d&#39;oiseau", "KMDA", "deux murs"))):
+    for h, words in zip(o["html"], (("Укриття навколо мене", "у радіусі 5 км", "по прямій", "КМДА", "двох стін"),
+                                    ("Shelters around me", "within 5 km", "straight-line", "KMDA", "two walls"),
+                                    ("Abris autour de moi", "dans un rayon de 5 km", "vol d&#39;oiseau", "KMDA", "deux murs"))):
         for w in words:
             assert w in h, (w, h[:200])
 

@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.57** · last updated 2026-10-11 (1.57.0)
+**Documented version: 1.57** · last updated 2026-10-11 (1.57.1)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -2016,14 +2016,18 @@ shelter the city lists, each labelled with what it is** — the city's own list 
 - **On the phone** (`static/shelters.js`, `SH`, its words in its own three languages): loaded by the Tactical page for a
   pin in Kyiv city while an alert or a warning concerns it (`shCard`: `LEVEL >= 1`, the place's status not green, or
   the layer on) or when the layer is on (`shLoad`), by Light under an alert (`lShel` → `SH.light`, which also carries
-  Light's look, so the page stays light). The service worker keeps both files (`FAST`). **The card** (`#mysh`): the
-  nearest of the strong kinds within 2 km (`LINE_STRONG_KM`), its address and access, and the nearest of any kind
-  within 1 km when nearer (`SH.line`). A tap: within 3 km, the three nearest of the strong kinds and the three nearest
-  of the others — basements, parkings — (`openShelters`, `SH.listHTML`, `SH.near` with `strong` / `weak`), each with its
-  access and ramp; a tap on one shows it on the map (`shShow`). **The layer**
-  (`LAYERS.shelters`, off by default; `drawShelters`, `#shelg`): a square per shelter — filled for the strong kinds,
-  ringed for the pin's nearest —, the strong kinds from 80 km across and every kind from 24 km (1,500 at most); a tap
-  opens its card (`openShelter`, `SH.oneHTML`: address, access, distance from the pin, phone, the city's note).
+  Light's look, so the page stays light). The service worker keeps both files (`FAST`). **One radius, 5 km round the
+  pin** (`SH.RADIUS_KM`; 1.57.1, the owner: "shelters around me, a 5 km radius based on the pin"), for the card, the
+  list and the layer. **The card** (`#mysh`): the nearest of the strong kinds, its address and access, and the nearest
+  of any kind when nearer (`SH.line`). A tap — "Shelters around me": the three nearest of the strong kinds and the three
+  nearest of the others — basements, parkings — (`openShelters`, `SH.listHTML`, `SH.near` with `strong` / `weak`), one
+  row per address, each with its access and ramp; a tap on one shows it on the map (`shShow`). **The layer**
+  ("Shelters around me (5 km)": `LAYERS.shelters`, off by default; `drawShelters`, `#shelg`): the shelters within 5 km
+  of the pin (`SHNEAR`, worked out again when the pin changes — `drawHome`), inside a dashed circle (`.shr`); a square
+  per shelter — filled for the strong kinds, ringed for the pin's nearest, dimmed for a school's own or one under repair
+  (`SH.near` with `all`) —, the strong kinds from 120 km across and every kind from 8 km (1,500 at most; 893 within 5 km of Pechersk); no pin in
+  Kyiv city, no layer, and switching it on says so (`shNoPin`). A tap on a square opens its card (`openShelter`,
+  `SH.oneHTML`: address, access, distance from the pin, phone, the city's note).
 - **What it never says**: a distance is a straight line ("відстань по прямій") — never a route, a walking time or a
   time to get there; a place is never "safe" — every list ends with "Heimdall does not check shelters: one may be
   closed, locked or full", the source and its date, and "Outside is dangerous during an attack. If you cannot get

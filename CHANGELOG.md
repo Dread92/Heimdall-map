@@ -2,6 +2,15 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.57.1 — 2026-10-11
+
+### Changed
+- **"Shelters around me", within 5 km of the pin** — the owner: "let's change to 'shelters around me' and put a 5 km
+  radius based on the pin location". One radius for the card (the nearest metro, underpass or civil-defence shelter
+  within 5 km, was 2), the list (was 3 km) and the layer, which now shows only the shelters within 5 km of the pin,
+  inside a dashed circle — no longer every shelter of the city. With no pin in Kyiv city the layer shows nothing and
+  says why. The list keeps one row per address (a station's entrances are one place).
+
 ## 1.57.0 — 2026-10-11
 
 ### Added

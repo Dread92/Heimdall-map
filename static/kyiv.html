@@ -920,7 +920,7 @@ body.lite .mk.inbound .lbl2,body.lite .mk.tohome .lbl2{fill:#ff9ab0}
 /* 1.57: the city's shelters — a square; filled for metro, underpasses and civil-defence shelters; the nearest to the pin ringed */
 #shelg .shl{cursor:pointer}#shelg .shl rect{fill:#0d1a2b;stroke:#5aa9ff;stroke-width:1.4px;vector-effect:non-scaling-stroke}
 #shelg .shl.st rect{fill:#5aa9ff;stroke:#fff}#shelg .shl.nr rect,#shelg .shl.sel rect{stroke:#fff;stroke-width:3px}
-#shelg .shl.no{opacity:.4}#shelg .shl rect.hit{fill:transparent;stroke:none}svg.no-shelters #shelg{display:none}
+#shelg .shr{fill:rgba(90,169,255,.05);stroke:#5aa9ff;stroke-width:1.5px;stroke-dasharray:6 5;vector-effect:non-scaling-stroke;pointer-events:none}#shelg .shl.no{opacity:.4}#shelg .shl rect.hit{fill:transparent;stroke:none}svg.no-shelters #shelg{display:none}
 .mych.mysh{border-left-color:#5aa9ff;min-height:48px}.mysh .shg{flex:none;width:40px;font-size:24px;text-align:center}.mysh .km{font-size:19px}
 .shh{font:700 12px/1.6 var(--mono);letter-spacing:.04em;text-transform:uppercase;color:var(--ink3);margin-top:12px}
 .shi{display:block;width:100%;text-align:left;background:var(--panel);border:1px solid var(--line);border-left:3px solid #2e4f78;border-radius:8px;padding:7px 10px;margin-top:5px;color:var(--ink);cursor:pointer}
@@ -1177,7 +1177,7 @@ body.lite #mycard,body.lite .panel{background:#000;border-color:#666}body.lite .
 </div>
 <div class="panel" id="lay" hidden role="dialog" aria-labelledby="layh"><div class="pgrab"></div>
   <div class="ph"><b id="layh" data-t="m_layers">Map layers</b><button type="button" class="px" data-close="lay" data-t-aria="btn_close" aria-label="Close">✕</button></div>
-  <div class="layermenu" id="layerbox"><div class="lbase" id="lbase" role="radiogroup"><span class="lbh" data-t="l_base">Background</span><div class="lbopts"><label data-b="sat" hidden><input type="radio" name="lbase" value="sat"> <span data-t="l_sat">Satellite</span></label><label data-b="map"><input type="radio" name="lbase" value="map"> <span data-t="l_map">Map</span></label><label data-b="none"><input type="radio" name="lbase" value="none"> <span data-t="l_plain">Plain</span></label></div></div><label><input type="checkbox" data-l="shelters"> <span data-t="l_shel">Shelters — Kyiv city's list</span></label><label><input type="checkbox" data-l="heat"> <span data-t="l_heat">Heat map: where drones were reported (not live)</span></label><label><input type="checkbox" data-l="trails"> <span data-t="l_trails">Tracks</span></label><label><input type="checkbox" data-l="selpath"> <span data-t="l_selpath">Path of a tapped target (red dots)</span></label><label><input type="checkbox" data-l="cones"> <span data-t="l_cones">Course rays</span></label><label><input type="checkbox" data-l="rivers"> <span data-t="l_rivers">Rivers</span></label><label><input type="checkbox" data-l="roads"> <span data-t="l_roads">Roads</span></label><label><input type="checkbox" data-l="infra"> <span data-t="l_infra">Airports / plants</span></label><label><input type="checkbox" data-l="rings"> <span data-t="l_rings">Rings</span></label><label><input type="checkbox" data-l="towns"> <span data-t="l_towns">Main towns of every oblast</span></label><label><input type="checkbox" data-l="minor"> <span data-t="l_minor">Villages &amp; small towns (off by default — clutters the phone)</span></label></div>
+  <div class="layermenu" id="layerbox"><div class="lbase" id="lbase" role="radiogroup"><span class="lbh" data-t="l_base">Background</span><div class="lbopts"><label data-b="sat" hidden><input type="radio" name="lbase" value="sat"> <span data-t="l_sat">Satellite</span></label><label data-b="map"><input type="radio" name="lbase" value="map"> <span data-t="l_map">Map</span></label><label data-b="none"><input type="radio" name="lbase" value="none"> <span data-t="l_plain">Plain</span></label></div></div><label><input type="checkbox" data-l="shelters"> <span data-t="l_shel">Shelters around me (5 km)</span></label><label><input type="checkbox" data-l="heat"> <span data-t="l_heat">Heat map: where drones were reported (not live)</span></label><label><input type="checkbox" data-l="trails"> <span data-t="l_trails">Tracks</span></label><label><input type="checkbox" data-l="selpath"> <span data-t="l_selpath">Path of a tapped target (red dots)</span></label><label><input type="checkbox" data-l="cones"> <span data-t="l_cones">Course rays</span></label><label><input type="checkbox" data-l="rivers"> <span data-t="l_rivers">Rivers</span></label><label><input type="checkbox" data-l="roads"> <span data-t="l_roads">Roads</span></label><label><input type="checkbox" data-l="infra"> <span data-t="l_infra">Airports / plants</span></label><label><input type="checkbox" data-l="rings"> <span data-t="l_rings">Rings</span></label><label><input type="checkbox" data-l="towns"> <span data-t="l_towns">Main towns of every oblast</span></label><label><input type="checkbox" data-l="minor"> <span data-t="l_minor">Villages &amp; small towns (off by default — clutters the phone)</span></label></div>
   <button class="mi" id="rpmenu" type="button" data-t="rp_open">Replay — the last 7 days</button>
   <button class="mi tg" id="zcity2" type="button"><span class="lb" data-t="m_city">Kyiv city map (10 districts) — toggle</span></button>
   <button class="mi tg" id="est" type="button" style="display:none!important"><span class="lb" data-t="m_est">Estimate motion along heading (EST)</span></button>
@@ -1643,7 +1643,7 @@ LAYERS.heat=false;   // 1.33: the heat map is never remembered — every opening
 function applyLayers(){for(const [l,on] of Object.entries(LAYERS)){svg.classList.toggle('no-'+l,!on);const cb=document.querySelector(`#layerbox input[data-l="${l}"]`);if(cb)cb.checked=on;}
   {const b=LAYERS.sat?'sat':LAYERS.tiles?'map':'none'; const rb=document.querySelector(`#lbase input[value="${b}"]`); if(rb) rb.checked=true;}if(typeof updateTiles==='function')updateTiles();if(typeof drawHeat==='function')drawHeat();}
 const saveLayers=()=>{try{localStorage.setItem('layers',JSON.stringify(Object.assign({},LAYERS,{heat:false})))}catch(e){}};
-document.querySelectorAll('#layerbox input[data-l]').forEach(cb=>cb.onchange=()=>{LAYERS[cb.dataset.l]=cb.checked;if(cb.dataset.l==='minor'&&cb.checked)loadVillages();if(cb.dataset.l==='shelters'){if(cb.checked)shLoad().then(()=>{drawShelters();paintCard(true);}).catch(()=>{});else{drawShelters();paintCard(true);}}if(cb.dataset.l==='towns'&&cb.checked)loadTownsUA();
+document.querySelectorAll('#layerbox input[data-l]').forEach(cb=>cb.onchange=()=>{LAYERS[cb.dataset.l]=cb.checked;if(cb.dataset.l==='minor'&&cb.checked)loadVillages();if(cb.dataset.l==='shelters'){if(cb.checked)shLoad().then(()=>{shNoPin();drawShelters();paintCard(true);}).catch(()=>{});else{drawShelters();paintCard(true);}}if(cb.dataset.l==='towns'&&cb.checked)loadTownsUA();
   saveLayers();   // 1.48: 1.47.1 had left this line inside a comment
   applyLayers();});
 document.querySelectorAll('#lbase input').forEach(rb=>rb.onchange=()=>{ if(!rb.checked) return;
@@ -1966,7 +1966,7 @@ function etaBand(m,dist){
   if(hi>90) return null;                        // beyond an hour and a half it is not an estimate any more
   return {lo:Math.max(0,lo),hi:hi,off:off};
 }
-function drawHome(){ if(!MAP) return; if(!HOME){$('homeg').innerHTML='';return;} const [x,y]=proj(HOME.lon,HOME.lat);
+function drawHome(){ if(typeof drawShelters==='function') setTimeout(drawShelters,0); if(!MAP) return; if(!HOME){$('homeg').innerHTML='';return;} const [x,y]=proj(HOME.lon,HOME.lat);
   $('homeg').innerHTML=`<g class="homemk"><circle class="ring" cx="${x}" cy="${y}" r="5" fill="none" style="stroke-width:1px;vector-effect:non-scaling-stroke"/><circle class="ring" cx="${x}" cy="${y}" r="10" fill="none" style="stroke-width:1px;vector-effect:non-scaling-stroke"/><g class="ico" transform="translate(${x} ${y})"><g class="pg">${POI_G.pin}<text class="pnn" x="0" y="-.6">${SLOT_ORDER.indexOf(ACTIVE)+1}</text></g></g><text class="hl" x="${x}" y="${kx(y-11*KPX)}" text-anchor="middle">${esc(slotNames()[ACTIVE]&&!HOME.dropped?slotName(ACTIVE)+' · '+homeName():homeName())}</text></g>`; }
 function paintSlots(){ const el=$('slotrow'); if(!el) return;
   const html=SLOT_IDS.map(id=>{const p=SLOTS[id]; const on=id===ACTIVE&&p;
@@ -3158,16 +3158,24 @@ function shLoad(){ if(window.SH) return SH.load(); if(shLoad.p) return shLoad.p;
   return shLoad.p; }
 const shIn=p=>!!p&&p.lon>30.2&&p.lon<30.85&&p.lat>50.2&&p.lat<50.6;   // Kyiv city: the only place the list covers
 let SHXY=null, SHSEL=null;
+// 1.57.1, the owner: "shelters around me" — the layer is the shelters within 5 km of the pin (SH.RADIUS_KM), inside
+// a dashed circle; no pin in Kyiv city, no layer (a line says why when it is switched on)
+let SHNEAR={k:'',ix:[]};
 function drawShelters(){ const g=$('shelg'); if(!g) return;
-  if(!LAYERS.shelters||!window.SH||!SH.D||!MAP||VB.w>80){ if(g.innerHTML) g.innerHTML=''; return; }
+  if(!LAYERS.shelters||!window.SH||!SH.D||!MAP||!shIn(HOME)||VB.w>120){ if(g.innerHTML) g.innerHTML=''; return; }
   if(!SHXY) SHXY=SH.D.s.map(s=>proj(s[0],s[1]));
-  // the strong kinds (metro, underpasses, civil-defence shelters) from 80 km across; every kind from 24 km
-  const all=VB.w<=24, x1=VB.x+VB.w, y1=VB.y+VB.h, r=5*KPX, hr=12*KPX;
-  const nr=shIn(HOME)?(SH.near(HOME.lon,HOME.lat,{strong:true,max:SH.LINE_STRONG_KM})[0]||[])[0]:null;
-  let h='', n=0;
-  SH.D.s.forEach((s,i)=>{ if(n>=1500||(!all&&s[2]>=SH.STRONG&&i!==SHSEL)) return; const [x,y]=SHXY[i]; if(x<VB.x||x>x1||y<VB.y||y>y1) return; n++;
-    h+=`<g class="shl${s[2]<SH.STRONG?' st':''}${SH.closed(i)?' no':''}${i===nr?' nr':''}${i===SHSEL?' sel':''}" data-i="${i}"><rect class="hit" x="${kx(x-hr)}" y="${kx(y-hr)}" width="${kx(2*hr)}" height="${kx(2*hr)}"/><rect x="${kx(x-r)}" y="${kx(y-r)}" width="${kx(2*r)}" height="${kx(2*r)}" rx="${kx(r*.3)}"/></g>`; });
+  const key=HOME.lon+','+HOME.lat; if(SHNEAR.k!==key) SHNEAR={k:key,ix:SH.near(HOME.lon,HOME.lat,{n:1e5,all:true}).map(a=>a[0])};
+  // the strong kinds (metro, underpasses, civil-defence shelters) from 120 km across; every kind from 8 km — the 893
+  // within 5 km of Pechersk are a blot at the circle's own scale
+  const all=VB.w<=8, x1=VB.x+VB.w, y1=VB.y+VB.h, r=5*KPX, hr=12*KPX, [hx,hy]=proj(HOME.lon,HOME.lat);
+  const nr=(SH.near(HOME.lon,HOME.lat,{strong:true})[0]||[])[0];
+  let h=`<circle class="shr" cx="${kx(hx)}" cy="${kx(hy)}" r="${SH.RADIUS_KM}"/>`, n=0;
+  for(const i of SHNEAR.ix){ const s=SH.D.s[i]; if(n>=1500) break; if(!all&&s[2]>=SH.STRONG&&i!==SHSEL) continue; const [x,y]=SHXY[i]; if(x<VB.x||x>x1||y<VB.y||y>y1) continue; n++;
+    h+=`<g class="shl${s[2]<SH.STRONG?' st':''}${SH.closed(i)?' no':''}${i===nr?' nr':''}${i===SHSEL?' sel':''}" data-i="${i}"><rect class="hit" x="${kx(x-hr)}" y="${kx(y-hr)}" width="${kx(2*hr)}" height="${kx(2*hr)}"/><rect x="${kx(x-r)}" y="${kx(y-r)}" width="${kx(2*r)}" height="${kx(2*r)}" rx="${kx(r*.3)}"/></g>`; }
   g.innerHTML=h; }
+function shNoPin(){ if(shIn(HOME)) return; const el=$('toast'); el.style.borderLeftColor='#5aa9ff';
+  el.innerHTML=`<b>🛡 ${esc(SH.T[LANG]?SH.T[LANG].title:SH.T.en.title)}</b><div style="color:var(--muted);font-size:13.5px;margin-top:3px">${esc((SH.T[LANG]||SH.T.en).nopin.replace('{0}',SH.RADIUS_KM))}</div>`;
+  el.classList.add('show'); el.onclick=()=>el.classList.remove('show'); clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('show'),7000); }
 function shCard(pk){ const el=$('mysh'); if(!el) return;
   if(!HOME||!shIn(HOME)||!(LEVEL>=1||pk!=='G'||LAYERS.shelters)){ el.hidden=true; return; }
   if(!window.SH||!SH.D){ el.hidden=true; shLoad().then(()=>paintCard(true)).catch(()=>{}); return; }
