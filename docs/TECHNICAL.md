@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.56** · last updated 2026-10-11 (1.56.5)
+**Documented version: 1.56** · last updated 2026-10-11 (1.56.6)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -529,6 +529,18 @@ reader's place (a ballistic mark is "the whole region" only within `REGION_R` = 
 the posts of a regional channel carry `home` in the feed: the Tactical page raises a regional channel's ballistic or
 MiG-31K report only for a reader whose oblast — picked, or of a watched place — is that one.
 
+**1.56.6: a missile post is for the oblasts it names.** The Air Force's "🚀Швидкісна ціль на заході Донеччини, курс на
+північ" raised "ballistic — shelter now" in Vyshenky and turned the Voronkiv target into "drone or missile" (the owner:
+"the banner alarms the user for nothing"). `missile_obls(post_id, channel, text, tags)` gives, for a post tagged
+`ballistic_missiles` or `cruise_missiles`, the oblasts it names: `geo.oblasts_named()` (the oblasts written out) and the
+`oblast_uid` of every mark `geo.parse_for_channel()` reads in it (a town's oblast), `31` folded into `14`, `ua` dropped;
+cached by post id and text (an edited post is read again). `Store.feed` adds them to the post as `obl`. The warning
+strip (`threatStrip`) skips a post with an `obl` none of the reader's oblasts (`myOblasts()`, Kyiv city counting as its
+oblast) is in — a MiG-31K take-off excepted, its missiles reach everywhere; a post with no `obl` warns everyone, as
+before. `State._missile_active()` skips a post whose `obl` misses the oblasts on the map (`SCOPE_UIDS`), Kyiv and the
+favourites: the level sets every reader's cadence, so it follows the map, not one reader. The official alerts are never
+filtered this way — only the official data sets an alert.
+
 A channel whose preview shows no messages is marked failed with "web preview disabled by the channel", so "no
 drones reported" and "cannot read this channel" never look the same.
 
@@ -725,19 +737,23 @@ the target the channel reported last, within 15 minutes, at that report's place 
 
 **A weapon not stated, in the app (1.54.8).** The owner: "'unknown' is badly worded — it is most likely a drone (a jet
 Shahed); the only exception is when we know ballistic or cruise missiles are also coming". A mark of type `unknown` is
-named by what else is in the air (`mslCtx()`: a missile on the map — `MSL_TYPES` — or a MiG-31K / ballistic /
-strategic-aviation / cruise warning in the strip, `TS_TOP`): **"probably a drone"** on the map's label, the card's title
+named by what else is in the air (`mslCtx(m)`: a missile on the map — `MSL_TYPES` — or a MiG-31K / ballistic /
+strategic-aviation / cruise warning in the strip, `TS_TOP`; **local since 1.56.6**: a missile mark within `MSL_NEAR_KM`
+= 150 km of the target — `MSLP`, the missiles' projected points, set by `mslPaint()` where the marks are painted — or
+a strip warning, which is the reader's oblast's, with the target within 300 km of the reader's place; a missile in
+Donetsk oblast no longer turns the drones around Kyiv into "drone or missile"): **"probably a drone"** on the map's label, the card's title
 ("Probably a drone — type not stated", `th_unk_dr`), its note (`unk_note_dr`: no missile reported right now, so most
 likely a strike drone, a Shahed or a jet one), the Near list (`k_unk_dr`) and the counts (`lb_unk_dr`); **"drone or
 missile"** (`unk_mix`, `th_unk_mix`, `unk_note_mix`, `k_unk_mix`, `lb_unk_mix`) while missiles are reported. The ⚠ sign
 stays: the post did not say what it is. The Light page names it the same way (`lMsl`). **1.54.9, drawn as a drone** (the owner: "instead of the triangles, Shahed icons by default — outside a ballistic or
-cruise missile context these threats are to be treated as drones"): `asDrone(m)` — an unstated mark while `MSLX` (the
-paint's missile context) is off — takes the drone's silhouette (`glyphKey`, `silSvg`, the oblast badges), colour
+cruise missile context these threats are to be treated as drones"): `asDrone(m)` — an unstated mark with no missile
+context (`mslCtx(m)`; until 1.56.6 one switch for the whole map, `MSLX`) — takes the drone's silhouette (`glyphKey`, `silSvg`, the oblast badges), colour
 (`KIND_COL`) and class, turns to a stated course (`orientOf`), is counted with the drones, and its label is "probably a
 drone" without the ⚠; the hover card and every other reader of `THREAT.unknown` (a getter) say "🛸 Probably a drone".
 No ETA is worked out for it (`speedBand` has none for an unstated type): a jet drone flies 2.4 times as fast, and a
-countdown on a guess could be late. While missiles are reported it is the red ⚠ "drone or missile" again. Light:
-`lDr(m)`.
+countdown on a guess could be late. While missiles are reported near it it is the red ⚠ "drone or missile" again. Light:
+`lDr(m)`, with `lMsl(m)`: a MiG-31K or strategic aviation on the map, or `mslNear(m, marks)` (i18n.js: a missile mark
+within 150 km).
 
 ### 7.4 Scope, chaining, staleness
 

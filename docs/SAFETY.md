@@ -158,6 +158,18 @@ they picked, or one of their watched places. Kharkiv hears ballistic launches fr
 be told to take cover for each of them by a Kharkiv channel. The country-wide channels and the Air Force still warn
 everyone, and the official alerts are unaffected.
 
+## A missile post is for the oblasts it names (1.56.6)
+
+On 11 Oct 2026 the Air Force posted "🚀Швидкісна ціль на заході Донеччини, курс на північ." — a fast target in the west
+of Donetsk oblast, some 600 km from Kyiv. The app raised "ballistic — shelter now" for a reader in Vyshenky, and the
+drones around them turned into "drone or missile". A warning that cries wolf teaches people to ignore the next one.
+Now a missile post that names oblasts — written out, or through the towns it names — warns only the readers of those
+oblasts (Kyiv city counts as its oblast). A post that names none ("загроза балістики з північного сходу") still warns
+everyone: when the post does not say where, the app does not guess that it is elsewhere. A MiG-31K take-off warns
+everyone too. An unstated target is "drone or missile" only when a missile is reported within 150 km of it, or a
+missile warning stands for the reader's own oblast. The official alerts are never filtered: they come oblast by
+oblast already, and only the official data sets an alert.
+
 ## The nuclear event cannot be switched on by accident
 
 The dashboard can cover the map on every page with the radiation symbol (1.32). A false one would be the worst

@@ -414,6 +414,10 @@ const ALT_MAX_MIN=4;
 // report gave) but the app shows none: no number on the map, in the tooltip, the card or the replay, and no night's
 // path built from them (/api/trail). true brings them all back.
 const TAGS_SHOWN=false;
+// 1.56.6: is a missile on the map near this target (MSL_NEAR_KM)? An unstated target is "drone or missile" only then —
+// a missile 600 km away (Donetsk oblast) says nothing about one over Voronkiv. Light's; the Tactical page has mslCtx.
+function mslNear(m,marks){ if(!m||m.lon==null) return false; const k=Math.cos(m.lat*Math.PI/180)*111.2;
+  return (marks||[]).some(x=>!x.status&&!x.endedBy&&/^(ball|cruise|supers|unspec)/.test(x.type)&&x.lon!=null&&Math.hypot((x.lon-m.lon)*k,(x.lat-m.lat)*111.2)<=150); }
 // 1.56.4: where an approach mark is said to be heading — every place of the post's list, as written ("Київ / Ірпінь /
 // Буча"); the mark itself stands at the one approach_pick chose (geo.py)
 const apprTo=m=>(m.targets&&m.targets.length>1?m.targets:[m.target||m.place||'']).map(pn).join(' / ');

@@ -2,6 +2,23 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.56.6 — 2026-10-11
+
+### Fixed
+- **A missile in another oblast no longer raises the shelter banner here** — the owner, a phone in Vyshenky at 15:34:
+  "a ballistic alert for I don't know which oblast, and the banner alarms the user for nothing — it must be fixed at
+  all costs, all the more because it changes how the targets are marked". The Air Force had posted "🚀Швидкісна ціль на
+  заході Донеччини, курс на північ" — Donetsk oblast, some 600 km away. A missile post now carries the oblasts it names
+  (the oblasts written out, and those of the towns it puts a missile at; Kyiv city counts as its oblast), and the
+  warning strip raises it only for a reader of one of them. A post naming none ("загроза балістики з північного
+  сходу") still warns everyone, a MiG-31K take-off too, and the official alerts are untouched.
+- **A missile far away no longer turns the drones here into "drone or missile"** — the Voronkiv target, type not stated,
+  became a red ⚠ "drone or missile" because of the Donetsk post. A target is "drone or missile" now only when a missile
+  is on the map within 150 km of it, or a missile warning is raised for the reader's own oblast and the target is
+  within 300 km of their place; otherwise it stays "probably a drone", drawn as one. Same on the Light page.
+- The server's missile level (how fast every page and channel is read) follows the oblasts on the map, Kyiv and the
+  favourites; a missile post about an oblast off the map no longer speeds it up.
+
 ## 1.56.5 — 2026-10-11
 
 ### Changed

@@ -1102,6 +1102,39 @@ def coarse_home(home):
 # ---------------------------------------------------------------------------
 # State + storage
 # ---------------------------------------------------------------------------
+# 1.56.6, the owner (a phone in Vyshenky, 15:32): "a ballistic alert for I don't know which oblast, and the banner alarms
+# the reader for nothing — and it changes how the targets are marked". The Air Force: "🚀Швидкісна ціль на заході
+# Донеччини, курс на північ" — Donetsk oblast, 600 km away. A missile post is tagged with the oblasts it names (`obl`):
+# the oblasts written out, and those of the towns it puts a missile at; Kyiv city counts as its oblast. A post that
+# names none still concerns everyone, as before.
+MISSILE_POST_TAGS = ("ballistic_missiles", "cruise_missiles")
+_MSL_OBL_CACHE = {}
+
+
+def missile_obls(post_id, channel, text, tags):
+    """The oblasts a missile post names (uids, "31" folded into "14"), or [] — for any other post, or one naming none."""
+    if not geo or not any(t in (tags or ()) for t in MISSILE_POST_TAGS):
+        return []
+    key = (post_id, text or "")                    # an edited post keeps its id: its new text is read again
+    hit = _MSL_OBL_CACHE.get(key)
+    if hit is not None:
+        return hit
+    out = []
+    try:
+        uids = list(geo.oblasts_named(text or "", channel))
+        uids += [m.get("oblast_uid") for m in geo.parse_for_channel(channel, text or "")]
+        for u in uids:
+            u = "14" if str(u) == "31" else str(u or "")
+            if u and u != "ua" and u not in out:
+                out.append(u)
+    except Exception:
+        out = []
+    if len(_MSL_OBL_CACHE) > 5000:
+        _MSL_OBL_CACHE.clear()
+    _MSL_OBL_CACHE[key] = out
+    return out
+
+
 class Store:
     def __init__(self, path):
         self.lock = threading.Lock()
@@ -1897,6 +1930,9 @@ class Store:
             home = self.home_of(r[1])
             if home and home not in ("31", "ua"):
                 item["home"] = home          # a regional channel's warning is for the readers of that oblast (1.43)
+            obl = missile_obls(r[0], r[1], r[3], tags)
+            if obl:
+                item["obl"] = obl            # 1.56.6: a missile post's oblasts — its warning is for their readers
             out.append(item)
             if len(out) >= limit:
                 break
@@ -4782,10 +4818,16 @@ class State:
                         return self.MSL_BALLISTIC          # nothing outranks this, stop looking
                     if ty in kinds:
                         level = self.MSL_CRUISE
+        # 1.56.6: the oblasts on the map (the level sets everyone's cadence), Kyiv, and the favourites — never a missile
+        # a post puts in another oblast ("на заході Донеччини"); the city counts as its oblast
+        mine = {"14" if u == "31" else u for u in set(SCOPE_UIDS) | set(fav) | {"14"}}
         for p in self.store.feed_since(10, limit=60, translate=False):      # newest first
             tags = set(p.get("tags") or [])
             if "retract" in tags:
                 break                                  # what was reported before a retraction no longer counts
+            obl = missile_obls(p.get("post_id"), p.get("channel"), p.get("text"), tags)
+            if obl and not mine & set(obl):
+                continue                               # 1.56.6: a missile for another oblast ("на заході Донеччини")
             if bal & tags:
                 return self.MSL_BALLISTIC
             if kinds & tags:
