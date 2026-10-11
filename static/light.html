@@ -199,7 +199,7 @@ footer .fbs{display:flex;gap:8px;margin-top:10px}footer .fbs a{flex:1;display:fl
 <div class="status U" id="status"><div class="big">…</div></div>
 <div class="lsh" id="lsh" hidden></div>
 <div id="rwrap" class="empty"><svg id="radar" viewBox="-66 -66 132 132" aria-hidden="true"></svg>
-  <div class="zc"><button type="button" id="zin">+</button><button type="button" id="zout" disabled>−</button><button type="button" id="zreset" hidden>⟲</button></div>
+  <div class="zc"><button type="button" id="zbg" aria-label="Map background"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3 3 8l9 5 9-5zM3 13l9 5 9-5"/></svg></button><button type="button" id="zin">+</button><button type="button" id="zout" disabled>−</button><button type="button" id="zreset" hidden>⟲</button></div>
   <div id="rcard" hidden></div></div>
 <button type="button" class="lgb" id="lgb" hidden></button><div class="lg" id="lg" hidden></div>
 <div id="list"></div>
@@ -554,7 +554,7 @@ function paint(){
       if(txt) q+=`<text class="altl${dsc?' dsc':''}" x="3.2" y="2.6">${esc(txt)}</text>`; }
     g+=q+'</g>';
   }
-  $('radar').innerHTML=g;
+  $('radar').innerHTML=g; if(window.LT) LT.draw(p);
   $('lgb').hidden=!LM; $('lgb').textContent='? '+t('lg_show'); $('lg').hidden=!LM||!LG_OPEN; $('lg').textContent=t('lt_legend')+' · '+t('lt_zhint');
 
   // the list — each row opens on a tap: what the post said, the track so far, the source
@@ -735,6 +735,10 @@ async function openPick(slot){ PICK=slot; $('pick').classList.add('show');
       .filter(x=>!/громада|берег|столиця|водосховище|море|АЕС|ГЕС|траса|шосе|проспект/i.test(x.name)); }catch(e){ PLACES=[]; } }
   listPick(''); setTimeout(()=>$('pickq').focus(),80); hsOpen(); }
 // 1.56: every street and village of an oblast (OpenStreetMap), searched on this phone (static/streets.js)
+// 1.57.2: the radar's background — plain, satellite or map (static/lightmap.js, loaded when asked for)
+function ldLT(f){ if(window.LT) return f&&f(); const s=document.createElement('script'); s.src='/static/lightmap.js?v=1'; s.onload=()=>{ f&&f(); paint(); }; document.head.appendChild(s); }
+$('zbg').onclick=()=>ldLT(()=>LT.menu());
+try{ if(localStorage.getItem('lbg')) ldLT(); }catch(e){}
 // 1.57: the nearest shelter Kyiv city lists, under an alert (static/shelters.js)
 function lShel(p,k){ if(window.SH) return SH.light($('lsh'),p,k,LANG,placeName(p),paint);
   if(k!=='G'&&p.lon>30.2&&p.lon<30.85&&p.lat>50.2&&p.lat<50.6&&!lShel.l){ lShel.l=1; const s=document.createElement('script'); s.src='/static/shelters.js?v=1'; s.onload=paint; document.head.appendChild(s); } }

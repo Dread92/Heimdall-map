@@ -2,6 +2,17 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.57.2 — 2026-10-11
+
+### Added
+- **The Light radar can show the satellite picture or the street map** — the owner: "it'd be good if the light version
+  showed the satellite / map too". A layers button on the radar: Background → Plain (the default, as before) /
+  Satellite / Map ("uses more data"), kept on the phone. The same pictures as the Tactical map, clipped to the disc,
+  under the rings, the outlines and the targets; the source credited under it. Its code is loaded only when asked for,
+  so the page stays light for 2G.
+- **The pictures do not say where the pin is**: the tiles asked for are those of the ~10 km cell the place is in (the
+  cell the push already stores), with a margin — every place of one cell asks for the same ones.
+
 ## 1.57.1 — 2026-10-11
 
 ### Changed

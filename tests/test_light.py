@@ -64,8 +64,10 @@ def test_it_stays_light():
     # static/streets.js when the picker opens (the search and the oblast's list are not part of the page)
     # 1.57 raised it by 0.2 KB: the nearest shelter Kyiv city lists, under an alert — the few lines that load
     # static/shelters.js (the list, its look and the shelters themselves are not part of the page)
-    assert page < 25_400, f"the light page is no longer light ({page} B gzipped)"
-    assert page + extra < 66_400, f"page + map data = {page + extra} B gzipped"
+    # 1.57.2 raised it by 0.2 KB: the radar's background (plain, satellite or map) — the button and the few lines that
+    # load static/lightmap.js when a reader asks for it (the tiles and their code are not part of the page)
+    assert page < 25_600, f"the light page is no longer light ({page} B gzipped)"
+    assert page + extra < 66_600, f"page + map data = {page + extra} B gzipped"
     # 1.29: the live line is allowed — the light variant only (alerts and marks, no feed, no raw events). An open
     # line costs the server nothing any more (one thread holds them all) and the phone ~100 bytes every 15 s,
     # against ~8 KB every 15 s for asking.

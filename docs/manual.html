@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Heimdall (Kyiv Air Watch) — the full technical documentation, with a map of the system.">
-<meta name="heimdall-version" content="1.57.1">
-<meta name="heimdall-docs" content="de096c28b3162c3d">
+<meta name="heimdall-version" content="1.57.2">
+<meta name="heimdall-docs" content="2b6cf01052820711">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Heimdall Technical Manual</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -237,7 +237,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
 <header class="top">
   <div class="wrap">
     <a class="brand" href="#top"><b>Heimdall</b><span>Technical manual</span></a>
-    <span class="ver">1.57.1</span>
+    <span class="ver">1.57.2</span>
     <nav class="nav" aria-label="Sections">
       <a href="#map">Map</a><a href="#journeys">Journeys</a><a href="#rules">Rules</a><a href="#reference">Reference</a><a href="#safety">Safety</a>
     </nav>
@@ -256,7 +256,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
       <h1 class="title">How Heimdall works</h1>
       <p class="lead">An unofficial air-threat map for Kyiv and the oblasts around it. One Python process reads the official
       alert data and the channels that track drones and missiles, stores every post before it reads it, rebuilds the map
-      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.57.1, 11 October 2026:
+      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.57.2, 11 October 2026:
       the map first, then everything in full.</p>
     </div>
     <dl class="facts">
@@ -634,7 +634,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
     <div class="doc" id="doc">
 <section class="part" id="tech" data-label="Reference"><p class="partlabel">Part I · The reference</p>
 <h1 id="heimdall--technical-documentation">Heimdall — technical documentation</h1>
-<p><strong>Documented version: 1.57</strong> · last updated 2026-10-11 (1.57.1)</p>
+<p><strong>Documented version: 1.57</strong> · last updated 2026-10-11 (1.57.2)</p>
 <p>Heimdall was called <strong>Clear Sky</strong> until 1.29; the repository, the Fly app (<code>kyiv-air-watch-gb</code>) and some
 internal names still carry the old name.</p>
 <p>This is the complete technical reference: what runs, where the data comes from, how a Telegram post becomes a
@@ -783,6 +783,7 @@ real post, and a fix to the rules applies to posts already in the database.</p>
 │   ├── streets.js          1.56: their search, on the phone — loaded by both pages' pin pickers when they open (§10.6)
 │   ├── shelters.json       1.57: the shelters Kyiv city lists (KMDA, ІАС «Майно»; built by scripts/build_shelters.py)
 │   ├── shelters.js         1.57: the nearest ones, on the phone — loaded by both pages for a pin in Kyiv (§10.7)
+│   ├── lightmap.js         1.57.2: the Light radar's satellite / map background — loaded when asked for (§10.2)
 │   ├── ukraine-map.json    oblast outlines in an affine lon/lat projection (Light page fallback lookup)
 │   ├── admin.html          private dashboard: usage, source health, channels, lead time (/admin, ADMIN_KEY)
 │   ├── index.html, mobile.html   older desktop / mobile views (/desktop, /ua)
@@ -2782,6 +2783,20 @@ the colour legend is behind a &quot;?&quot; button; the footer is two buttons (W
 <li>1.39: under the two buttons, the same footer component as Tactical (<code>footerHTML({logos:false})</code>, §10.1) —
 without the two logos, which would cost 20 KB on 2G; it is drawn again when the language changes.</li>
 <li>Immediate types: a banner for the whole region, no distance, no countdown.</li>
+<li><strong>The radar's background</strong> (1.57.2, the owner: &quot;the light version should show the satellite / map too&quot;): plain by
+default; the layers button on the radar (<code>#zbg</code>) opens Background → Plain / Satellite / Map (the Tactical words,
+<code>l_base</code>, <code>l_plain</code>, <code>l_sat</code>, <code>l_map</code>; &quot;uses more data&quot; under the two pictures), kept on the phone (<code>localStorage.lbg</code>).
+Its code is <code>static/lightmap.js</code> (<code>LT</code>), loaded only when the button is pressed or a choice is kept (<code>ldLT</code>): the
+page stays light. The pictures are the Tactical map's — the server's own satellite tiles (<code>/tiles/sat/</code>, their
+version and deepest zoom from <code>state.config</code>) or Esri's dark street map (<code>/tiles/esri/mapn/</code>, in the reader's
+language) — in an SVG of their own under the radar (<code>#rtile</code>), clipped to the disc, its viewBox following the
+radar's at once (a <code>MutationObserver</code> on <code>#radar</code>'s viewBox); the radar's own background is a veil over them
+(<code>#rwrap.tl</code>), and the source is credited under it (<code>#rtattr</code>). An option the server does not have is greyed.
+<strong>The tiles say the cell, not the place</strong>: the radar is centred on the place, so the tiles of exactly its view would
+say where the pin is. The tiles asked for (<code>LT.tiles</code>) cover the view as seen from the ~10 km cell of its centre —
+the grid the push stores (<code>HOME_CELL_KM</code>) — plus the cell's margin (7.5 km): every place of one cell asks for the
+same tiles. Fewer than 50 a view (<code>MAX_TILES</code>: one zoom less rather than more); zoom 10–11 for the whole disc, 12–13
+zoomed in.</li>
 </ul>
 <h3 id="103-the-switch">10.3 The switch<a class="anc" href="#103-the-switch" aria-label="Link to this section">#</a></h3>
 <p>Both pages carry the <strong>LIGHT | TACTICAL</strong> switch (UK: ПРОСТА | ТАКТИЧНА, FR: LÉGÈRE | TACTIQUE): a full-width
@@ -2985,6 +3000,8 @@ there in time: two walls between you and the street, away from windows.&quot; No
 <li>1.56: a street or a village is searched on the phone (<code>static/streets.js</code>); the server sees only which oblast's list
 was opened (<code>/static/streets/&lt;uid&gt;.json</code>, the Kyiv pair by default) — what the map tiles a phone shows already say,
 and less — never what is typed, nor the street chosen.</li>
+<li>1.57.2: the Light radar's satellite or map background asks for the tiles of the ~10 km cell the place is in, never
+of the place itself (<code>LT.tiles</code>, §10.2): the server learns no more than the push already stores.</li>
 <li>1.57: the nearest shelter is found on the phone (<code>static/shelters.js</code>), from one file that is the same for everyone
 (<code>/static/shelters.json</code>): no pin and no position is in any request.</li>
 <li>Push subscriptions: a ~10 km cell only; older stored homes are coarsened at start.</li>
@@ -4564,7 +4581,7 @@ d'alerte ne sont pas des préférences de style.</p>
 </section>
     </div>
   </div>
-  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.57.1, 11 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
+  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.57.2, 11 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
 </main>
 
 <script>

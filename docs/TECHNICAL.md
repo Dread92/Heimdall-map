@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.57** · last updated 2026-10-11 (1.57.1)
+**Documented version: 1.57** · last updated 2026-10-11 (1.57.2)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -145,6 +145,7 @@ clear-sky/
 │   ├── streets.js          1.56: their search, on the phone — loaded by both pages' pin pickers when they open (§10.6)
 │   ├── shelters.json       1.57: the shelters Kyiv city lists (KMDA, ІАС «Майно»; built by scripts/build_shelters.py)
 │   ├── shelters.js         1.57: the nearest ones, on the phone — loaded by both pages for a pin in Kyiv (§10.7)
+│   ├── lightmap.js         1.57.2: the Light radar's satellite / map background — loaded when asked for (§10.2)
 │   ├── ukraine-map.json    oblast outlines in an affine lon/lat projection (Light page fallback lookup)
 │   ├── admin.html          private dashboard: usage, source health, channels, lead time (/admin, ADMIN_KEY)
 │   ├── index.html, mobile.html   older desktop / mobile views (/desktop, /ua)
@@ -1819,6 +1820,20 @@ One place, what concerns it, nothing else. Built to load and be read on 2G (page
 - 1.39: under the two buttons, the same footer component as Tactical (`footerHTML({logos:false})`, §10.1) —
   without the two logos, which would cost 20 KB on 2G; it is drawn again when the language changes.
 - Immediate types: a banner for the whole region, no distance, no countdown.
+- **The radar's background** (1.57.2, the owner: "the light version should show the satellite / map too"): plain by
+  default; the layers button on the radar (`#zbg`) opens Background → Plain / Satellite / Map (the Tactical words,
+  `l_base`, `l_plain`, `l_sat`, `l_map`; "uses more data" under the two pictures), kept on the phone (`localStorage.lbg`).
+  Its code is `static/lightmap.js` (`LT`), loaded only when the button is pressed or a choice is kept (`ldLT`): the
+  page stays light. The pictures are the Tactical map's — the server's own satellite tiles (`/tiles/sat/`, their
+  version and deepest zoom from `state.config`) or Esri's dark street map (`/tiles/esri/mapn/`, in the reader's
+  language) — in an SVG of their own under the radar (`#rtile`), clipped to the disc, its viewBox following the
+  radar's at once (a `MutationObserver` on `#radar`'s viewBox); the radar's own background is a veil over them
+  (`#rwrap.tl`), and the source is credited under it (`#rtattr`). An option the server does not have is greyed.
+  **The tiles say the cell, not the place**: the radar is centred on the place, so the tiles of exactly its view would
+  say where the pin is. The tiles asked for (`LT.tiles`) cover the view as seen from the ~10 km cell of its centre —
+  the grid the push stores (`HOME_CELL_KM`) — plus the cell's margin (7.5 km): every place of one cell asks for the
+  same tiles. Fewer than 50 a view (`MAX_TILES`: one zoom less rather than more); zoom 10–11 for the whole disc, 12–13
+  zoomed in.
 
 ### 10.3 The switch
 
@@ -2039,6 +2054,8 @@ shelter the city lists, each labelled with what it is** — the city's own list 
 - 1.56: a street or a village is searched on the phone (`static/streets.js`); the server sees only which oblast's list
   was opened (`/static/streets/<uid>.json`, the Kyiv pair by default) — what the map tiles a phone shows already say,
   and less — never what is typed, nor the street chosen.
+- 1.57.2: the Light radar's satellite or map background asks for the tiles of the ~10 km cell the place is in, never
+  of the place itself (`LT.tiles`, §10.2): the server learns no more than the push already stores.
 - 1.57: the nearest shelter is found on the phone (`static/shelters.js`), from one file that is the same for everyone
   (`/static/shelters.json`): no pin and no position is in any request.
 - Push subscriptions: a ~10 km cell only; older stored homes are coarsened at start.
