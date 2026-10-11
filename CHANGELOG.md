@@ -2,6 +2,17 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.56.4 — 2026-10-11
+
+### Fixed
+- **"Jet UAV to Kyiv/Irpin/Bucha" is drawn at Bucha, not in the middle of Kyiv** — the owner: "the post is talking about
+  Bucha, yet the drone is again put randomly in the middle of the city". When a post names several places a target is
+  heading for and nowhere it is, the mark stands at the one it reaches first: around Kyiv, not the city when its suburbs
+  are named with it, and of the rest the farthest out. The card and the label say the whole list ("heading for Київ /
+  Ірпінь / Буча").
+- **"на Бучу", "у Бучі" were no place at all** — a four-letter name kept its last letter in the search; Bucha's cases
+  (and Ichnia's, Kiliia's, Mena's) are read now.
+
 ## 1.56.3 — 2026-10-10
 
 ### Fixed

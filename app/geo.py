@@ -350,6 +350,10 @@ ALT = {"Північний міст": [r"\bпівнічн\w{0,3}\s+м[іо]ст\
        # reservoir. The longer stem wins the same span. "Петрівці" is Нові Петрівці (Старі is 4 km off,
        # inside the position tolerance, and is not in the gazetteer).
        "Велика Димерка": ["димерк"], "Нові Петрівці": ["петрівц"],
+       # 1.56.4: four letters and a vowel — the stem keeps the vowel, so "на Бучу" / "у Бучі" were no place at all (the
+       # owner: "Jet UAV to Kyiv/Irpin/Bucha", drawn in the middle of Kyiv). Their cases, written out ("Мена": not
+       # "мені", which is "to me"; "Гора": not "гору", a mountain)
+       "Буча": [r"\bбуч(?:у|і|ею|и|е)\b"], "Ічня": [r"\bічн(?:ю|і|ею)\b"], "Кілія": [r"\bкілі(?:ю|ї|єю)\b"], "Мена": [r"\bмену\b"],
        "Івано-Франківськ": ["івано-франківськ"], "Луцьк": ["луцьк"], "Керч": ["керч"], "Ізюм": ["ізюм"], "Бар": ["\bбар[іау]?\b"],
        "Кременчуцьке водосховище": ["кременчуцьк[а-яіїє]* водосховищ[а-яіїє]*\\b", "кременчуцьк"], "Каховське водосховище": ["каховськ[а-яіїє]* водосховищ[а-яіїє]*\\b", "каховськ"],
        "Канівське водосховище": ["канівськ[а-яіїє]* водосховищ[а-яіїє]*\\b", "канівськ"],
@@ -781,6 +785,34 @@ def _ambig_token(keys, uid, said="", default=None):
 def _km(a, b):
     """Distance in km between two (lon, lat) points — flat-earth, fine at the scale of an oblast."""
     return math.hypot((a[0] - b[0]) * 111.0 * math.cos(math.radians((a[1] + b[1]) / 2)), (a[1] - b[1]) * 111.0)
+
+
+KYIV_CENTRE = (30.5234, 50.4501)
+
+
+def approach_pick(names):
+    """1.56.4, the owner: "Jet UAV to Kyiv/Irpin/Bucha — the post is talking about Bucha, yet the drone is put in the
+    middle of the city". Of several places a target is said to be heading for (a list: "/", ",", "або", "чи"), the one
+    it is drawn at as an approach. In Kyiv and its oblast: not the city when its suburbs are named with it (the city is
+    the direction, the suburbs are where it is going), and of the rest the one farthest from the centre — a target
+    heading for all of them reaches the outermost first. Elsewhere the first named, as before."""
+    names = [n for i, n in enumerate(names) if n in PLACES and n not in names[:i]]
+    if len(names) < 2:
+        return names[0] if names else None
+    if all(PLACES[n][2] in ("31", "14") for n in names):
+        rest = [n for n in names if PLACES[n][2] != "31"] or names
+        return max(rest, key=lambda n: _km(PLACES[n][:2], KYIV_CENTRE))
+    return names[0]
+
+
+def _listed(seg, places):
+    """The places of `places` (in text order) that make one list with the first: joined by `_LIST_SEP_RX`."""
+    out = places[:1]
+    for p in places[1:]:
+        if not _LIST_SEP_RX.fullmatch(seg[out[-1][1]:p[0]]):
+            break
+        out.append(p)
+    return out
 
 
 def villages(uids, min_pop=1000):
@@ -1874,8 +1906,10 @@ def parse_post(text, home=None):
             else:
                 ev["position"] = {"matched": seg[obl[0]:obl[0] + 14].strip(), "place": "oblast", "method": "oblast centre (no town named)", "confidence": "low"}
         approaching = False
+        listed = []
         if lon is None and target and cm:
-            tn = target[0][2]
+            listed = [p[2] for p in _listed(seg, target)]
+            tn = approach_pick(listed) or target[0][2]           # 1.56.4: of a list, the one it is drawn at
             lon, lat, _ = PLACES[tn]
             where = "→ " + tn
             approaching = True
@@ -1903,7 +1937,7 @@ def parse_post(text, home=None):
                 heading = bearing(lon, lat, tl, tt)
                 ev["heading"] = {"matched": seg[cpos:target[0][1]].strip(), "method": f"bearing from {where} to the named destination {tgt_name}", "confidence": "high"}
             elif approaching:
-                tgt_name = target[0][2]
+                tgt_name = where[2:]                                 # the one it is drawn at (1.56.4)
             elif tobl:
                 # "Далі Київщина" — the app knows exactly which oblast was named, so it says so. Showing
                 # "neighbouring oblast" threw that away and left the reader guessing at the one thing the
@@ -1954,6 +1988,8 @@ def parse_post(text, home=None):
                         "place": where, "target": tgt_name, "target_uid": tgt_uid, "count": cnt, "jet": bool(JET_RX.search(seg)),
                         # drawn at the town it is heading to, not where it is: never moved on past it, never read as there
                         "approach": approaching,
+                        # 1.56.4: every place of a list it was said to be heading for, as written ("Київ/Ірпінь/Бучу")
+                        **({"targets": listed} if approaching and len(listed) > 1 else {}),
                         "alt": alt, "likely": likely,
                         # The oblast the sentence names and the oblast the gazetteer has for the town must
                         # agree. When they do not, the town was matched wrong — that is exactly how
@@ -2162,6 +2198,12 @@ def _parse_live(text, uid):
     at = next((p_ for p_, r in roles if r == "from"), None) or next((p_ for p_, r in roles if r is None), None)
     dest = next((p_ for p_, r in roles if r == "dest" and (not at or p_[2] != at[2])), None)
     dest_only = at is None
+    listed = []
+    if dest_only and dest:
+        # 1.56.4: "на Київ/Ірпінь/Бучу" — of the list, the one it is drawn at (approach_pick)
+        listed = [p_[2] for p_ in _listed(t, [p_ for p_, r in roles if r == "dest"])]
+        pick = approach_pick(listed)
+        dest = next((p_ for p_, r in roles if r == "dest" and p_[2] == pick), dest)
     s, e, name = at or dest
     lon, lat, uid = PLACES[name]
     mtype = None
@@ -2227,6 +2269,7 @@ def _parse_live(text, uid):
     return [{"type": mtype, "status": st, "lon": round(lon, 3), "lat": round(lat, 3), "heading": heading,
              "place": ("→ " + name) if dest_only else name, "target": target, "count": cnt,
              "approach": dest_only, "dest_only": dest_only,
+             **({"targets": listed} if dest_only and len(listed) > 1 else {}),
              "alt": alt,
              "jet": bool(JET_RX.search(t)), "oblast_uid": uid, "live": True, "likely": (None if stated else "drones"),
              "evidence": {"segment": t.strip(), "type": {"matched": ("✈️" if plane else "(none)"), "method": kind_ev, "confidence": ("high" if (stated and not plane) else "medium" if plane else "none")},

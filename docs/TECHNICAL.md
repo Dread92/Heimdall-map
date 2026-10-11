@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.56** · last updated 2026-10-10 (1.56.3)
+**Documented version: 1.56** · last updated 2026-10-11 (1.56.4)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -640,7 +640,14 @@ apostrophe — `_ru_variants`). Kharkiv city's districts are named by hand in th
   is cut before the post is tagged or parsed (`translate._SIGN_LINE`), never its first line.
 - 1.44.1: **a list after "в бік / курс"** ("в бік Велика Рибиця/Мала Рибиця/Осоївка", "на Димерку, Бровари") is a list of
   places it may be heading for: every name joined by `/`, `,`, "або / чи / і" to a destination is a destination
-  (`_LIST_SEP_RX` in `_parse_live`) — read as a bare name, the second one became where the target was. A segment that
+  (`_LIST_SEP_RX` in `_parse_live`) — read as a bare name, the second one became where the target was. 1.56.4, the
+  owner: "Jet UAV to Kyiv/Irpin/Bucha — the post is talking about Bucha, yet the drone is put in the middle of the
+  city": a target heading for a list and nowhere stated is drawn, as an approach, at the one `geo.approach_pick`
+  chooses — in Kyiv and its oblast not the city when its suburbs are named with it, and of the rest the farthest from
+  the centre (a target heading for all of them reaches the outermost first); elsewhere the first named, as before —
+  and the mark keeps the whole list (`targets`), which the pages say as written ("heading for Київ / Ірпінь / Буча",
+  `apprTo` in `i18n.js`). Four-letter names keep their last vowel in the stem, so "на Бучу", "у Бучі" were no place
+  at all: their cases are written out in `ALT` (Буча, Ічня, Кілія; Мена as "Мену" only — "мені" is "to me"). A segment that
   names no place and says the target left ("вилетів з області") or is coming from outside ("підлітає до нас / до
   області") is no position (`_EXIT_RX`), nor is "Дорозвідка". "В. Михайловка" / "М. …" are Велика / Мала
   (`_REG_ABBR_RX`); a Russian name declined like an adjective is matched in its cases ("Раздельная" → "Раздельной",

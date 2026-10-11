@@ -409,6 +409,9 @@ const fmtAlt=v=>v==null?'':v>=1000?`${(v/1000).toFixed(v%1000?1:0).replace('.',L
 // 15:50 explosions — the map kept the 900 m for 11 minutes). A height, a descent and a run of heights are shown on the maps
 // and in the lists only while the report that stated them is at most ALT_MAX_MIN old; the card's track keeps them, timed.
 const ALT_MAX_MIN=4;
+// 1.56.4: where an approach mark is said to be heading — every place of the post's list, as written ("Київ / Ірпінь /
+// Буча"); the mark itself stands at the one approach_pick chose (geo.py)
+const apprTo=m=>(m.targets&&m.targets.length>1?m.targets:[m.target||m.place||'']).map(pn).join(' / ');
 const altFresh=ts=>!!ts&&(Date.now()-Date.parse(ts))/60000<=ALT_MAX_MIN;
 function altNow(m){ return m&&m.alt&&altFresh(m.ts)?m.alt:null; }
 function altTrend(m){ const all=[...(m.history||[]).filter(h=>h.alt_m!=null).map(h=>[h.alt_m,h.ts]), ...(m.alt&&m.alt.m!=null?[[m.alt.m,m.ts]]:[])];

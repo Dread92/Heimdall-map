@@ -518,7 +518,7 @@ def test_the_rules_now_ask_for_origin_and_speed():
 def test_an_approach_mark_is_not_spotted_at_the_town_it_heads_for():
     page = _read("static/kyiv.html")
     assert "const appr=!!cur.approach&&!cur.status&&!cur.endedBy;" in page
-    assert "${appr?esc(t('sh_appr',pn(cur.place))):`${cur.status?t('tp_reported'):t('tp_spotted')}" in page
+    assert "${appr?esc(t('sh_appr',apprTo(cur))):`${cur.status?t('tp_reported'):t('tp_spotted')}" in page
 
 
 # ---- 1.51: the deterministic reading, the map and the oblast in the prompt -------------------------------------------

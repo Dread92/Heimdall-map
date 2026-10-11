@@ -38,7 +38,7 @@ def test_an_oblast_alone_is_still_the_oblast():
 
 def test_a_destination_is_never_shown_as_a_position_with_a_distance():
     assert "const appr=!!m.approach&&!m.status&&!m.endedBy;" in PAGE
-    assert "const where=appr?`<b>${esc(t('sh_appr',pn(m.place)))}</b>`" in PAGE
+    assert "const where=appr?`<b>${esc(t('sh_appr',apprTo(m)))}</b>`" in PAGE
     assert "if(!HOME||m.status||m.endedBy||appr) return '';" in PAGE          # no "near zone, up to 10 km"
     assert len(re.findall(r"\bsh_appr:'", I18N)) == 3 and len(re.findall(r"\bn_rep_to:'", I18N)) == 3
 

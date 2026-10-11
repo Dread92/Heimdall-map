@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Heimdall (Kyiv Air Watch) — the full technical documentation, with a map of the system.">
-<meta name="heimdall-version" content="1.56.3">
-<meta name="heimdall-docs" content="ad012d646381c72f">
+<meta name="heimdall-version" content="1.56.4">
+<meta name="heimdall-docs" content="fe5c3cdb45da4511">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Heimdall Technical Manual</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -237,7 +237,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
 <header class="top">
   <div class="wrap">
     <a class="brand" href="#top"><b>Heimdall</b><span>Technical manual</span></a>
-    <span class="ver">1.56.3</span>
+    <span class="ver">1.56.4</span>
     <nav class="nav" aria-label="Sections">
       <a href="#map">Map</a><a href="#journeys">Journeys</a><a href="#rules">Rules</a><a href="#reference">Reference</a><a href="#safety">Safety</a>
     </nav>
@@ -256,7 +256,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
       <h1 class="title">How Heimdall works</h1>
       <p class="lead">An unofficial air-threat map for Kyiv and the oblasts around it. One Python process reads the official
       alert data and the channels that track drones and missiles, stores every post before it reads it, rebuilds the map
-      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.56.3, 10 October 2026:
+      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.56.4, 11 October 2026:
       the map first, then everything in full.</p>
     </div>
     <dl class="facts">
@@ -632,7 +632,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
     <div class="doc" id="doc">
 <section class="part" id="tech" data-label="Reference"><p class="partlabel">Part I · The reference</p>
 <h1 id="heimdall--technical-documentation">Heimdall — technical documentation</h1>
-<p><strong>Documented version: 1.56</strong> · last updated 2026-10-10 (1.56.3)</p>
+<p><strong>Documented version: 1.56</strong> · last updated 2026-10-11 (1.56.4)</p>
 <p>Heimdall was called <strong>Clear Sky</strong> until 1.29; the repository, the Fly app (<code>kyiv-air-watch-gb</code>) and some
 internal names still carry the old name.</p>
 <p>This is the complete technical reference: what runs, where the data comes from, how a Telegram post becomes a
@@ -1661,7 +1661,14 @@ lost target (not &quot;загроз не фіксується&quot;). A channel'
 is cut before the post is tagged or parsed (<code>translate._SIGN_LINE</code>), never its first line.</li>
 <li>1.44.1: <strong>a list after &quot;в бік / курс&quot;</strong> (&quot;в бік Велика Рибиця/Мала Рибиця/Осоївка&quot;, &quot;на Димерку, Бровари&quot;) is a list of
 places it may be heading for: every name joined by <code>/</code>, <code>,</code>, &quot;або / чи / і&quot; to a destination is a destination
-(<code>_LIST_SEP_RX</code> in <code>_parse_live</code>) — read as a bare name, the second one became where the target was. A segment that
+(<code>_LIST_SEP_RX</code> in <code>_parse_live</code>) — read as a bare name, the second one became where the target was. 1.56.4, the
+owner: &quot;Jet UAV to Kyiv/Irpin/Bucha — the post is talking about Bucha, yet the drone is put in the middle of the
+city&quot;: a target heading for a list and nowhere stated is drawn, as an approach, at the one <code>geo.approach_pick</code>
+chooses — in Kyiv and its oblast not the city when its suburbs are named with it, and of the rest the farthest from
+the centre (a target heading for all of them reaches the outermost first); elsewhere the first named, as before —
+and the mark keeps the whole list (<code>targets</code>), which the pages say as written (&quot;heading for Київ / Ірпінь / Буча&quot;,
+<code>apprTo</code> in <code>i18n.js</code>). Four-letter names keep their last vowel in the stem, so &quot;на Бучу&quot;, &quot;у Бучі&quot; were no place
+at all: their cases are written out in <code>ALT</code> (Буча, Ічня, Кілія; Мена as &quot;Мену&quot; only — &quot;мені&quot; is &quot;to me&quot;). A segment that
 names no place and says the target left (&quot;вилетів з області&quot;) or is coming from outside (&quot;підлітає до нас / до
 області&quot;) is no position (<code>_EXIT_RX</code>), nor is &quot;Дорозвідка&quot;. &quot;В. Михайловка&quot; / &quot;М. …&quot; are Велика / Мала
 (<code>_REG_ABBR_RX</code>); a Russian name declined like an adjective is matched in its cases (&quot;Раздельная&quot; → &quot;Раздельной&quot;,
@@ -4458,7 +4465,7 @@ d'alerte ne sont pas des préférences de style.</p>
 </section>
     </div>
   </div>
-  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.56.3, 10 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
+  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.56.4, 11 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
 </main>
 
 <script>

@@ -559,7 +559,7 @@ function paint(){
   const row=({m,d,zone,toHere,eta,no},force)=>{
     const n=(m.count&&m.count>1)?' ×'+m.count:'';
     const bits=[zone?t('lt_z_'+zone):t('lt_far')]; if(toHere) bits.push(`<b class="hr">${esc(t('lt_here'))}</b>`);
-    if(m.approach) bits.push(`<span class="wh">${esc(t('lt_to',pn(m.target||m.place)))}</span>`);
+    if(m.approach) bits.push(`<span class="wh">${esc(t('lt_to',apprTo(m)))}</span>`);
     else if(m.place) bits.push(`<span class="wh">${esc(t('lt_at',pn(m.place)))}</span>`);
     if(statedCourse(m)) bits.push(esc(t('lt_course',DIRS[Math.round(m.heading/45)%8])));
     // Height, only when a post stated it — a low or falling drone can be diving. Shown on the row itself,
