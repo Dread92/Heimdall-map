@@ -77,6 +77,30 @@ DB_PATH = os.environ.get("DB_PATH") or os.path.join(ROOT, "alerts.sqlite")
 # 1.47: the satellite layer's tiles — an MBTiles file next to the database (on the volume), built once by
 # scripts/build_imagery.py and put there by scripts/upload-imagery.bat. Without it the layer is simply not offered.
 SAT_PATH = os.environ.get("SAT_TILES") or os.path.join(os.path.dirname(os.path.abspath(DB_PATH)), "sat-ua.mbtiles")
+
+
+# 1.58.3: how the process ended last time, so that the dashboard can tell a clean restart (a deploy, a secret set, Fly
+# moving the machine — every one of them stops it with a signal) from a crash or an out-of-memory kill (no signal
+# handled, nothing written). A small file beside the database: written from the signal handler, it needs no lock.
+def exit_path():
+    return os.path.join(os.path.dirname(os.path.abspath(DB_PATH)), "last-exit.json")
+
+
+def record_exit(how):
+    try:
+        with open(exit_path(), "w", encoding="utf-8") as f:
+            json.dump({"ts": datetime.now(timezone.utc).isoformat(), "how": how}, f)
+    except Exception:
+        pass
+
+
+def last_exit():
+    try:
+        with open(exit_path(), encoding="utf-8") as f:
+            d = json.load(f)
+        return d if isinstance(d, dict) else None
+    except Exception:
+        return None
 STATIC = os.path.join(ROOT, "static")
 
 DEFAULT_CONFIG = {
@@ -4163,6 +4187,12 @@ class State:
         self._health_res = (time.time(), out)
         return out
 
+    def channel_status(self):
+        """1.58.3: the private channel for the dashboard — set up or not (the two secrets), its switch, what it did."""
+        ch = getattr(self, "channel", None)
+        return {"configured": bool(chanpost and chanpost.configured()), "running": ch is not None,
+                "on": self.store.kv_get("chan_on") != "0", "health": ch.health() if ch else None}
+
     def lead_times(self, days=30):
         """How long before each official air-raid alert over Kyiv or Kyiv oblast the map already showed a threat
         there (a live mark in the hour before it). Alerts that start within 30 min of another are one wave, counted
@@ -6811,7 +6841,13 @@ class Vitals(threading.Thread):
             b = json.loads(self.state.store.kv_get("boots") or "[]")
         except Exception:
             b = []
-        b = (b + [{"ts": self.started, "build": BUILD, "app": APP_VERSION}])[-100:]
+        # 1.58.3: how the run before this one ended — "stop" (a signal: deploy, secret, Fly), "watchdog", or "unclean"
+        # (nothing written: a crash, an out-of-memory kill, the host gone)
+        ex, prev = last_exit(), (b[-1] if b else None)
+        end = None
+        if prev:
+            end = ex.get("how") if ex and str(ex.get("ts") or "") >= str(prev.get("ts") or "~") else "unclean"
+        b = (b + [{"ts": self.started, "build": BUILD, "app": APP_VERSION, "prev_end": end}])[-100:]
         try:
             self.state.store.kv_set("boots", json.dumps(b))
         except Exception:
@@ -6885,12 +6921,22 @@ class Vitals(threading.Thread):
         week = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
         recent = [b for b in self.boots if b["ts"] >= week]
         same = sum(1 for i, b in enumerate(self.boots) if i and b["ts"] >= week and self.boots[i - 1]["build"] == b["build"])
+        # 1.58.3: every start of the week by why the run before it ended; starts recorded before 1.58.3 are "unknown"
+        why = {"new_build": 0, "stop": 0, "watchdog": 0, "unclean": 0, "unknown": 0}
+        for i, b in enumerate(self.boots):
+            if not i or b["ts"] < week:
+                continue
+            if self.boots[i - 1]["build"] != b["build"]:
+                why["new_build"] += 1
+            else:
+                k = b.get("prev_end") or "unknown"
+                why[k if k in why else "unknown"] += 1
         return {"started": self.started, "uptime_s": int(time.monotonic() - self._t0), "build": BUILD, "app": APP_VERSION,
                 "cpu": stat(col("cpu")), "steal": stat(col("steal")), "late": stat(col("late")),
                 "rss": stat(col("rss")), "avail_min": min(col("avail")) if col("avail") else None,
                 "mem_total": (col("total") or [None])[-1],
                 "slow_1h": [x for x in self.slow if x["ts"] >= hour][-10:], "slow_1h_n": sum(1 for x in self.slow if x["ts"] >= hour),
-                "starts_7d": len(recent), "restarts_same_build_7d": same, "boots": self.boots[-12:]}
+                "starts_7d": len(recent), "restarts_same_build_7d": same, "restarts_7d": why, "boots": self.boots[-12:]}
 
 
 class Watchdog(threading.Thread):
@@ -6940,6 +6986,7 @@ class Watchdog(threading.Thread):
                 log(f"--- thread {names.get(ident, ident)}\n" + "".join(traceback.format_stack(frame)[-8:]))
             if self.misses >= self.MISSES:
                 log("WATCHDOG: the server is not answering — exiting so that Fly restarts it")
+                record_exit("watchdog")
                 os._exit(3)
 
 
@@ -7941,7 +7988,7 @@ class Handler(BaseHTTPRequestHandler):
                 vt = getattr(st, "vitals", None)
                 return self._json({"online": hub.online() if hub else None, "notice": st.notice_now(), "nuke": st.nuke,
                                    "push_last": getattr(pu, "last_fanout", None), "now": now_iso(),
-                                   "process": vt.report() if vt else None})
+                                   "process": vt.report() if vt else None, "channel": st.channel_status()})
             if u.path == "/.well-known/assetlinks.json":
                 return self._json(android_asset_links())
             if u.path == "/api/version":
@@ -8152,6 +8199,17 @@ class Handler(BaseHTTPRequestHandler):
                 ai = getattr(st, "ai", None)
                 return self._json({"ok": True, "stats": ai.stats() if ai else None,
                                    "bulletin_public": st.store.kv_get("ai_bulletin_public") == "1"})
+            if u.path == "/api/admin/channel_switch":
+                # 1.58.3: the private Telegram channel's kill switch (dashboard → Live). Off: the poster makes no call
+                # at all from its next pass (≤ 5 s); on: it carries on — a target first reported more than 5 min ago is
+                # not posted late, and the posts of targets gone meanwhile are closed. The secrets stay where they are.
+                if not self._admin_ok(q):
+                    return self._json({"error": "unauthorized"}, 401)
+                if "on" in data:
+                    st.store.kv_set("chan_on", "1" if data.get("on") else "0")
+                    st._health_res = None
+                    log(f"channel: switched {'on' if data.get('on') else 'OFF'} from the dashboard")
+                return self._json({"ok": True, "channel": st.channel_status()})
             if u.path == "/api/admin/region":
                 # 1.43: an oblast on or off as a whole — its channels and its place on the map
                 if not self._admin_ok(q):
@@ -8542,6 +8600,16 @@ def main():
         pass
     state.hub = StreamHub(state)
     state.hub.start()
+
+    # 1.58.3: the first /api/stats after a start parsed four days of posts for its explosions while a reader waited
+    # (16.6 s on the dashboard after the 1.58 deploy): done once in the background a little after the start instead
+    def warm():
+        time.sleep(45)
+        try:
+            state.stats(14)
+        except Exception as e:
+            log("warm-up:", type(e).__name__, e)
+    threading.Thread(target=warm, daemon=True, name="warm").start()
     # 1.58: the owner's private Telegram channel — one post per target over Kyiv and its oblast, with the map around
     # it (app/chanpost.py). Only when both secrets are set (scripts/set-telegram-channel.bat); the token is never logged.
     state.channel = None
@@ -8558,6 +8626,18 @@ def main():
         ip = lan_ip()
         if ip:
             log(f"on your phone (same Wi-Fi) → http://{ip}:{cfg['port']}/m")
+    # 1.58.3: a stop asked for (Fly sends SIGINT on a deploy, a secret set, a move; SIGTERM elsewhere) is written down
+    # first, so that the next start knows it was not a crash
+    import signal
+
+    def stopping(signum, frame):
+        record_exit("stop")
+        raise KeyboardInterrupt
+    for sg in (signal.SIGINT, signal.SIGTERM):
+        try:
+            signal.signal(sg, stopping)
+        except (ValueError, OSError):
+            pass
     try:
         srv.serve_forever()
     except KeyboardInterrupt:

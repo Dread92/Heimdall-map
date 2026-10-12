@@ -40,6 +40,7 @@ KEEP_S = 24 * 3600                         # what the store remembers of the pos
 BUDGET = 18                                # calls a minute (Telegram allows ~20 messages a minute in one channel)
 TICK_S = 5
 KV = "chan_posts"
+KV_ON = "chan_on"                          # 1.58.3: the dashboard's kill switch ("0" = off; anything else, or unset = on)
 MSL_TYPES = ("ballistic_missiles", "cruise_missiles", "supersonic_missiles", "unspecified_missiles")
 
 LABEL = {"drones": ("🛵", "Шахед"), "jet": ("🛩", "Реактивний дрон"), "ballistic_missiles": ("🚀", "Балістична ракета"),
@@ -289,7 +290,8 @@ class ChannelPoster(threading.Thread):
         ok = not st["failing"]                # the last call to Telegram worked (or none was needed yet)
         return {"name": "telegram channel (posting)", "ok": ok, "last": st["last_post"],
                 "error": None if ok else st["last_error"],
-                "note": f"posted {st['posted']} · redrawn {st['edited']} · closed {st['closed']}"
+                "note": ("switched OFF on the dashboard · " if not self.enabled() else "")
+                        + f"posted {st['posted']} · redrawn {st['edited']} · closed {st['closed']}"
                         + ("" if self.shot else " · text only (no Pillow)")}
 
     # ---- one pass ------------------------------------------------------------------------------------------------
@@ -312,7 +314,17 @@ class ChannelPoster(threading.Thread):
             self.log("channel: picture failed —", type(e).__name__, e)
             return None
 
+    def enabled(self):
+        """The dashboard's switch (Live tab): off, the channel makes no call at all — no post, no redraw, no closing line.
+        Read on every pass, so it takes effect within one (5 s). Unreadable: on, as before the switch existed."""
+        try:
+            return (self.kv.kv_get(KV_ON) if self.kv else None) != "0"
+        except Exception:
+            return True
+
     def tick(self):
+        if not self.enabled():
+            return
         now = self.clock()
         marks = self.marks() or []
         self.missiles = [(m["lon"], m["lat"]) for m in marks if m.get("type") in MSL_TYPES and not m.get("status")

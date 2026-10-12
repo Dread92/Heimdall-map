@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-13 (1.58.2)
+**Documented version: 1.58** · last updated 2026-10-13 (1.58.3)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -202,7 +202,7 @@ clear-sky/
 | `Ubilling` | oblast-level mirror; applies only while the raion source is down | 30 s |
 | `Telegram` | reads the channels' `t.me/s/` previews (all but those the API reads) | 30 s; 10 s while a missile threat is open or a threat is within 12 km of a Kyiv bridge (1.34) |
 | `TelegramAPI` | reads `telegram_api_channels` (chyste_nebo) through the Telegram client API — polls the channel, **never subscribes to updates** | last 20 posts every 15 s (8 s in a missile threat) |
-| `Vitals` | 1.41: the process's own CPU, the CPU the host took away (steal — on a shared Fly vCPU, throttling), memory, how late its own clock woke it; every request over 2 s (path and time only); every start with its build (`kv.boots`, last 100). On the dashboard's Live tab (`/api/online` → `process`) | 10 s |
+| `Vitals` | 1.41: the process's own CPU, the CPU the host took away (steal — on a shared Fly vCPU, throttling), memory, how late its own clock woke it; every request over 2 s (path and time only); every start with its build (`kv.boots`, last 100). On the dashboard's Live tab (`/api/online` → `process`) | 10 s 1.58.3: each start says how the run before it ended — a stop signal (`last-exit.json` beside the database, written by the SIGINT/SIGTERM handler: a deploy, a secret set, Fly moving the machine), the watchdog, or nothing written (a crash, an out-of-memory kill); the server panel counts the week's starts by cause (`restarts_7d`) |
 | `Watchdog` | the database and alert-state locks must be free within 15 s; a held lock logs every thread's stack, five in a row (~2 min) → exit, Fly restarts it; a starved process is only logged (load, not a deadlock) | 20 s |
 | `Digests` | each night (18:00–08:00 Kyiv) after `digest_hour`, and each Monday for the week: the figures (`State.digest_facts`), and with `ANTHROPIC_API_KEY` a written summary in EN + UK; stored in `digests` | 5 min check |
 | `Translations` | machine-translates feed posts into a language somebody reads | on demand, ~3 calls/s max |
@@ -211,6 +211,7 @@ clear-sky/
 | `Pusher` | sends Web Push: one notification at a time, each to all its phones at once through `push.Sender` (32 workers, one kept-open HTTPS connection per push service per worker, VAPID signed once an hour per service) | queue |
 | `streams` | **every open page's live line** (`StreamHub`, §5.4): one thread, non-blocking sockets (epoll), the data sent as changes | events + every 15 / 5 / 2 s |
 | `proximity` | per-subscriber distance checks → push | continuous |
+| `warm` | 1.58.3: 45 s after a start, `/api/stats`'s 14 days once in the background — the first ask after a start parsed four days of posts for the explosions while a reader waited (16.6 s after the 1.58 deploy) | once |
 | `channel` | 1.58, with `TG_BOT_TOKEN` and `TG_CHANNEL_ID`: the owner's private Telegram channel (§9c) — a post per target over Kyiv and its oblast with the map around it (`mapshot.py`), redrawn as it is reported again, closed when it is gone; at most 18 calls a minute | 5 s |
 | `AlertsInUa.backfill` | a month of history for the favourite regions | once at start |
 | `AFBackfill` | the Air Force summaries of the last 14 days that `af_reports` lacks: first from the stored feed, then from `t.me/s/kpszsu?before=…` pages (at most 240, stops once nothing is missing); since 1.33 also the carriers (`parse_air_report`) in every stored post, once per parser version (`kv.air_parsed`) | 60 s after start, then daily |
@@ -1599,6 +1600,12 @@ report, what was drawn (`signature`), a trimmed copy of the mark for the closing
 deploy neither reposts nor forgets a post. **Health**: the dashboard's official sources list "telegram channel
 (posting)" — working or failing (the last call to Telegram), posted / redrawn / closed counts.
 
+**Kill switch** (1.58.3, the owner: "il faudrait faire un killswitch"): dashboard → Live, "Private Telegram channel —
+ON / OFF" (`POST /api/admin/channel_switch` 🔒, `kv` `chan_on`). Off: from its next pass (≤ 5 s) the channel makes no
+call at all — no post, no redraw, no closing line; the bot and its secrets stay. On again: it carries on with what is
+reported from then — nothing first reported more than 5 min ago is posted late, and the posts of targets gone meanwhile
+are closed. Without the secrets the block says "not set up" and how to set it up.
+
 **Setup** (`scripts/set-telegram-channel.bat`, once): @BotFather /newbot → a private channel → the bot as an
 administrator ("Post messages", "Edit messages of others") → a message in the channel → the script: the token asked
 hidden and checked (`getMe`), the channel found from the bot's updates (`getUpdates`: a channel post or the bot's own
@@ -2294,6 +2301,7 @@ All JSON unless stated. Public unless marked 🔒 (`ADMIN_KEY`).
 | 🔒 `GET /api/admin/night?night=YYYY-MM-DD` | 1.53: one night in full (§7.10): `summary` (`State.night_summary`), `text` (`State.night_text`), `report` (the AI's, or null), `reports` (the nights that have one), `writing`, `report_hour` |
 | 🔒 `GET /api/admin/patterns?days=&kind=&res=&min=&raw=` | 1.55: the direction patterns (§7.12) — `days` 0–3650 (0: all; 90), `kind` `drones`\|`drone`\|`jet`\|`unstated`, `res` 1\|2\|4 (×14 km), `min` (3): `coverage` (`moves`, `tracks`, `nights`, `first`, `last`, `stated`, `cells`, `by_kind`, 1.56.1 `by_src`, `stated_first`, `built`, `version`), 1.56.1 `plain` (`en`, `uk`: the sentences, the first on what they are built from; `found`), `cell_deg`, `cell_km`, `cells` (≤ 400, busiest first: `cell`, `lon`, `lat`, `name`, `names`, `moves`, `tracks`, `nights`, `dir`, `dir_p`, `mean_bearing`, `consistency`, `stay`, `next`, `next_places`, `through`, `final`, `final_places`, `origins`, `stated`, `stated_n`, `said`, `speed_kmh`, `gap_min`; each share `{n, p, lo, hi}` in %, Wilson 95%); `raw=1` adds `moves` (≤ 50,000, not cached). Cached 5 min |
 | 🔒 `POST /api/admin/ai_report` | 1.53: `{night}` — asks the `night-reports` thread to write (again) that night's report |
+| 🔒 `POST /api/admin/channel_switch` | 1.58.3 (§9c): `{on: bool}` — the private Telegram channel's kill switch (`kv` `chan_on`); answers `{channel: {configured, running, on, health}}`, also on `/api/online` |
 | 🔒 `POST /api/admin/region` | `{id, on}` — an oblast on or off as a whole (1.43, §7.1): its place on the map and its channels; `31` is always on |
 | 🔒 `POST /api/admin/notice` | `{text: {uk, en, fr}, level: info|warn|alert, hours: 0–168 (0 = until removed), push: bool}` or `{clear: true}` — the team's message (§9) |
 | 🔒 `GET /api/ai_reads?limit=&all=` | the dashboard's AI tab: `stats` (`key`, `enabled`, `model`, `prompt_v`, `mode` "bulletins", `usd_month`, `cap_usd`, `paused`, `last_error`, 1.54 `bulletins_month`, `usd_bulletins_month`, `bulletin_errors_month`; and of the readings before 1.54 `reads_month`, `by_verdict`, `ms_median`), 1.54 `bulletins` (the last 30, with the record each was written from) and `bulletin` (`public`, `every_min`, `writing`, `why`), `checks`, and `reads` (newest first, ≤ 300; only the disagreements and errors unless `all=1`): post, channel, `stored`, `verdict`, `rules`, `ai` (`targets`, `uncertain`), `dropped`, `cost`, `ms`, `model`, `error` |

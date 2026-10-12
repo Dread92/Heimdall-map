@@ -43,3 +43,5 @@ diag/
 
 # ---- the satellite layer (1.47): built by scripts/build_imagery.py, uploaded by scripts/upload-imagery.bat ----
 imagery/
+# 1.58.3: how the server ended last time (written on a stop signal), beside the database
+last-exit.json

@@ -2,6 +2,28 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.3 — 2026-10-13
+
+### Added
+- **The private channel's kill switch** — the owner: "il faudrait faire un killswitch dans le analytic board". Dashboard
+  → Live: "Private Telegram channel — ON / OFF", with a confirmation. Off, the server makes no call to the channel from
+  its next pass (≤ 5 s): no post, no redraw, no closing line. On again, it carries on with what is reported from then
+  (nothing older than 5 minutes is posted late) and closes the posts of targets gone meanwhile. The secrets stay.
+
+### Changed
+- **The server panel says why the server restarted** — the owner, of "Starts in 7 days: 58 · without a new version
+  (crash, out of memory, watchdog): 10": "should I worry". A restart with the same code was counted as a crash, though
+  a secret set, a deploy of the docs alone and Fly moving the machine restart it the same way. A stop signal is now
+  written down (`last-exit.json`, beside the database), and so is the watchdog's exit; the panel counts the week's starts
+  as a new version · a clean restart · the watchdog · unexpected (crash, out of memory), red only for the last two.
+  Starts recorded before this version say their cause was not recorded. The CPU line turns red over 50 % on average,
+  not 6 %: that was a shared CPU's baseline, and the machine has had a dedicated one since 1.41.1 — every start (a minute
+  or two at full CPU, reading back the stored data) turned it red.
+
+### Fixed
+- The first `/api/stats` after a start took 16.6 s (four days of posts parsed for their explosions while a reader
+  waited): it is computed once in the background 45 s after the start.
+
 ## 1.58.2 — 2026-10-13
 
 ### Changed

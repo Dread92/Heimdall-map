@@ -22,3 +22,4 @@ scripts/
 
 # the satellite layer lives on the volume, not in the image
 imagery/
+last-exit.json

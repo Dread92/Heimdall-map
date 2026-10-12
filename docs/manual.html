@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Heimdall (Kyiv Air Watch) — the full technical documentation, with a map of the system.">
-<meta name="heimdall-version" content="1.58.2">
-<meta name="heimdall-docs" content="3b696029ea2285a8">
+<meta name="heimdall-version" content="1.58.3">
+<meta name="heimdall-docs" content="d492b493fb9e0304">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Heimdall Technical Manual</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -237,7 +237,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
 <header class="top">
   <div class="wrap">
     <a class="brand" href="#top"><b>Heimdall</b><span>Technical manual</span></a>
-    <span class="ver">1.58.2</span>
+    <span class="ver">1.58.3</span>
     <nav class="nav" aria-label="Sections">
       <a href="#map">Map</a><a href="#journeys">Journeys</a><a href="#rules">Rules</a><a href="#reference">Reference</a><a href="#safety">Safety</a>
     </nav>
@@ -256,7 +256,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
       <h1 class="title">How Heimdall works</h1>
       <p class="lead">An unofficial air-threat map for Kyiv and the oblasts around it. One Python process reads the official
       alert data and the channels that track drones and missiles, stores every post before it reads it, rebuilds the map
-      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.2, 13 October 2026:
+      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.3, 13 October 2026:
       the map first, then everything in full.</p>
     </div>
     <dl class="facts">
@@ -645,7 +645,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
     <div class="doc" id="doc">
 <section class="part" id="tech" data-label="Reference"><p class="partlabel">Part I · The reference</p>
 <h1 id="heimdall--technical-documentation">Heimdall — technical documentation</h1>
-<p><strong>Documented version: 1.58</strong> · last updated 2026-10-13 (1.58.2)</p>
+<p><strong>Documented version: 1.58</strong> · last updated 2026-10-13 (1.58.3)</p>
 <p>Heimdall was called <strong>Clear Sky</strong> until 1.29; the repository, the Fly app (<code>kyiv-air-watch-gb</code>) and some
 internal names still carry the old name.</p>
 <p>This is the complete technical reference: what runs, where the data comes from, how a Telegram post becomes a
@@ -877,7 +877,7 @@ real post, and a fix to the rules applies to posts already in the database.</p>
 <tr>
 <td><code>Vitals</code></td>
 <td>1.41: the process's own CPU, the CPU the host took away (steal — on a shared Fly vCPU, throttling), memory, how late its own clock woke it; every request over 2 s (path and time only); every start with its build (<code>kv.boots</code>, last 100). On the dashboard's Live tab (<code>/api/online</code> → <code>process</code>)</td>
-<td>10 s</td>
+<td>10 s 1.58.3: each start says how the run before it ended — a stop signal (<code>last-exit.json</code> beside the database, written by the SIGINT/SIGTERM handler: a deploy, a secret set, Fly moving the machine), the watchdog, or nothing written (a crash, an out-of-memory kill); the server panel counts the week's starts by cause (<code>restarts_7d</code>)</td>
 </tr>
 <tr>
 <td><code>Watchdog</code></td>
@@ -918,6 +918,11 @@ real post, and a fix to the rules applies to posts already in the database.</p>
 <td><code>proximity</code></td>
 <td>per-subscriber distance checks → push</td>
 <td>continuous</td>
+</tr>
+<tr>
+<td><code>warm</code></td>
+<td>1.58.3: 45 s after a start, <code>/api/stats</code>'s 14 days once in the background — the first ask after a start parsed four days of posts for the explosions while a reader waited (16.6 s after the 1.58 deploy)</td>
+<td>once</td>
 </tr>
 <tr>
 <td><code>channel</code></td>
@@ -2620,6 +2625,11 @@ recent first; a 429's <code>retry_after</code> is obeyed. <strong>State</strong>
 report, what was drawn (<code>signature</code>), a trimmed copy of the mark for the closing line; 24 h, kept over a restart so a
 deploy neither reposts nor forgets a post. <strong>Health</strong>: the dashboard's official sources list &quot;telegram channel
 (posting)&quot; — working or failing (the last call to Telegram), posted / redrawn / closed counts.</p>
+<p><strong>Kill switch</strong> (1.58.3, the owner: &quot;il faudrait faire un killswitch&quot;): dashboard → Live, &quot;Private Telegram channel —
+ON / OFF&quot; (<code>POST /api/admin/channel_switch</code> 🔒, <code>kv</code> <code>chan_on</code>). Off: from its next pass (≤ 5 s) the channel makes no
+call at all — no post, no redraw, no closing line; the bot and its secrets stay. On again: it carries on with what is
+reported from then — nothing first reported more than 5 min ago is posted late, and the posts of targets gone meanwhile
+are closed. Without the secrets the block says &quot;not set up&quot; and how to set it up.</p>
 <p><strong>Setup</strong> (<code>scripts/set-telegram-channel.bat</code>, once): @BotFather /newbot → a private channel → the bot as an
 administrator (&quot;Post messages&quot;, &quot;Edit messages of others&quot;) → a message in the channel → the script: the token asked
 hidden and checked (<code>getMe</code>), the channel found from the bot's updates (<code>getUpdates</code>: a channel post or the bot's own
@@ -3396,6 +3406,10 @@ downloading again, and still picks up a new version immediately.</li>
 <tr>
 <td>🔒 <code>POST /api/admin/ai_report</code></td>
 <td>1.53: <code>{night}</code> — asks the <code>night-reports</code> thread to write (again) that night's report</td>
+</tr>
+<tr>
+<td>🔒 <code>POST /api/admin/channel_switch</code></td>
+<td>1.58.3 (§9c): <code>{on: bool}</code> — the private Telegram channel's kill switch (<code>kv</code> <code>chan_on</code>); answers <code>{channel: {configured, running, on, health}}</code>, also on <code>/api/online</code></td>
 </tr>
 <tr>
 <td>🔒 <code>POST /api/admin/region</code></td>
@@ -4836,7 +4850,7 @@ d'alerte ne sont pas des préférences de style.</p>
 </section>
     </div>
   </div>
-  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.2, 13 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
+  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.3, 13 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
 </main>
 
 <script>
