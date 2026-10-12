@@ -530,6 +530,12 @@ night**. It was being drawn as eight ballistic missiles over Kyiv, right now, fo
 stayed in the feed. A retrospective summary produces no markers at all — same rule as a press release, for the
 same reason.
 
+The same holds for a single strike told after it happened (1.57.9): "О 22.10 ворог завдав удару по столиці … 6-ма
+балістичними ракетами", posted at 23:48, was drawn as ballistic missiles over Kyiv, launch completed, with the red
+level that comes with them — an hour and a half after the strike, by every channel that relayed it. "Struck",
+"attacked at 22.10": a report, never a sky. And a strike's flash report is never added to the night's totals — the
+morning summary counts the same missiles.
+
 ## One weapon, one symbol — and it never turns
 
 A symbol that rotates has to point somewhere, so a target reported without a course forced a choice between

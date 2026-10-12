@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.57** · last updated 2026-10-12 (1.57.8)
+**Documented version: 1.57** · last updated 2026-10-12 (1.57.9)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -901,6 +901,25 @@ the fullest, then the latest. `AFBackfill` fills the gaps (§5.1). The Stats tab
 Analytics (§8c) and the nights' figures (§8b) all read this table. `parse_af_summary` (the two totals) remains as
 a wrapper for older callers. `tests/test_af_reports.py` pins it on 11 real summaries of 21–28 Sep 2026
 (`tests/fixtures/af_summaries_2026_09.json`).
+
+**1.57.9: a flash report and a model's number.** The Air Force at 23:48 on 12 October: "❗️О 22.10 ворог завдав удару по
+столиці попередньо 6-ма балістичними ракетами … Інформації щодо пусків з території противника не поступало … Крім того,
+противник атакував Харків 9-ма баражуючими боєприпасами S-8000 «Бандероль»". Tagged `af_summary` by the feed, it was
+drawn all the same as ballistic missiles over Kyiv, "launch completed", 98 minutes after the strike, and stored as
+8,000 Banderols. Now:
+- `_marks_from_posts` drops the marks of a post `parse_af_report` reads, from `AF_SUMMARY_CHANNELS`, unless it says what
+  flies now (`AF_LIVE_RX`: "курсом на", "рухається", "у напрямку", "загроза застосування", "швидкісна ціль");
+- `geo.SUMMARY_RX` reads a strike told after it happened ("ворог завдав удару", "О 22.10 ворог атакував …"), whoever
+  relays it; `_parse_live` (the Kyiv trackers) returns nothing for a post `looks_like_news` — it fell through to the place
+  names when `parse_post` said so by returning nothing;
+- a number glued to a model's letters ("S-8000", "Х-101") is the model, and a model may stand between a count and its
+  weapon (`_AF_TYPE_RX`); "завдав удару" opens the attack as "атакував" does (`_AF_ATTACK_RX`);
+- a report dated by its own clock time and no night or day is `period: "flash"`: listed, never added to a date's or a
+  window's totals (`AF_TOTAL_PERIODS`) — the morning's summary counts the same missiles;
+- the stored reports are read again once (`Store.af_reparse`, `AF_PARSE_V`) at start;
+- "Інформації щодо пусків … не поступало" is no launch (`geo._launch_denied`); "столиця" is Kyiv named and no place in it —
+  the city is marked, not a point at its centre, and a course to it is "→ Київ" (`_city_settle`)
+  (`tests/test_retro_strike_1579.py`, `tests/fixtures/af_flash_2026_10_12.json`).
 
 ### 7.7 The AI reader (1.50; its facts in the target tags since 1.51; retired from the map in 1.54)
 

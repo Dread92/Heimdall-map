@@ -320,6 +320,11 @@ RETRACT_WEAK_RX = re.compile(r"(?:хибн|помилков)\w*\s+(?:триво�
 RETRACT_CTX_RX = re.compile(r"баліст|ракет|швидк|пуск|м[іи]г|кинджал|кінжал|іскандер", re.I)
 
 
+# 1.57.9: what an Air Force post says is flying NOW — a course, a direction, a threat — as against a summary of what was
+AF_LIVE_RX = re.compile(r"курсом\s+на|рухаєть\w*|(?:у|в)\s+напрямку\s+(?!удар)|загроза\s+(?:застосування|балістик|ударн)|"
+                        r"швидкісн\w+\s+ціл", re.I)
+
+
 def is_retraction(text):
     t = text or ""
     return bool(RETRACT_RX.search(t) or (RETRACT_WEAK_RX.search(t) and RETRACT_CTX_RX.search(t)))
@@ -601,7 +606,9 @@ NEAR_CTX_MIN = 30
 
 AF_SUMMARY_CHANNELS = {"kpszsu", "war_monitor", "monitor_ukr"}   # the Air Force summary and the channels that re-post it verbatim
 _AF_NUM = r"(\d{1,3})(?:-?[а-яіїєґ']{1,3})?"
-_AF_ATTACK_RX = re.compile(r"(?:противник|ворог|росі\w+|рф)\s+(?:масовано\s+|знову\s+)?атакув\w+", re.I)
+_AF_ATTACK_RX = re.compile(r"(?:противник|ворог|росі\w+|рф)\s+(?:масовано\s+|знову\s+)?(?:атакув\w+|завда\w*\s+удар\w*)", re.I)
+AF_TOTAL_PERIODS = {"night", "day", "other"}      # 1.57.9: a "flash" report is never added to the totals
+AF_PARSE_V = "2"                                  # 1.57.9: the stored reports are read again once (Store.af_reparse)
 _AF_DRONES_RX = re.compile(_AF_NUM + r"\s+(?:ударн\w+\s+|розвідувальн\w+\s+)?(?:БпЛА|безпілотник\w*|дрон\w*)", re.I)
 _AF_MISSILE_RX = re.compile(_AF_NUM + r"\s+(?:[а-яіїєґ'\-/]+\s+){0,4}?ракет\w*", re.I)
 _AF_DOWN_RX = re.compile(r"(?:збито|знищено|подавлен\w+|збито/подавлено|збито\s*/\s*подавлено)\s+" + _AF_NUM, re.I)
@@ -641,7 +648,11 @@ AF_MISSILE_TYPES = ("cruise", "ballistic", "aeroballistic", "antiship", "guided"
 def af_missiles(counts):
     """Missiles in a launched / shot-down dict: the stated total when there is one, else the sum of the types."""
     return counts.get("missiles") or sum(counts.get(k, 0) for k in AF_MISSILE_TYPES)
-_AF_TYPE_RX = [(k, re.compile(r"(?<![\d.,])(\d{1,4})(?:-?[а-яіїєґ']{1,3})?\s+(?:[а-яіїєґА-ЯІЇЄҐ'\-]+\s+){0,2}?" + rx, re.I)) for k, rx in AF_TYPES]
+# 1.57.9: a number glued to a model's letters ("S-8000 «Бандероль»", "Х-101") is the model, not a count — "противник
+# атакував Харків 9-ма баражуючими боєприпасами S-8000 «Бандероль»" was read as 8,000 Banderols launched (and the 9
+# not at all): the model may stand between the count and the weapon
+_AF_TYPE_RX = [(k, re.compile(r"(?<![\d.,\w-])(\d{1,4})(?:-?[а-яіїєґ']{1,3})?\s+(?:[а-яіїєґА-ЯІЇЄҐ'\-]+\s+){0,2}?"
+                              r"(?:[A-Za-zА-ЯІЇЄҐ]{1,3}-?\d{1,5}\s+)?" + rx, re.I)) for k, rx in AF_TYPES]
 _AF_MENTION_RX = [(k, re.compile(rx, re.I)) for k, rx in AF_TYPES]
 _AF_JET_RX = re.compile(r"\(\s*(?:понад\s+)?(\d{1,4})\s+(?:із|з)\s+них\s*[-–—]\s*реактивн", re.I)
 _AF_MONTHS = {"січня": 1, "лютого": 2, "березня": 3, "квітня": 4, "травня": 5, "червня": 6, "липня": 7, "серпня": 8,
@@ -736,6 +747,11 @@ def parse_af_report(text, ts=None):
             date = None
     if not date and posted:
         date = posted.astimezone(kyiv_tz()).strftime("%Y-%m-%d")
+    # 1.57.9: a flash report of one strike, dated by its own clock time — "❗️О 22.10 ворог завдав удару по столиці …
+    # Крім того, противник атакував Харків …" (23:48). The night's summary counts the same missiles again in the morning:
+    # kept as "flash", shown as such, never added to a night's or a week's totals (AF_TOTAL_PERIODS)
+    if period == "other" and re.search(r"(?<!\w)(?:о|об)\s+\d{1,2}[.:]\d{2}\b", body[:200], re.I):
+        period = "flash"
     out = {"period": period, "date": date, "launched": launched, "used": sorted(used - set(launched)),
            "down": down}
     im = re.search(r"влучання[^.]*?на\s+(\d{1,4})\s+локаці", body, re.I)
@@ -1277,6 +1293,28 @@ class Store:
                                     (post_id, channel, ts, rep.get("period"), rep.get("date"), json.dumps(rep, ensure_ascii=False)))
             self.conn.commit()
         return bool(cur.rowcount)
+
+    def af_reparse(self):
+        """1.57.9: every stored Air Force report whose post is still in the feed, read again with today's rules — once per
+        AF_PARSE_V. The flash report of 12 October had been stored as 8,000 Banderols launched (the model "S-8000"): the
+        week's totals carried it until it was read again. A report that no longer reads is left as it was."""
+        if self.kv_get("af_parse_v") == AF_PARSE_V:
+            return 0
+        with self.lock:
+            rows = self.conn.execute("SELECT a.post_id, a.ts, a.data, f.text FROM af_reports a JOIN feed f ON f.post_id=a.post_id").fetchall()
+        n = 0
+        for pid, ts, data, text in rows:
+            rep = parse_af_report(text, ts)
+            if rep is None:
+                continue
+            new = json.dumps(rep, ensure_ascii=False)
+            if new != data:
+                with self.lock:
+                    self.conn.execute("UPDATE af_reports SET period=?, date=?, data=? WHERE post_id=?", (rep.get("period"), rep.get("date"), new, pid))
+                    self.conn.commit()
+                n += 1
+        self.kv_set("af_parse_v", AF_PARSE_V)
+        return n
 
     def af_reports(self, since_date="0000"):
         """One report per (date, period): the Air Force's own post over a re-post, then the fullest, then the latest."""
@@ -3359,6 +3397,10 @@ class State:
                     ms = geo.parse_for_channel(p["channel"], p["text"], near or None)
                 except Exception:
                     ms = []
+                # 1.57.9: the feed tags an Air Force summary "af_summary" and the strip ignores it; the marks did not —
+                # "О 22.10 ворог завдав удару по столиці …" was tagged a summary and drawn as ballistic missiles over Kyiv
+                if ms and p["channel"] in AF_SUMMARY_CHANNELS and not AF_LIVE_RX.search(p["text"] or "") and parse_af_report(p["text"]):
+                    ms = []
                 cache[p["post_id"]] = ms
             if pts:
                 nb = near_by_channel.setdefault(p["channel"], [])
@@ -3760,7 +3802,7 @@ class State:
         areas, dirs, models = collections.Counter(), collections.Counter(), collections.Counter()
         for r in self.store.af_reports(start_d.isoformat()):
             row = af.get(r.get("date"))
-            if not row:
+            if not row or r.get("period") not in AF_TOTAL_PERIODS:
                 continue
             row["periods"].append(r.get("period"))
             if r.get("period") == "night" and (r.get("launched") or {}).get("drones") is not None:
@@ -4791,6 +4833,8 @@ class State:
         for w, acc in windows.items():
             acc["af"] = {"launched": {}, "down": {}, "used": [], "impacts": 0, "debris": 0}
         for r in reps:
+            if r.get("period") not in AF_TOTAL_PERIODS:
+                continue
             age_d = (now - (parse_iso(r["ts"]) or now)).total_seconds() / 86400
             la, dn = r.get("launched") or {}, r.get("down") or {}
             if r.get("date") in by_day:
@@ -8432,6 +8476,12 @@ def main():
     if cfg.get("telegram_channels"):
         tg = Telegram(state, cfg)
         tg.start()
+        try:
+            n = state.store.af_reparse()          # 1.57.9: the stored reports read again with today's rules, once
+            if n:
+                log(f"af: {n} stored Air Force report(s) read again")
+        except Exception as e:
+            log("af reparse:", e)
         AFBackfill(state).start()
         Weather(state).start()
         log("feed:", ", ".join("t.me/" + c for c in cfg["telegram_channels"]))

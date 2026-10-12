@@ -262,7 +262,8 @@ def test_an_alert_said_to_be_coming_is_not_where_the_target_is():
     rd = lambda t: [(m["place"], m.get("target")) for m in geo.parse_for_channel("eRadarrua", t)]   # noqa: E731
     assert rd("🛵 Буде тривога в столиці. БпЛА на Козин") == [("→ Козин", "Козин")]
     assert rd("Тривога в столиці через шахед на Бровари") == [("→ Бровари", "Бровари")]
-    assert rd("Шахед над столицею") == [("Столиця", None)]                   # over the capital is still over it
+    # over the capital is still over it — the city marked, not a point at its centre (1.57.9, as "над Києвом")
+    assert rd("Шахед над столицею") == [("область", None)]
 
 
 def test_a_tag_holds_under_a_target():

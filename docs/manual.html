@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Heimdall (Kyiv Air Watch) — the full technical documentation, with a map of the system.">
-<meta name="heimdall-version" content="1.57.8">
-<meta name="heimdall-docs" content="32cd69ad67783549">
+<meta name="heimdall-version" content="1.57.9">
+<meta name="heimdall-docs" content="a9b1e6c77505b7a2">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Heimdall Technical Manual</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -237,7 +237,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
 <header class="top">
   <div class="wrap">
     <a class="brand" href="#top"><b>Heimdall</b><span>Technical manual</span></a>
-    <span class="ver">1.57.8</span>
+    <span class="ver">1.57.9</span>
     <nav class="nav" aria-label="Sections">
       <a href="#map">Map</a><a href="#journeys">Journeys</a><a href="#rules">Rules</a><a href="#reference">Reference</a><a href="#safety">Safety</a>
     </nav>
@@ -256,7 +256,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
       <h1 class="title">How Heimdall works</h1>
       <p class="lead">An unofficial air-threat map for Kyiv and the oblasts around it. One Python process reads the official
       alert data and the channels that track drones and missiles, stores every post before it reads it, rebuilds the map
-      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.57.8, 12 October 2026:
+      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.57.9, 12 October 2026:
       the map first, then everything in full.</p>
     </div>
     <dl class="facts">
@@ -635,7 +635,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
     <div class="doc" id="doc">
 <section class="part" id="tech" data-label="Reference"><p class="partlabel">Part I · The reference</p>
 <h1 id="heimdall--technical-documentation">Heimdall — technical documentation</h1>
-<p><strong>Documented version: 1.57</strong> · last updated 2026-10-12 (1.57.8)</p>
+<p><strong>Documented version: 1.57</strong> · last updated 2026-10-12 (1.57.9)</p>
 <p>Heimdall was called <strong>Clear Sky</strong> until 1.29; the repository, the Fly app (<code>kyiv-air-watch-gb</code>) and some
 internal names still carry the old name.</p>
 <p>This is the complete technical reference: what runs, where the data comes from, how a Telegram post becomes a
@@ -1923,6 +1923,26 @@ the fullest, then the latest. <code>AFBackfill</code> fills the gaps (§5.1). Th
 Analytics (§8c) and the nights' figures (§8b) all read this table. <code>parse_af_summary</code> (the two totals) remains as
 a wrapper for older callers. <code>tests/test_af_reports.py</code> pins it on 11 real summaries of 21–28 Sep 2026
 (<code>tests/fixtures/af_summaries_2026_09.json</code>).</p>
+<p><strong>1.57.9: a flash report and a model's number.</strong> The Air Force at 23:48 on 12 October: &quot;❗️О 22.10 ворог завдав удару по
+столиці попередньо 6-ма балістичними ракетами … Інформації щодо пусків з території противника не поступало … Крім того,
+противник атакував Харків 9-ма баражуючими боєприпасами S-8000 «Бандероль»&quot;. Tagged <code>af_summary</code> by the feed, it was
+drawn all the same as ballistic missiles over Kyiv, &quot;launch completed&quot;, 98 minutes after the strike, and stored as
+8,000 Banderols. Now:</p>
+<ul>
+<li><code>_marks_from_posts</code> drops the marks of a post <code>parse_af_report</code> reads, from <code>AF_SUMMARY_CHANNELS</code>, unless it says what
+flies now (<code>AF_LIVE_RX</code>: &quot;курсом на&quot;, &quot;рухається&quot;, &quot;у напрямку&quot;, &quot;загроза застосування&quot;, &quot;швидкісна ціль&quot;);</li>
+<li><code>geo.SUMMARY_RX</code> reads a strike told after it happened (&quot;ворог завдав удару&quot;, &quot;О 22.10 ворог атакував …&quot;), whoever
+relays it; <code>_parse_live</code> (the Kyiv trackers) returns nothing for a post <code>looks_like_news</code> — it fell through to the place
+names when <code>parse_post</code> said so by returning nothing;</li>
+<li>a number glued to a model's letters (&quot;S-8000&quot;, &quot;Х-101&quot;) is the model, and a model may stand between a count and its
+weapon (<code>_AF_TYPE_RX</code>); &quot;завдав удару&quot; opens the attack as &quot;атакував&quot; does (<code>_AF_ATTACK_RX</code>);</li>
+<li>a report dated by its own clock time and no night or day is <code>period: &quot;flash&quot;</code>: listed, never added to a date's or a
+window's totals (<code>AF_TOTAL_PERIODS</code>) — the morning's summary counts the same missiles;</li>
+<li>the stored reports are read again once (<code>Store.af_reparse</code>, <code>AF_PARSE_V</code>) at start;</li>
+<li>&quot;Інформації щодо пусків … не поступало&quot; is no launch (<code>geo._launch_denied</code>); &quot;столиця&quot; is Kyiv named and no place in it —
+the city is marked, not a point at its centre, and a course to it is &quot;→ Київ&quot; (<code>_city_settle</code>)
+(<code>tests/test_retro_strike_1579.py</code>, <code>tests/fixtures/af_flash_2026_10_12.json</code>).</li>
+</ul>
 <h3 id="77-the-ai-reader-150-its-facts-in-the-target-tags-since-151-retired-from-the-map-in-154">7.7 The AI reader (1.50; its facts in the target tags since 1.51; retired from the map in 1.54)<a class="anc" href="#77-the-ai-reader-150-its-facts-in-the-target-tags-since-151-retired-from-the-map-in-154" aria-label="Link to this section">#</a></h3>
 <blockquote>
 <p><strong>1.54, the owner: &quot;the AI placing things on the map — we forget it&quot;.</strong> Nothing in §7.7, §7.9 or §7.10's check runs any
@@ -4095,6 +4115,11 @@ and the dashboard's Analytics, never onto the map. A weapon the summary names wi
 night</strong>. It was being drawn as eight ballistic missiles over Kyiv, right now, for the whole time the post
 stayed in the feed. A retrospective summary produces no markers at all — same rule as a press release, for the
 same reason.</p>
+<p>The same holds for a single strike told after it happened (1.57.9): &quot;О 22.10 ворог завдав удару по столиці … 6-ма
+балістичними ракетами&quot;, posted at 23:48, was drawn as ballistic missiles over Kyiv, launch completed, with the red
+level that comes with them — an hour and a half after the strike, by every channel that relayed it. &quot;Struck&quot;,
+&quot;attacked at 22.10&quot;: a report, never a sky. And a strike's flash report is never added to the night's totals — the
+morning summary counts the same missiles.</p>
 <h2 id="s-one-weapon-one-symbol--and-it-never-turns">One weapon, one symbol — and it never turns<a class="anc" href="#s-one-weapon-one-symbol--and-it-never-turns" aria-label="Link to this section">#</a></h2>
 <p>A symbol that rotates has to point somewhere, so a target reported without a course forced a choice between
 inventing a heading and drawing a second, different icon for the same weapon. The app did both at different
@@ -4674,7 +4699,7 @@ d'alerte ne sont pas des préférences de style.</p>
 </section>
     </div>
   </div>
-  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.57.8, 12 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
+  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.57.9, 12 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
 </main>
 
 <script>

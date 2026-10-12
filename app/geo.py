@@ -1240,7 +1240,14 @@ SUMMARY_RX = re.compile(
     r"протягом\s+ноч|за\s+ніч\b|#зведення|за\s+приблизними\s+оцінками|загалом\s+(?:випущ|застосов)|"
     # 1.43: the night's tally relayed by a regional tracker: "Уночі Сили ППО збили 161 ціль ворога … Вдалося знищити або
     # подавити 117 ударних безпілотників, 5 балістичних ракет" was drawn as ballistic missiles over Dnipro
-    r"(?:уночі|вночі)\s+(?:\S+\s+){0,3}?(?:збил|знищил|подавил)\w*\s+\d+|вдалося\s+(?:знищити|збити|подавити)", re.I)
+    r"(?:уночі|вночі)\s+(?:\S+\s+){0,3}?(?:збил|знищил|подавил)\w*\s+\d+|вдалося\s+(?:знищити|збити|подавити)|"
+    # 1.57.9: a strike told after it happened. The Air Force at 23:48: "❗️О 22.10 ворог завдав удару по столиці
+    # попередньо 6-ма балістичними ракетами … Інформації щодо пусків з території противника не поступало" — drawn as
+    # ballistic missiles over Kyiv, "launch completed", 98 minutes after the strike (the owner: "encore une news
+    # détectée comme une menace"); every channel that relayed it did the same. "завдав удару" (struck) is told after;
+    # so is an attack dated by its own clock time ("О 22.10 ворог атакував …")
+    r"(?:ворог|противник|рф|росі\w*|окупант\w*)\s+(?:\S+\s+){0,2}?завда(?:в|ла|ли)\s+(?:\S+\s+){0,2}?удар|"
+    r"(?<!\w)(?:о|об)\s+\d{1,2}[.:]\d{2}\s+(?:\S+\s+){0,2}?(?:ворог|противник)\s+(?:\S+\s+)?(?:атакува|завда|здійсни|вдари)\w*", re.I)
 
 
 def looks_like_summary(t):
@@ -1539,6 +1546,15 @@ PHASE_RX = [
 ]
 
 
+_LAUNCH_DENIED_RX = re.compile(r"не\s+(?:по|на)?ступал|не\s+надходил|не\s+(?:було\s+)?зафіксов|не\s+фіксу|не\s+виявлен|"
+                               r"не\s+спостеріга|немає|відсутн", re.I)
+
+
+def _launch_denied(t, m):
+    """A launch the post says there is no word of: "інформації щодо пусків … не поступало", "пусків не зафіксовано"."""
+    return bool(re.search(r"без\s+$", t[max(0, m.start() - 5):m.start()]) or _LAUNCH_DENIED_RX.search(t[m.end():m.end() + 60]))
+
+
 def detect_phase(text, mtype=None):
     """The stage this post reports, or None when it reports no stage at all.
 
@@ -1551,6 +1567,8 @@ def detect_phase(text, mtype=None):
     for key, rx in PHASE_RX:
         if not rx.search(t):
             continue
+        if key == "launch" and all(_launch_denied(t, m) for m in rx.finditer(t)):
+            continue          # 1.57.9: "Інформації щодо пусків з території противника не поступало" is no launch
         if key == "launch" and all(_hedged(t, m.start()) for m in rx.finditer(t)):
             # Every launch this post mentions is hedged. Never harden that into a launch, even if
             # "prep" is not a rung on this ladder — one unhedged mention anywhere is enough to keep it.
@@ -2157,6 +2175,11 @@ def _parse_live(text, uid):
     kept = _drop_clear_sentences(t)         # "Чисте небо … Київ. Васильків увага" → only Vasylkiv is a warning
     if kept != t and kept.strip():
         text, t = kept, kept
+    # 1.57.9: a report or an article is no sighting, whoever posts it. parse_post said so by returning nothing — and
+    # nothing fell through to the place names below: "О 22.10 ворог завдав удару по столиці …", relayed by the Kyiv
+    # trackers, became ballistic missiles at "Столиця"
+    if looks_like_news(t):
+        return []
     if len(t.split()) > 8 or re.search(r"курс|напрям|у бік|летить", t):
         r = parse_post(text, home)
         if r:
@@ -2498,7 +2521,11 @@ _BANK_RX = re.compile(r"\b(прав|лів)\w*\s+берег\w*", re.I)
 
 
 def _city_settle(m):
-    if m.get("place") != "Київ" or m.get("approach"):
+    # 1.57.9: "столиця" (the capital) is Kyiv named and no place in it, as much as "Київ" — it was a point at the centre,
+    # "Stolytsia, town in gazetteer, high confidence, ±5 km"
+    if m.get("approach") and m.get("target") == "Столиця":
+        m["target"], m["place"] = "Київ", "→ Київ"          # a course to the capital is a course to Kyiv
+    if m.get("place") not in ("Київ", "Столиця") or m.get("approach"):
         return m
     ev = dict(m.get("evidence") or {})
     pos = dict(ev.get("position") or {})

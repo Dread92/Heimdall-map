@@ -2,6 +2,23 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.57.9 — 2026-10-12
+
+### Fixed
+- **A strike told after it happened is no threat** — the owner, with a screenshot of ballistic missiles over Kyiv,
+  "launch completed", at 23:48: "encore une news détectée comme une menace". The Air Force's flash report ("❗️О 22.10
+  ворог завдав удару по столиці … 6-ма балістичними ракетами … Інформації щодо пусків … не поступало") was drawn as a
+  live ballistic attack 98 minutes after the strike, by the Air Force's channel and every Kyiv channel that relayed it —
+  though the feed had already tagged it the Air Force's summary. "Ворог завдав удару", "О 22.10 ворог атакував …" are
+  now read as a report, whoever posts it, and what the feed calls the Air Force's summary never becomes a mark unless
+  it says what flies now. A ballistic push may have gone to phones around Kyiv at 23:48.
+- **The Air Force's figures**: "9-ма баражуючими боєприпасами S-8000 «Бандероль»" was stored as 8,000 Banderols launched
+  (the model's number) — now 9, and the 6 ballistic missiles are counted. A flash report of one strike is kept apart
+  ("flash") and never added to a night's or a week's totals: the morning summary counts the same missiles. The stored
+  reports are read again once at start.
+- "Інформації щодо пусків … не поступало" is no launch; "столиця" is Kyiv with no place in it — the city is marked, not
+  a point at its centre ("Stolytsia, high confidence"), and a course to it reads "→ Київ".
+
 ## 1.57.8 — 2026-10-12
 
 ### Added
