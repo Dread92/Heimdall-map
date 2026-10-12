@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.57** · last updated 2026-10-12 (1.57.6)
+**Documented version: 1.57** · last updated 2026-10-12 (1.57.7)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -1623,7 +1623,9 @@ of dozen elsewhere — on an Odesa or Lviv view they did nothing. Now:
   Ukraine's oblasts (the Dnipro with its reservoirs, the Dniester, Southern Bug, Siverskyi Donets, Desna, Prypiat,
   Prut, Western Bug, Seim, Danube; names in the three languages), the first-rank roads outside Kyiv oblast, and by
   hand from GeoNames the civil airports of the oblast capitals and the large power plants (four nuclear, Burshtyn,
-  the Dniester and Dnipro HPPs) — **no military airfield**. Loaded with the map (`drawUA`); it replaces the
+  the Dniester and Dnipro HPPs) — **no military airfield**. Each checked on the satellite picture in 1.57.7: all on
+  their runway, dam or plant but the South Ukraine NPP, which GeoNames rounds to the minute (500 m off, in the cooling
+  pond) — now on its reactors. Loaded with the map (`drawUA`); it replaces the
   hand-drawn Dnipro, Desna and Kyiv Reservoir lines (`.river.hand`), whose labels stay;
 - the villages layer fetches `/api/places?villages=scope` the first time it is turned on (`loadVillages`): the regional
   gazetteer's hromada centres and places of 1,000+ in the oblasts the map covers, about 1,800 names, drawn like the
@@ -1781,7 +1783,13 @@ Main parts:
   left out (`nolbl`). The boxes (`LBLBOX`) hide the town names under them (`layoutTownLabels`);
 - the map's own pictograms are vector shapes, not the phone's emoji (1.39): the airfields, power plants and nuclear
   plants of the infrastructure layer (`POIS`, `POI_G`: a plane, a lightning bolt, a trefoil; shown zoomed in, hidden
-  at night and in blackout) and the watched place's house — the same on every phone;
+  at night and in blackout) and the watched place's house — the same on every phone. 1.57.7: Kyiv oblast's `POIS` are
+  at the plants' and airfields' own coordinates (Global Energy Monitor, Wikipedia), each checked on the satellite
+  picture — they had been rounded to 0.01°, so ТЕЦ-6 stood 4.6 km off in Troieshchyna's flats, ТЕЦ-5 on the Stolychne
+  highway and the Bila Tserkva airfield 10 km east, past the town; `geo.PLACES` carries the same points for ТЕЦ-5,
+  ТЕЦ-6 and the two airports, so a post naming the plant marks the plant (`tests/test_poi_places_1577.py`). Each
+  name (`.poilbl`) stands on its icon's point and is set aside in screen pixels by the CSS (`--k`), as the icon is
+  sized: offset 2 km in map units, it was 200 px away at the street view — "Київська ТЕЦ-5" in the Dnipro;
 - the OSM tile credit sits small in the bottom corner; the Crimea Cossack is drawn in `#obllbl`, above the raion
   outlines, one path per colour;
 - display modes: normal, day (inverted, WCAG-checked), night (dim, arrows only), blackout (2G);

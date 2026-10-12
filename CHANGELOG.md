@@ -2,6 +2,23 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.57.7 — 2026-10-12
+
+### Fixed
+- **The power plants and airfields are where they are** — the owner, with screenshots: "some icons are shown in the
+  wrong place, we need to make sure that it isn't badly placed". The Kyiv oblast landmarks had been typed rounded to
+  0.01°: ТЕЦ-6 stood 4.6 km off, in Troieshchyna's flats; ТЕЦ-5 on the Stolychne highway, 2 km from the plant by the
+  Southern bridge; Darnytsia TPP, Trypillia TPP and the Kyiv HPP 1.5–2 km off; the Bila Tserkva airfield 10 km east,
+  on the far side of the town. Now the plants' own coordinates (Global Energy Monitor, Wikipedia), every one checked
+  on the satellite picture: each icon sits on the plant's main building, the dam or the runway. Over the rest of the
+  country one was off: the South Ukraine NPP, rounded to the minute by GeoNames (500 m north, in the cooling pond),
+  now on its reactors.
+- **A post naming ТЕЦ-5 or ТЕЦ-6 marks the plant**: the place list the rules read had the same rounded points
+  (ТЕЦ-6 4.6 km away); the two plants and the Boryspil and Zhuliany airports now have their own.
+- **A landmark's name stands beside its icon at every zoom.** It was set 2 km off in map units — a few pixels at the
+  region view, 200 px at the street view, where "Київська ТЕЦ-5" ended up in the Dnipro. It now stands on the icon's
+  point, moved aside in screen pixels like the icon is sized.
+
 ## 1.57.6 — 2026-10-12
 
 ### Added

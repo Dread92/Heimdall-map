@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Heimdall (Kyiv Air Watch) — the full technical documentation, with a map of the system.">
-<meta name="heimdall-version" content="1.57.6">
-<meta name="heimdall-docs" content="1ba100a7ecdb4e52">
+<meta name="heimdall-version" content="1.57.7">
+<meta name="heimdall-docs" content="5e35a4e46ec7fd3f">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Heimdall Technical Manual</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -237,7 +237,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
 <header class="top">
   <div class="wrap">
     <a class="brand" href="#top"><b>Heimdall</b><span>Technical manual</span></a>
-    <span class="ver">1.57.6</span>
+    <span class="ver">1.57.7</span>
     <nav class="nav" aria-label="Sections">
       <a href="#map">Map</a><a href="#journeys">Journeys</a><a href="#rules">Rules</a><a href="#reference">Reference</a><a href="#safety">Safety</a>
     </nav>
@@ -256,7 +256,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
       <h1 class="title">How Heimdall works</h1>
       <p class="lead">An unofficial air-threat map for Kyiv and the oblasts around it. One Python process reads the official
       alert data and the channels that track drones and missiles, stores every post before it reads it, rebuilds the map
-      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.57.6, 12 October 2026:
+      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.57.7, 12 October 2026:
       the map first, then everything in full.</p>
     </div>
     <dl class="facts">
@@ -635,7 +635,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
     <div class="doc" id="doc">
 <section class="part" id="tech" data-label="Reference"><p class="partlabel">Part I · The reference</p>
 <h1 id="heimdall--technical-documentation">Heimdall — technical documentation</h1>
-<p><strong>Documented version: 1.57</strong> · last updated 2026-10-12 (1.57.6)</p>
+<p><strong>Documented version: 1.57</strong> · last updated 2026-10-12 (1.57.7)</p>
 <p>Heimdall was called <strong>Clear Sky</strong> until 1.29; the repository, the Fly app (<code>kyiv-air-watch-gb</code>) and some
 internal names still carry the old name.</p>
 <p>This is the complete technical reference: what runs, where the data comes from, how a Telegram post becomes a
@@ -2599,7 +2599,9 @@ of dozen elsewhere — on an Odesa or Lviv view they did nothing. Now:</p>
 Ukraine's oblasts (the Dnipro with its reservoirs, the Dniester, Southern Bug, Siverskyi Donets, Desna, Prypiat,
 Prut, Western Bug, Seim, Danube; names in the three languages), the first-rank roads outside Kyiv oblast, and by
 hand from GeoNames the civil airports of the oblast capitals and the large power plants (four nuclear, Burshtyn,
-the Dniester and Dnipro HPPs) — <strong>no military airfield</strong>. Loaded with the map (<code>drawUA</code>); it replaces the
+the Dniester and Dnipro HPPs) — <strong>no military airfield</strong>. Each checked on the satellite picture in 1.57.7: all on
+their runway, dam or plant but the South Ukraine NPP, which GeoNames rounds to the minute (500 m off, in the cooling
+pond) — now on its reactors. Loaded with the map (<code>drawUA</code>); it replaces the
 hand-drawn Dnipro, Desna and Kyiv Reservoir lines (<code>.river.hand</code>), whose labels stay;</li>
 <li>the villages layer fetches <code>/api/places?villages=scope</code> the first time it is turned on (<code>loadVillages</code>): the regional
 gazetteer's hromada centres and places of 1,000+ in the oblasts the map covers, about 1,800 names, drawn like the
@@ -2757,7 +2759,13 @@ descending, others, outcomes); an ordinary label that fits nowhere loses its sec
 left out (<code>nolbl</code>). The boxes (<code>LBLBOX</code>) hide the town names under them (<code>layoutTownLabels</code>);</li>
 <li>the map's own pictograms are vector shapes, not the phone's emoji (1.39): the airfields, power plants and nuclear
 plants of the infrastructure layer (<code>POIS</code>, <code>POI_G</code>: a plane, a lightning bolt, a trefoil; shown zoomed in, hidden
-at night and in blackout) and the watched place's house — the same on every phone;</li>
+at night and in blackout) and the watched place's house — the same on every phone. 1.57.7: Kyiv oblast's <code>POIS</code> are
+at the plants' and airfields' own coordinates (Global Energy Monitor, Wikipedia), each checked on the satellite
+picture — they had been rounded to 0.01°, so ТЕЦ-6 stood 4.6 km off in Troieshchyna's flats, ТЕЦ-5 on the Stolychne
+highway and the Bila Tserkva airfield 10 km east, past the town; <code>geo.PLACES</code> carries the same points for ТЕЦ-5,
+ТЕЦ-6 and the two airports, so a post naming the plant marks the plant (<code>tests/test_poi_places_1577.py</code>). Each
+name (<code>.poilbl</code>) stands on its icon's point and is set aside in screen pixels by the CSS (<code>--k</code>), as the icon is
+sized: offset 2 km in map units, it was 200 px away at the street view — &quot;Київська ТЕЦ-5&quot; in the Dnipro;</li>
 <li>the OSM tile credit sits small in the bottom corner; the Crimea Cossack is drawn in <code>#obllbl</code>, above the raion
 outlines, one path per colour;</li>
 <li>display modes: normal, day (inverted, WCAG-checked), night (dim, arrows only), blackout (2G);</li>
@@ -4648,7 +4656,7 @@ d'alerte ne sont pas des préférences de style.</p>
 </section>
     </div>
   </div>
-  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.57.6, 12 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
+  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.57.7, 12 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
 </main>
 
 <script>

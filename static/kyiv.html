@@ -514,7 +514,10 @@ svg.veryfar.no-minor .town:not(.big):not(.rg):not(.uac):not(.tw2){display:none}s
 .bridge{fill:#8fa3c0;stroke:#080b10;stroke-width:.6px;vector-effect:non-scaling-stroke}
 .poi{pointer-events:none}.poi .pg,.homemk .ico .pg{transform:scale(calc(var(--k,1)*.55));stroke:#080b10;stroke-width:1.4px;vector-effect:non-scaling-stroke;paint-order:stroke}
 .poi.air{fill:#9fb7dc}.poi.pow{fill:#f5b940}.poi.nuc{fill:#ffd23f}
-.poilbl{fill:#8f9bb0;font:500 calc(var(--k,1)*9.5px) system-ui;paint-order:stroke;stroke:#080b10;stroke-width:calc(var(--k,1)*2.5px);pointer-events:none}
+/* 1.57.7: the name stands beside its icon at every zoom. It was set 2 km off in map units — 10 px at the region view,
+   but 200 px at the street view, where "Київська ТЕЦ-5" ended up in the Dnipro: now it is placed on the icon's point and
+   moved aside in screen pixels (--k = km per pixel), as the icon is sized */
+.poilbl{fill:#8f9bb0;font:500 calc(var(--k,1)*9.5px) system-ui;paint-order:stroke;stroke:#080b10;stroke-width:calc(var(--k,1)*2.5px);pointer-events:none;transform:translate(calc(var(--k,1)*9px),calc(var(--k,1)*3.5px))}
 svg.far .poilbl{display:none}svg:not(.close) .poi,svg:not(.close) .poilbl{display:none}
 .kd{fill:#161c26;stroke:#5b6f95;stroke-width:1.2px;vector-effect:non-scaling-stroke}.kd.Y{fill:rgba(245,185,64,.3)}.kd.R{fill:rgba(229,72,77,.4)}.kd.hot{stroke:#ff4d57;stroke-width:2.2px}
 #kdistg{display:none}svg.city #kdistg{display:block}
@@ -1535,12 +1538,16 @@ async function loadMap(){
     ['E-95 Chernihiv',[[30.58,50.49],[30.62,50.60],[30.72,50.80],[30.88,50.95],[31.0,51.15],[31.29,51.50]]],
     ['T-1019 Kaniv',[[30.95,50.35],[31.10,50.20],[31.30,50.10],[31.45,50.07],[31.47,49.75]]]];
   const RING=[[30.45,50.56],[30.38,50.53],[30.34,50.48],[30.33,50.43],[30.36,50.37],[30.42,50.34],[30.50,50.33],[30.57,50.34],[30.60,50.36]];
-  const POIS=[['air','Boryspil airport',30.89,50.34],['air','Zhuliany airport',30.45,50.40],['air','Hostomel airfield',30.19,50.60],['air','Vasylkiv airbase',30.30,50.23],['air','Bila Tserkva airfield',30.16,49.79],['air','Ozerne airbase',28.74,50.16],
-    ['pow','Trypillia TPP',30.77,50.13],['pow','Kyiv HPP dam',30.52,50.60],['pow','Kyiv CHP-5',30.55,50.38],['pow','Kyiv CHP-6',30.60,50.52],['pow','Darnytsia TPP',30.63,50.43],['nuc','Chornobyl NPP',30.10,51.39]];
+  // 1.57.7, the owner (screenshots, ТЕЦ-6 drawn in Troieshchyna's flats, ТЕЦ-5 on the Stolychne highway): "some icons
+  // are shown in the wrong place". They were rounded to 0.01° (up to 4.6 km off; the Bila Tserkva airfield 10 km, on the
+  // wrong side of the town). Now the plants' own coordinates (Global Energy Monitor, Wikipedia), each checked on the
+  // satellite picture: the icon sits on the plant's main building, the dam, the runway (tests/test_poi_places_1577.py).
+  const POIS=[['air','Boryspil airport',30.8933,50.3447],['air','Zhuliany airport',30.4517,50.4017],['air','Hostomel airfield',30.1919,50.6036],['air','Vasylkiv airbase',30.3000,50.2333],['air','Bila Tserkva airfield',30.0244,49.7961],['air','Ozerne airbase',28.7383,50.1583],
+    ['pow','Trypillia TPP',30.7467,50.1334],['pow','Kyiv HPP dam',30.5123,50.5883],['pow','Kyiv CHP-5',30.5695,50.3932],['pow','Kyiv CHP-6',30.6623,50.5317],['pow','Darnytsia TPP',30.6429,50.4478],['nuc','Chornobyl NPP',30.0994,51.3892]];
   const rp=pts=>pts.map(p=>proj(p[0],p[1]).map(v=>v.toFixed(1)).join(',')).join(' ');
   $('infra').innerHTML=ROADS.map(([n,pts])=>{const mid=pts[Math.floor(pts.length/2)];const [lx,ly]=proj(mid[0],mid[1]);return `<polyline class="road" points="${rp(pts)}"/><text class="roadlbl minor" x="${(lx+1).toFixed(1)}" y="${(ly-1).toFixed(1)}">${n}</text>`;}).join('')
     +`<polyline class="road ring2" points="${rp(RING)}"/>`
-    +POIS.map(([ic,n,lo,la])=>{const [x,y]=proj(lo,la);return `<g class="poi ${ic}" transform="translate(${x.toFixed(2)} ${y.toFixed(2)})"><g class="pg">${POI_G[ic]}</g></g><text class="poilbl minor" x="${(x+2).toFixed(1)}" y="${(y+1.2).toFixed(1)}">${poiName(n)}</text>`;}).join('');
+    +POIS.map(([ic,n,lo,la])=>{const [x,y]=proj(lo,la);return `<g class="poi ${ic}" transform="translate(${x.toFixed(2)} ${y.toFixed(2)})"><g class="pg">${POI_G[ic]}</g></g><text class="poilbl minor" x="${x.toFixed(2)}" y="${y.toFixed(2)}">${poiName(n)}</text>`;}).join('');
   $('towns').innerHTML=TOWNS.map(([n,lo,la,big])=>{const [x,y]=proj(lo,la);const rg=big===2,ua=big===3;return `<circle class="towndot${rg?' rg':''}${ua?' uac':''}" data-n="${n}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${big===1?1.6:.9}" style="r:calc(var(--k,1)*${big===1?4:2.5}px)"/><text class="town ${big===1?'big':''}${rg?' rg':''}${ua?' uac':''}" data-n="${n}" x="${(x+2).toFixed(1)}" y="${(y+1.5).toFixed(1)}">${townName(n)}</text>`;}).join('')
     +'<g id="twng"></g><g id="minorg"></g><g id="villg"></g>';
   if(LAYERS.towns) loadTownsUA();
@@ -1557,7 +1564,7 @@ function drawUA(ua){
   $('rings').insertAdjacentHTML('afterbegin',(ua.rivers||[]).map(r=>r.l.map(l=>`<polyline class="river ${r.c}" points="${pl(l)}"/>`).join('')
     +r.lb.map(([x,y])=>`<text class="rvlbl" x="${x}" y="${y}">${esc(nm(r))}</text>`).join('')).join(''));
   $('infra').insertAdjacentHTML('afterbegin',(ua.roads||[]).map(l=>`<polyline class="road" points="${pl(l)}"/>`).join('')
-    +(ua.pois||[]).map(p=>`<g class="poi ${p.k}" transform="translate(${p.x} ${p.y})"><g class="pg">${POI_G[p.k]||''}</g></g><text class="poilbl minor" x="${(p.x+2).toFixed(1)}" y="${(p.y+1.2).toFixed(1)}">${esc(nm(p))}</text>`).join(''));
+    +(ua.pois||[]).map(p=>`<g class="poi ${p.k}" transform="translate(${p.x} ${p.y})"><g class="pg">${POI_G[p.k]||''}</g></g><text class="poilbl minor" x="${p.x}" y="${p.y}">${esc(nm(p))}</text>`).join(''));
 }
 // 1.45: the 15/30/50 km rings are around the reader's oblast capital — around Kyiv they told somebody in Odesa
 // nothing. Occupied capitals are not used: the rings go back to Kyiv.

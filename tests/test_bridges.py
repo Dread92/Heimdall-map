@@ -64,7 +64,7 @@ def test_the_spans_and_the_distance_to_them():
     pd = B["pivdennyi"]
     mid = ((pd["pts"][0][0] + pd["pts"][1][0]) / 2, (pd["pts"][0][1] + pd["pts"][1][1]) / 2)
     assert server.bridge_km(*mid, pd) < 0.01
-    assert 2.0 < server.bridge_km(30.55, 50.38, pd) < 2.5                        # ТЕЦ-5
+    assert 2.0 < server.bridge_km(30.55, 50.38, pd) < 2.5                        # on the Stolychne highway
     # 1.38: a crossing that bends is measured along every piece of it
     pod = B["podilskyi"]
     assert all(server.bridge_km(lo, la, pod) < 0.01 for lo, la in pod["pts"])
@@ -95,7 +95,7 @@ def _m(i, lon, lat, place, minutes=1, **kw):
 def test_bridge_by_bridge_at_near_hit_and_what_never_counts():
     marks = [
         _m("a", 30.5763, 50.3977, "Південний міст"),                            # on the Southern bridge
-        _m("b", 30.55, 50.38, "ТЕЦ-5"),                                         # 2.3 km from it: near (it stays "at")
+        _m("b", 30.55, 50.38, "Корчувате"),                                     # 2.3 km from it: near (it stays "at")
         _m("c", 30.592, 50.433, "Русанівка", jet=True),                         # a jet drone 0.3 km from Paton's east end: at
         _m("d", 30.50, 50.51, "Оболонь"),                                       # a Shahed 3.2 km from the Northern bridge: near
         _m("e", 30.52, 50.45, "Київ"),                                          # "Kyiv" alone: no bridge

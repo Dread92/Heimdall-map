@@ -40,7 +40,9 @@ RIVERS = {
 # the Dnipro's reservoirs are its "lake centrelines": drawn wider, as the hand-drawn Kyiv Reservoir was
 WIDE = {("Dnipro", "Lake Centerline")}
 
-# (kind, English, Ukrainian, French, lon, lat) — GeoNames coordinates
+# (kind, English, Ukrainian, French, lon, lat) — GeoNames coordinates, each checked on the satellite picture in 1.57.7:
+# all sit on their runway, dam or plant but the South Ukraine NPP (GeoNames rounds it to the minute: 500 m north, in the
+# cooling pond), now on its reactors
 POIS = [
     ("air", "Odesa airport", "аеропорт Одеса", "aéroport d'Odessa", 30.6765, 46.4268),
     ("air", "Lviv airport", "аеропорт Львів", "aéroport de Lviv", 23.9561, 49.8125),
@@ -65,7 +67,7 @@ POIS = [
     ("air", "Cherkasy airport", "аеропорт Черкаси", "aéroport de Tcherkassy", 32.0042, 49.4062),
     ("nuc", "Rivne NPP", "Рівненська АЕС", "centrale nucléaire de Rivne", 25.8917, 51.3278),
     ("nuc", "Khmelnytskyi NPP", "Хмельницька АЕС", "centrale nucléaire de Khmelnytskyï", 26.6498, 50.3014),
-    ("nuc", "South Ukraine NPP", "Південноукраїнська АЕС", "centrale nucléaire d'Ukraine du Sud", 31.2167, 47.8167),
+    ("nuc", "South Ukraine NPP", "Південноукраїнська АЕС", "centrale nucléaire d'Ukraine du Sud", 31.2190, 47.8127),
     ("nuc", "Zaporizhzhia NPP", "Запорізька АЕС", "centrale nucléaire de Zaporijjia", 34.5858, 47.5122),
     ("pow", "Burshtyn TPP", "Бурштинська ТЕС", "centrale thermique de Bourchtyn", 24.6676, 49.2087),
     ("pow", "Dniester HPP", "Дністровська ГЕС", "centrale hydro du Dniestr", 27.4530, 48.5934),
