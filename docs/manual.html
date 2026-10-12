@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Heimdall (Kyiv Air Watch) — the full technical documentation, with a map of the system.">
-<meta name="heimdall-version" content="1.58.4">
-<meta name="heimdall-docs" content="2cc7275d9292d456">
+<meta name="heimdall-version" content="1.58.5">
+<meta name="heimdall-docs" content="ccb1e7e9ee4d4170">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Heimdall Technical Manual</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -237,7 +237,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
 <header class="top">
   <div class="wrap">
     <a class="brand" href="#top"><b>Heimdall</b><span>Technical manual</span></a>
-    <span class="ver">1.58.4</span>
+    <span class="ver">1.58.5</span>
     <nav class="nav" aria-label="Sections">
       <a href="#map">Map</a><a href="#journeys">Journeys</a><a href="#rules">Rules</a><a href="#reference">Reference</a><a href="#safety">Safety</a>
     </nav>
@@ -256,7 +256,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
       <h1 class="title">How Heimdall works</h1>
       <p class="lead">An unofficial air-threat map for Kyiv and the oblasts around it. One Python process reads the official
       alert data and the channels that track drones and missiles, stores every post before it reads it, rebuilds the map
-      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.4, 13 October 2026:
+      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.5, 13 October 2026:
       the map first, then everything in full.</p>
     </div>
     <dl class="facts">
@@ -645,7 +645,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
     <div class="doc" id="doc">
 <section class="part" id="tech" data-label="Reference"><p class="partlabel">Part I · The reference</p>
 <h1 id="heimdall--technical-documentation">Heimdall — technical documentation</h1>
-<p><strong>Documented version: 1.58</strong> · last updated 2026-10-13 (1.58.4)</p>
+<p><strong>Documented version: 1.58</strong> · last updated 2026-10-13 (1.58.5)</p>
 <p>Heimdall was called <strong>Clear Sky</strong> until 1.29; the repository, the Fly app (<code>kyiv-air-watch-gb</code>) and some
 internal names still carry the old name.</p>
 <p>This is the complete technical reference: what runs, where the data comes from, how a Telegram post becomes a
@@ -2614,8 +2614,11 @@ The data the pages draw: the oblasts and raions of <code>static/kyiv-map.json</c
 from i18n.js), the raion labels (<code>RAION_LBL</code>, <code>RAION_ADJ</code> + &quot;р-н&quot;), the silhouettes of <code>static/glyphs.js</code> (checked
 shape by shape by the tests), the colours of the Tactical page. The official alerts of the moment are painted as
 <code>alertMap()</code> paints them (<code>alert_fill</code>: the city; Kyiv oblast's raions — oblast-wide, by raion, a hromada's raion; the
-oblasts around, fainter). The view: the target, its last six reported places (a dotted path), Kyiv when it is within
-70 km, ×1.5, between 30 km (the city) or 50 km and 150 km. The silhouette turns as <code>orientOf()</code> turns it; the course
+oblasts around, fainter). The view (1.58.5, the owner: &quot;the map isn't zoomed out enough, we get no situational
+awareness&quot;): the target, its last six reported places (a dotted path) and always Kyiv, ×1.3 + 20 km, between 40 km
+(a target in the city: the whole city) or 90 km and 220 km — centred on the target past that. The other targets of the
+moment (the channel's own, <code>ChannelPoster.cur</code>) are drawn too, smaller and fainter, under the one the post is about; a
+town name beside one moves to its other side rather than vanish. The silhouette turns as <code>orientOf()</code> turns it; the course
 ray is drawn only with a stated course. The place the post named stands in a pill beside it; town names that would
 cover it are left out; the places it was reported at before are named beside their dots where there is room. Header: HEIMDALL · Київ · Київщина · the report's time; foot: the warning and the map's
 credits. Without Pillow (or the font) the channel posts its text alone. The image installs <code>fonts-dejavu-core</code>.</p>
@@ -4858,7 +4861,7 @@ d'alerte ne sont pas des préférences de style.</p>
 </section>
     </div>
   </div>
-  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.4, 13 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
+  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.5, 13 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
 </main>
 
 <script>

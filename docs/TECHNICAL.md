@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-13 (1.58.4)
+**Documented version: 1.58** · last updated 2026-10-13 (1.58.5)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -1587,8 +1587,11 @@ The data the pages draw: the oblasts and raions of `static/kyiv-map.json`, the c
 from i18n.js), the raion labels (`RAION_LBL`, `RAION_ADJ` + "р-н"), the silhouettes of `static/glyphs.js` (checked
 shape by shape by the tests), the colours of the Tactical page. The official alerts of the moment are painted as
 `alertMap()` paints them (`alert_fill`: the city; Kyiv oblast's raions — oblast-wide, by raion, a hromada's raion; the
-oblasts around, fainter). The view: the target, its last six reported places (a dotted path), Kyiv when it is within
-70 km, ×1.5, between 30 km (the city) or 50 km and 150 km. The silhouette turns as `orientOf()` turns it; the course
+oblasts around, fainter). The view (1.58.5, the owner: "the map isn't zoomed out enough, we get no situational
+awareness"): the target, its last six reported places (a dotted path) and always Kyiv, ×1.3 + 20 km, between 40 km
+(a target in the city: the whole city) or 90 km and 220 km — centred on the target past that. The other targets of the
+moment (the channel's own, `ChannelPoster.cur`) are drawn too, smaller and fainter, under the one the post is about; a
+town name beside one moves to its other side rather than vanish. The silhouette turns as `orientOf()` turns it; the course
 ray is drawn only with a stated course. The place the post named stands in a pill beside it; town names that would
 cover it are left out; the places it was reported at before are named beside their dots where there is room. Header: HEIMDALL · Київ · Київщина · the report's time; foot: the warning and the map's
 credits. Without Pillow (or the font) the channel posts its text alone. The image installs `fonts-dejavu-core`.

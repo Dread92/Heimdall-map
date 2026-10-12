@@ -223,28 +223,33 @@ class MapShot:
         return ((lon - self.c0) * self.kx, -(lat - self.c1) * self.ky)
 
     # ---- the view ------------------------------------------------------------------------------------------------
+    VIEW_MIN_CITY, VIEW_MIN, VIEW_MAX = 40.0, 90.0, 220.0     # km, the picture's height
+
     def view(self, m):
-        """A square of the map around the target: where it is, where it was reported before, Kyiv when it is near."""
+        """A square of the map around the target: where it is, where it was reported before, and Kyiv — the reader's
+        landmark. 1.58.5, the owner, of a target alone on fields near Pereiaslav: "the map isn't zoomed out enough, we
+        get no situational awareness": Kyiv is always in the picture, never less than 90 km of the oblast (40 km, the
+        whole city, for a target in it), up to 220 km."""
         pts = [self.proj(m["lon"], m["lat"])]
         for h in (m.get("history") or [])[-6:]:
             if h.get("lon") is not None and h.get("lat") is not None:
                 pts.append(self.proj(h["lon"], h["lat"]))
-        kyiv = self.proj(30.52, 50.45)
-        if math.dist(pts[0], kyiv) < 70:          # most of the oblast: the city is the reader's landmark
-            pts.append(kyiv)
+        pts.append(self.proj(30.52, 50.45))
         xs, ys = [p[0] for p in pts], [p[1] for p in pts]
-        span = max(max(xs) - min(xs), max(ys) - min(ys)) * 1.5
-        span = min(max(span, 30.0 if m.get("oblast_uid") == "31" else 50.0), 150.0)
+        span = max(max(xs) - min(xs), max(ys) - min(ys)) * 1.3 + 20
+        span = min(max(span, self.VIEW_MIN_CITY if m.get("oblast_uid") == "31" else self.VIEW_MIN), self.VIEW_MAX)
         cx, cy = (max(xs) + min(xs)) / 2, (max(ys) + min(ys)) / 2
-        if span >= 150.0:                         # a long track: the target stays in view, centred
+        if span >= self.VIEW_MAX:                 # too far to hold both: the target stays in view, centred
             cx, cy = pts[0]
         return cx - span / 2, cy - span / 2, span
 
     # ---- the picture ---------------------------------------------------------------------------------------------
-    def render(self, m, active=(), when="", ray=True, missiles=()):
+    def render(self, m, active=(), when="", ray=True, missiles=(), others=()):
         """JPEG bytes of the map around mark `m` (as /api/markers gives it), with the official alerts `active`.
         `ray`: draw its course — the caller says False when no post stated one (app/chanpost.py: stated_course).
-        `missiles`: (lon, lat) of the missiles on the map, for a target of no stated type (as_drone)."""
+        `missiles`: (lon, lat) of the missiles on the map, for a target of no stated type (as_drone).
+        `others`: 1.58.5 — the other targets of the moment (the channel's, as the map shows them), drawn smaller and
+        fainter, so that the picture says what else is in the sky around."""
         if Image is None:
             return None
         x0, y0, span = self.view(m)
@@ -304,6 +309,15 @@ class MapShot:
                  (0, bottom - 52 * SS, 300 * SS, bottom)]
         bounds = (0, top, S, bottom)
         tag = self._tag(d, m, here, boxes, bounds)
+        # the other targets of the moment: their room is kept too, so that no town name is written under them
+        oth = []
+        for o in others or ():
+            if o.get("lon") is None or o.get("lat") is None:
+                continue
+            q = px(self.proj(o["lon"], o["lat"]))
+            if 0 <= q[0] <= S and top <= q[1] <= bottom and math.dist(q, here) > 20 * SS:
+                oth.append((o, q))
+                boxes.append((q[0] - 28 * SS, q[1] - 28 * SS, q[0] + 28 * SS, q[1] + 28 * SS))
         if span > 60:
             for text, p in self.raion_lbl:
                 q = px(p)
@@ -315,14 +329,20 @@ class MapShot:
                 continue
             r = (5 if big else 3.5) * SS
             under = boxes[0][0] <= q[0] <= boxes[0][2] and boxes[0][1] <= q[1] <= boxes[0][3]   # under the target
-            if self._label(d, (q[0] + r + 5 * SS, q[1]), name, self.fb[26] if big else self.f[19], INK if big else INK2,
-                           boxes, bounds) or (big and not under):
+            font, ink = (self.fb[26], INK) if big else (self.f[19], INK2)
+            g = r + 5 * SS                         # right of the dot, else left, above, below (1.58.5: a target beside)
+            placed = any(self._label(d, (q[0] + dx, q[1] + dy), name, font, ink, boxes, bounds, anchor=an)
+                         for gg in (g, 31 * SS)        # and clear of a target drawn on the town
+                         for dx, dy, an in ((gg, 0, "lm"), (-gg, 0, "rm"), (0, -gg, "mb"), (0, gg, "mt")))
+            if placed or (big and not under):
                 d.ellipse([q[0] - r, q[1] - r, q[0] + r, q[1] + r], fill=INK if big else INK2, outline=STROKE, width=SS)
         if span <= 60:                            # the city's districts, quietly, where there is room
             for name, cx, cy, _rings_ in self.districts:
                 if cx is not None:
                     self._label(d, px((cx, cy)), name.replace(" район", ""), self.f[17],
                                 (196, 205, 220) if on_sat else (120, 132, 152), boxes, bounds, anchor="mm")
+        for o, q in oth:                             # the other targets first, under the one this post is about
+            self._glyph(d, o, q, 2.3 * SS, 175, as_drone(o, missiles))
         self._target(d, m, px, here, ray, as_drone(m, missiles), k, boxes, bounds)
         if tag:
             self._pill(d, *tag)
@@ -440,7 +460,6 @@ class MapShot:
         d.text(((box[0] + box[2]) / 2, (box[1] + box[3]) / 2), text, font=font, fill=INK, anchor="mm")
 
     def _target(self, d, m, px, here, ray=True, drone_like=False, k=1.0, boxes=None, bounds=None):
-        fill, edge = colour_of(m, drone_like)
         alpha = 255
         if m.get("approach") or m.get("dest_only") or (m.get("place") or "").startswith("→"):
             # only where it is heading was said: drawn at that town as the app draws it — fainter, and from the side
@@ -485,8 +504,12 @@ class MapShot:
         d.ellipse([here[0] - R, here[1] - R, here[0] + R, here[1] + R], outline=col + (120,), width=3 * SS)
         if m.get("type") == "ballistic_missiles":
             d.ellipse([here[0] - R * 1.4, here[1] - R * 1.4, here[0] + R * 1.4, here[1] + R * 1.4], outline=(255, 23, 68, 170), width=4 * SS)
+        self._glyph(d, m, here, 3.9 * SS, alpha, drone_like)
+
+    def _glyph(self, d, m, here, sc, alpha=255, drone_like=False):
+        """The silhouette of `m` at `here`, `sc` pixels a unit, turned as the app turns it."""
+        fill, edge = colour_of(m, drone_like)
         g = glyph_of(m, drone_like)
-        sc = 3.9 * SS
         rot = math.radians(orient(m, drone_like))
 
         def tr(x, y):

@@ -2,6 +2,15 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.5 — 2026-10-13
+
+### Changed
+- **The channel's picture shows the situation, not one field** — the owner, of a post with a target "→ Переяслав"
+  alone on fields: "the map isn't zoomed out enough, we get no situational awareness from this screenshot". Kyiv is
+  always in the picture now, at least 90 km of the oblast (the whole city for a target in it), up to 220 km; the other
+  targets of the moment are drawn too, smaller and fainter; a town name beside a target moves aside instead of
+  disappearing.
+
 ## 1.58.4 — 2026-10-13
 
 ### Fixed

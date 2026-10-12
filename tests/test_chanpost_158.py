@@ -130,7 +130,7 @@ def test_the_picture_is_a_square_photo():
     # the view: the target, its reported places, Kyiv when it is in the oblast around
     x0, y0, span = shot.view(mark(place="Фастів", lon=29.92, lat=50.08))
     kx, ky = shot.proj(30.52, 50.45)
-    assert x0 <= kx <= x0 + span and y0 <= ky <= y0 + span and span <= 150
+    assert x0 <= kx <= x0 + span and y0 <= ky <= y0 + span and span <= 220
 
 
 # ---- what the channel says ---------------------------------------------------------------------------------------
@@ -154,7 +154,7 @@ def test_a_target_whose_post_named_only_where_it_heads_is_posted_as_such():
     shots = []
 
     class Rec:
-        def render(self, m, active, when, ray=True, missiles=()):
+        def render(self, m, active, when, ray=True, missiles=(), others=()):
             shots.append(ray)
             return b"png"
     p, st = poster(shot=Rec())
@@ -232,7 +232,7 @@ class API:
 
 
 class Shot:
-    def render(self, m, active, when, ray=True, missiles=()):
+    def render(self, m, active, when, ray=True, missiles=(), others=()):
         return b"\x89PNG-" + m["place"].encode()
 
 

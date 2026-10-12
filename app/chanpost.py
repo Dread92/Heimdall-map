@@ -242,6 +242,7 @@ class ChannelPoster(threading.Thread):
         self.shot = shot
         self.calls = []                    # times of the last minute's calls
         self.missiles = []                 # (lon, lat) of the missiles on the map, this pass
+        self.cur = {}                      # the targets the channel shows, this pass (key → mark)
         self.pause_until = 0.0
         self.stats = {"posted": 0, "edited": 0, "closed": 0, "errors": 0, "last_error": None, "last_post": None,
                       "failing": False}
@@ -308,8 +309,11 @@ class ChannelPoster(threading.Thread):
         if not self.shot:
             return None
         try:
+            k = key_of(m)
+            others = [o for kk, o in (self.cur or {}).items() if kk != k]     # 1.58.5: what else is in the sky
             return self.shot.render(m, active, hhmm(report_t(m) or self.clock()),
-                                    ray=stated_course(m) is not None and not approach(m), missiles=self.missiles)
+                                    ray=stated_course(m) is not None and not approach(m), missiles=self.missiles,
+                                    others=others)
         except Exception as e:
             self.log("channel: picture failed —", type(e).__name__, e)
             return None
@@ -338,6 +342,7 @@ class ChannelPoster(threading.Thread):
         for k, m in cur.items():
             if m.get("type") == "unknown":
                 cur[k] = dict(m, _drone=mapshot.as_drone(m, self.missiles) if mapshot else True)
+        self.cur = cur
         active = None
         changed = False
         # 1. new targets first, the most recent report first
