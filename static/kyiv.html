@@ -946,16 +946,29 @@ body.lite .mk.inbound .lbl2,body.lite .mk.tohome .lbl2{fill:#ff9ab0}
 .mych.calm:not(.set) b,.mych.calm:not(.set) small{display:inline;font:600 13.5px/1.4 var(--sans);color:var(--ink)}.mych.calm:not(.set) small{font-weight:500;color:var(--ink2);margin:0}
 .mych.set{cursor:pointer;border-left-color:#9cc0ff}.mych.set em{font:700 22px var(--sans);font-style:normal;color:#9cc0ff}
 .mych.old{opacity:.55;filter:grayscale(1)}
-.mcfoot{display:grid;grid-template-columns:auto 1fr auto;grid-template-areas:"u s f" "n w f";align-items:center;column-gap:8px;min-height:44px;padding:0 4px;font:500 13px/1.25 var(--sans);color:var(--ink2)}
-.mcfoot .upd{grid-area:u}.mcfoot .srcs{grid-area:s;justify-self:start}.mcfoot .mcun{grid-area:n;justify-self:start}.mcfoot .mcwhat{grid-area:w}
+.mcfoot{display:grid;grid-template-columns:auto 1fr auto;grid-template-areas:"s s f" "n w f";align-items:center;column-gap:8px;min-height:44px;padding:0 4px;font:500 13px/1.25 var(--sans);color:var(--ink2)}
+.mcfoot .srcs{grid-area:s;justify-self:start}.mcfoot .mcun{grid-area:n;justify-self:start}.mcfoot .mcwhat{grid-area:w}
 .mcfold{grid-area:f;width:44px;height:44px;margin-left:4px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);color:var(--ink2);font:700 15px/1 var(--sans);cursor:pointer}
 .mcmini.w{border-radius:10px;padding:0 10px;background:#3a1030;color:#ffd0f0}.mcmini.w b{font:800 13.5px/1.2 var(--sans);text-transform:uppercase;white-space:normal}
 .mcmini.w.mig{background:#5b2fa8;color:#fff}.mcmini.w.bal,.mcmini.w.offr{background:#7a0f16;color:#fff}.mcmini.w.offy{background:#4a3a06;color:#ffe9a8}.mcmini.w em{color:inherit}
 body.lite .mcmini.w{background:#fff;color:#000}
 #mycard:has(.tsbtn) .mcwhat{display:none}
-.mcfoot .upd{display:inline-flex;align-items:center;gap:6px;font:500 13px var(--sans);color:var(--ink2)}
-.mcfoot .upd::before{content:'';flex:none;width:8px;height:8px;border-radius:50%;background:var(--green)}
-.mcfoot .upd.stale{color:#ffd166}.mcfoot .upd.stale::before{background:#ffd166}.mcfoot .upd.off{color:#ffb4ae}.mcfoot .upd.off::before{background:var(--red2)}
+.asof .upd{display:inline-flex;align-items:center;gap:6px;font:500 12.5px/1.3 var(--sans);color:var(--ink2)}
+.asof .upd::before{content:'';flex:none;width:8px;height:8px;border-radius:50%;background:var(--green)}
+.asof .upd.stale{color:#ffd166}.asof .upd.stale::before{background:#ffd166}.asof .upd.off{color:#ffb4ae}.asof .upd.off::before{background:var(--red2)}
+/* 1.57.8, the owner, showing the government app's header ("Станом на: 12 жовтня о 20:27 (1692 день) · Оновлення через
+   05 с · ⟳"): when the screen is from, the day of the war, live or when the next update comes, and a button to ask now.
+   Above the card, so it shows with the card folded too; it replaces the card's "updated 5 s ago" */
+.asof{display:flex;align-items:center;gap:8px;margin:0 8px 3px;padding:0 0 0 6px;min-height:42px}
+.asof .aqt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.asof .aqd{font:500 12.5px/1.3 var(--sans);color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.asof .upd.wait::before{background:var(--ink3)}
+.rfr{flex:none;width:42px;height:42px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);color:var(--ink2);display:grid;place-items:center;cursor:pointer;padding:0}
+.rfr svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.rfr.spin svg{animation:rfspin .8s linear infinite}@keyframes rfspin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.rfr.spin svg{animation:none;opacity:.45}}
+@media (min-width:700px){.asof{min-height:36px}.asof .aqt{flex-direction:row;align-items:center;gap:14px}}
+body.m-day .rfr{background:#fff;color:#12161c;border-color:#9aa1ac}body.lite .rfr{background:#000;color:#fff;border-color:#fff}
 .mcfoot .srcs .sn{display:none}
 .mcun{position:relative;background:none;border:0;min-height:24px;padding:2px 0;color:var(--ink3);font:500 13px var(--sans);text-align:left;cursor:pointer}.mcun::before{content:'';position:absolute;inset:-10px -4px}
 .mcwhat{position:relative;justify-self:end;display:flex;align-items:center;min-height:24px;padding:2px 2px 2px 8px;color:#9cc0ff;font:700 14px var(--sans);text-decoration:none;white-space:nowrap}.mcwhat::before{content:'';position:absolute;inset:-10px -2px}
@@ -1107,7 +1120,7 @@ body.m-day .afl,body.m-day .afchip b{color:#b8480a}
 body.m-day .afd,body.m-day .aftot,body.m-day .afchip i,body.m-day .kv1.green{color:#0d6b3f}
 body.m-day .kv1.yellow,body.m-day .sup b,body.m-day .upd .cd,body.m-day .card .rep{color:#7a5f00}body.m-day .card .rep{border-color:#8a6d00}
 body.m-day .sfoot.warn{color:#4a4128}
-body.m-day .mcfoot .upd.stale{color:#7a5f00}body.m-day .mcfoot .upd.stale::before{background:#c99700}body.m-day .mcfoot .upd.off{color:#b3140d}
+body.m-day .asof .upd.stale{color:#7a5f00}body.m-day .asof .upd.stale::before{background:#c99700}body.m-day .asof .upd.off{color:#b3140d}
 body.m-day .grow{background:#fff;color:var(--ink)}body.m-day .grow.flagr.on{background:#fff6cc}
 
 body.m-day .warnbox{background:#fdecea}
@@ -1132,6 +1145,8 @@ body.lite #mycard,body.lite .panel{background:#000;border-color:#666}body.lite .
     <button class="hb" id="bellbtn" type="button" data-t-title="m_bell" data-t-aria="m_bell" title="Alerts on this phone" aria-label="Alerts on this phone"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg><i class="bdot" id="bdot"></i></button>
     <button class="hb" id="menubtn" type="button" data-t-title="m_more" data-t-aria="m_more" title="Settings and about" aria-label="Settings and about"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg></button>
   </div>
+  <!-- 1.57.8: as of when, the day of the war, live or the next update, and ⟳ — as the government app shows it -->
+  <div class="asof" id="asofbar"><div class="aqt"><span class="aqd" id="asof"></span><span class="upd" id="upd">—</span></div><button type="button" class="rfr" id="rfr" data-t-title="rf_now" data-t-aria="rf_now" title="Refresh now" aria-label="Refresh now"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v5h-5"/></svg></button></div>
   <!-- 1.36: the "my place" card — the answer to "do I go down?" for the place being watched, in one block:
        the official status of its raion, a preventive threat, what the channels report near it, the bridges,
        and how old all of it is. In the header, never over the map; it grows with the threat. -->
@@ -1142,7 +1157,7 @@ body.lite #mycard,body.lite .panel{background:#000;border-color:#666}body.lite .
     <div class="mych" id="mych" hidden></div>
     <div class="mych mysh" id="mysh" hidden role="button" tabindex="0"></div>
     <div class="brgbar" id="brgbar" hidden role="alert"></div>
-    <div class="mcfoot" id="mcfoot"><span class="upd" id="upd">—</span><span class="srcs" id="srcs"></span><button type="button" class="mcun" id="mcun" data-t="mc_unoff">unofficial · not radar</button><a class="mcwhat" href="/guide" data-t="mc_what">What to do →</a><button type="button" class="mcfold" id="mcfold" data-t-aria="mc_fold" aria-label="Fold the card">▴</button></div>
+    <div class="mcfoot" id="mcfoot"><span class="srcs" id="srcs"></span><button type="button" class="mcun" id="mcun" data-t="mc_unoff">unofficial · not radar</button><a class="mcwhat" href="/guide" data-t="mc_what">What to do →</a><button type="button" class="mcfold" id="mcfold" data-t-aria="mc_fold" aria-label="Fold the card">▴</button></div>
     <button type="button" class="mcmini" id="mcmini" hidden></button>
     <div class="bul" id="bulL" hidden></div>
     <div class="nearl" id="nearL"></div>
@@ -1297,6 +1312,13 @@ const CH=LANG==='uk'?{kyiv_airdef:'ППО Київ',vseok450:'4.5.0',xydessa_liv
  :{kyiv_airdef:'AirDef live',vseok450:'4.5.0',xydessa_live:'Odesa live',kpszsu:'Air Force',povitryanatrivogaaa:'Alert map',war_monitor:'monitor',monitor_ukr:'monitor UA',kyivoda:'Kyiv Oblast Admin',KyivCityOfficial:'City Admin',demo:'demo',
   UkraineAlarmSignal:'єТривога',cherkasy_alerts:'Cherkasy alerts',cherkasy_monitor:'Cherkasy live',poltavskaODA:'Poltava Admin',zhytomyrskaODA:'Zhytomyr Admin',chernihiv_alert:'Chernihiv siren',Zhytomyr_alert:'Zhytomyr siren',sumy_alert:'Sumy siren',sumy_alerts:'Sumy live',eRadarrua:'єРадар',kyiv_times_official:'Kyiv Times'};
 const RAION=Object.fromEntries(Object.keys(RAION_N).map(r=>[r,raionName(r)]));
+// 1.57.8, the owner (Google's outline of Вишгородський район beside our map): "it's the Vyshhorod district here, not
+// the Vyshhorod city". The raions were named by their centre town alone — "ВИШГОРОД" written in the middle of the raion,
+// 30 km from the town, and "Тривога: Вишгород" for an alert over the whole raion. A raion is now named as one.
+const RAION_ADJ={bucha:'Бучанський',vyshhorod:'Вишгородський',brovary:'Броварський',boryspil:'Бориспільський',obukhiv:'Обухівський','bila-tserkva':'Білоцерківський',fastiv:'Фастівський'};
+const raionOf=r=>t('lt_unit_r',raionName(r)).replace(/\bde ([AEIOUYÉ])/,"d'$1");   // "raion d'Obukhiv"
+const raionFull=r=>!RAION_ADJ[r]?raionName(r):LANG==='uk'?RAION_ADJ[r]+' район':raionOf(r);
+const raionLbl=r=>!RAION_ADJ[r]?raionName(r):LANG==='uk'?RAION_ADJ[r]+' р-н':raionOf(r);
 const RAION_STEM=[['бровар','brovary'],['бориспіл','boryspil'],['бучан','bucha'],['вишгород','vyshhorod'],['обухів','obukhiv'],['білоцерків','bila-tserkva'],['фастів','fastiv']];
 const RAION_LBL={bucha:[-22,-8],vyshhorod:[-10,-48],brovary:[30,-18],boryspil:[52,14],obukhiv:[26,44],'bila-tserkva':[-30,70],fastiv:[-28,24]};
 const SPEED=m=>m.type==='drones'?(m.jet?6.5:2.7):(m.type==='cruise_missiles'||m.type==='unspecified_missiles')?12:0; // km/min — 0 for an unspecified threat: nothing to extrapolate
@@ -1512,7 +1534,7 @@ async function loadMap(){
   $('neighbors').innerHTML=MAP.features.filter(f=>!f.raion).map(f=>`<path class="nb${f.obl==='29'||f.obl==='30'?' occ':''}" data-o="${f.obl}" data-key="${f.key||''}" data-stem="${f.stem||''}" d="${f.path}"/>`).join('')
 ;
   $('raionsg').innerHTML=MAP.features.filter(f=>f.raion).map(f=>`<path class="rn ${f.raion==='kyiv-city'?'city':''}" data-r="${f.raion}" d="${f.path}"/>`).join('')
-    +Object.entries(RAION_LBL).map(([r,[x,y]])=>`<text class="rnlbl" x="${x}" y="${y}" text-anchor="middle">${RAION[r]}</text>`).join('');
+    +Object.entries(RAION_LBL).map(([r,[x,y]])=>`<text class="rnlbl" x="${x}" y="${y}" text-anchor="middle">${esc(raionLbl(r))}</text>`).join('');
   // rivers (coarse): Dnipro incl. Kyiv & Kaniv reservoirs, Desna, Irpin, Teteriv, Ros, Trubizh. 1.45: the first three are
   // replaced by static/map-ua.json's once it has loaded (drawUA), with the rest of the country's rivers; the light
   // page's map still takes them from here (scripts/build_geo.py).
@@ -2022,7 +2044,7 @@ let SLOT_PICKING=null;   // which slot the place picker is currently filling
 let PLACES_ALL=[];
 const homeName=()=>!HOME?'':HOME.dropped?slotName(ACTIVE):(LANG==='uk'&&HOME.uk?HOME.uk:townName(HOME.name));   // 1.54.9: a pin put on the map is its own name
 async function loadPlacesList(){try{const pl=(await (await fetch('/api/places?oblast=scope')).json()).places;PLACES_ALL=pl.filter(p=>!/громада|берег|столиця|водосховище|море|АЕС|ГЕС|траса|шосе|проспект/i.test(p.name)).map(p=>({name:translit(p.name),uk:p.name,lon:p.lon,lat:p.lat,obl:p.oblast_uid,kind:OBL_N[p.oblast_uid]?oblFull(p.oblast_uid):t('kd_region')}));
-  for(const [r,n] of Object.entries(RAION)) if(r!=='kyiv-city'){const c=RAION_LBL[r];PLACES_ALL.push({name:RAION_N[r][0]+' raion',uk:RAION_N[r][1]+' район',lon:C[0]+c[0]/KX,lat:C[1]-c[1]/KY,obl:'14',kind:t('kd_raion')});}
+  for(const [r,n] of Object.entries(RAION)) if(r!=='kyiv-city'){const c=RAION_LBL[r];PLACES_ALL.push({name:RAION_N[r][0]+' raion',uk:(RAION_ADJ[r]||RAION_N[r][1])+' район',lon:C[0]+c[0]/KX,lat:C[1]-c[1]/KY,obl:'14',kind:t('kd_raion')});}
   PLACES_ALL.sort((a,b)=>a.name.localeCompare(b.name));}catch(e){}}
 function renderHomeList(q){const s=(q||'').toLowerCase();const rows=PLACES_ALL.filter(p=>!s||p.name.toLowerCase().includes(s)||p.uk.toLowerCase().includes(s)).slice(0,60);
   $('homelist').innerHTML=rows.map((p,i)=>`<div class="hitem" data-i="${PLACES_ALL.indexOf(p)}"><div>${esc(LANG==='uk'?p.uk:p.name)} <span>${esc(LANG==='uk'?p.name:p.uk)}</span></div><span>${esc(p.kind)}</span></div>`).join('')||`<div class="empty">${t('hl_nomatch')}</div>`;
@@ -3322,7 +3344,7 @@ function placeLevel(p){
   if(pt.length) return {k:'H',since:since(pt),u};
   return {k:'G',u};
 }
-const unitName=u=>!u?'':u.obl==='31'?t('b_kyiv'):(u.obl==='14'&&RAION[u.key])?t('lt_unit_r',RAION[u.key]):oblFull(u.obl);
+const unitName=u=>!u?'':u.obl==='31'?t('b_kyiv'):(u.obl==='14'&&RAION_ADJ[u.key])?raionFull(u.key):oblFull(u.obl);
 // What the official system says about the reader's own region: R, Y, or nothing. The banner takes its
 // colour from this and not from the threat type, so the strip can never be a different colour from the
 // alert it belongs to. When there is no official alert yet the strip keeps the threat's own colour — the
@@ -3403,7 +3425,7 @@ function render(){
   const oblWide=S.active.find(a=>a.oblast_uid===MYU&&a.location_type==='oblast'); const cityWide=isK?S.active.find(a=>a.oblast_uid==='31'&&(a.location_type==='oblast'||a.location_type==='city')):null;
   const cityL=isK?(cityWide?lvl(cityWide.alert_level):(k.status==='A'?lvl(k.level):null)):null, oblL=oblWide?lvl(oblWide.alert_level):null;
   const maxL=(a,b)=>(a==='R'||b==='R')?'R':(a||b||'');
-  const rname=r=>RAION[r]||r;
+  const rname=r=>RAION_ADJ[r]?raionFull(r):(RAION[r]||r);
   const rst={}; for(const a of raionAlerts){const rk=isK?(a.raion_key||raionKey(a.location_title)):pn(String(a.location_title||'').replace(/\s*район\s*$/i,'')); if(rk) rst[rk]=(rst[rk]==='R'||lvl(a.alert_level)==='R')?'R':'Y';}
   const anyR=cityL==='R'||oblL==='R'||Object.values(rst).includes('R'), anyY=cityL==='Y'||oblL==='Y'||Object.values(rst).includes('Y');
   const hasRaions=Object.keys(rst).length>0; const oblFill=oblL;
@@ -3880,13 +3902,27 @@ function updAge(){ const el=$('upd'); if(!el) return;
   // 1.41: never "updated 5 s ago" before anything arrived; after 15 s without the server, a bar says so
   const down=everOK?(!netOK&&sec>15):Date.now()-T_LOAD>15000, nb=$('netbar');
   if(nb&&nb.hidden===down){ nb.hidden=!down; if(down){ $('netT').textContent=t('net_t'); $('netB').textContent=t('net_b'); } }
-  if(!everOK){ const cls='upd'+(down?' off':''), txt=t(down?'net_t':'net_wait'); if(el.className!==cls) el.className=cls; if(el.textContent!==txt) el.textContent=txt; return; }
+  // 1.57.8: as of the last word from the server (a date and a time, Kyiv's), and the day of the war
+  const aq=$('asof'); if(aq){ const s=(everOK&&last?asOf(last)+' · ':'')+t('aq_day',warDay()); if(aq.textContent!==s) aq.textContent=s; }
+  if(!everOK){ const cls='upd'+(down?' off':' wait'), txt=t(down?'net_t':'net_wait'); if(el.className!==cls) el.className=cls; if(el.textContent!==txt) el.textContent=txt; return; }
   let cls='upd', txt;
   if(sec>120||(!netOK&&sec>30)){ cls+=netOK?' stale':' off'; txt=t('mc_stale',Math.max(1,Math.round(sec/60))); }
-  else txt=sec<60?t('mc_upd_s',sec):t('mc_upd_m',Math.round(sec/60));
+  // the live line brings each change as it comes; without it, the next ask is counted down, as the government app does
+  else if(liveOK()) txt=t('aq_live');
+  else txt=t('aq_next',String(Math.max(0,Math.ceil((nextPulse-Date.now())/1000))).padStart(2,'0'));
   if(el.className!==cls) el.className=cls; if(el.textContent!==txt) el.textContent=txt;
   const ch=$('mych'); if(ch) ch.classList.toggle('old',sec>600); }
 let netOK=true,lastPing=Date.now(),everOK=false;const T_LOAD=Date.now();
+// 1.57.8: the day of the full-scale war, counted in Kyiv as the government app counts it (24 February 2022 is day 1)
+const WAR_D0=Date.UTC(2022,1,24);
+function warDay(){ const p=new Intl.DateTimeFormat('en-CA',{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()).split('-').map(Number);
+  return Math.floor((Date.UTC(p[0],p[1]-1,p[2])-WAR_D0)/86400000)+1; }
+const asOf=ms=>{ const d=new Date(ms); return t('aq_asof',d.toLocaleDateString(LOCALE(),{day:'numeric',month:'long',timeZone:TZ}),
+  d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',timeZone:TZ})); };
+// ⟳: everything asked again now (and the live line opened again if it had dropped); it turns while that is under way
+$('rfr').onclick=async()=>{ const b=$('rfr'); if(b.classList.contains('spin')) return; b.classList.add('spin');
+  if(!liveOK()){ LIVE_SYNC=false; try{ es&&es.close(); }catch(e){} connect(); }
+  lastFull=0; try{ await pulse(true); }catch(e){} finally{ setTimeout(()=>b.classList.remove('spin'),300); updAge(); } };
 function schedulePulse(){ clearInterval(pulseTimer); const iv=pulseIv(); nextPulse=Date.now()+iv;
   pulseTimer=setInterval(()=>{nextPulse=Date.now()+iv;pulse();},iv); }
 // A phone throttles background timers, so the interval alone is not a guarantee. This second-by-second check is

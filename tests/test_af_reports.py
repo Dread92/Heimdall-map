@@ -80,6 +80,9 @@ def test_one_report_per_night_the_statistics_and_the_backfill():
     try:
         b = server.AFBackfill(st)
         b.MAX_PAGES = 2
+        # the fixture's posts are from late September 2026: the window reaches back to them whatever today is (1.57.8 —
+        # with the default 14 days the test stopped after one page from 12 October on)
+        b.DAYS = (datetime.now(timezone.utc) - datetime(2026, 9, 20, tzinfo=timezone.utc)).days + 1
         assert b.from_history() == 2                   # two summaries; the update (81106) is not one
     finally:
         server.http_get = old

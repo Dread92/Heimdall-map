@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.57** · last updated 2026-10-12 (1.57.7)
+**Documented version: 1.57** · last updated 2026-10-12 (1.57.8)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -2107,6 +2107,24 @@ Android app at once**; a new APK is needed only for its name, icon, address or A
   fingerprint(s) in `ANDROID_CERT_SHA256` (`scripts/set-android-key.bat`, a Fly secret like the others — public, but set
   by the owner). Without it, Android opens the app with an address bar on top (a Custom Tab), as for the test build.
 - No pin and no setting changes hands: the app is the web app, its storage the browser's.
+
+### 10.9 As of when, and a raion named as one (1.57.8)
+
+- **The line under the header** (`#asofbar`), from the government app's header the owner showed ("Станом на: 12 жовтня
+  о 20:27 (1692 день) · Оновлення через 05 с · ⟳"): "Станом на 12 жовтня о 20:27 · 1692-й день війни" — the time of
+  the server's last word, Kyiv's date and time (`asOf`), and the day of the full-scale war counted in Kyiv as the
+  government app counts it, 24 February 2022 being day 1 (`warDay`); then "Наживо — зміни надходять одразу" while the
+  live line beats, or "Оновлення через 05 с" counted down to the next ask without it (`nextPulse`); the stale and
+  offline warnings as before. **⟳** (`#rfr`) asks everything again at once (`lastFull=0; pulse(true)`) and opens the
+  live line again if it had dropped; it turns while that is under way (still, with reduced motion). In the header, so
+  it shows with the card folded too; it replaces the card's "updated 5 s ago" (`mc_upd_s`, `mc_upd_m` removed).
+  Light keeps its own "updated" line (its budget, §10.2).
+- **A raion is named as a raion.** The owner: "it's the Vyshhorod district here, not the Vyshhorod city (which is
+  rightfully placed correctly on the map)". Kyiv oblast's seven raions were written by their centre town alone —
+  "ВИШГОРОД" in the middle of the raion (`RAION_LBL`), 30 km from the town, and "Вишгород" for an alert over the whole
+  raion. Now `RAION_ADJ` gives each its name: "Вишгородський район" in the place's status and the list of raions under
+  alert (`raionFull`), "Вишгородський р-н" on the map (`raionLbl`), "Vyshhorod raion", "raion de Vychhorod" (`lt_unit_r`,
+  with "raion d'Obukhiv"); the place picker lists "Вишгородський район" (tests/test_asof_raions_1578.py).
 
 ## 11. Privacy and security
 

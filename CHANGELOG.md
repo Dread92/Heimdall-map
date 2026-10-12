@@ -2,6 +2,23 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.57.8 — 2026-10-12
+
+### Added
+- **As of when, the day of the war, and ⟳** — the owner, showing the government app's header ("Станом на: 12 жовтня о
+  20:27 (1692 день) · Оновлення через 05 с"): "good to have". A line under the header: "Станом на 12 жовтня о 20:27 ·
+  1692-й день війни", then "Наживо — зміни надходять одразу" while the live line is up, or "Оновлення через 05 с"
+  counted down without it, and a button that asks everything again at once. It shows with the card folded too, and
+  replaces the card's "updated 5 s ago".
+
+### Fixed
+- **A raion is named as a raion** — the owner: "it's the Vyshhorod district here, not the Vyshhorod city". The map wrote
+  "ВИШГОРОД" in the middle of the raion, 30 km from the town, and an alert over the whole raion read "Вишгород". Kyiv
+  oblast's seven raions are now "Вишгородський р-н" on the map and "Вишгородський район" in the status and the list of
+  raions under alert ("Vyshhorod raion", "raion de Vychhorod").
+- A test of the Air Force history backfill depended on the date: its September posts fell out of the 14-day window on
+  12 October. Its window now reaches back to them whatever the day.
+
 ## 1.57.7 — 2026-10-12
 
 ### Fixed
