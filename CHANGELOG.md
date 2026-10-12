@@ -2,6 +2,19 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.4 — 2026-10-13
+
+### Fixed
+- **Time under alert, alert by alert** — found reading the dashboard for the owner's pattern analysis: every oblast
+  "under alert 168 hours a week", Kyiv city 1,440 minutes a day since mid-September, and on the app's statistics "the
+  longest alert: 20,131 minutes, from 24 September to 12 October". The alerts table keeps one row per region and alert
+  type, and a region's new alert only rewrote its end: its start stayed the region's first, and read as a history every
+  alert ran from that first start to the last end. The stats, the dashboard's analytics (Kyiv's minutes, the alerts'
+  starts, the oblasts' hours), the lead times, the nights' summaries, the digests and the records the AI writes its
+  bulletins and night reports from now read each alert from its start and end events (`State.alert_rows`), as the
+  replay does; and a region's new alert now starts its row again. An "alert" over within a minute is left out of that
+  history: an official channel read from 15 to 24 September flipped Kyiv's alert 1,290 times, ~17 s each.
+
 ## 1.58.3 — 2026-10-13
 
 ### Added

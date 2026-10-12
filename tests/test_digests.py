@@ -6,6 +6,7 @@ import os
 from datetime import datetime, timedelta, timezone
 
 import server
+from alert_events import events_from_table  # 1.58.4: the alerts' start / end events
 
 SRC = open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "app", "server.py"), encoding="utf-8").read()
 T0 = datetime(2026, 9, 26, 15, 0, tzinfo=timezone.utc)          # 18:00 Kyiv
@@ -25,6 +26,7 @@ def _night():
     _alert(st, "c2", "31", "м. Київ", T0 + timedelta(hours=2, minutes=20), T0 + timedelta(hours=4), "yellow", "oblast")
     _alert(st, "b1", "14", "Броварський район", T0 + timedelta(hours=1), T0 + timedelta(hours=2))
     _alert(st, "old", "31", "м. Київ", T0 - timedelta(days=2), T0 - timedelta(days=2, hours=-1), "red", "oblast")
+    events_from_table(st)
     st.store.log_markers([
         {"id": "a/1#0", "ts": (T0 + timedelta(minutes=50)).isoformat(), "channel": "kyiv_airdef", "type": "drones", "jet": True,
          "status": None, "place": "Бровари", "oblast_uid": "14", "lon": 30.8, "lat": 50.5, "heading": 250},

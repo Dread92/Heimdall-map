@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-13 (1.58.3)
+**Documented version: 1.58** · last updated 2026-10-13 (1.58.4)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -470,6 +470,15 @@ and emits `start`, `update`, `threat` and `end` events (stored in `events`, publ
 `oblast`) can never close a raion alert, and the raion source (authoritative for every level) takes back what
 the mirror painted when it returns. `snapshot()` merges duplicates and computes each oblast's status: **A**
 (an oblast-wide alert), **P** (only raions / hromadas), **N**.
+
+**The history of the alerts** (1.58.4): `State.alert_rows(start, end)` — one row per alert, in the alerts table's shape,
+rebuilt from the `start` / `end` events (`_alert_intervals`, the replay's own reading: a restart closes what was not
+started again within five minutes of it; an alert with no end written and not on now is left out, never counted to
+now; one over within a minute is a source's flicker, not an alert — an official channel read from 15 to 24 September
+2026 flipped Kyiv's alert 1,290 times, ~17 s each). The stats (`/api/stats`), the dashboard's analytics (Kyiv's minutes, the starts, the oblasts' hours), the lead
+times, the nights' summaries, the AI's records (bulletins, night reports) and the digests read it. Until 1.58.4 they read
+the alerts table, whose one row per region kept the region's first start: Kyiv city was "under alert" 1,440 minutes
+a day from mid-September and "the longest alert" ran from 24 September to 12 October (20,131 minutes).
 
 ### 6.6 What decides a colour, page by page
 
@@ -2315,7 +2324,7 @@ SQLite in WAL mode (`DB_PATH`; on Fly, the volume). Tables:
 
 | Table | Holds |
 |---|---|
-| `alerts` | every alert seen (active and finished) — the normalised shape. One row per region and alert type: a region's next alert overwrites the row (its start stays the first one), so it is not a history — the replay reads `events` |
+| `alerts` | every alert seen (active and finished) — the normalised shape. One row per region and alert type (key `ua:<region>:<type>`): a region's next alert rewrites the row — since 1.58.4 its start too (before, the start stayed the region's first). **Not a history**: what happened over time is read from `events` (`State.alert_rows`, below) |
 | `events` | start / end / threat / update events — the alert history the replay rebuilds intervals from (§10.3c) |
 | `feed` | posts: `post_id, channel, ts, text, tags, text_en, text_fr, en_mt` |
 | `kv` | small settings: the VAPID key pair, the usage counter's daily salt, the channels (`channels`), the admin's message (`notice`), the nuclear event (`nuke`), the AI's switches (`ai_reader_on`, 1.54 `ai_bulletin_public`), 1.58 the private channel's posts of the last 24 h (`chan_posts`: per target, the message id, when first and last reported, what was drawn — never the token), and similar |

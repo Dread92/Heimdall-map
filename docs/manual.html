@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Heimdall (Kyiv Air Watch) — the full technical documentation, with a map of the system.">
-<meta name="heimdall-version" content="1.58.3">
-<meta name="heimdall-docs" content="d492b493fb9e0304">
+<meta name="heimdall-version" content="1.58.4">
+<meta name="heimdall-docs" content="2cc7275d9292d456">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Heimdall Technical Manual</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -237,7 +237,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
 <header class="top">
   <div class="wrap">
     <a class="brand" href="#top"><b>Heimdall</b><span>Technical manual</span></a>
-    <span class="ver">1.58.3</span>
+    <span class="ver">1.58.4</span>
     <nav class="nav" aria-label="Sections">
       <a href="#map">Map</a><a href="#journeys">Journeys</a><a href="#rules">Rules</a><a href="#reference">Reference</a><a href="#safety">Safety</a>
     </nav>
@@ -256,7 +256,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
       <h1 class="title">How Heimdall works</h1>
       <p class="lead">An unofficial air-threat map for Kyiv and the oblasts around it. One Python process reads the official
       alert data and the channels that track drones and missiles, stores every post before it reads it, rebuilds the map
-      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.3, 13 October 2026:
+      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.4, 13 October 2026:
       the map first, then everything in full.</p>
     </div>
     <dl class="facts">
@@ -645,7 +645,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
     <div class="doc" id="doc">
 <section class="part" id="tech" data-label="Reference"><p class="partlabel">Part I · The reference</p>
 <h1 id="heimdall--technical-documentation">Heimdall — technical documentation</h1>
-<p><strong>Documented version: 1.58</strong> · last updated 2026-10-13 (1.58.3)</p>
+<p><strong>Documented version: 1.58</strong> · last updated 2026-10-13 (1.58.4)</p>
 <p>Heimdall was called <strong>Clear Sky</strong> until 1.29; the repository, the Fly app (<code>kyiv-air-watch-gb</code>) and some
 internal names still carry the old name.</p>
 <p>This is the complete technical reference: what runs, where the data comes from, how a Telegram post becomes a
@@ -1438,6 +1438,14 @@ and emits <code>start</code>, <code>update</code>, <code>threat</code> and <code
 <code>oblast</code>) can never close a raion alert, and the raion source (authoritative for every level) takes back what
 the mirror painted when it returns. <code>snapshot()</code> merges duplicates and computes each oblast's status: <strong>A</strong>
 (an oblast-wide alert), <strong>P</strong> (only raions / hromadas), <strong>N</strong>.</p>
+<p><strong>The history of the alerts</strong> (1.58.4): <code>State.alert_rows(start, end)</code> — one row per alert, in the alerts table's shape,
+rebuilt from the <code>start</code> / <code>end</code> events (<code>_alert_intervals</code>, the replay's own reading: a restart closes what was not
+started again within five minutes of it; an alert with no end written and not on now is left out, never counted to
+now; one over within a minute is a source's flicker, not an alert — an official channel read from 15 to 24 September
+2026 flipped Kyiv's alert 1,290 times, ~17 s each). The stats (<code>/api/stats</code>), the dashboard's analytics (Kyiv's minutes, the starts, the oblasts' hours), the lead
+times, the nights' summaries, the AI's records (bulletins, night reports) and the digests read it. Until 1.58.4 they read
+the alerts table, whose one row per region kept the region's first start: Kyiv city was &quot;under alert&quot; 1,440 minutes
+a day from mid-September and &quot;the longest alert&quot; ran from 24 September to 12 October (20,131 minutes).</p>
 <h3 id="66-what-decides-a-colour-page-by-page">6.6 What decides a colour, page by page<a class="anc" href="#66-what-decides-a-colour-page-by-page" aria-label="Link to this section">#</a></h3>
 <ul>
 <li><strong>Tactical</strong>: each raion shape is coloured by alerts with its <code>raion_key</code> (fallback: name stems); an
@@ -3449,7 +3457,7 @@ downloading again, and still picks up a new version immediately.</li>
 <tbody>
 <tr>
 <td><code>alerts</code></td>
-<td>every alert seen (active and finished) — the normalised shape. One row per region and alert type: a region's next alert overwrites the row (its start stays the first one), so it is not a history — the replay reads <code>events</code></td>
+<td>every alert seen (active and finished) — the normalised shape. One row per region and alert type (key <code>ua:&lt;region&gt;:&lt;type&gt;</code>): a region's next alert rewrites the row — since 1.58.4 its start too (before, the start stayed the region's first). <strong>Not a history</strong>: what happened over time is read from <code>events</code> (<code>State.alert_rows</code>, below)</td>
 </tr>
 <tr>
 <td><code>events</code></td>
@@ -4850,7 +4858,7 @@ d'alerte ne sont pas des préférences de style.</p>
 </section>
     </div>
   </div>
-  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.3, 13 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
+  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.4, 13 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
 </main>
 
 <script>

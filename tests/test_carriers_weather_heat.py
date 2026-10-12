@@ -9,6 +9,7 @@ from datetime import datetime, timedelta, timezone
 
 import geo
 import server
+from alert_events import events_from_table  # 1.58.4: the alerts' start / end events
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FIX = json.load(open(os.path.join(ROOT, "tests", "fixtures", "air_posts_2026.json"), encoding="utf-8"))
@@ -115,6 +116,7 @@ def test_analytics_weather_approach_carriers_and_oblasts():
                        ("k2", "t", "ua-22-1", "район", "raion", "22", "air_raid", "red", (now - timedelta(hours=4)).isoformat(), (now - timedelta(hours=3)).isoformat()),
                        ("s1", "t", "ua-20", "Сумська", "oblast", "20", "air_raid", "red", (now - timedelta(days=20)).isoformat(), None)])
         c.commit()
+    events_from_table(st)                      # s1 is open but not on (not in State.active): it must not count to now
     st.store.air_save("war_monitor/1", "war_monitor", (now - timedelta(hours=9)).isoformat(), [("strategic", "up")], "a")
     st.store.air_save("war_monitor/2", "war_monitor", (now - timedelta(hours=7)).isoformat(), [("strategic", "launch")], "b")
     A = st.analytics(7)

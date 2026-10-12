@@ -7,6 +7,7 @@ import re
 from datetime import datetime, timedelta, timezone
 
 import server
+from alert_events import events_from_table  # 1.58.4: the alerts' start / end events
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = open(os.path.join(ROOT, "app", "server.py"), encoding="utf-8").read()
@@ -112,6 +113,7 @@ def _seed(st):
                                    ("m4", a.isoformat(), "p4", "c", "drones", "down", "31", None, 0),
                                    ("m5", a.isoformat(), "p5", "c", "drones", None, "5", 0, 0)])
         st.store.conn.commit()
+    events_from_table(st)
     return d1, a.astimezone(tz)
 
 

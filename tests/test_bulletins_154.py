@@ -17,6 +17,7 @@ from unittest import mock
 
 import ai_reader as A
 import server
+from alert_events import events_from_table  # 1.58.4: the alerts' start / end events
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -54,6 +55,7 @@ def _busy_state():
     st.store.conn.execute("INSERT INTO alerts(key, source, location_uid, location_title, location_type, oblast_uid, alert_type, "
                           "alert_level, started_at, finished_at) VALUES(?,?,?,?,?,?,?,?,?,?)",
                           ("a1", "t", "31", "м. Київ", "city", "31", "air_raid", "red", ago(40), None))
+    events_from_table(st, active=("a1",))
     night = server.tag_night(ago(30))
     st.store.conn.execute("INSERT INTO targets(night,n,prefix,origin,osrc,oquote,opost,first_ts,last_ts,type) VALUES(?,?,?,?,?,?,?,?,?,?)",
                           (night, 3, "?", None, None, None, "kpszsu/1", ago(50), ago(30), "drones"))

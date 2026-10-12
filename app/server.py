@@ -1528,7 +1528,9 @@ class Store:
                 oblast_uid,alert_type,alert_level,started_at,finished_at,notes,threats)
                 VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)
                 ON CONFLICT(key) DO UPDATE SET finished_at=excluded.finished_at, alert_level=excluded.alert_level,
-                threats=excluded.threats, notes=excluded.notes, source=excluded.source""",
+                threats=excluded.threats, notes=excluded.notes, source=excluded.source,
+                started_at=CASE WHEN alerts.finished_at IS NOT NULL AND excluded.finished_at IS NULL
+                                THEN excluded.started_at ELSE alerts.started_at END""",
                 (a["key"], a["source"], a["location_uid"], a["location_title"], a.get("location_title_en"),
                  a["location_type"], a["oblast_uid"], a["alert_type"], a.get("alert_level"),
                  a["started_at"], a.get("finished_at"), a.get("notes"), json.dumps(a.get("threats") or [], ensure_ascii=False)))
@@ -3857,11 +3859,10 @@ class State:
             models.update(r.get("models") or [])
         # 2. the official alerts over Kyiv city (31) and the oblast (14): minutes per day, and when they start
         t0 = datetime(start_d.year, start_d.month, start_d.day, tzinfo=tz).astimezone(timezone.utc)
-        with self.store.lock:
-            # by oblast_uid, whatever the level: the city is one unit (31); "the oblast" is any raion of 14 under alert
-            al = self.store.conn.execute(
-                "SELECT oblast_uid, location_type, alert_level, started_at, finished_at FROM alerts WHERE (finished_at IS NULL OR finished_at>=?) "
-                "AND oblast_uid IN ('31','14') AND alert_type='air_raid'", (t0.isoformat(),)).fetchall()
+        # by oblast_uid, whatever the level: the city is one unit (31); "the oblast" is any raion of 14 under alert.
+        # 1.58.4: each alert from the start / end events (alert_rows), not the alerts table's one row per region
+        al = [(a["oblast_uid"], a["location_type"], a["alert_level"], a["started_at"], a["finished_at"]) for a in self.alert_rows(t0)
+              if a["oblast_uid"] in ("31", "14") and a["alert_type"] == "air_raid"]
         spans = {"31": [], "14": []}
         starts = [[0] * 24 for _ in range(7)]
         for uid, _lt, _lvl, sa, fa in al:
@@ -4070,9 +4071,8 @@ class State:
         now = datetime.now(timezone.utc)
         with self.lock:
             live = set(self.active)
-        with self.store.lock:
-            rows = self.store.conn.execute("SELECT key, oblast_uid, started_at, finished_at FROM alerts WHERE alert_type='air_raid' "
-                                           "AND (finished_at IS NULL OR finished_at>=?)", (t0.isoformat(),)).fetchall()
+        rows = [(a["key"], a["oblast_uid"], a["started_at"], a["finished_at"]) for a in self.alert_rows(t0)     # 1.58.4
+                if a["alert_type"] == "air_raid"]
         spans = collections.defaultdict(list)
         for key, uid, sa, fa in rows:
             a = parse_iso(sa)
@@ -4199,8 +4199,8 @@ class State:
         once. A wave with nothing on the map in the hour before it counts as no warning — never as a zero lead."""
         now = datetime.now(timezone.utc)
         since = now - timedelta(days=days)
-        starts = sorted(st for st in (parse_iso(a["started_at"]) for a in self.store.history(days * 24, ["31", "14"])
-                                      if (a.get("alert_type") or "air_raid") == "air_raid") if st and st >= since)
+        starts = sorted(st for st in (parse_iso(a["started_at"]) for a in self.alert_rows(since)       # 1.58.4
+                                      if a["oblast_uid"] in ("31", "14") and a["alert_type"] == "air_raid") if st and st >= since)
         marks = sorted(parse_iso(m["ts"]) for m in self.store.markers_between((since - timedelta(hours=1)).isoformat(), now.isoformat())
                        if m.get("oblast_uid") in ("31", "14"))
         marks = [m for m in marks if m]
@@ -4230,8 +4230,8 @@ class State:
 
         def loc(d):
             return d.astimezone(tz).strftime("%d.%m %H:%M")
-        hours = int((now - start).total_seconds() / 3600) + 2
-        al = [a for a in self.store.history(hours, ["31", "14"]) if (a.get("alert_type") or "air_raid") == "air_raid"]
+        al = [a for a in self.alert_rows(start, min(end, now))                                 # 1.58.4
+              if a["oblast_uid"] in ("31", "14") and a["alert_type"] == "air_raid"]
         spans = []
         for a in al:
             s, e = parse_iso(a["started_at"]), parse_iso(a["finished_at"]) if a["finished_at"] else now
@@ -4337,9 +4337,9 @@ class State:
         loc = lambda t: (parse_iso(t).astimezone(tz).strftime("%H:%M") if parse_iso(t) else None)   # noqa: E731
         obl = {u: en for u, _uk, en in OBLASTS}
         st = self.store
+        al = [(a["oblast_uid"], a["location_type"], a["location_title"], a["alert_level"], a["started_at"], a["finished_at"])
+              for a in self.alert_rows(start, until) if a["alert_type"] == "air_raid"]                     # 1.58.4
         with st.lock:
-            al = st.conn.execute("SELECT oblast_uid, location_type, location_title, alert_level, started_at, finished_at FROM alerts "
-                                 "WHERE alert_type='air_raid' AND started_at<? AND (finished_at IS NULL OR finished_at>?)", (U, S)).fetchall()
             tg = st.conn.execute("SELECT n, prefix, origin, osrc, oquote, first_ts, last_ts, type FROM targets WHERE night=? ORDER BY n",
                                  (night,)).fetchall()
             pts = st.conn.execute("SELECT n, ts, lon, lat, place, alt_m FROM target_points WHERE night=? ORDER BY ts", (night,)).fetchall()
@@ -4536,9 +4536,9 @@ class State:
         loc = lambda t: parse_iso(t).astimezone(tz).strftime("%H:%M") if parse_iso(t) else "?"   # noqa: E731
         inside = lambda u: u is None or str(u) in scope      # noqa: E731
         st = self.store
+        al = [(a["oblast_uid"], a["location_type"], a["location_title"], a["started_at"], a["finished_at"])
+              for a in self.alert_rows(parse_iso(S), parse_iso(U)) if a["alert_type"] == "air_raid"]      # 1.58.4
         with st.lock:
-            al = st.conn.execute("SELECT oblast_uid, location_type, location_title, started_at, finished_at FROM alerts "
-                                 "WHERE alert_type='air_raid' AND started_at<? AND (finished_at IS NULL OR finished_at>?)", (U, S)).fetchall()
             ml = st.conn.execute("SELECT ts, type, status, place, oblast_uid, jet, count, heading, alt_m, alt_state, speed_kmh, origin, "
                                  "approach, likely FROM marker_log WHERE ts>=? AND ts<?", (P, U)).fetchall()
             oc = st.conn.execute("SELECT ts, status, type, place, oblast_uid, count FROM outcomes WHERE ts>=? AND ts<?", (S, U)).fetchall()
@@ -4800,7 +4800,7 @@ class State:
         since = now - timedelta(days=days)
         kyiv_tz = timezone(timedelta(hours=3))
         # 1. alerts (Kyiv city + oblast-wide) → per day count / minutes, hour-of-day histogram, longest
-        al = [a for a in self.store.history(days * 24, ["31", "14"]) if a["location_type"] in ("oblast", "city")]
+        al = [a for a in self.alert_rows(since) if a["oblast_uid"] in ("31", "14") and a["location_type"] in ("oblast", "city")]
         by_day = {}
         hours = [0] * 24
         longest = None
@@ -5063,6 +5063,56 @@ class State:
         return {"from": t0, "to": t1, "now": int(time.time()), "alerts": alerts, "tracks": tracks}
 
     def _replay_alerts(self, start, end):
+        """The replay's shape of `_alert_intervals` (what the time bar paints)."""
+        iv, meta = self._alert_intervals(start, end)
+        uar = ua_regions()
+
+        def raion_key(uid):
+            rid = uid[3:] if (uid or "").startswith("ua-") else None
+            if not rid:
+                return None
+            d = uar["districts"].get(rid)
+            if not d:
+                c = uar["communities"].get(rid) or {}
+                d = uar["districts"].get(c.get("d") or "")
+            return (d or {}).get("key")
+        out = []
+        for s0, e0, r in iv:
+            lt, lv, _en = meta.get(r[2], (None, None, None))
+            out.append({"k": r[3], "o": r[6], "lt": lt or ("oblast" if (r[3] or "") == r[6] else "raion"), "rk": raion_key(r[3]),
+                        "lv": lv, "at": r[5] or "air_raid", "ti": r[4], "s": int(s0.timestamp()),
+                        "e": int(e0.timestamp()) if e0 else None})
+        out.sort(key=lambda a: a["s"])
+        return out
+
+    def alert_rows(self, start, end=None):
+        """1.58.4: every official alert overlapping [start, end] (UTC datetimes; end: now), one row per alert, in the alerts
+        table's shape — started_at / finished_at (None while it is on) —, rebuilt from the start / end events.
+
+        The alerts table keeps ONE row per region and alert type, and kept the region's FIRST start: read as a history
+        (the stats, the analytics, the lead times, the nights' and the bulletins' records), Kyiv city had been "under
+        alert" 24 hours a day since 24 September — "the longest alert: 335 hours"."""
+        now = datetime.now(timezone.utc)
+        end = end or now
+        iv, meta = self._alert_intervals(start, end)
+        with self.lock:
+            live = set(self.active)
+        out = []
+        for s0, e0, r in iv:
+            if e0 is None and end >= now - timedelta(minutes=2) and r[2] not in live:
+                continue                    # no end written and not on now: its end was lost — never counted to now
+            if e0 is not None and (e0 - s0).total_seconds() < 60:
+                continue                    # over within a minute: a source's flicker, not an alert (an official
+                                            # channel read 15–24 Sep 2026 flipped Kyiv's alert 1,290 times, ~17 s each)
+            lt, lv, _en = meta.get(r[2], (None, None, None))
+            out.append({"key": r[2], "location_uid": r[3], "location_title": r[4],
+                        "location_type": lt or ("oblast" if (r[3] or "") == r[6] else "raion"), "oblast_uid": r[6],
+                        "alert_type": r[5] or "air_raid", "alert_level": lv, "started_at": s0.isoformat(),
+                        "finished_at": e0.isoformat() if e0 else None})
+        out.sort(key=lambda a: a["started_at"], reverse=True)
+        return out
+
+    def _alert_intervals(self, start, end):
         """Official alert intervals overlapping [start, end], rebuilt from the start / end events.
 
         A restart loses the alerts the process held without writing an end: the first reading after it writes a
@@ -5126,27 +5176,7 @@ class State:
         for a in act:
             if a["key"] not in seen:
                 iv.append((look, None, (None, "start", a["key"], a["location_uid"], a["location_title"], a["alert_type"], a["oblast_uid"])))
-        uar = ua_regions()
-
-        def raion_key(uid):
-            rid = uid[3:] if (uid or "").startswith("ua-") else None
-            if not rid:
-                return None
-            d = uar["districts"].get(rid)
-            if not d:
-                c = uar["communities"].get(rid) or {}
-                d = uar["districts"].get(c.get("d") or "")
-            return (d or {}).get("key")
-        out = []
-        for s0, e0, r in iv:
-            if s0 >= end or (e0 is not None and e0 <= start):
-                continue
-            lt, lv, _en = meta.get(r[2], (None, None, None))
-            out.append({"k": r[3], "o": r[6], "lt": lt or ("oblast" if (r[3] or "") == r[6] else "raion"), "rk": raion_key(r[3]),
-                        "lv": lv, "at": r[5] or "air_raid", "ti": r[4], "s": int(s0.timestamp()),
-                        "e": int(e0.timestamp()) if e0 else None})
-        out.sort(key=lambda a: a["s"])
-        return out
+        return [(s0, e0, r) for s0, e0, r in iv if s0 < end and (e0 is None or e0 > start)], meta
 
     def _replay_tracks(self, start, end, alerts):
         """The targets of the window as tracks: each one's reported positions, oldest first."""

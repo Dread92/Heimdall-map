@@ -12,6 +12,7 @@ from datetime import datetime, timedelta, timezone
 
 import ai_reader as A
 import server
+from alert_events import events_from_table  # 1.58.4: the alerts' start / end events
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -94,6 +95,7 @@ def test_the_record_carries_courses_heights_speeds_origins_and_raions():
                           "alert_level, started_at, finished_at) VALUES(?,?,?,?,?,?,?,?,?,?)",
                           ("a2", "t", "r1", "Броварський район", "raion", "14", "air_raid", "red", ago(50), None))
     st.store.conn.commit()
+    events_from_table(st, active=("a2",))
     d = st.activity_summary(NOW - timedelta(hours=1), NOW)
     assert d["courses"] == [{"oblast": d["courses"][0]["oblast"], "NW": 2, "E": 1}]
     assert d["heights_all"]["reports"] == 2 and d["heights_all"]["descending"] == 1 and d["heights_all"]["max"] == 1800

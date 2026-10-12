@@ -9,6 +9,7 @@ import os
 from datetime import datetime, timedelta, timezone
 
 import server
+from alert_events import events_from_table  # 1.58.4: the alerts' start / end events
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PAGE = open(os.path.join(ROOT, "static", "kyiv.html"), encoding="utf-8").read()
@@ -105,6 +106,7 @@ def test_lead_time_counts_a_wave_once_and_no_warning_as_no_warning():
     alert("a", t1)
     alert("b", t1 + timedelta(minutes=5))       # the same wave, one raion after another
     alert("c", t2)                              # a second wave, with nothing on the map before it
+    events_from_table(st, active=("a", "b", "c"))
     st.store.log_markers([{"id": "kyiv_airdef/1#0", "ts": _iso(t1 - timedelta(minutes=14)), "channel": "kyiv_airdef",
                            "type": "drones", "status": None, "place": "Бровари", "oblast_uid": "14", "lon": 30.8, "lat": 50.5}])
     ld = st.lead_times(30)
