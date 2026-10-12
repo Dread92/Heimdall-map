@@ -127,6 +127,27 @@ children. A shared text now carries the kind, the place the post named, the time
 channel and the reminder — never a pin, its name or a distance to it. The pins themselves are numbered and named by
 their owner, and the name stays on the phone with them.
 
+## The private channel says what the map says, and nothing about what became of a target (1.58)
+
+The owner's private Telegram channel (TECHNICAL.md §9c) posts the targets over Kyiv and Kyiv oblast with a picture of
+the map around them. A post in a channel is forwarded, screenshotted and read without the app around it, so:
+
+- **What and where, as the post said**: the type the app names, the place a post gave, the height a post gave, the
+  channel, the time. A course only when a post **stated** one (a target town, compass words) — the bearing the app works
+  out between two reports of a live channel is drawn in the app with its caveat, never said or drawn in the channel.
+  A post that said only where a target is heading ("Балістика на Київ!") is shown at that town as the app shows it,
+  with no course ray, and the caption says that where it is now was not said. No ETA, no "towards your area", no
+  distance to anybody.
+- **No outcome, no air defence.** A target shot at, shot down or that hit something is not announced, and no impact or
+  air-defence position is ever published live: the post of a target that leaves the map's flying marks, for whatever
+  reason, is closed with "no new reports after HH:MM" — the same words whatever happened. Outcome glyphs do not exist
+  in the picture.
+- **The official alerts** are drawn as the app draws them, from the official data alone; the channel never says that an
+  alert starts or ends. Every post carries "from channel posts, not radar — the siren and the official alert come first".
+- **Nobody's place.** The channel knows no pin, no subscriber, no reader: what it posts is the same for everyone.
+- **The token is the owner's**: created by him, stored by his script straight into Fly's secrets, never written to a
+  file, the database, a log or the dashboard.
+
 ## A weapon nobody named is "probably a drone" — never "unknown", never "a drone" (1.54.8)
 
 A post that says where and not what ("Кулажинці", "лук'янівка") was shown as an unspecified threat. On a night of drones

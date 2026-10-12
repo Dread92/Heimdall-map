@@ -2,6 +2,29 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.0 — 2026-10-12
+
+### Added
+- **A private Telegram channel** — the owner: "a small private Telegram channel that posts alerts like the channels we
+  read, with a 'screenshot' of the app where the drone is (Kyiv + Kyiv oblast only)"; picked: one post per target,
+  updated, and the app's style drawn on the server. Each target over Kyiv city or Kyiv oblast gets one post: a
+  1080 × 1080 map around it (the raions and the city tinted by the official alerts, its reported path, a course ray only
+  when a post stated one, the place in a pill; "Балістика на Київ!" at Kyiv, as an approach, "where it is now was not
+  said") and a caption — type, count, place, stated course and height, the time,
+  the channel, "З дописів каналів, не радар", a link to the map. It is redrawn in the same message as new reports of
+  the same target come in (at most every 45 s), and closed with "⏹ Нових дописів після HH:MM немає" once gone from the
+  map — never an outcome, never an impact or air-defence position. At most 18 calls a minute; nothing older than
+  5 minutes is posted after a restart; the posts survive a deploy. The dashboard's official sources show "telegram
+  channel (posting)". `app/chanpost.py`, `app/mapshot.py` (Pillow; the image installs the DejaVu font).
+- `scripts/set-telegram-channel.bat`: the bot's token asked hidden and checked, the private channel found, the bot's
+  rights checked, a test message, then `TG_BOT_TOKEN` / `TG_CHANNEL_ID` straight into Fly's secrets. Off until then.
+
+### Fixed
+- **A ballistic missile on a drone's village** — found while building the channel: "Балістика на Київ!" 20 s after
+  "Шахед Княжичі, курсом на Київ" on the same live channel put the ballistic missile at Kniazhychi, the Shahed's place
+  (a post naming only where a target goes keeps it at the channel's previous report). Only a report of the same weapon
+  is now taken for it; the ballistic missile is drawn at Kyiv as an approach, as the post said.
+
 ## 1.57.9 — 2026-10-12
 
 ### Fixed

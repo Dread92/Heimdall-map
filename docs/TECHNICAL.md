@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.57** · last updated 2026-10-12 (1.57.9)
+**Documented version: 1.58** · last updated 2026-10-12 (1.58.0)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -27,7 +27,7 @@ regression corpus: [CORPUS.md](CORPUS.md). French quick start: [DEMARRAGE-FR.md]
 6. [Official alert data](#6-official-alert-data)
 7. [The Telegram feed and the map marks](#7-the-telegram-feed-and-the-map-marks)
 8. [Translation](#8-translation)
-9. [Notifications](#9-notifications)
+9. [Notifications](#9-notifications) — and [9c. The owner's private Telegram channel](#9c-the-owners-private-telegram-channel-158)
 10. [The two pages: Tactical and Light](#10-the-two-pages-tactical-and-light)
 11. [Privacy and security](#11-privacy-and-security)
 12. [HTTP API](#12-http-api)
@@ -129,6 +129,8 @@ clear-sky/
 │   ├── geo.py              Ukrainian parsing: gazetteer, declensions, types, headings, counts, phases, altitude
 │   ├── translate.py        offline UK→EN glossary; DeepL / Google machine translation with a circuit breaker
 │   ├── ai_reader.py        1.50: the AI reader in shadow mode (OpenRouter) — prompt, schema, checks, comparison (§7.7)
+│   ├── chanpost.py         1.58: the owner's private Telegram channel — one post per target, edited (§9c)
+│   ├── mapshot.py          1.58: its picture — the map around one target, drawn with Pillow in the app's style (§9c)
 │   └── push.py             Web Push: VAPID ES256 JWT + RFC 8291 aes128gcm, on `cryptography` only
 ├── static/
 │   ├── kyiv.html           Tactical page (one self-contained file)
@@ -171,6 +173,7 @@ clear-sky/
 │   ├── upload-imagery.bat  puts imagery/sat-ua.mbtiles on the Fly volume (1.47)
 │   ├── set-esri-key.bat    one-time: the owner's Esri key for the closest zooms, into Fly's secrets (1.48)
 │   ├── set-openrouter-key.bat  one-time: the owner's OpenRouter key for the AI reader, into Fly's secrets (1.50)
+│   ├── set-telegram-channel.bat one-time: the owner's bot token and private channel, into Fly's secrets (1.58, §9c)
 │   ├── build_manual.py     rebuilds docs/manual.html — the whole documentation as one page, with the system map (1.54.9)
 │   ├── manual/             its template (template.html) and the system map, drawn by hand (map-svg.html)
 │   ├── corpus.py           add / review / pull corpus cases
@@ -208,6 +211,7 @@ clear-sky/
 | `Pusher` | sends Web Push: one notification at a time, each to all its phones at once through `push.Sender` (32 workers, one kept-open HTTPS connection per push service per worker, VAPID signed once an hour per service) | queue |
 | `streams` | **every open page's live line** (`StreamHub`, §5.4): one thread, non-blocking sockets (epoll), the data sent as changes | events + every 15 / 5 / 2 s |
 | `proximity` | per-subscriber distance checks → push | continuous |
+| `channel` | 1.58, with `TG_BOT_TOKEN` and `TG_CHANNEL_ID`: the owner's private Telegram channel (§9c) — a post per target over Kyiv and its oblast with the map around it (`mapshot.py`), redrawn as it is reported again, closed when it is gone; at most 18 calls a minute | 5 s |
 | `AlertsInUa.backfill` | a month of history for the favourite regions | once at start |
 | `AFBackfill` | the Air Force summaries of the last 14 days that `af_reports` lacks: first from the stored feed, then from `t.me/s/kpszsu?before=…` pages (at most 240, stops once nothing is missing); since 1.33 also the carriers (`parse_air_report`) in every stored post, once per parser version (`kv.air_parsed`) | 60 s after start, then daily |
 | `bridges` | every 5 s: a Kyiv bridge whose state rose (nothing → near → at, §9b) is written to `bridge_events` and pushed to the phones that asked for the bridges (topic `bridges`, in their language), at most once per bridge every 10 min — a "near" turning "at" excepted | 5 s |
@@ -337,6 +341,9 @@ Environment variables win over `config.json`. On Fly they are set as **secrets**
 | `TG_API_HASH` | Telegram API app hash. |
 | `CANONICAL_HOST` | The app's own address (e.g. `heimdall.com.ua`). Pages opened elsewhere show the move banner (§9). Set by `scripts/set-domain.bat`. |
 | `TG_SESSION` | The signed-in Telegram session (a key to that account). Set only by `scripts/telegram-login.bat`, via `fly secrets import`. |
+| `TG_BOT_TOKEN` | 1.58: the owner's bot (@BotFather) that posts in his private channel (§9c). Set only by `scripts/set-telegram-channel.bat`, via `fly secrets import`; never logged. |
+| `TG_CHANNEL_ID` | 1.58: that channel's id (`-100…`), found by the same script. The channel runs only when both are set. |
+| `PUBLIC_URL` | 1.58: the address the channel's posts link to (`/m`). Default `https://kyiv-air-watch-gb.fly.dev`. |
 
 Secrets live only in `config.json` (git-ignored) or in Fly secrets. They are never committed, never printed
 by the scripts, and `.dockerignore` keeps `config.json` out of the image.
@@ -603,7 +610,8 @@ block for every value:
   ("на Васильків з північного заходу", "курсом на Київ"): the mark is drawn **at the destination as an approach**
   (`approach: true`, `place: "→ X"`, low confidence) — also when the post's only other place is its own oblast
   heading. On live channels, "Від Глевахи на Васильків" is at Hlevakha heading for Vasylkiv; "йдуть на Васильків"
-  alone (`dest_only`) stays at the channel's previous report (≤ 8 min) turned toward the destination, or else is an
+  alone (`dest_only`) stays at the channel's previous report (≤ 8 min) turned toward the destination — 1.58: only a
+  report of the same weapon (`same_weapon`: the same type, or a drone and a weapon not named) —, or else is an
   approach. In tracking, a later approach about a target already on the map gives it its destination and course
   instead of moving it; an approach point is never a step of a track.
 - **Count**, **altitude** (only when written: "знижується", "низько", metres "висота 2200", a bare "1600, Вороньків"
@@ -1534,6 +1542,59 @@ Limits, said in the texts: the positions are the places the posts named (a distr
 1–3 minutes after the sighting — a jet drone covers 6 km in that time. A bridge with nothing reported is "nothing
 reported", never "safe".
 
+## 9c. The owner's private Telegram channel (1.58)
+
+The owner: "a small private Telegram channel that posts alerts like the channels we read, with a 'screenshot' of the
+app where the drone is (Kyiv and Kyiv oblast only)" — one post per target, updated, with a picture in the app's style
+drawn on the server. Off unless `TG_BOT_TOKEN` and `TG_CHANNEL_ID` are set; then `main()` starts `ChannelPoster`
+(`app/chanpost.py`, thread `channel`). Its rules are SAFETY.md's "The private channel says what the map says".
+
+**What it posts.** Every 5 s it takes the marks as the pages see them (`State.markers_now()`) and keeps
+(`chanpost.eligible`) the ones over Kyiv city or Kyiv oblast (`oblast_uid` 31 / 14) at a named place, of a flying type
+(drones, the missiles, Banderol, a weapon not stated) — no outcome (`status`), no faded mark (`stale`), no merged one
+(`superseded_by`), no oblast-wide guess, no reading still waiting for its context. A target whose post named only where
+it is heading ("Балістика на Київ!": `approach`, a place "→ Київ") is posted as the app draws it — at that town,
+fainter, set off on the side a post named, no course ray — and its caption says "📍 Де саме зараз — у дописі не
+сказано". They are grouped by target tag (`tag.night` + `tag.id`, else the mark's id): one post per target.
+
+| When | Call | What |
+|---|---|---|
+| a new target, reported in the last 5 min (`FRESH_S`) | `sendPhoto` | the picture and the caption; the phone rings |
+| the same target reported again (a new place, course, count, height, path or minute) | `editMessageMedia` | the same message redrawn, at most every 45 s (`EDIT_EVERY_S`) |
+| gone from the flying marks for 5 min (`END_AFTER_S`) — faded, shot at, merged, anything | `editMessageCaption` | "⏹ Нових дописів після HH:MM немає" above the last caption; nothing on what became of it |
+
+The caption (Telegram HTML, Ukrainian): the type as the app names it (Шахед, Реактивний дрон, Балістична ракета,
+Бандероль (реактивний дрон), "Ймовірно, дрон — тип не вказано" — as `asDrone`: no missile within 150 km), the count,
+the place; a course **only when a post stated it** (`stated_course`: a target town, or compass words with a confidence —
+never the bearing the app worked out between two reports, nor a destination a later post gave a carried mark); the
+height a post gave; the time of the report (Kyiv) and of the first one; the channel; "З дописів каналів, не радар.
+Сирена й офіційна тривога — головне."; a link to `/m` (`PUBLIC_URL`).
+
+**The picture** (`app/mapshot.py`, `MapShot.render`, ~0.15 s): a 1080 × 1080 JPEG (Telegram makes every photo one),
+drawn at twice the size and scaled down.
+The data the pages draw: the oblasts and raions of `static/kyiv-map.json`, the city districts of `kyiv-districts.json`
+(names when the view is under 60 km), the rivers of `map-ua.json`, the towns of kyiv.html's `TOWNS` (Ukrainian names
+from i18n.js), the raion labels (`RAION_LBL`, `RAION_ADJ` + "р-н"), the silhouettes of `static/glyphs.js` (checked
+shape by shape by the tests), the colours of the Tactical page. The official alerts of the moment are painted as
+`alertMap()` paints them (`alert_fill`: the city; Kyiv oblast's raions — oblast-wide, by raion, a hromada's raion; the
+oblasts around, fainter). The view: the target, its last six reported places (a dotted path), Kyiv when it is within
+70 km, ×1.5, between 30 km (the city) or 50 km and 150 km. The silhouette turns as `orientOf()` turns it; the course
+ray is drawn only with a stated course. The place the post named stands in a pill beside it; town names that would
+cover it are left out; the places it was reported at before are named beside their dots where there is room. Header: HEIMDALL · Київ · Київщина · the report's time; foot: the warning and the map's
+credits. Without Pillow (or the font) the channel posts its text alone. The image installs `fonts-dejavu-core`.
+
+**Limits**: 18 calls a minute (`BUDGET`; Telegram's is ~20 messages a minute per channel), new targets first, the most
+recent first; a 429's `retry_after` is obeyed. **State**: `kv` `chan_posts` — per target, the message id, first / last
+report, what was drawn (`signature`), a trimmed copy of the mark for the closing line; 24 h, kept over a restart so a
+deploy neither reposts nor forgets a post. **Health**: the dashboard's official sources list "telegram channel
+(posting)" — working or failing (the last call to Telegram), posted / redrawn / closed counts.
+
+**Setup** (`scripts/set-telegram-channel.bat`, once): @BotFather /newbot → a private channel → the bot as an
+administrator ("Post messages", "Edit messages of others") → a message in the channel → the script: the token asked
+hidden and checked (`getMe`), the channel found from the bot's updates (`getUpdates`: a channel post or the bot's own
+addition), the bot's rights checked (`getChatMember`), a test message, then `TG_BOT_TOKEN` and `TG_CHANNEL_ID` into
+Fly's secrets through `fly secrets import`'s input. To stop: `fly secrets unset TG_BOT_TOKEN TG_CHANNEL_ID`.
+
 ## 10. The two pages: Tactical and Light
 
 ### 10.1 Tactical (`/m`)
@@ -2156,6 +2217,11 @@ Android app at once**; a new APK is needed only for its name, icon, address or A
 - 1.57: the nearest shelter is found on the phone (`static/shelters.js`), from one file that is the same for everyone
   (`/static/shelters.json`): no pin and no position is in any request.
 - Push subscriptions: a ~10 km cell only; older stored homes are coarsened at start.
+- 1.58: the private channel's bot token (`TG_BOT_TOKEN`) is the owner's, created by him at @BotFather and stored by
+  `scripts/set-telegram-channel.bat` straight into Fly's secrets (asked hidden, read from stdin by `fly secrets
+  import`). The server reads it from the environment and puts it only in the address of its calls to Telegram: no
+  error, log line, dashboard row or `kv` entry carries it (`BotAPI` reports the method's name and Telegram's words).
+  The bot posts and edits in that one channel; it reads nothing. Revoke it at @BotFather (/revoke).
 - The Telegram session (`TG_SESSION`) is a key to a whole Telegram account. It is created on the owner's PC by
   `scripts/telegram-login.bat` and goes straight into Fly's secret store (`fly secrets import`, read from stdin):
   never on a command line, in a file, in the logs, in `config.json` or in the repository. Revoke it in Telegram:
@@ -2231,7 +2297,7 @@ SQLite in WAL mode (`DB_PATH`; on Fly, the volume). Tables:
 | `alerts` | every alert seen (active and finished) — the normalised shape. One row per region and alert type: a region's next alert overwrites the row (its start stays the first one), so it is not a history — the replay reads `events` |
 | `events` | start / end / threat / update events — the alert history the replay rebuilds intervals from (§10.3c) |
 | `feed` | posts: `post_id, channel, ts, text, tags, text_en, text_fr, en_mt` |
-| `kv` | small settings: the VAPID key pair, the usage counter's daily salt, the channels (`channels`), the admin's message (`notice`), the nuclear event (`nuke`), the AI's switches (`ai_reader_on`, 1.54 `ai_bulletin_public`), and similar |
+| `kv` | small settings: the VAPID key pair, the usage counter's daily salt, the channels (`channels`), the admin's message (`notice`), the nuclear event (`nuke`), the AI's switches (`ai_reader_on`, 1.54 `ai_bulletin_public`), 1.58 the private channel's posts of the last 24 h (`chan_posts`: per target, the message id, when first and last reported, what was drawn — never the token), and similar |
 | `push_subs` | push subscriptions with a ~10 km cell, the topics asked for (`bridges`) and the language |
 | `marker_log` | every mark as computed, with its evidence; 1.54.8: and what it stated — `alt_m`, `alt_state`, `speed_kmh`, `origin`, `target`, `likely`, `tag` (night#n), `approach` (`MLOG_EXTRA`). Kept for good so far: `Store.prune_log(days)` exists but nothing calls it — the volume's size is the limit |
 | `outcomes` | shoot-downs, impacts, losses |
@@ -2404,6 +2470,10 @@ Black Flame logos (`logo*.png`, `bf-logo*.png`) stay as they are.
   district) is not placed. `chyste_nebocherkasy` needs the Telegram API (its preview is off). The new trackers'
   formats were read from a day of their posts: watch the first nights in the dashboard (Read 7 d) and add their
   misreads to the corpus.
+- 1.58: the private channel follows the map's marks, so it is as right as they are, and a little later (it looks every
+  5 s, redraws a post at most every 45 s). Telegram allows about 20 messages a minute in a channel: on a heavy night
+  the channel keeps to 18 calls a minute, new targets first, and a target first reported more than 5 minutes ago is
+  not posted late. One post per target tag: two tags the app could not join are two posts.
 - 1.45: GeoNames has no Гулівці, Мокроволя, Завірці, Кром'яне — those posts place nothing. "Велика Березна" from
   Rivne still reads as Березне. Natural Earth's rivers are 1:10m — about a kilometre off in places — and its roads
   carry no names, so the roads outside Kyiv oblast are unlabelled lines.

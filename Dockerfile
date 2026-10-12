@@ -3,7 +3,9 @@ FROM python:3.12-slim
 
 WORKDIR /srv
 
-# Only optional dependency: cryptography, for Web Push (VAPID / RFC 8291).
+# Optional dependencies (requirements.txt): cryptography for Web Push, telethon, tzdata, Pillow for the private channel's
+# map picture (1.58) — with DejaVu, a font that has Cyrillic, for its names.
+RUN apt-get update && apt-get install -y --no-install-recommends fonts-dejavu-core && rm -rf /var/lib/apt/lists/*
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 

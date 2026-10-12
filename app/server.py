@@ -55,6 +55,10 @@ try:
     import ai_reader
 except Exception:  # pragma: no cover
     ai_reader = None
+try:
+    import chanpost
+except Exception:  # pragma: no cover
+    chanpost = None
 
 
 def to_en(text):
@@ -434,7 +438,7 @@ def build_id():
 
 # The version the front end shows in its footer, kept here too so /api/version can answer "what is actually
 # running" without anybody reading it off a screenshot. tests/test_version.py pins the two to each other.
-APP_VERSION = "1.57"
+APP_VERSION = "1.58"
 APP_NAME = "Heimdall"
 BUILD = None    # filled at startup
 
@@ -2772,6 +2776,12 @@ def _inward_bearing(m):
     return geo.bearing(m["lon"], m["lat"], pt[0], pt[1])
 
 
+def same_weapon(a, b):
+    """Could two reports be of one target, by what they say it is? The same type; a drone and a weapon nobody named."""
+    ta, tb = a.get("type"), b.get("type")
+    return ta == tb or (ta in ("drones", "unknown") and tb in ("drones", "unknown"))
+
+
 def outward(m, brg):
     """Does this course point back across the border, out of Ukraine (an INWARD oblast only)?"""
     b = _inward_bearing(m)
@@ -3496,7 +3506,11 @@ class State:
                     # "Два йдуть на Васильків": only where it is going. The target this channel reported last (within
                     # 8 min) is the one going there: it stays where that report put it, turned toward the destination.
                     # Without one it stays drawn at the destination, as an approach — never moved on past it.
-                    if ctx and pts and (pts - ctx[0]).total_seconds() <= 8 * 60 and m.get("target") in geo.PLACES:
+                    # 1.58: only a report of the same weapon is "the one going there" — "Балістика на Київ!" after a
+                    # Shahed at Kniazhychi had put the ballistic missile on the drone's village (found building the
+                    # private channel, which would have posted it there)
+                    if ctx and pts and (pts - ctx[0]).total_seconds() <= 8 * 60 and m.get("target") in geo.PLACES \
+                            and same_weapon(m, ctx[1]):
                         dlon, dlat, _ = geo.PLACES[m["target"]]
                         if math.hypot((dlon - ctx[1]["lon"]) * 70.7, (dlat - ctx[1]["lat"]) * 111) >= 0.4:
                             m.update(lon=ctx[1]["lon"], lat=ctx[1]["lat"], place=ctx[1]["place"], oblast_uid=ctx[1].get("oblast_uid"),
@@ -4133,6 +4147,8 @@ class State:
                              "read_via": reg.get(ch.lower(), {}).get("via"), "added": reg.get(ch.lower(), {}).get("added"),
                              "home": reg.get(ch.lower(), {}).get("home", "") if ch.lower() in reg else None})
         official = [{"name": k, **v} for k, v in sorted(sources.items()) if not k.startswith(("tg:", "tga:"))]
+        if getattr(self, "channel", None):                 # 1.58: the owner's private channel, when it is set up
+            official.append(self.channel.health())
         tr = {"available": [], "paused": {}}
         if _tr:
             try:
@@ -8526,6 +8542,16 @@ def main():
         pass
     state.hub = StreamHub(state)
     state.hub.start()
+    # 1.58: the owner's private Telegram channel — one post per target over Kyiv and its oblast, with the map around
+    # it (app/chanpost.py). Only when both secrets are set (scripts/set-telegram-channel.bat); the token is never logged.
+    state.channel = None
+    if chanpost and chanpost.configured():
+        try:
+            state.channel = chanpost.start(state, log=log, ssl_ctx=_SSL_CTX)
+        except Exception as e:
+            log("channel: not started —", type(e).__name__)
+    elif chanpost:
+        log("channel: off — TG_BOT_TOKEN / TG_CHANNEL_ID not set (scripts/set-telegram-channel.bat)")
     srv = Server((bind, int(cfg["port"])), Handler)
     log(f"dashboard → http://localhost:{cfg['port']}   mobile → http://localhost:{cfg['port']}/m")
     if bind == "0.0.0.0":

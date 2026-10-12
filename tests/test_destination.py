@@ -94,3 +94,12 @@ def test_the_map_never_moves_a_destination_on_or_counts_down_to_it():
     assert "&&!appr){ // reported heading" in page                 # no course ray ahead of it
     light = open(server.os.path.join(server.ROOT, "static", "light.html"), encoding="utf-8").read()
     assert "d>1&&!m.approach" in light
+
+
+def test_a_destination_is_given_only_to_a_report_of_the_same_weapon():
+    # 1.58: "Балістика на Київ!" 20 s after "Шахед Княжичі" had put the ballistic missile on the drone's village
+    st = _state([("kyiv_airdef", 3, "Шахед Княжичі, курсом на Київ"), ("kyiv_airdef", 2, "Балістика на Київ!")])
+    bal = [m for m in st.markers() if m.get("type") == "ballistic_missiles" and not m.get("status")]
+    assert len(bal) == 1 and bal[0]["place"] == "→ Київ" and bal[0].get("approach")
+    assert server.same_weapon({"type": "drones"}, {"type": "unknown"})
+    assert not server.same_weapon({"type": "ballistic_missiles"}, {"type": "drones"})
