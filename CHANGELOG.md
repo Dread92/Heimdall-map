@@ -2,6 +2,17 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.1 — 2026-10-13
+
+### Fixed
+- **The channel's setup found no channel** — the owner, with the bot an administrator of "Heimdall Kyiv" and a message
+  posted: "pourtant le bot est bien sur la chaîne". `scripts/set-telegram-channel.bat` learnt the channel only from the
+  bot's updates and said nothing of why there were none. It now says what Telegram answered (its own words, the token
+  masked) or how many updates the bot received, and when the bot is told nothing — or another program already reads
+  its updates — asks for the channel's id (Telegram Desktop: Settings → Advanced → Experimental settings → "Show Peer
+  IDs in Profile"; or the address of the channel in web.telegram.org/a), with or without its -100, and checks it with
+  Telegram (`getChat`) before going on.
+
 ## 1.58.0 — 2026-10-12
 
 ### Added

@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-12 (1.58.0)
+**Documented version: 1.58** · last updated 2026-10-13 (1.58.1)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -1592,7 +1592,10 @@ deploy neither reposts nor forgets a post. **Health**: the dashboard's official 
 **Setup** (`scripts/set-telegram-channel.bat`, once): @BotFather /newbot → a private channel → the bot as an
 administrator ("Post messages", "Edit messages of others") → a message in the channel → the script: the token asked
 hidden and checked (`getMe`), the channel found from the bot's updates (`getUpdates`: a channel post or the bot's own
-addition), the bot's rights checked (`getChatMember`), a test message, then `TG_BOT_TOKEN` and `TG_CHANNEL_ID` into
+addition) — 1.58.1: or, when the bot is told nothing (no update; another program reading its updates, a webhook),
+the channel's id typed in (Telegram Desktop's "Show Peer IDs in Profile", or the channel's address in web.telegram.org/a;
+with or without -100) and checked with `getChat`; what Telegram answered is shown in its own words, the token masked —,
+the bot's rights checked (`getChatMember`), a test message, then `TG_BOT_TOKEN` and `TG_CHANNEL_ID` into
 Fly's secrets through `fly secrets import`'s input. To stop: `fly secrets unset TG_BOT_TOKEN TG_CHANNEL_ID`.
 
 ## 10. The two pages: Tactical and Light

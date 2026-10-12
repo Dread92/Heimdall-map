@@ -382,6 +382,11 @@ def test_the_setup_script_keeps_the_token_out_of_files_and_the_screen():
     for bad in ("Out-File", "Set-Content", "Add-Content", "Write-Host $tok", "Write-Host ($tok", "> $"):
         assert bad not in bat, bad
     # on an error, only the method's name: the address with the token is never printed
-    tg = re.search(r"function Tg\(.*?\n\}", bat, re.S).group(0)
-    assert "catch { }" in tg and "Write-" not in tg
+    tg = re.search(r"function Tg\(.*?\r\n\}", bat, re.S).group(0)
+    assert "Write-" not in tg and "$_.ErrorDetails.Message" in tg
+    assert "$script:tgErr.Replace($script:tok, '<token>')" in tg          # Telegram's words, the token masked
+    # 1.58.1: when the bot is told nothing (no update, or another program reads its updates), the channel's id is asked
+    # and checked with Telegram (getChat) — the owner's bot was an administrator and the script still found nothing
+    assert "Telegram says: " in bat and "'getChat'" in bat and "Show Peer IDs in Profile" in bat
+    assert "('-100' + $bare)" in bat
     assert "can_post_messages" in bat and "can_edit_messages" in bat

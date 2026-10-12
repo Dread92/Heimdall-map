@@ -30,15 +30,25 @@ Write-Host '4. Post any message in the channel (e.g. "test"): that is how the bo
 Write-Host ''
 
 $tok = $null
+$tgErr = $null
 function Forget { $script:tok = $null; [GC]::Collect() }
 function Tg([string]$method, $body) {
-  # the token is in the address Telegram asks for: on an error, only the method's name is shown
+  # the token is in the address Telegram asks for: on an error only Telegram's own words are kept ($tgErr), never
+  # the address, and the token is masked in them should Telegram ever repeat it
+  $script:tgErr = $null
   try {
     $r = Invoke-RestMethod -Method Post -Uri ("https://api.telegram.org/bot" + $script:tok + "/" + $method) `
       -ContentType 'application/json; charset=utf-8' -Body ([Text.Encoding]::UTF8.GetBytes(($body | ConvertTo-Json -Depth 5 -Compress)))
     if ($r.ok) { return $r.result }
-  } catch { }
-  return $null
+    $script:tgErr = [string]$r.description
+  } catch {
+    $d = $null
+    try { $d = [string](($_.ErrorDetails.Message | ConvertFrom-Json).description) } catch { }
+    if (-not $d) { $d = [string]$_.Exception.Message }
+    if (-not $d) { $d = 'no answer from Telegram (network, firewall or proxy?)' }
+    $script:tgErr = $d
+  }
+  if ($script:tgErr -and $script:tok) { $script:tgErr = $script:tgErr.Replace($script:tok, '<token>') }
 }
 
 for ($i = 1; $i -le 3; $i++) {
@@ -55,12 +65,12 @@ for ($i = 1; $i -le 3; $i++) {
 if (-not $tok) { Write-Host '*** No valid token - nothing changed.' -ForegroundColor Red; return }
 Write-Host ("Bot: @" + $me.username) -ForegroundColor Green
 
-# the channel: from the bot's updates (its addition as an admin, or a post in the channel)
+# the channel: from the bot's updates (its addition as an admin, or a post in the channel) ...
 $chan = $null
-for ($try = 1; $try -le 5 -and -not $chan; $try++) {
-  $ups = Tg 'getUpdates' @{ allowed_updates = @('channel_post', 'my_chat_member'); timeout = 0 }
+for ($try = 1; $try -le 3 -and -not $chan; $try++) {
+  $ups = @(Tg 'getUpdates' @{ allowed_updates = @('channel_post', 'my_chat_member'); timeout = 0 })
   $seen = @{}
-  foreach ($u in @($ups)) {
+  foreach ($u in $ups) {
     $c = $null
     if ($u.channel_post) { $c = $u.channel_post.chat } elseif ($u.my_chat_member) { $c = $u.my_chat_member.chat }
     if ($c -and $c.type -eq 'channel') { $seen["$($c.id)"] = $c.title }
@@ -72,8 +82,43 @@ for ($try = 1; $try -le 5 -and -not $chan; $try++) {
     $n = Read-Host 'Which channel (number)'
     if ($n -match '^\d+$' -and [int]$n -ge 1 -and [int]$n -le $keys.Count) { $k = $keys[[int]$n - 1]; $chan = @{ id = $k; title = $seen[$k] } }
   } else {
-    Write-Host 'The bot sees no channel yet: add it as an administrator, post a message in the channel, then press Enter.' -ForegroundColor Yellow
-    [void](Read-Host)
+    # say why: Telegram's own answer, or what the bot did receive
+    if ($tgErr) {
+      Write-Host ("Telegram says: " + $tgErr) -ForegroundColor Yellow
+      if ($tgErr -match 'webhook|Conflict') {
+        Write-Host 'This bot''s messages are already read by another program or service - the channel''s id is asked below instead.' -ForegroundColor Yellow
+        break
+      }
+    } else {
+      Write-Host ("The bot received " + $ups.Count + " update(s), none from a channel.") -ForegroundColor Yellow
+    }
+    if ($try -lt 3) {
+      Write-Host 'Post a NEW message in the channel (after the bot became an administrator), then press Enter.' -ForegroundColor Yellow
+      [void](Read-Host)
+    }
+  }
+}
+# ... or, when the bot is told nothing, its id given by hand and checked with Telegram
+while (-not $chan) {
+  Write-Host ''
+  Write-Host 'Give the channel''s id yourself - two ways to read it:'
+  Write-Host '  - Telegram Desktop: Settings - Advanced - Experimental settings - "Show Peer IDs in Profile" ON,'
+  Write-Host '    then open the channel''s info: the number shown (ID).'
+  Write-Host '  - or open the channel in https://web.telegram.org/a/ : the address ends with #-100... (that number).'
+  $raw = (Read-Host 'Channel id (Enter alone to stop)') -replace '[^0-9-]', ''
+  if (-not $raw) { break }
+  $bare = $raw.TrimStart('-')
+  $ids = @()
+  if ($raw.StartsWith('-100')) { $ids += $raw }
+  $ids += ('-100' + $bare)
+  if ($raw.StartsWith('-')) { $ids += $raw }
+  foreach ($cid in ($ids | Select-Object -Unique)) {
+    $c = Tg 'getChat' @{ chat_id = $cid }
+    if ($c -and $c.type -eq 'channel') { $chan = @{ id = "$($c.id)"; title = $c.title }; break }
+  }
+  if (-not $chan) {
+    Write-Host ('The bot cannot see that channel' + $(if ($tgErr) { ' - Telegram says: ' + $tgErr } else { '' }) + '.') -ForegroundColor Yellow
+    Write-Host 'Check the number, and that the bot is an administrator of the channel.' -ForegroundColor Yellow
   }
 }
 if (-not $chan) { Forget; Write-Host '*** No channel found - nothing changed.' -ForegroundColor Red; return }
@@ -81,6 +126,7 @@ Write-Host ("Channel: " + $chan.title + "  (id " + $chan.id + ")") -ForegroundCo
 
 $m = Tg 'getChatMember' @{ chat_id = $chan.id; user_id = $me.id }
 if (-not $m -or $m.status -ne 'administrator' -or -not $m.can_post_messages -or -not $m.can_edit_messages) {
+  if ($tgErr) { Write-Host ("Telegram says: " + $tgErr) -ForegroundColor Yellow }
   Write-Host 'The bot must be an administrator of the channel with "Post messages" and "Edit messages of others".' -ForegroundColor Yellow
   Write-Host 'Fix it in the channel''s Administrators, then run this script again.' -ForegroundColor Yellow
   Forget; return
@@ -89,7 +135,7 @@ if (-not $m -or $m.status -ne 'administrator' -or -not $m.can_post_messages -or 
 $go = Read-Host ("Connect Heimdall to """ + $chan.title + """ (Y/n)")
 if ($go -match '^[nN]') { Forget; Write-Host 'Nothing changed.'; return }
 $t = Tg 'sendMessage' @{ chat_id = $chan.id; text = "Heimdall: канал підключено. Тут з'являтимуться цілі над Києвом і Київщиною - з дописів каналів, не радар." }
-if (-not $t) { Write-Host 'The test message could not be posted - check the bot''s rights.' -ForegroundColor Yellow; Forget; return }
+if (-not $t) { Write-Host ('The test message could not be posted - Telegram says: ' + $tgErr) -ForegroundColor Yellow; Forget; return }
 
 # into Fly's secret store, through the input of "fly secrets import": never on the command line, never in a file
 ("TG_BOT_TOKEN=" + $tok + "`nTG_CHANNEL_ID=" + $chan.id) | fly secrets import -a $app

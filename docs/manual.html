@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Heimdall (Kyiv Air Watch) — the full technical documentation, with a map of the system.">
-<meta name="heimdall-version" content="1.58.0">
-<meta name="heimdall-docs" content="a49ae735a37d88f9">
+<meta name="heimdall-version" content="1.58.1">
+<meta name="heimdall-docs" content="1f27c043c855c067">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Heimdall Technical Manual</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -237,7 +237,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
 <header class="top">
   <div class="wrap">
     <a class="brand" href="#top"><b>Heimdall</b><span>Technical manual</span></a>
-    <span class="ver">1.58.0</span>
+    <span class="ver">1.58.1</span>
     <nav class="nav" aria-label="Sections">
       <a href="#map">Map</a><a href="#journeys">Journeys</a><a href="#rules">Rules</a><a href="#reference">Reference</a><a href="#safety">Safety</a>
     </nav>
@@ -256,7 +256,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
       <h1 class="title">How Heimdall works</h1>
       <p class="lead">An unofficial air-threat map for Kyiv and the oblasts around it. One Python process reads the official
       alert data and the channels that track drones and missiles, stores every post before it reads it, rebuilds the map
-      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.0, 12 October 2026:
+      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.1, 13 October 2026:
       the map first, then everything in full.</p>
     </div>
     <dl class="facts">
@@ -645,7 +645,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
     <div class="doc" id="doc">
 <section class="part" id="tech" data-label="Reference"><p class="partlabel">Part I · The reference</p>
 <h1 id="heimdall--technical-documentation">Heimdall — technical documentation</h1>
-<p><strong>Documented version: 1.58</strong> · last updated 2026-10-12 (1.58.0)</p>
+<p><strong>Documented version: 1.58</strong> · last updated 2026-10-13 (1.58.1)</p>
 <p>Heimdall was called <strong>Clear Sky</strong> until 1.29; the repository, the Fly app (<code>kyiv-air-watch-gb</code>) and some
 internal names still carry the old name.</p>
 <p>This is the complete technical reference: what runs, where the data comes from, how a Telegram post becomes a
@@ -2614,7 +2614,10 @@ deploy neither reposts nor forgets a post. <strong>Health</strong>: the dashboar
 <p><strong>Setup</strong> (<code>scripts/set-telegram-channel.bat</code>, once): @BotFather /newbot → a private channel → the bot as an
 administrator (&quot;Post messages&quot;, &quot;Edit messages of others&quot;) → a message in the channel → the script: the token asked
 hidden and checked (<code>getMe</code>), the channel found from the bot's updates (<code>getUpdates</code>: a channel post or the bot's own
-addition), the bot's rights checked (<code>getChatMember</code>), a test message, then <code>TG_BOT_TOKEN</code> and <code>TG_CHANNEL_ID</code> into
+addition) — 1.58.1: or, when the bot is told nothing (no update; another program reading its updates, a webhook),
+the channel's id typed in (Telegram Desktop's &quot;Show Peer IDs in Profile&quot;, or the channel's address in web.telegram.org/a;
+with or without -100) and checked with <code>getChat</code>; what Telegram answered is shown in its own words, the token masked —,
+the bot's rights checked (<code>getChatMember</code>), a test message, then <code>TG_BOT_TOKEN</code> and <code>TG_CHANNEL_ID</code> into
 Fly's secrets through <code>fly secrets import</code>'s input. To stop: <code>fly secrets unset TG_BOT_TOKEN TG_CHANNEL_ID</code>.</p>
 <h2 id="10-the-two-pages-tactical-and-light">10. The two pages: Tactical and Light<a class="anc" href="#10-the-two-pages-tactical-and-light" aria-label="Link to this section">#</a></h2>
 <h3 id="101-tactical-m">10.1 Tactical (<code>/m</code>)<a class="anc" href="#101-tactical-m" aria-label="Link to this section">#</a></h3>
@@ -4824,7 +4827,7 @@ d'alerte ne sont pas des préférences de style.</p>
 </section>
     </div>
   </div>
-  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.0, 12 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
+  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.1, 13 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
 </main>
 
 <script>
