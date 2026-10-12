@@ -226,7 +226,7 @@ class ChannelPoster(threading.Thread):
     again, a closing line for a target gone from the map."""
 
     def __init__(self, state, token, chat_id, public_url, api=None, shot=None, log=print, clock=time.time,
-                 kv=None, ssl_ctx=None):
+                 kv=None, ssl_ctx=None, sat=None):
         super().__init__(daemon=True, name="channel")
         self.state, self.chat_id, self.public_url = state, chat_id, public_url
         self.api = api or BotAPI(token, ssl_ctx)
@@ -234,7 +234,7 @@ class ChannelPoster(threading.Thread):
         self.kv = kv or getattr(state, "store", None)
         if shot is None and mapshot is not None and mapshot.Image is not None:
             try:
-                shot = mapshot.MapShot()
+                shot = mapshot.MapShot(sat=sat)       # 1.58.2: over the app's satellite picture
             except Exception as e:
                 log("channel: no map picture —", type(e).__name__, e)
                 shot = None
@@ -459,12 +459,12 @@ def configured(env=None):
     return bool(env.get("TG_BOT_TOKEN") and env.get("TG_CHANNEL_ID"))
 
 
-def start(state, log=print, ssl_ctx=None, env=None):
+def start(state, log=print, ssl_ctx=None, env=None, sat=None):
     """Called by app/server.py's main(): the channel runs only when the owner has set both secrets."""
     env = os.environ if env is None else env
     if not configured(env):
         return None
     url = env.get("PUBLIC_URL") or "https://kyiv-air-watch-gb.fly.dev"
-    p = ChannelPoster(state, env["TG_BOT_TOKEN"], env["TG_CHANNEL_ID"], url, log=log, ssl_ctx=ssl_ctx)
+    p = ChannelPoster(state, env["TG_BOT_TOKEN"], env["TG_CHANNEL_ID"], url, log=log, ssl_ctx=ssl_ctx, sat=sat)
     p.start()
     return p

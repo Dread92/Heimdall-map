@@ -8547,7 +8547,7 @@ def main():
     state.channel = None
     if chanpost and chanpost.configured():
         try:
-            state.channel = chanpost.start(state, log=log, ssl_ctx=_SSL_CTX)
+            state.channel = chanpost.start(state, log=log, ssl_ctx=_SSL_CTX, sat=SAT)     # 1.58.2: the satellite view
         except Exception as e:
             log("channel: not started —", type(e).__name__)
     elif chanpost:

@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Heimdall (Kyiv Air Watch) — the full technical documentation, with a map of the system.">
-<meta name="heimdall-version" content="1.58.1">
-<meta name="heimdall-docs" content="1f27c043c855c067">
+<meta name="heimdall-version" content="1.58.2">
+<meta name="heimdall-docs" content="3b696029ea2285a8">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Heimdall Technical Manual</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -237,7 +237,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
 <header class="top">
   <div class="wrap">
     <a class="brand" href="#top"><b>Heimdall</b><span>Technical manual</span></a>
-    <span class="ver">1.58.1</span>
+    <span class="ver">1.58.2</span>
     <nav class="nav" aria-label="Sections">
       <a href="#map">Map</a><a href="#journeys">Journeys</a><a href="#rules">Rules</a><a href="#reference">Reference</a><a href="#safety">Safety</a>
     </nav>
@@ -256,7 +256,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
       <h1 class="title">How Heimdall works</h1>
       <p class="lead">An unofficial air-threat map for Kyiv and the oblasts around it. One Python process reads the official
       alert data and the channels that track drones and missiles, stores every post before it reads it, rebuilds the map
-      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.1, 13 October 2026:
+      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.2, 13 October 2026:
       the map first, then everything in full.</p>
     </div>
     <dl class="facts">
@@ -645,7 +645,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
     <div class="doc" id="doc">
 <section class="part" id="tech" data-label="Reference"><p class="partlabel">Part I · The reference</p>
 <h1 id="heimdall--technical-documentation">Heimdall — technical documentation</h1>
-<p><strong>Documented version: 1.58</strong> · last updated 2026-10-13 (1.58.1)</p>
+<p><strong>Documented version: 1.58</strong> · last updated 2026-10-13 (1.58.2)</p>
 <p>Heimdall was called <strong>Clear Sky</strong> until 1.29; the repository, the Fly app (<code>kyiv-air-watch-gb</code>) and some
 internal names still carry the old name.</p>
 <p>This is the complete technical reference: what runs, where the data comes from, how a Telegram post becomes a
@@ -2606,6 +2606,15 @@ oblasts around, fainter). The view: the target, its last six reported places (a 
 ray is drawn only with a stated course. The place the post named stands in a pill beside it; town names that would
 cover it are left out; the places it was reported at before are named beside their dots where there is room. Header: HEIMDALL · Київ · Київщина · the report's time; foot: the warning and the map's
 credits. Without Pillow (or the font) the channel posts its text alone. The image installs <code>fonts-dejavu-core</code>.</p>
+<p>1.58.2, the owner: &quot;il faudrait idéalement la vision map satellite&quot;. <strong>Under the map, the satellite picture</strong>: the app's
+own Sentinel-2 tiles (<code>SAT</code>, the MBTiles file on the volume, §10.1 — no map provider is asked, Esri's are never used
+here), at the zoom as sharp as the picture (~z10 for a 150 km view, ~z12 for 30 km; 10–60 tiles), each tile placed by
+its own corners in the map's kilometres, then dimmed as the Tactical page dims its layer (<code>#sat</code>: brightness .62,
+saturate .82, contrast 1.04 — <code>SAT_LOOK</code>). The areas are not filled; the alerts' tint is drawn in one layer of its own
+(over the picture, two shapes meeting at an edge or an enclave would otherwise be tinted twice); the rivers are the
+picture's. The last 200 decoded tiles are kept (~40 MB; a bad tile is not). Credits: &quot;Знімки: ESA WorldCover 2021,
+modified Copernicus Sentinel data (2021) · межі: OCHA, geoBoundaries · © OpenStreetMap&quot;. ~0.3–0.5 s a picture. No
+file on the volume (a local run): the plain map, as before.</p>
 <p><strong>Limits</strong>: 18 calls a minute (<code>BUDGET</code>; Telegram's is ~20 messages a minute per channel), new targets first, the most
 recent first; a 429's <code>retry_after</code> is obeyed. <strong>State</strong>: <code>kv</code> <code>chan_posts</code> — per target, the message id, first / last
 report, what was drawn (<code>signature</code>), a trimmed copy of the mark for the closing line; 24 h, kept over a restart so a
@@ -4827,7 +4836,7 @@ d'alerte ne sont pas des préférences de style.</p>
 </section>
     </div>
   </div>
-  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.1, 13 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
+  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.2, 13 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
 </main>
 
 <script>

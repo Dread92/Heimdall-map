@@ -11,6 +11,7 @@ It shows what the post said and nothing more (docs/SAFETY.md): where it was repo
 before, a course only when a post gave one, the official alerts of the moment by raion. No outcome (a shot-down, an
 explosion) is ever drawn — the channel is for what flies, and where a strike landed is not published live.
 """
+import collections
 import io
 import json
 import math
@@ -18,9 +19,9 @@ import os
 import re
 
 try:
-    from PIL import Image, ImageDraw, ImageFont
+    from PIL import Image, ImageDraw, ImageEnhance, ImageFont
 except ImportError:            # optional: without it the channel sends text only
-    Image = ImageDraw = ImageFont = None
+    Image = ImageDraw = ImageEnhance = ImageFont = None
 
 STATIC = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "static")
 FONTS = ("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", "/usr/share/fonts/TTF/DejaVuSans.ttf",
@@ -173,8 +174,18 @@ def alert_fill(active):
     return out
 
 
+SAT_CREDIT = "Знімки: ESA WorldCover 2021, modified Copernicus Sentinel data (2021) · межі: OCHA, geoBoundaries · © OpenStreetMap"
+MAP_CREDIT = "Межі: OCHA · geoBoundaries (CC BY) · райони Києва © OpenStreetMap"
+# the Tactical page's satellite layer: #sat{filter:brightness(.62) saturate(.82) contrast(1.04)}
+SAT_LOOK = (0.62, 0.82, 1.04)
+
+
 class MapShot:
-    def __init__(self, static=STATIC):
+    def __init__(self, static=STATIC, sat=None):
+        # 1.58.2: `sat` — the app's own satellite tiles (server.SAT: .info() → (version, deepest zoom), .tile(z, x, y)
+        # → WebP bytes); the picture is drawn over them as the Tactical page's satellite view. None: the plain map.
+        self.sat = sat
+        self._tiles = collections.OrderedDict()
         base = json.load(open(os.path.join(static, "kyiv-map.json"), encoding="utf-8"))
         self.c0, self.c1 = base["center"]
         self.kx, self.ky = base["kx"], base["ky"]
@@ -205,7 +216,7 @@ class MapShot:
             for k, x, y in re.findall(r"'?([\w-]+)'?:\[(-?[\d.]+),(-?[\d.]+)\]", lbl.group(1)):
                 if k in adj:
                     self.raion_lbl.append(((adj[k] + " р-н").upper(), (float(x), float(y))))
-        self.f = {s: _font(FONTS, s * SS) for s in (17, 19, 22, 26, 30)}
+        self.f = {s: _font(FONTS, s * SS) for s in (15, 17, 19, 22, 26, 30)}
         self.fb = {s: _font(FONTS_B, s * SS) for s in (19, 22, 26, 30, 34)}
 
     def proj(self, lon, lat):
@@ -246,34 +257,47 @@ class MapShot:
             return ((p[0] - x0) * k, top + (p[1] - y0) * k)
 
         img = Image.new("RGB", (S, S), BG)
+        sat = self._satellite(S, top, bottom, x0, y0, k)
+        on_sat = sat is not None
+        if on_sat:
+            img.paste(sat, (0, top))
         d = ImageDraw.Draw(img, "RGBA")
         fills = alert_fill(active)
-        # outlines: the oblasts around, Kyiv oblast's raions, the city — tinted by the official alerts
-        for raion, obl, key, rings in self.features:
-            if raion:
+        # outlines: the oblasts around, Kyiv oblast's raions, the city — tinted by the official alerts. Over the
+        # satellite picture the areas are not filled: the ground shows through, under the alerts' tint
+        nb_line = (225, 230, 240, 70) if on_sat else NB_LINE
+        rn_line = (215, 225, 245, 150) if on_sat else RN_LINE
+        if not on_sat:                                # the plain map: the oblasts around, then Kyiv oblast's raions
+            for raion, obl, key, rings in sorted(self.features, key=lambda f: bool(f[0])):
+                for r in rings:
+                    d.polygon([px(p) for p in r], fill=RN if raion else NB)
+        # the alerts' tint, in one layer of its own: two shapes over each other (an enclave, a shared edge) are not
+        # tinted twice — over the satellite picture that showed as brighter patches
+        tint = Image.new("RGBA", img.size, (0, 0, 0, 0))
+        td = ImageDraw.Draw(tint)
+        tinted = False
+        for raion, obl, key, rings in sorted(self.features, key=lambda f: bool(f[0])):
+            lvl = fills.get(raion) if raion else (fills.get("nb:" + (key or "")) or fills.get("obl:" + (obl or "")))
+            if not lvl:
                 continue
-            lvl = fills.get("nb:" + (key or "")) or fills.get("obl:" + (obl or ""))
+            col = RED_T if lvl == "R" else YEL_T
             for r in rings:
-                d.polygon([px(p) for p in r], fill=NB)
-                if lvl:
-                    d.polygon([px(p) for p in r], fill=(RED_T if lvl == "R" else YEL_T)[:3] + (40,))
-                d.line([px(p) for p in r] + [px(r[0])], fill=NB_LINE, width=SS)
-        for raion, obl, key, rings in self.features:
-            if not raion:
-                continue
+                td.polygon([px(p) for p in r], fill=col if raion else col[:3] + (40,))
+            tinted = True
+        if tinted:
+            img.paste(tint, (0, 0), tint)
+        for raion, obl, key, rings in sorted(self.features, key=lambda f: bool(f[0])):
             for r in rings:
-                d.polygon([px(p) for p in r], fill=RN)
-                lvl = fills.get(raion)
-                if lvl:
-                    d.polygon([px(p) for p in r], fill=RED_T if lvl == "R" else YEL_T)
-                d.line([px(p) for p in r] + [px(r[0])], fill=CITY_LINE if raion == "kyiv-city" else RN_LINE,
-                       width=(3 if raion == "kyiv-city" else 2) * SS)
+                d.line([px(p) for p in r] + [px(r[0])],
+                       fill=(CITY_LINE if raion == "kyiv-city" else rn_line) if raion else nb_line,
+                       width=(3 if raion == "kyiv-city" else 2 if raion else 1) * SS)
         if span <= 60:
             for name, cx, cy, rings in self.districts:
                 for r in rings:
-                    d.line([px(p) for p in r] + [px(r[0])], fill=KD_LINE, width=SS)
-        for w, ln in self.rivers:
-            d.line([px(p) for p in ln], fill=RIVER, width=w * SS, joint="curve")
+                    d.line([px(p) for p in r] + [px(r[0])], fill=(225, 232, 245, 70) if on_sat else KD_LINE, width=SS)
+        if not on_sat:                                # the picture shows the rivers itself
+            for w, ln in self.rivers:
+                d.line([px(p) for p in ln], fill=RIVER, width=w * SS, joint="curve")
         # the target's own room and the scale's are kept first: no name is written over them
         here = px(self.proj(m["lon"], m["lat"]))
         boxes = [(here[0] - HALO * SS, here[1] - HALO * SS, here[0] + HALO * SS, here[1] + HALO * SS),
@@ -283,7 +307,7 @@ class MapShot:
         if span > 60:
             for text, p in self.raion_lbl:
                 q = px(p)
-                self._label(d, q, text, self.f[17], (138, 150, 170), boxes, bounds, anchor="mm")
+                self._label(d, q, text, self.f[17], (205, 214, 228) if on_sat else (138, 150, 170), boxes, bounds, anchor="mm")
         # the towns, the big ones first; a name that would cover another is left out
         for name, p, big in sorted(self.towns, key=lambda t: not t[2]):
             q = px(p)
@@ -297,18 +321,84 @@ class MapShot:
         if span <= 60:                            # the city's districts, quietly, where there is room
             for name, cx, cy, _rings_ in self.districts:
                 if cx is not None:
-                    self._label(d, px((cx, cy)), name.replace(" район", ""), self.f[17], (120, 132, 152), boxes, bounds,
-                                anchor="mm")
+                    self._label(d, px((cx, cy)), name.replace(" район", ""), self.f[17],
+                                (196, 205, 220) if on_sat else (120, 132, 152), boxes, bounds, anchor="mm")
         self._target(d, m, px, here, ray, as_drone(m, missiles), k, boxes, bounds)
         if tag:
             self._pill(d, *tag)
-        self._bands(d, when, k)
+        self._bands(d, when, k, SAT_CREDIT if on_sat else MAP_CREDIT)
         out = img.resize((W, W), Image.LANCZOS)
         buf = io.BytesIO()
         # JPEG, full colour resolution so the names stay sharp: Telegram re-encodes every photo as JPEG anyway, and
         # a PNG of this map took half the drawing time to compress
         out.save(buf, "JPEG", quality=90, subsampling=0)
         return buf.getvalue()
+
+    def _satellite(self, S, top, bottom, x0, y0, k):
+        """The Sentinel-2 picture of the view, from the app's own tiles (no map provider is asked), dimmed as the Tactical
+        page dims its satellite layer — or None (no file, nothing in view: the plain map)."""
+        if self.sat is None:
+            return None
+        try:
+            ver, zmax = self.sat.info()
+        except Exception:
+            return None
+        if not zmax:
+            return None
+        h = bottom - top
+        lat_c = self.c1 - (y0 + h / k / 2) / self.ky
+        # the zoom whose tiles are as sharp as the picture (a 256-px tile spans C / 2^z km), not sharper
+        C = 40075.017 * math.cos(math.radians(lat_c))
+        z = int(max(5, min(int(zmax), math.ceil(math.log2(max(1.0, (k / SS) * C / 256))))))
+        n = 1 << z
+
+        def tx(lon):
+            return int((lon + 180) / 360 * n)
+
+        def ty(lat):
+            r = math.radians(lat)
+            return int((1 - math.log(math.tan(r) + 1 / math.cos(r)) / math.pi) / 2 * n)
+
+        def corner(X, Y):                        # a tile's north-west corner, in this picture's pixels
+            lon = X / n * 360 - 180
+            lat = math.degrees(math.atan(math.sinh(math.pi * (1 - 2 * Y / n))))
+            q = self.proj(lon, lat)
+            return round((q[0] - x0) * k), round((q[1] - y0) * k)
+        lon0, lon1 = self.c0 + x0 / self.kx, self.c0 + (x0 + S / k) / self.kx
+        lat0, lat1 = self.c1 - y0 / self.ky, self.c1 - (y0 + h / k) / self.ky
+        base = Image.new("RGB", (S, h), BG)
+        got = 0
+        for X in range(max(0, tx(lon0)), min(n - 1, tx(lon1)) + 1):
+            for Y in range(max(0, ty(lat0)), min(n - 1, ty(lat1)) + 1):
+                im = self._tile(ver, z, X, Y)
+                if im is None:
+                    continue
+                (ax, ay), (bx, by) = corner(X, Y), corner(X + 1, Y + 1)
+                if bx > ax and by > ay:
+                    base.paste(im.resize((bx - ax, by - ay), Image.BILINEAR), (ax, ay))
+                    got += 1
+        if not got:
+            return None
+        b, c, ct = SAT_LOOK
+        return ImageEnhance.Contrast(ImageEnhance.Color(ImageEnhance.Brightness(base).enhance(b)).enhance(c)).enhance(ct)
+
+    def _tile(self, ver, z, x, y):
+        """One tile, decoded; the last 200 kept (~40 MB): on a night the same few places are drawn again and again."""
+        key = (ver, z, x, y)
+        im = self._tiles.get(key)
+        if im is not None:
+            self._tiles.move_to_end(key)
+            return im
+        try:
+            data = self.sat.tile(z, x, y)
+            im = Image.open(io.BytesIO(data)).convert("RGB") if data else None
+        except Exception:
+            im = None
+        if im is not None:
+            self._tiles[key] = im
+            while len(self._tiles) > 200:
+                self._tiles.popitem(last=False)
+        return im
 
     @staticmethod
     def _free(box, boxes, bounds):
@@ -413,7 +503,7 @@ class MapShot:
             c = tr(0, 4)
             d.ellipse([c[0] - 1.2 * sc, c[1] - 1.2 * sc, c[0] + 1.2 * sc, c[1] + 1.2 * sc], fill=STROKE)
 
-    def _bands(self, d, when, k):
+    def _bands(self, d, when, k, credit=MAP_CREDIT):
         S = W * SS
         d.rectangle([0, 0, S, HEAD * SS], fill=(18, 21, 27))
         d.line([0, HEAD * SS, S, HEAD * SS], fill=(36, 40, 48), width=SS)
@@ -426,8 +516,8 @@ class MapShot:
         d.line([0, y, S, y], fill=(36, 40, 48), width=SS)
         d.text((26 * SS, y + 30 * SS), "З дописів каналів, не радар · сирена й офіційна тривога — головне",
                font=self.f[19], fill=INK2, anchor="lm")
-        d.text((26 * SS, y + 62 * SS), "Межі: OCHA · geoBoundaries (CC BY) · райони Києва © OpenStreetMap",
-               font=self.f[17], fill=INK3, anchor="lm")
+        cf = self.f[17] if d.textlength(credit, font=self.f[17]) <= (W - 52) * SS else self.f[15]
+        d.text((26 * SS, y + 62 * SS), credit, font=cf, fill=INK3, anchor="lm")
         # the scale: a round number of kilometres about a sixth of the picture
         km = next((v for v in (1, 2, 5, 10, 20, 50) if v * k >= S / 9), 50)
         bx, by = 26 * SS, y - 26 * SS

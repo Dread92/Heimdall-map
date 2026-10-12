@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-13 (1.58.1)
+**Documented version: 1.58** · last updated 2026-10-13 (1.58.2)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -1582,6 +1582,16 @@ oblasts around, fainter). The view: the target, its last six reported places (a 
 ray is drawn only with a stated course. The place the post named stands in a pill beside it; town names that would
 cover it are left out; the places it was reported at before are named beside their dots where there is room. Header: HEIMDALL · Київ · Київщина · the report's time; foot: the warning and the map's
 credits. Without Pillow (or the font) the channel posts its text alone. The image installs `fonts-dejavu-core`.
+
+1.58.2, the owner: "il faudrait idéalement la vision map satellite". **Under the map, the satellite picture**: the app's
+own Sentinel-2 tiles (`SAT`, the MBTiles file on the volume, §10.1 — no map provider is asked, Esri's are never used
+here), at the zoom as sharp as the picture (~z10 for a 150 km view, ~z12 for 30 km; 10–60 tiles), each tile placed by
+its own corners in the map's kilometres, then dimmed as the Tactical page dims its layer (`#sat`: brightness .62,
+saturate .82, contrast 1.04 — `SAT_LOOK`). The areas are not filled; the alerts' tint is drawn in one layer of its own
+(over the picture, two shapes meeting at an edge or an enclave would otherwise be tinted twice); the rivers are the
+picture's. The last 200 decoded tiles are kept (~40 MB; a bad tile is not). Credits: "Знімки: ESA WorldCover 2021,
+modified Copernicus Sentinel data (2021) · межі: OCHA, geoBoundaries · © OpenStreetMap". ~0.3–0.5 s a picture. No
+file on the volume (a local run): the plain map, as before.
 
 **Limits**: 18 calls a minute (`BUDGET`; Telegram's is ~20 messages a minute per channel), new targets first, the most
 recent first; a 429's `retry_after` is obeyed. **State**: `kv` `chan_posts` — per target, the message id, first / last

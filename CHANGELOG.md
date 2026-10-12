@@ -2,6 +2,15 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.2 — 2026-10-13
+
+### Changed
+- **The channel's picture over the satellite view** — the owner: "il faudrait idéalement la vision map satellite". The
+  map around each target is now drawn over the app's own Sentinel-2 picture (the file on the volume — no map provider
+  is asked), dimmed as the Tactical page dims its satellite layer: the raions' outlines, the alerts' tint, the towns,
+  the path and the target over the ground. The tint is one layer, so where two shapes meet nothing is tinted twice.
+  The credits name the imagery. Without the file, the plain map as before.
+
 ## 1.58.1 — 2026-10-13
 
 ### Fixed
