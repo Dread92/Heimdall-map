@@ -2791,6 +2791,28 @@ def face_of(m):
         m["face"], m["face_by"] = f, "track"
 
 
+# 1.57.6: the Android app (a Trusted Web Activity, built outside this repository — heimdall-android) shows this site full
+# screen only when the site says the app is its own: /.well-known/assetlinks.json names the app and the SHA-256 of the
+# owner's signing key (ANDROID_CERT_SHA256, a Fly secret set with scripts/set-android-key.bat — public, not a secret,
+# but set by the owner). No key set: an empty list, and the app shows the site with an address bar.
+ANDROID_PACKAGE_DEFAULT = "com.blackflamestudio.heimdall"
+
+
+def android_asset_links():
+    fps = []
+    # "AB:CD:…" (keytool, 32 pairs) or 64 hex digits (apksigner), one or several, whatever is around them ("SHA256: …")
+    for f in re.findall(r"(?:[0-9A-Fa-f]{2}:){31}[0-9A-Fa-f]{2}|(?<![0-9A-Fa-f])[0-9A-Fa-f]{64}(?![0-9A-Fa-f])",
+                        os.environ.get("ANDROID_CERT_SHA256", "")):
+        h = f.replace(":", "").upper()
+        if h not in fps:
+            fps.append(h)
+    if not fps:
+        return []
+    return [{"relation": ["delegate_permission/common.handle_all_urls"],
+             "target": {"namespace": "android_app", "package_name": os.environ.get("ANDROID_PACKAGE") or ANDROID_PACKAGE_DEFAULT,
+                        "sha256_cert_fingerprints": [":".join(h[i:i + 2] for i in range(0, 64, 2)) for h in fps]}}]
+
+
 class State:
     """In-memory current picture + SSE fan-out."""
 
@@ -7860,6 +7882,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json({"online": hub.online() if hub else None, "notice": st.notice_now(), "nuke": st.nuke,
                                    "push_last": getattr(pu, "last_fanout", None), "now": now_iso(),
                                    "process": vt.report() if vt else None})
+            if u.path == "/.well-known/assetlinks.json":
+                return self._json(android_asset_links())
             if u.path == "/api/version":
                 usage = getattr(st, "usage", None)
                 if usage:

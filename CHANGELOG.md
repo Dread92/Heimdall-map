@@ -2,6 +2,15 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.57.6 — 2026-10-12
+
+### Added
+- **The Android app can open the site full screen** — the owner: "an app we can really install on the phone, an APK,
+  without going through the stores first, in a folder of its own". The app is `heimdall-android` (a separate folder: a
+  Trusted Web Activity that shows this web app, with its notifications); this release only lets the site vouch for it:
+  `/.well-known/assetlinks.json` names the app and the fingerprint of the owner's signing key, set once with
+  `scripts/set-android-key.bat`. Until then the list is empty and the app shows an address bar.
+
 ## 1.57.5 — 2026-10-11
 
 ### Changed

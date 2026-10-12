@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.57** · last updated 2026-10-11 (1.57.5)
+**Documented version: 1.57** · last updated 2026-10-12 (1.57.6)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -319,6 +319,8 @@ Environment variables win over `config.json`. On Fly they are set as **secrets**
 | `DB_PATH` | SQLite file (Fly: on the volume). |
 | `SAT_TILES` | The satellite layer's MBTiles file (1.47). Default: `sat-ua.mbtiles` next to `DB_PATH` — on Fly, `/data/sat-ua.mbtiles` on the volume. |
 | `CONFIG_PATH` | Alternative `config.json` location. |
+| `ANDROID_CERT_SHA256` | 1.57.6: the SHA-256 fingerprint(s) of the Android app's signing key (§10.8), as keytool or apksigner prints them, several separated by commas — set with `scripts/set-android-key.bat`. Public, not a secret. Unset: `/.well-known/assetlinks.json` is an empty list. |
+| `ANDROID_PACKAGE` | 1.57.6: the Android app's identifier, default `com.blackflamestudio.heimdall`. |
 | `ADMIN_KEY` | Protects `/admin` and its APIs only. The map stays public. |
 | `ACCESS_KEY` | Puts the whole app behind a key. **Never on the public app.** |
 | `ALERTS_IN_UA_TOKEN` | alerts.in.ua token. |
@@ -2079,6 +2081,25 @@ shelter the city lists, each labelled with what it is** — the city's own list 
   closed, locked or full", the source and its date, and "Outside is dangerous during an attack. If you cannot get
   there in time: two walls between you and the street, away from windows." No shelter is offered outside Kyiv city.
 
+### 10.8 The Android app (1.57.6)
+
+The owner: "an app we can really install on the phone, an APK, without going through the Play Store first — in a
+folder of its own, to keep things clear". It is **`heimdall-android`**, a separate folder (not in this repository): a
+Trusted Web Activity built on Google's `androidbrowserhelper` — the app shows `https://kyiv-air-watch-gb.fly.dev/m` full
+screen through the phone's Chrome, with its notifications (the library's `DelegationService`; Android 13+ asks the
+reader once), its icon, a splash, and two shortcuts (Light, What to do). **Every release of this web app reaches the
+Android app at once**; a new APK is needed only for its name, icon, address or Android behaviour. Identifier
+`com.blackflamestudio.heimdall`; Android 7 (API 24) and later; `compileSdk`/`targetSdk` 36.
+
+- **The signing key is the owner's**: made on his computer by `heimdall-android\scripts\2-make-key.bat` (keytool asks
+  for the password; the key lives in `%USERPROFILE%\.heimdall`, outside both folders), used by `3-build-apk.bat`
+  (apksigner asks for the password, nothing stored). A test build (`…heimdall.test`, "Heimdall (test)", the debug key)
+  installs beside it.
+- **The site says the app is its own**: `GET /.well-known/assetlinks.json` (`android_asset_links`) names the app and the
+  fingerprint(s) in `ANDROID_CERT_SHA256` (`scripts/set-android-key.bat`, a Fly secret like the others — public, but set
+  by the owner). Without it, Android opens the app with an address bar on top (a Custom Tab), as for the test build.
+- No pin and no setting changes hands: the app is the web app, its storage the browser's.
+
 ## 11. Privacy and security
 
 - The four places never leave the phone; the Light page's requests carry no place (checked in the render tests).
@@ -2118,6 +2139,7 @@ All JSON unless stated. Public unless marked 🔒 (`ADMIN_KEY`).
 | `GET /desktop`, `/index.html`, `/dash` | older desktop view |
 | `GET /ua`, `/mobile`, `/mobile.html` | older mobile view |
 | `GET /manifest.json`, `/light.webmanifest`, `/sw.js`, `/favicon.ico`, `/static/*` | PWA files, assets (gzip + ETag) |
+| `GET /.well-known/assetlinks.json` | 1.57.6: the Digital Asset Links that let the Android app open this site full screen (§10.8): `[]` until `ANDROID_CERT_SHA256` is set |
 | `GET /healthz` | liveness: `{"ok": true}`, or **503** when the database cannot be had within 3 s |
 | `GET /api/version` | `{v, now, missile, msl, build, app}` — the cheap ping pages poll |
 | `GET /api/state` | active alerts, per-oblast status, whether each source works (1.46: `{ok}` only — the detail is `/api/health`), єРадар counts, the admin's message, the nuclear event, the Kyiv bridges (`bridges`, §9b), the oblasts on the map (`scope`, 1.43), config summary |
