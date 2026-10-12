@@ -2,6 +2,17 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.6 — 2026-10-13
+
+### Fixed
+- **"In the east of Kyiv oblast, heading for the capital" is in the east, not on Kyiv** — the owner, with the Air
+  Force's jet drone drawn on Kyiv as "→ Київ" (and turned east) while Kyiv had no alert: "placement here is obviously
+  wrong, it's towards Kyiv but not in Kyiv at least yet… alarm ALWAYS is better… it's dangerous". A post that places a
+  target in a part of an oblast and names where it is heading now puts it in that part (low confidence, "east of the
+  oblast"), its course toward the destination; the side is no longer read as its course (it pointed east, away from
+  Kyiv). Only a post that says nothing of where it is is still drawn at its destination. The private channel posts
+  such a target as "Схід Київщини", with the area it is somewhere in.
+
 ## 1.58.5 — 2026-10-13
 
 ### Changed

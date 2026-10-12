@@ -40,6 +40,7 @@ KEEP_S = 24 * 3600                         # what the store remembers of the pos
 BUDGET = 18                                # calls a minute (Telegram allows ~20 messages a minute in one channel)
 TICK_S = 5
 KV = "chan_posts"
+AREA_KM = 35                               # the radius drawn round a target placed only in a part of the oblast
 KV_ON = "chan_on"                          # 1.58.3: the dashboard's kill switch ("0" = off; anything else, or unset = on)
 MSL_TYPES = ("ballistic_missiles", "cruise_missiles", "supersonic_missiles", "unspecified_missiles")
 
@@ -95,8 +96,25 @@ def eligible(m):
         return False
     if m.get("needs_context") or m.get("candidates"):
         return False
+    if part_of_oblast(m):                       # 1.58.6: "на сході Київщини" — the part the post named, as such
+        return True
     place = (m.get("place") or "").strip().lstrip("→").strip()           # "→ Київ": the town it is heading for
     return bool(place) and place.lower() not in ("область", "київщина", "київська область")
+
+
+QUAD_UK = {"n": "Північ", "s": "Південь", "e": "Схід", "w": "Захід", "ne": "Північний схід", "nw": "Північний захід",
+           "se": "Південний схід", "sw": "Південний захід"}
+
+
+def part_of_oblast(m):
+    """The part of Kyiv oblast a post placed it in, with no town ("на сході Київщини") — its key (n, se, …) or None."""
+    q = ((m.get("evidence") or {}).get("position") or {}).get("quad")
+    return q if m.get("place") == "область" and m.get("oblast_uid") == "14" and q in QUAD_UK else None
+
+
+def place_text(m):
+    q = part_of_oblast(m)
+    return QUAD_UK[q] + " Київщини" if q else (m.get("place") or "")
 
 
 def key_of(m):
@@ -139,7 +157,7 @@ def caption(m, first_t, public_url, ended_t=None):
     """The post's text (Telegram HTML). Only what the post said; nothing about what became of it."""
     emo, name = label_of(m)
     n = m.get("count")
-    head = f"{emo} <b>{esc(name)}{' ×' + str(n) if isinstance(n, int) and n > 1 else ''}</b> · {esc(m.get('place'))}"
+    head = f"{emo} <b>{esc(name)}{' ×' + str(n) if isinstance(n, int) and n > 1 else ''}</b> · {esc(place_text(m))}"
     lines = []
     if ended_t:
         lines.append(f"⏹ Нових дописів після {hhmm(ended_t)} немає")
@@ -149,6 +167,8 @@ def caption(m, first_t, public_url, ended_t=None):
         lines.append(f"➡️ {esc(c)} (так у дописі)")
     if approach(m):
         lines.append("📍 Де саме зараз — у дописі не сказано")
+    elif part_of_oblast(m):
+        lines.append("📍 Точного місця в дописі немає — лише частина області")
     alt = m.get("alt") or {}
     if isinstance(alt, dict) and (alt.get("m") or alt.get("state") in ALT_STATE):
         lines.append("↕️ Висота: " + (f"~{int(alt['m'])} м" if alt.get("m") else ALT_STATE[alt["state"]]) + " (у дописі)")
@@ -311,6 +331,8 @@ class ChannelPoster(threading.Thread):
         try:
             k = key_of(m)
             others = [o for kk, o in (self.cur or {}).items() if kk != k]     # 1.58.5: what else is in the sky
+            if part_of_oblast(m):                 # 1.58.6: a part of the oblast is an area, not a point
+                m = dict(m, place=place_text(m), _area_km=AREA_KM)
             return self.shot.render(m, active, hhmm(report_t(m) or self.clock()),
                                     ray=stated_course(m) is not None and not approach(m), missiles=self.missiles,
                                     others=others)

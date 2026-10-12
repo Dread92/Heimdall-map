@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-13 (1.58.5)
+**Documented version: 1.58** · last updated 2026-10-13 (1.58.6)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -623,7 +623,9 @@ block for every value:
   alone (`dest_only`) stays at the channel's previous report (≤ 8 min) turned toward the destination — 1.58: only a
   report of the same weapon (`same_weapon`: the same type, or a drone and a weapon not named) —, or else is an
   approach. In tracking, a later approach about a target already on the map gives it its destination and course
-  instead of moving it; an approach point is never a step of a track.
+  instead of moving it; an approach point is never a step of a track. 1.58.6: a part of the oblast the post placed it
+  in ("на сході Київщини, в напрямку столиці") is where it is — the oblast centre shifted ~70 km to that side, with
+  its `quad` — and the destination is its course (`side_stated`); the side is never read as the course.
 - **Count**, **altitude** (only when written: "знижується", "низько", metres "висота 2200", a bare "1600, Вороньків"
   in a short live post, kilometres "висота 4,4км"), **phase** (`PHASE_LADDER`:
   prep → launch → entering…, with a per-sentence hedge guard: "може відбутись" is preparation, not a launch).
@@ -1591,7 +1593,9 @@ oblasts around, fainter). The view (1.58.5, the owner: "the map isn't zoomed out
 awareness"): the target, its last six reported places (a dotted path) and always Kyiv, ×1.3 + 20 km, between 40 km
 (a target in the city: the whole city) or 90 km and 220 km — centred on the target past that. The other targets of the
 moment (the channel's own, `ChannelPoster.cur`) are drawn too, smaller and fainter, under the one the post is about; a
-town name beside one moves to its other side rather than vanish. The silhouette turns as `orientOf()` turns it; the course
+town name beside one moves to its other side rather than vanish. 1.58.6: a target placed only in a part of Kyiv oblast ("на сході
+Київщини") is posted as that part ("Схід Київщини", "📍 Точного місця в дописі немає — лише частина області"), drawn
+with a dashed circle of 35 km round the point (`AREA_KM`). The silhouette turns as `orientOf()` turns it; the course
 ray is drawn only with a stated course. The place the post named stands in a pill beside it; town names that would
 cover it are left out; the places it was reported at before are named beside their dots where there is room. Header: HEIMDALL · Київ · Київщина · the report's time; foot: the warning and the map's
 credits. Without Pillow (or the font) the channel posts its text alone. The image installs `fonts-dejavu-core`.

@@ -1902,7 +1902,12 @@ def parse_post(text, home=None):
             PLACES[target[0][2]][2] == obl[1] or {PLACES[target[0][2]][2], obl[1]} <= {"31", "14"})
         # an oblast it comes FROM — "БпЛА з Чернігівщини курсом на Київ" — is where it is, as far as the post says
         from_obl = bool(obl) and bool(re.search(r"(?:^|\s)(?:з|зі|із|від)\s+$", seg[max(0, obl[0] - 6):obl[0]]))
-        if lon is None and (in_obl or (target and cm and not from_obl)):
+        # 1.58.6: a part of the oblast the post placed it in — "на сході Київщини, в напрямку столиці" — is where it is,
+        # destination or not. Drawn at the destination as an approach, the AF's jet drone "in the east of Kyiv oblast,
+        # heading for the capital" sat on Kyiv while Kyiv was under no alert, turned east by the "сході" read as its
+        # course (the owner: "it's towards Kyiv but not in Kyiv at least yet … it's dangerous").
+        side_stated = bool(obl) and not from_obl and _sub_direction_offset(seg, obl[0]) != (0, 0)
+        if lon is None and (in_obl or (target and cm and not from_obl)) and not side_stated:
             # 1.45: a town it is heading for, and no town where it is: it is drawn at that town, as an approach — never at
             # the centre of an oblast the post named as its heading. "Чернігівщина: … 3 реакти на Славутич з півночі"
             # put three jet drones in the middle of Chernihiv oblast, 100 km from anything the post said.
@@ -1913,6 +1918,9 @@ def parse_post(text, home=None):
             where = "область"
             origin_end = obl[0]
             ev["position"] = {"matched": seg[seg.rfind(" ", 0, max(0, obl[0] - 10)) + 1:obl[0] + 14].strip(), "place": "oblast", "method": "oblast centre" + (" shifted ~70 km toward the stated side" if (dx or dy) else " (no town named)"), "confidence": "low"}
+            qk = ("n" if dy > 0.1 else "s" if dy < -0.1 else "") + ("e" if dx > 0.1 else "w" if dx < -0.1 else "")
+            if qk:                                  # 1.58.6: the card says which part ("схід області"), as for a quadrant
+                ev["position"]["quad"] = qk
         elif lon is None and obl:
             lon, lat = obl[2], obl[3]
             where = "область"
@@ -1955,7 +1963,9 @@ def parse_post(text, home=None):
                 tgt_name = target[0][2]
                 tl, tt, _ = PLACES[tgt_name]
                 heading = bearing(lon, lat, tl, tt)
-                ev["heading"] = {"matched": seg[cpos:target[0][1]].strip(), "method": f"bearing from {where} to the named destination {tgt_name}", "confidence": "high"}
+                # from a part of an oblast (a point ~70 km toward that side) the bearing is only roughly the course
+                ev["heading"] = {"matched": seg[cpos:target[0][1]].strip(), "method": f"bearing from {where} to the named destination {tgt_name}",
+                                 "confidence": "medium" if where == "область" else "high"}
             elif approaching:
                 tgt_name = where[2:]                                 # the one it is drawn at (1.56.4)
             elif tobl:
@@ -1974,7 +1984,7 @@ def parse_post(text, home=None):
                 heading = _dir(_FROM_COMPASS.sub(" ", after))
                 if heading is not None:
                     ev["heading"] = {"matched": after.strip()[:40], "method": "compass word after 'course'", "confidence": "medium"}
-            if heading is None:
+            if heading is None and not side_stated:   # "на сході Київщини" is where it is, never its course
                 heading = _dir(seg[origin_end:cpos])
                 if heading is not None:
                     ev["heading"] = {"matched": seg[origin_end:cpos].strip()[:40], "method": "compass word before 'course'", "confidence": "medium"}
@@ -2525,6 +2535,8 @@ def _city_settle(m):
     # "Stolytsia, town in gazetteer, high confidence, ±5 km"
     if m.get("approach") and m.get("target") == "Столиця":
         m["target"], m["place"] = "Київ", "→ Київ"          # a course to the capital is a course to Kyiv
+    elif m.get("target") == "Столиця":
+        m["target"] = "Київ"                                # 1.58.6: also from a part of the oblast the post placed it in
     if m.get("place") not in ("Київ", "Столиця") or m.get("approach"):
         return m
     ev = dict(m.get("evidence") or {})

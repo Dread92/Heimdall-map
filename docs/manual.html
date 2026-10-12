@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Heimdall (Kyiv Air Watch) — the full technical documentation, with a map of the system.">
-<meta name="heimdall-version" content="1.58.5">
-<meta name="heimdall-docs" content="ccb1e7e9ee4d4170">
+<meta name="heimdall-version" content="1.58.6">
+<meta name="heimdall-docs" content="479ad7aa23c19043">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Heimdall Technical Manual</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -237,7 +237,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
 <header class="top">
   <div class="wrap">
     <a class="brand" href="#top"><b>Heimdall</b><span>Technical manual</span></a>
-    <span class="ver">1.58.5</span>
+    <span class="ver">1.58.6</span>
     <nav class="nav" aria-label="Sections">
       <a href="#map">Map</a><a href="#journeys">Journeys</a><a href="#rules">Rules</a><a href="#reference">Reference</a><a href="#safety">Safety</a>
     </nav>
@@ -256,7 +256,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
       <h1 class="title">How Heimdall works</h1>
       <p class="lead">An unofficial air-threat map for Kyiv and the oblasts around it. One Python process reads the official
       alert data and the channels that track drones and missiles, stores every post before it reads it, rebuilds the map
-      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.5, 13 October 2026:
+      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.6, 13 October 2026:
       the map first, then everything in full.</p>
     </div>
     <dl class="facts">
@@ -645,7 +645,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
     <div class="doc" id="doc">
 <section class="part" id="tech" data-label="Reference"><p class="partlabel">Part I · The reference</p>
 <h1 id="heimdall--technical-documentation">Heimdall — technical documentation</h1>
-<p><strong>Documented version: 1.58</strong> · last updated 2026-10-13 (1.58.5)</p>
+<p><strong>Documented version: 1.58</strong> · last updated 2026-10-13 (1.58.6)</p>
 <p>Heimdall was called <strong>Clear Sky</strong> until 1.29; the repository, the Fly app (<code>kyiv-air-watch-gb</code>) and some
 internal names still carry the old name.</p>
 <p>This is the complete technical reference: what runs, where the data comes from, how a Telegram post becomes a
@@ -1682,7 +1682,9 @@ heading. On live channels, &quot;Від Глевахи на Васильків&q
 alone (<code>dest_only</code>) stays at the channel's previous report (≤ 8 min) turned toward the destination — 1.58: only a
 report of the same weapon (<code>same_weapon</code>: the same type, or a drone and a weapon not named) —, or else is an
 approach. In tracking, a later approach about a target already on the map gives it its destination and course
-instead of moving it; an approach point is never a step of a track.</li>
+instead of moving it; an approach point is never a step of a track. 1.58.6: a part of the oblast the post placed it
+in (&quot;на сході Київщини, в напрямку столиці&quot;) is where it is — the oblast centre shifted ~70 km to that side, with
+its <code>quad</code> — and the destination is its course (<code>side_stated</code>); the side is never read as the course.</li>
 <li><strong>Count</strong>, <strong>altitude</strong> (only when written: &quot;знижується&quot;, &quot;низько&quot;, metres &quot;висота 2200&quot;, a bare &quot;1600, Вороньків&quot;
 in a short live post, kilometres &quot;висота 4,4км&quot;), <strong>phase</strong> (<code>PHASE_LADDER</code>:
 prep → launch → entering…, with a per-sentence hedge guard: &quot;може відбутись&quot; is preparation, not a launch).</li>
@@ -2618,7 +2620,9 @@ oblasts around, fainter). The view (1.58.5, the owner: &quot;the map isn't zoome
 awareness&quot;): the target, its last six reported places (a dotted path) and always Kyiv, ×1.3 + 20 km, between 40 km
 (a target in the city: the whole city) or 90 km and 220 km — centred on the target past that. The other targets of the
 moment (the channel's own, <code>ChannelPoster.cur</code>) are drawn too, smaller and fainter, under the one the post is about; a
-town name beside one moves to its other side rather than vanish. The silhouette turns as <code>orientOf()</code> turns it; the course
+town name beside one moves to its other side rather than vanish. 1.58.6: a target placed only in a part of Kyiv oblast (&quot;на сході
+Київщини&quot;) is posted as that part (&quot;Схід Київщини&quot;, &quot;📍 Точного місця в дописі немає — лише частина області&quot;), drawn
+with a dashed circle of 35 km round the point (<code>AREA_KM</code>). The silhouette turns as <code>orientOf()</code> turns it; the course
 ray is drawn only with a stated course. The place the post named stands in a pill beside it; town names that would
 cover it are left out; the places it was reported at before are named beside their dots where there is room. Header: HEIMDALL · Київ · Київщина · the report's time; foot: the warning and the map's
 credits. Without Pillow (or the font) the channel posts its text alone. The image installs <code>fonts-dejavu-core</code>.</p>
@@ -4231,6 +4235,13 @@ the oblast and no town — its outline, the weapon and the count — and its car
 the same sentence names the town it is heading for (&quot;на півночі Чернігівщини ➡️ курсом на Славутич&quot;), it is drawn as
 an approach to that town: the one place the post did name. A raion named as where it is (&quot;залітає у Гайсинський
 район … курсом на Теплик&quot;) is the same: an approach to Теплик, with no course drawn from the raion's centre.</p>
+<p>1.58.6: <strong>not when the post says which part of the oblast it is in.</strong> The Air Force's &quot;Реактивний БпЛА на сході
+Київщини, в напрямку столиці&quot; was drawn on Kyiv — &quot;→ Київ&quot;, turned east by the &quot;сході&quot; read as its course — while Kyiv
+was under no alert. The owner: &quot;it's towards Kyiv but not in Kyiv at least yet … alarm ALWAYS is better … it's
+dangerous&quot;. A target the post placed in a part of the oblast is drawn in that part (low confidence, the card says
+<em>east of the oblast</em>), its course toward the place it is heading for; the private channel shows it as &quot;Схід Київщини&quot;
+with the area it is somewhere in. The side is never read as a course. Only a post that says nothing of where the
+target is — &quot;БпЛА на Київ&quot;, an oblast written as a header — is drawn at its destination, as an approach.</p>
 <h2 id="s-a-side-of-a-town-is-not-the-town-1451">A side of a town is not the town (1.45.1)<a class="anc" href="#s-a-side-of-a-town-is-not-the-town-1451" aria-label="Link to this section">#</a></h2>
 <p>&quot;БпЛА на півночі від Миколаєва&quot; — north of Mykolaiv — was drawn on Mykolaiv itself, &quot;±5 km, high confidence&quot;. The
 post named the city as a reference and gave no distance. Now: with a distance (&quot;за 20 км на північ від …&quot;) the mark
@@ -4861,7 +4872,7 @@ d'alerte ne sont pas des préférences de style.</p>
 </section>
     </div>
   </div>
-  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.5, 13 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
+  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.6, 13 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
 </main>
 
 <script>

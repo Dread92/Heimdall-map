@@ -488,6 +488,14 @@ the same sentence names the town it is heading for ("на півночі Чер�
 an approach to that town: the one place the post did name. A raion named as where it is ("залітає у Гайсинський
 район … курсом на Теплик") is the same: an approach to Теплик, with no course drawn from the raion's centre.
 
+1.58.6: **not when the post says which part of the oblast it is in.** The Air Force's "Реактивний БпЛА на сході
+Київщини, в напрямку столиці" was drawn on Kyiv — "→ Київ", turned east by the "сході" read as its course — while Kyiv
+was under no alert. The owner: "it's towards Kyiv but not in Kyiv at least yet … alarm ALWAYS is better … it's
+dangerous". A target the post placed in a part of the oblast is drawn in that part (low confidence, the card says
+*east of the oblast*), its course toward the place it is heading for; the private channel shows it as "Схід Київщини"
+with the area it is somewhere in. The side is never read as a course. Only a post that says nothing of where the
+target is — "БпЛА на Київ", an oblast written as a header — is drawn at its destination, as an approach.
+
 ## A side of a town is not the town (1.45.1)
 
 "БпЛА на півночі від Миколаєва" — north of Mykolaiv — was drawn on Mykolaiv itself, "±5 km, high confidence". The

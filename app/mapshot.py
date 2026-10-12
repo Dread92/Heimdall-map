@@ -499,6 +499,15 @@ class MapShot:
             hl = 22 * SS
             d.polygon([tip, (tip[0] + math.sin(a1) * hl, tip[1] - math.cos(a1) * hl),
                        (tip[0] + math.sin(a2) * hl, tip[1] - math.cos(a2) * hl)], fill=col, outline=STROKE)
+        # 1.58.6: placed only in a part of the oblast ("на сході Київщини"): the area it is somewhere in, dashed
+        if m.get("_area_km"):
+            ra = m["_area_km"] * k
+            n = 72
+            for i in range(0, n, 2):
+                a0, a1 = 2 * math.pi * i / n, 2 * math.pi * (i + 1) / n
+                d.line([(here[0] + ra * math.cos(a0), here[1] + ra * math.sin(a0)),
+                        (here[0] + ra * math.cos(a1), here[1] + ra * math.sin(a1))], fill=col + (210,), width=3 * SS)
+            d.ellipse([here[0] - ra, here[1] - ra, here[0] + ra, here[1] + ra], fill=col + (28,))
         # the halo, then the silhouette
         R = HALO * SS
         d.ellipse([here[0] - R, here[1] - R, here[0] + R, here[1] + R], outline=col + (120,), width=3 * SS)
