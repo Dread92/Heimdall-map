@@ -45,5 +45,5 @@ def test_never_back_across_the_border():
 def test_the_card_says_why():
     page = open(os.path.join(ROOT, "static", "kyiv.html"), encoding="utf-8").read()
     i18n = open(os.path.join(ROOT, "static", "i18n.js"), encoding="utf-8").read()
-    assert "t(m.face_by==='track'?'face_track':'face_note')" in page and i18n.count("face_track:'") == 3
+    assert "t(m.face_by==='track'?'face_track':m.face_by==='south'?'face_south':'face_note')" in page and i18n.count("face_track:'") == 3
     assert "face_of(m)" in open(os.path.join(ROOT, "app", "server.py"), encoding="utf-8").read()

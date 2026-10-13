@@ -70,7 +70,7 @@ def test_a_drone_with_no_course_faces_into_ukraine():
 
 def test_the_pages_turn_the_glyph_only():
     page, light, doc, safety = _read("static/kyiv.html"), _read("static/light.html"), _read("docs/TECHNICAL.md"), _read("docs/SAFETY.md")
-    assert "const fc=m.face!=null?m.face:0;\n  if(m.heading==null) return fc;" in page and "'face_track':'face_note'" in page
+    assert "const fc=m.face!=null?m.face:0;\n  if(m.heading==null) return fc;" in page and "'face_track':m.face_by==='south'?'face_south':'face_note'" in page
     assert "const markOrient=m=>(m.type!=='unknown'||lDr(m))?(statedCourse(m)?m.heading:m.face||0):0;" in light
     assert "inward_face(m)" in _read("app/server.py") and "INWARD" in doc and "a drone faces into Ukraine" in safety
     # no course is made of it: the course ray, the heading text and the ETA read `heading`, never `face`

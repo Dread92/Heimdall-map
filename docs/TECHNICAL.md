@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-13 (1.58.7)
+**Documented version: 1.58** · last updated 2026-10-13 (1.58.8)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -1866,7 +1866,12 @@ Main parts:
   unstated weapon with no course is drawn facing that way (`inward_face`, the mark's `face`: `orientOf`, Light's
   `markOrient`) — the glyph only: no course ray, no heading in the card or the tooltip, no ETA, and the card says why
   (`face_note`); a course worked out from two reports that is more than `INWARD_MAX_DEG` (100°) off the way in is not
-  kept (`outward`; a course a post stated always is). Elsewhere a mark with no course stays upright, as before;
+  kept (`outward`; a course a post stated always is). **1.58.8, south north of Kyiv** (the owner, of two drones over
+  the Kyiv reservoir, one drawn facing north: "for those drones here, take the habit by default to make them face south
+  — it's the most likely direction they will go anyway"): in Kyiv oblast north of 50.60° N (`SOUTH_FACE`: from just
+  north of Vyshhorod — the reservoir, Ivankiv, the north of Bucha and Brovary raions) such a drone faces south
+  (`face: 180`, `face_by: "south"`, the card's `face_south`), the glyph only, as above; nothing is dropped there. Elsewhere
+  a mark with no course stays upright, as before;
 - **1.57.5, a mark faces the way its reports moved** (the owner, a jet drone at Obolon drawn facing north while its
   reported path came down from above the reservoir: "the drone should face downward when it is possible to guess"):
   with no course stated, `track_face` gives `face` the bearing from the last earlier report of the mark's own track

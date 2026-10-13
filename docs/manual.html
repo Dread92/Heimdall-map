@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Heimdall (Kyiv Air Watch) — the full technical documentation, with a map of the system.">
-<meta name="heimdall-version" content="1.58.7">
-<meta name="heimdall-docs" content="fc31f53cf1c843a2">
+<meta name="heimdall-version" content="1.58.8">
+<meta name="heimdall-docs" content="fe08d540c60a384d">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Heimdall Technical Manual</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -237,7 +237,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
 <header class="top">
   <div class="wrap">
     <a class="brand" href="#top"><b>Heimdall</b><span>Technical manual</span></a>
-    <span class="ver">1.58.7</span>
+    <span class="ver">1.58.8</span>
     <nav class="nav" aria-label="Sections">
       <a href="#map">Map</a><a href="#journeys">Journeys</a><a href="#rules">Rules</a><a href="#reference">Reference</a><a href="#safety">Safety</a>
     </nav>
@@ -256,7 +256,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
       <h1 class="title">How Heimdall works</h1>
       <p class="lead">An unofficial air-threat map for Kyiv and the oblasts around it. One Python process reads the official
       alert data and the channels that track drones and missiles, stores every post before it reads it, rebuilds the map
-      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.7, 13 October 2026:
+      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.8, 13 October 2026:
       the map first, then everything in full.</p>
     </div>
     <dl class="facts">
@@ -645,7 +645,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
     <div class="doc" id="doc">
 <section class="part" id="tech" data-label="Reference"><p class="partlabel">Part I · The reference</p>
 <h1 id="heimdall--technical-documentation">Heimdall — technical documentation</h1>
-<p><strong>Documented version: 1.58</strong> · last updated 2026-10-13 (1.58.7)</p>
+<p><strong>Documented version: 1.58</strong> · last updated 2026-10-13 (1.58.8)</p>
 <p>Heimdall was called <strong>Clear Sky</strong> until 1.29; the repository, the Fly app (<code>kyiv-air-watch-gb</code>) and some
 internal names still carry the old name.</p>
 <p>This is the complete technical reference: what runs, where the data comes from, how a Telegram post becomes a
@@ -2887,7 +2887,12 @@ oblast (Chernihiv, <code>&quot;25&quot;</code> → towards Kyiv, where its drone
 unstated weapon with no course is drawn facing that way (<code>inward_face</code>, the mark's <code>face</code>: <code>orientOf</code>, Light's
 <code>markOrient</code>) — the glyph only: no course ray, no heading in the card or the tooltip, no ETA, and the card says why
 (<code>face_note</code>); a course worked out from two reports that is more than <code>INWARD_MAX_DEG</code> (100°) off the way in is not
-kept (<code>outward</code>; a course a post stated always is). Elsewhere a mark with no course stays upright, as before;</li>
+kept (<code>outward</code>; a course a post stated always is). <strong>1.58.8, south north of Kyiv</strong> (the owner, of two drones over
+the Kyiv reservoir, one drawn facing north: &quot;for those drones here, take the habit by default to make them face south
+— it's the most likely direction they will go anyway&quot;): in Kyiv oblast north of 50.60° N (<code>SOUTH_FACE</code>: from just
+north of Vyshhorod — the reservoir, Ivankiv, the north of Bucha and Brovary raions) such a drone faces south
+(<code>face: 180</code>, <code>face_by: &quot;south&quot;</code>, the card's <code>face_south</code>), the glyph only, as above; nothing is dropped there. Elsewhere
+a mark with no course stays upright, as before;</li>
 <li><strong>1.57.5, a mark faces the way its reports moved</strong> (the owner, a jet drone at Obolon drawn facing north while its
 reported path came down from above the reservoir: &quot;the drone should face downward when it is possible to guess&quot;):
 with no course stated, <code>track_face</code> gives <code>face</code> the bearing from the last earlier report of the mark's own track
@@ -4399,6 +4404,11 @@ post states is always drawn as stated.</p>
 moved (from the last earlier report of its track at least 1.5 km away, at most 45 minutes old). That is where it was
 reported to have come from, not where it is going: the icon turns, nothing else — no ray, no heading, no time — and the
 card says &quot;drawn facing the way its reports moved: no course was stated&quot;.</p>
+<p>1.58.8: north of Kyiv, south. Over the Kyiv reservoir a drone with no course stood upright — facing north, the one way
+they almost never go from there. The owner: &quot;for those drones here, take the habit by default to make them face south —
+it's the most likely direction they will go anyway&quot;. In Kyiv oblast north of Vyshhorod such a drone now faces south, and
+its card says &quot;drawn facing south: no course was stated, and from north of Kyiv that is the way drones most often go&quot;.
+The icon only, like the rest of this section: no ray, no heading, no time; its own reports' track comes first.</p>
 <h2 id="s-heading-to-your-village-is-a-thing-the-post-has-to-say">&quot;Heading to your village&quot; is a thing the post has to say<a class="anc" href="#s-heading-to-your-village-is-a-thing-the-post-has-to-say" aria-label="Link to this section">#</a></h2>
 <p>The priority location alert used to mean &quot;the reported course passes within 25° of it&quot;. From 80 km away a 25°
 cone is 35 km wide, so the app told people a drone was coming to their village when the post had said nothing
@@ -4938,7 +4948,7 @@ d'alerte ne sont pas des préférences de style.</p>
 </section>
     </div>
   </div>
-  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.7, 13 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
+  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.8, 13 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
 </main>
 
 <script>

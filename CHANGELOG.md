@@ -2,6 +2,15 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.8 — 2026-10-13
+
+### Changed
+- **North of Kyiv, a drone with no course faces south** — the owner, with two drones over the Kyiv reservoir, one drawn
+  facing north: "for those drones here, take the habit by default to make them face south — it's the most likely
+  direction they will go anyway". In Kyiv oblast north of Vyshhorod, a drone (or a weapon not stated) with no course
+  and no reported track now faces south, on the Tactical and Light maps and in the private channel's picture; its card
+  says why. The icon only — no course, no ray, no time. A course a post gave, or the way its reports moved, still wins.
+
 ## 1.58.7 — 2026-10-13
 
 ### Changed

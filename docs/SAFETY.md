@@ -639,6 +639,12 @@ moved (from the last earlier report of its track at least 1.5 km away, at most 4
 reported to have come from, not where it is going: the icon turns, nothing else — no ray, no heading, no time — and the
 card says "drawn facing the way its reports moved: no course was stated".
 
+1.58.8: north of Kyiv, south. Over the Kyiv reservoir a drone with no course stood upright — facing north, the one way
+they almost never go from there. The owner: "for those drones here, take the habit by default to make them face south —
+it's the most likely direction they will go anyway". In Kyiv oblast north of Vyshhorod such a drone now faces south, and
+its card says "drawn facing south: no course was stated, and from north of Kyiv that is the way drones most often go".
+The icon only, like the rest of this section: no ray, no heading, no time; its own reports' track comes first.
+
 ## "Heading to your village" is a thing the post has to say
 
 The priority location alert used to mean "the reported course passes within 25° of it". From 80 km away a 25°

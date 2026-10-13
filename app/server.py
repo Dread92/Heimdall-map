@@ -2799,6 +2799,11 @@ class Patterns(threading.Thread):
 # off the way in — is not kept.
 INWARD = {"25": (30.52, 50.45)}            # Chernihiv oblast → towards Kyiv, where its drones go (the patterns: SW, S)
 INWARD_MAX_DEG = 100
+# 1.58.8, the owner, of two drones over the Kyiv reservoir north of the city, one drawn facing north: "for those drones
+# here, take the habit by default to make them face south — it's the most likely direction they will go anyway". In
+# these oblasts, north of this latitude (Kyiv oblast: from just north of Vyshhorod), a drone with no course faces south
+# (`face_by: "south"`). The glyph only, as INWARD's; its reports' own track still comes first (`face_of`).
+SOUTH_FACE = {"14": 50.60}
 
 
 def _inward_bearing(m):
@@ -2821,7 +2826,8 @@ def outward(m, brg):
 
 
 def inward_face(m):
-    """`face` for a drone of an INWARD oblast with no course: the way into Ukraine. Nothing for any other mark."""
+    """`face` for a drone with no course: the way into Ukraine in an INWARD oblast, south in the north of a SOUTH_FACE
+    one. Nothing for any other mark."""
     m.pop("face", None)
     m.pop("face_by", None)
     if m.get("status") or m.get("heading") is not None or m.get("type") not in ("drones", "unknown"):
@@ -2829,6 +2835,10 @@ def inward_face(m):
     b = _inward_bearing(m)
     if b is not None:
         m["face"] = round(b)
+        return
+    north = SOUTH_FACE.get(str(m.get("oblast_uid") or ""))
+    if north is not None and m.get("lat") is not None and m["lat"] >= north:
+        m["face"], m["face_by"] = 180, "south"
 
 
 # 1.57.5, the owner — a jet drone at Obolon drawn facing north while its reported path came down from the north over the
@@ -2864,7 +2874,7 @@ def track_face(m):
 
 def face_of(m):
     """The way a mark's icon faces when no course was stated: along its reported track, else (Chernihiv oblast) into
-    Ukraine, else north (no `face`)."""
+    Ukraine, else (1.58.8: Kyiv oblast north of Vyshhorod) south, else north (no `face`)."""
     inward_face(m)
     f = track_face(m)
     if f is not None:
