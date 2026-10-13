@@ -8,8 +8,9 @@ second; no browser runs on the server. Needs Pillow and a font with Cyrillic (th
 Pillow the channel posts its text alone.
 
 It shows what the post said and nothing more (docs/SAFETY.md): where it was reported, the places it was reported at
-before, a course only when a post gave one, the official alerts of the moment by raion. No outcome (a shot-down, an
-explosion) is ever drawn — the channel is for what flies, and where a strike landed is not published live.
+before, a course only when a post gave one, the height a post gave (1.58.7), the official alerts of the moment by raion.
+No outcome (a shot-down, an explosion) is ever drawn: the channel's caption says what became of a target (1.58.7), and
+where it came down or a strike landed is not published live.
 """
 import collections
 import io
@@ -17,11 +18,15 @@ import json
 import math
 import os
 import re
+import sys
 
 try:
     from PIL import Image, ImageDraw, ImageEnhance, ImageFont
 except ImportError:            # optional: without it the channel sends text only
     Image = ImageDraw = ImageEnhance = ImageFont = None
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from areas import RAION_STEM, alert_fill  # noqa: E402,F401  (1.58.7: shared with the server)
 
 STATIC = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "static")
 FONTS = ("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", "/usr/share/fonts/TTF/DejaVuSans.ttf",
@@ -37,6 +42,10 @@ BG, NB, NB_LINE = (11, 13, 17), (14, 17, 22), (26, 31, 40)
 RN, RN_LINE, CITY_LINE = (20, 25, 32), (43, 51, 64), (143, 180, 255)
 KD_LINE, RIVER = (51, 65, 92), (42, 74, 115)
 INK, INK2, INK3 = (232, 230, 223), (181, 179, 171), (143, 141, 134)
+VIL_INK = (196, 194, 186)      # 1.58.7: a village's name — between the towns' and the credits', readable on the satellite
+VIL_MAX = 10                   # 1.58.7: at most this many village names in a picture …
+VIL_GAP = 130                  # … each this far (drawing px, half that in the picture) from any other named dot
+VIL_TIER2 = 1.4                # a village no channel names counts as this much farther from the target
 RED_T, YEL_T = (229, 72, 77, 72), (245, 185, 64, 60)
 ORANGE, AMBER, MSL = (255, 138, 61), (255, 177, 92), (255, 90, 90)
 STROKE = (8, 11, 16)
@@ -61,7 +70,25 @@ GLYPHS = {
 }
 MSL_TYPES = ("ballistic_missiles", "cruise_missiles", "supersonic_missiles", "unspecified_missiles")
 FLAME = [(-3, 10.6), (0, 19.5), (3, 10.6)]
-HALO = 52                      # the ring around the target, in pixels
+HALO = 36                      # the ring around the target, in pixels (1.58.7: 52 → 36 — "the Shahed is far too big")
+GLYPH_SC, OTHER_SC = 2.6, 1.7  # 1.58.7: px a glyph unit — the target (3.9 before) and the others of the moment (2.3)
+# 1.58.7: the height a post gave, as the caption says it (app/chanpost.py ALT_STATE — tests check they agree)
+ALT_UK = {"low": "низько", "high": "високо", "descending": "знижується", "climbing": "набирає висоту"}
+
+
+def _norm(name):
+    """A name as compared: Зазим'я and Зазим’я are one village."""
+    return re.sub(r"[’ʼ'`]", "'", name).lower()
+
+
+def alt_text(m):
+    """"↕ ~100 м", "↕ низько" — the height the post stated, or None."""
+    a = m.get("alt") or {}
+    if not isinstance(a, dict):
+        return None
+    if a.get("m"):
+        return f"↕ ~{int(a['m'])} м"
+    return "↕ " + ALT_UK[a["state"]] if a.get("state") in ALT_UK else None
 
 
 def as_drone(m, missiles=()):
@@ -142,38 +169,6 @@ def _js_dict(src, name):
     return dict(re.findall(r"'?([\w\- ]+?)'?\s*:\s*'([^']*)'", m.group(1))) if m else {}
 
 
-RAION_STEM = (("бровар", "brovary"), ("бориспіл", "boryspil"), ("бучан", "bucha"), ("вишгород", "vyshhorod"),
-              ("обухів", "obukhiv"), ("білоцерків", "bila-tserkva"), ("фастів", "fastiv"))
-
-
-def alert_fill(active):
-    """The official alerts of the moment → {key: 'R' | 'Y'}, as the Tactical page paints them (alertMap): Kyiv city
-    ("kyiv-city"), the raions of Kyiv oblast by key — an oblast-wide alert fills all of them, a raion's or a hromada's
-    its raion —, and for the oblasts around, "obl:<uid>" for an oblast-wide alert and "nb:<raion key>" for a raion's."""
-    out = {}
-
-    def put(k, lvl):
-        if k and out.get(k) != "R":
-            out[k] = lvl
-    for a in active or ():
-        uid, lt, title = a.get("oblast_uid"), a.get("location_type"), (a.get("location_title") or "").lower()
-        lvl = "Y" if a.get("alert_level") == "yellow" else "R"        # no level reported (a mirror) = a full alert
-        if uid == "31":
-            put("kyiv-city", lvl)
-        elif uid == "14":
-            if lt == "oblast":
-                for _, k in RAION_STEM:
-                    put(k, lvl)
-            else:
-                put(a.get("raion_key") or next((k for s, k in RAION_STEM if s in title), None), lvl)
-        elif uid:
-            if lt == "oblast":
-                put("obl:" + uid, lvl)
-            elif a.get("raion_key"):
-                put("nb:" + a["raion_key"], lvl)
-    return out
-
-
 SAT_CREDIT = "Знімки: ESA WorldCover 2021, modified Copernicus Sentinel data (2021) · межі: OCHA, geoBoundaries · © OpenStreetMap"
 MAP_CREDIT = "Межі: OCHA · geoBoundaries (CC BY) · райони Києва © OpenStreetMap"
 # the Tactical page's satellite layer: #sat{filter:brightness(.62) saturate(.82) contrast(1.04)}
@@ -209,6 +204,11 @@ class MapShot:
         uk = _js_dict(i18n, "TOWN_UK")
         self.towns = [(uk.get(t[0], t[0]), self.proj(t[1], t[2]), len(t) > 3 and t[3] == 1) for t in _js_list(page, "TOWNS")
                       if len(t) < 4 or t[3] in (1, None)]
+        # 1.58.7, the owner, of the wider picture of 1.58.5: "it needs to be zoomed as it was before, but mark the name
+        # of the villages at least so people can orient themselves". After the towns: the places of Kyiv oblast the
+        # channels name (app/geo.py's gazetteer), the other towns of 10,000+ around (towns-ua.json), then any village
+        # of Kyiv oblast (GeoNames, data/extra_places.json) — each where its name has room, the first ones first.
+        self.villages = self._villages(static, {t[0] for t in self.towns})
         adj = _js_dict(page, "RAION_ADJ")
         lbl = re.search(r"const RAION_LBL=\{(.*?)\};", page, re.S)
         self.raion_lbl = []
@@ -222,24 +222,56 @@ class MapShot:
     def proj(self, lon, lat):
         return ((lon - self.c0) * self.kx, -(lat - self.c1) * self.ky)
 
-    # ---- the view ------------------------------------------------------------------------------------------------
-    VIEW_MIN_CITY, VIEW_MIN, VIEW_MAX = 40.0, 90.0, 220.0     # km, the picture's height
+    def _villages(self, static, have):
+        out, seen = [], set(have)
+
+        seen = {_norm(n) for n in seen}
+
+        def add(name, lon, lat, tier):
+            if name and _norm(name) not in seen and 29.0 <= lon <= 32.5 and 49.0 <= lat <= 51.7:
+                seen.add(_norm(name))
+                out.append((name, self.proj(lon, lat), tier))
+        try:
+            import geo  # the server has it loaded already
+            for name, v in geo.PLACES.items():
+                if v[2] == "14" and name.lower() not in ("область", "київщина", "київська область"):
+                    add(name, v[0], v[1], 1)
+        except Exception:
+            pass
+        try:
+            for t in json.load(open(os.path.join(static, "towns-ua.json"), encoding="utf-8"))["towns"]:
+                add(t[0], t[1], t[2], 1)
+        except (OSError, ValueError, KeyError, IndexError):
+            pass
+        try:
+            extra = os.path.join(os.path.dirname(static), "data", "extra_places.json")
+            for t in json.load(open(extra, encoding="utf-8"))["oblasts"].get("14", []):
+                add(t[0], t[1], t[2], 2)
+        except (OSError, ValueError, KeyError, IndexError):
+            pass
+        return out
+
+    # ---- the view ---------------------------------------------------------------------------------------------
+    VIEW_MIN_CITY, VIEW_MIN, VIEW_MAX = 30.0, 50.0, 150.0     # km, the picture's height
+    KYIV_NEAR = 70.0                                          # km: Kyiv is in the picture when the target is this near
 
     def view(self, m):
-        """A square of the map around the target: where it is, where it was reported before, and Kyiv — the reader's
-        landmark. 1.58.5, the owner, of a target alone on fields near Pereiaslav: "the map isn't zoomed out enough, we
-        get no situational awareness": Kyiv is always in the picture, never less than 90 km of the oblast (40 km, the
-        whole city, for a target in it), up to 220 km."""
+        """A square of the map around the target: where it is, where it was reported before, Kyiv when it is near.
+        1.58.7, the owner, of the wider picture of 1.58.5 (never less than 90 km, Kyiv always in it): "it needs to be
+        zoomed as it was before, but mark the name of the villages at least" — the closer view of 1.58 again (50 km of
+        the oblast, 30 km of the city, up to 150 km), with the villages named (render)."""
         pts = [self.proj(m["lon"], m["lat"])]
         for h in (m.get("history") or [])[-6:]:
             if h.get("lon") is not None and h.get("lat") is not None:
                 pts.append(self.proj(h["lon"], h["lat"]))
-        pts.append(self.proj(30.52, 50.45))
+        kyiv = self.proj(30.52, 50.45)
+        if math.dist(pts[0], kyiv) < self.KYIV_NEAR:     # most of the oblast: the city is the reader's landmark
+            pts.append(kyiv)
         xs, ys = [p[0] for p in pts], [p[1] for p in pts]
-        span = max(max(xs) - min(xs), max(ys) - min(ys)) * 1.3 + 20
+        span = max(max(xs) - min(xs), max(ys) - min(ys)) * 1.5
         span = min(max(span, self.VIEW_MIN_CITY if m.get("oblast_uid") == "31" else self.VIEW_MIN), self.VIEW_MAX)
         cx, cy = (max(xs) + min(xs)) / 2, (max(ys) + min(ys)) / 2
-        if span >= self.VIEW_MAX:                 # too far to hold both: the target stays in view, centred
+        if span >= self.VIEW_MAX:                 # a long track: the target stays in view, centred
             cx, cy = pts[0]
         return cx - span / 2, cy - span / 2, span
 
@@ -305,24 +337,27 @@ class MapShot:
                 d.line([px(p) for p in ln], fill=RIVER, width=w * SS, joint="curve")
         # the target's own room and the scale's are kept first: no name is written over them
         here = px(self.proj(m["lon"], m["lat"]))
-        boxes = [(here[0] - HALO * SS, here[1] - HALO * SS, here[0] + HALO * SS, here[1] + HALO * SS),
+        room = 12 if m.get("_held") else HALO     # held (1.58.7): nothing drawn there — the town under it keeps its name
+        boxes = [(here[0] - room * SS, here[1] - room * SS, here[0] + room * SS, here[1] + room * SS),
                  (0, bottom - 52 * SS, 300 * SS, bottom)]
         bounds = (0, top, S, bottom)
         tag = self._tag(d, m, here, boxes, bounds)
         # the other targets of the moment: their room is kept too, so that no town name is written under them
-        oth = []
+        oth, rooms = [], [boxes[0]]                   # rooms: the targets' own, where no village dot goes either
         for o in others or ():
             if o.get("lon") is None or o.get("lat") is None:
                 continue
             q = px(self.proj(o["lon"], o["lat"]))
             if 0 <= q[0] <= S and top <= q[1] <= bottom and math.dist(q, here) > 20 * SS:
                 oth.append((o, q))
-                boxes.append((q[0] - 28 * SS, q[1] - 28 * SS, q[0] + 28 * SS, q[1] + 28 * SS))
+                boxes.append((q[0] - 20 * SS, q[1] - 20 * SS, q[0] + 20 * SS, q[1] + 20 * SS))
+                rooms.append(boxes[-1])
         if span > 60:
             for text, p in self.raion_lbl:
                 q = px(p)
                 self._label(d, q, text, self.f[17], (205, 214, 228) if on_sat else (138, 150, 170), boxes, bounds, anchor="mm")
         # the towns, the big ones first; a name that would cover another is left out
+        dots = []
         for name, p, big in sorted(self.towns, key=lambda t: not t[2]):
             q = px(p)
             if not (0 <= q[0] <= S and top <= q[1] <= bottom):
@@ -336,13 +371,41 @@ class MapShot:
                          for dx, dy, an in ((gg, 0, "lm"), (-gg, 0, "rm"), (0, -gg, "mb"), (0, gg, "mt")))
             if placed or (big and not under):
                 d.ellipse([q[0] - r, q[1] - r, q[0] + r, q[1] + r], fill=INK if big else INK2, outline=STROKE, width=SS)
+                dots.append(q)
+        # 1.58.7: the villages, where their names have room — never under the target or another one. The owner, of the
+        # first try (every village with room): "far too many places named, it's unreadable" — at most VIL_MAX, the
+        # nearest to the target first (the channels' places before any village), each well apart from the others
+        vf, vr = self.f[17], 2.5 * SS
+        cand = []
+        said = {_norm(str(x)) for x in [m.get("place")] + [h.get("place") for h in (m.get("history") or [])] if x}
+        for name, p, tier in self.villages:
+            if _norm(name) in said:               # named already, in the pill or beside a reported place
+                continue
+            q = px(p)
+            if not (0 <= q[0] <= S and top <= q[1] <= bottom) or any(b[0] <= q[0] <= b[2] and b[1] <= q[1] <= b[3]
+                                                                     for b in rooms):
+                continue
+            cand.append((math.dist(q, here) * (1.0 if tier == 1 else VIL_TIER2), name, q, tier))
+        placed = list(dots)
+        for _, name, q, tier in sorted(cand):
+            if len(placed) - len(dots) >= VIL_MAX:
+                break
+            if any(math.dist(q, o) < VIL_GAP * SS for o in placed):
+                continue
+            g = vr + 5 * SS
+            if any(self._label(d, (q[0] + dx, q[1] + dy), name, vf, INK2 if tier == 1 else VIL_INK, boxes, bounds,
+                               anchor=an)
+                   for dx, dy, an in ((g, 0, "lm"), (-g, 0, "rm"), (0, -g, "mb"), (0, g, "mt"))):
+                d.ellipse([q[0] - vr, q[1] - vr, q[0] + vr, q[1] + vr], fill=INK2 if tier == 1 else VIL_INK,
+                          outline=STROKE, width=SS)
+                placed.append(q)
         if span <= 60:                            # the city's districts, quietly, where there is room
             for name, cx, cy, _rings_ in self.districts:
                 if cx is not None:
                     self._label(d, px((cx, cy)), name.replace(" район", ""), self.f[17],
                                 (196, 205, 220) if on_sat else (120, 132, 152), boxes, bounds, anchor="mm")
         for o, q in oth:                             # the other targets first, under the one this post is about
-            self._glyph(d, o, q, 2.3 * SS, 175, as_drone(o, missiles))
+            self._glyph(d, o, q, OTHER_SC * SS, 175, as_drone(o, missiles))
         self._target(d, m, px, here, ray, as_drone(m, missiles), k, boxes, bounds)
         if tag:
             self._pill(d, *tag)
@@ -444,23 +507,32 @@ class MapShot:
         if len(text) > 34:
             text = text[:33] + "…"
         font = self.fb[30]
-        w = d.textlength(text, font=font) + 28 * SS
-        h = 50 * SS
+        alt = alt_text(m)                         # 1.58.7, the owner: "display altitude on the screenshot"
+        w = max(d.textlength(text, font=font), d.textlength(alt, font=self.f[26]) if alt else 0) + 28 * SS
+        h = (84 if alt else 50) * SS
         g = (HALO + 8) * SS
         for x, y in ((here[0] + g, here[1] - h / 2), (here[0] - g - w, here[1] - h / 2),
                      (here[0] - w / 2, here[1] - g - h), (here[0] - w / 2, here[1] + g)):
             box = (x, y, x + w, y + h)
             if self._free(box, boxes[1:], bounds):
                 boxes.append(box)
-                return box, text, font
+                return box, text, font, alt
         return None
 
-    def _pill(self, d, box, text, font):
+    def _pill(self, d, box, text, font, alt=None):
         d.rounded_rectangle(box, radius=12 * SS, fill=(18, 21, 27, 235), outline=(70, 78, 92), width=SS)
-        d.text(((box[0] + box[2]) / 2, (box[1] + box[3]) / 2), text, font=font, fill=INK, anchor="mm")
+        cx = (box[0] + box[2]) / 2
+        if not alt:
+            d.text((cx, (box[1] + box[3]) / 2), text, font=font, fill=INK, anchor="mm")
+            return
+        d.text((cx, box[1] + 27 * SS), text, font=font, fill=INK, anchor="mm")
+        d.text((cx, box[1] + 62 * SS), alt, font=self.f[26], fill=AMBER, anchor="mm")
 
     def _target(self, d, m, px, here, ray=True, drone_like=False, k=1.0, boxes=None, bounds=None):
         alpha = 255
+        held = bool(m.get("_held"))
+        # 1.58.7 (the owner's choice for 1.58.6's rule): only where it is heading was said, and that place has no official
+        # alert yet — no silhouette there, no halo, no course: the places it was reported at before, and the name
         if m.get("approach") or m.get("dest_only") or (m.get("place") or "").startswith("→"):
             # only where it is heading was said: drawn at that town as the app draws it — fainter, and from the side
             # a post named (its course) set off the town by a little, never more than 12 km (kyiv.html, apOff)
@@ -476,7 +548,7 @@ class MapShot:
                       key=lambda h: h.get("ts") or 0)[-6:]
         trail = [px(self.proj(h["lon"], h["lat"])) for h in hist]
         if trail:
-            path = trail + [here]
+            path = trail if held else trail + [here]       # held: no line to a place it has not been seen at
             for a, b in zip(path, path[1:]):
                 n = max(1, int(math.dist(a, b) / (14 * SS)))
                 for i in range(0, n, 2):
@@ -488,15 +560,17 @@ class MapShot:
                 d.ellipse([q[0] - r, q[1] - r, q[0] + r, q[1] + r], fill=col + (150,), outline=STROKE, width=SS)
                 if h.get("place") and boxes is not None:          # where it was reported, if there is room
                     self._label(d, (q[0] + r + 4 * SS, q[1]), str(h["place"])[:28], self.f[17], INK2, boxes, bounds)
+        if held:
+            return
         # a course, only when a post gave one: the ray and its chevron
         hd = m.get("heading")
         if hd is not None and ray:
-            L = 110 * SS
+            L = 80 * SS
             rad = math.radians(hd)
             tip = (here[0] + math.sin(rad) * L, here[1] - math.cos(rad) * L)
-            d.line([here, tip], fill=col + (230,), width=5 * SS)
+            d.line([here, tip], fill=col + (230,), width=4 * SS)
             a1, a2 = math.radians(hd + 150), math.radians(hd - 150)
-            hl = 22 * SS
+            hl = 16 * SS
             d.polygon([tip, (tip[0] + math.sin(a1) * hl, tip[1] - math.cos(a1) * hl),
                        (tip[0] + math.sin(a2) * hl, tip[1] - math.cos(a2) * hl)], fill=col, outline=STROKE)
         # 1.58.6: placed only in a part of the oblast ("на сході Київщини"): the area it is somewhere in, dashed
@@ -513,7 +587,7 @@ class MapShot:
         d.ellipse([here[0] - R, here[1] - R, here[0] + R, here[1] + R], outline=col + (120,), width=3 * SS)
         if m.get("type") == "ballistic_missiles":
             d.ellipse([here[0] - R * 1.4, here[1] - R * 1.4, here[0] + R * 1.4, here[1] + R * 1.4], outline=(255, 23, 68, 170), width=4 * SS)
-        self._glyph(d, m, here, 3.9 * SS, alpha, drone_like)
+        self._glyph(d, m, here, GLYPH_SC * SS, alpha, drone_like)
 
     def _glyph(self, d, m, here, sc, alpha=255, drone_like=False):
         """The silhouette of `m` at `here`, `sc` pixels a unit, turned as the app turns it."""

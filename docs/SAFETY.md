@@ -127,26 +127,48 @@ children. A shared text now carries the kind, the place the post named, the time
 channel and the reminder — never a pin, its name or a distance to it. The pins themselves are numbered and named by
 their owner, and the name stays on the phone with them.
 
-## The private channel says what the map says, and nothing about what became of a target (1.58)
+## The private channel says what the map says — and, since 1.58.7, what the map shows became of a target (1.58)
 
 The owner's private Telegram channel (TECHNICAL.md §9c) posts the targets over Kyiv and Kyiv oblast with a picture of
 the map around them. A post in a channel is forwarded, screenshotted and read without the app around it, so:
 
-- **What and where, as the post said**: the type the app names, the place a post gave, the height a post gave, the
-  channel, the time. A course only when a post **stated** one (a target town, compass words) — the bearing the app works
-  out between two reports of a live channel is drawn in the app with its caveat, never said or drawn in the channel.
-  A post that said only where a target is heading ("Балістика на Київ!") is shown at that town as the app shows it,
-  with no course ray, and the caption says that where it is now was not said. No ETA, no "towards your area", no
-  distance to anybody.
-- **No outcome, no air defence.** A target shot at, shot down or that hit something is not announced, and no impact or
-  air-defence position is ever published live: the post of a target that leaves the map's flying marks, for whatever
-  reason, is closed with "no new reports after HH:MM" — the same words whatever happened. Outcome glyphs do not exist
-  in the picture.
-- **The official alerts** are drawn as the app draws them, from the official data alone; the channel never says that an
-  alert starts or ends. Every post carries "from channel posts, not radar — the siren and the official alert come first".
+- **What and where, as the post said**: the type the app names, the place a post gave, the height a post gave (1.58.7:
+  on the picture too), the time. A course only when a post **stated** one (a target town, compass words) — the bearing
+  the app works out between two reports of a live channel is drawn in the app with its caveat, never said or drawn in
+  the channel. A post that said only where a target is heading ("Балістика на Київ!") is shown at that town as the app
+  shows it, with no course ray, and the caption says that where it is now was not said. No ETA, no "towards your area",
+  no distance to anybody. 1.58.7, the owner: "no need to say the source of info" — the channel a post came from is no
+  longer named; every post still says "from channel posts, not radar".
+- **A new post for each new report** (1.58.7, the owner: "instead of editing the post, we need to add a screenshot every
+  time — it's better to keep track of what's going on"), in reply to the target's last one: what was posted stays as it
+  was posted, and the thread is the target's track as the posts gave it. At most one a minute per target, and never a
+  report older than five minutes.
+- **What became of it, as the map shows it** (1.58.7, the owner: "when the alarm is over, or it exploded or fell, or the
+  threat is no longer here, we should mark it too" — until then the channel said nothing of an outcome): an outcome a
+  post reported, linked to the target exactly as the Tactical page links it, in the app's own words — "Збито /
+  Приземлено", "Вибух (влучання або перехоплення — невідомо)", "Локаційно втрачено", "Повідомлено: у районі чисто" —
+  marked "так у дописі" with its time. **Never where**: the closing line names the target's last reported place, not
+  the place of the outcome, and no picture is drawn of it; no impact or air-defence position is ever published live. A
+  fire or damage on the ground ends nothing, as on the map.
+- **The official alerts** are drawn as the app draws them, from the official data alone. **The all-clear** (1.58.7) is
+  the official data's, never a post's: an area — the city, a raion of Kyiv oblast — whose alert had a channel target
+  in it, and whose alert has been gone for a full minute (the feed flickers; a flicker is no all-clear), gets one line,
+  "Відбій тривоги … (офіційно)". An alert must have been seen by the running server: after a restart, before the
+  alerts are read, nothing looks like an all-clear; and none is said late after the kill switch. A target that is simply
+  no longer reported gets "no new reports after HH:MM".
 - **Nobody's place.** The channel knows no pin, no subscriber, no reader: what it posts is the same for everyone.
 - **The token is the owner's**: created by him, stored by his script straight into Fly's secrets, never written to a
   file, the database, a log or the dashboard.
+
+## Only where it is heading, and no alert there: not on the map (1.58.7)
+
+A drone whose post said only where it is heading ("шахед на Київ") used to be drawn at that place, as an approach. The
+owner, of a jet drone drawn on Kyiv while Kyiv had no alert: "alarm ALWAYS is better — you see Kyiv isn't under alarm
+yet, so why put a drone icon here, it's dangerous". So while that place has no official alert, the target is `held`:
+the maps and the channel's picture do not draw it there (the channel's post says why), the Near list keeps it without
+a distance — "position not stated — on the map once that place is under alert" —, and no "near you" push is sent for
+it. Once the place is under alert it is drawn as before. A missile is never held: its alert follows within a minute or
+two, and a ballistic warning must never wait for it.
 
 ## A weapon nobody named is "probably a drone" — never "unknown", never "a drone" (1.54.8)
 

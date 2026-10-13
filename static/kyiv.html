@@ -2373,7 +2373,10 @@ function tick(){
   // reads as "it is still going on", and one reported for a whole oblast says least of all.
   const OUTCOME_TTL=15;
   const outcomeTtl=m=>m.status!=='impact'?OUTCOME_TTL:(m.place==='область'?5:10);
-  const now=Date.now(); let live=MK.filter(m=>agoMin(m.ts)<=(m.status?outcomeTtl(m):ttl)&&!HIDDEN_STATUS.has(m.status));
+  // 1.58.7: `held` (the server's) — a drone whose post said only where it is heading, while that place has no official
+  // alert: not drawn there ("alarm ALWAYS is better … why put a drone icon here, it's dangerous" — the owner); it stays in
+  // the Near list, "position not stated", and is drawn once the place is under alert
+  const now=Date.now(); let live=MK.filter(m=>agoMin(m.ts)<=(m.status?outcomeTtl(m):ttl)&&!HIDDEN_STATUS.has(m.status)&&!m.held);
   // "Київщина - вибухи" names no town. Drawn as a pin it claimed the oblast centre, which for Kyiv oblast
   // is near Vasylkiv — so a report about the whole region read as an explosion in one village. These become
   // a mark on the region itself, handled below, and never a position.
@@ -3160,7 +3163,7 @@ function nearRows(){
     const [x,y]=posOf(m,now), d=Math.hypot(x-ref[0],y-ref[1]), hi=HOME?homeInfo(m,x,y):{inbound:false,named:false};
     if(d>NEAR_MAX) continue;      // 1.43: the map covers Odesa and Kharkiv now — a target 400 km away is not "near" anyone here
     const n=m.csum||m.count||1, chs=new Set([m.channel,...corroboration(m).map(o=>o.channel)]).size;
-    out.push({m,d,hi,n,chs,imm:IMMEDIATE.has(m.type)&&d<=REGION_R,vague:m.place==='область'}); }
+    out.push({m,d,hi,n,chs,imm:IMMEDIATE.has(m.type)&&d<=REGION_R,vague:m.place==='область'||!!m.held}); }
   out.sort((a,b)=>(b.imm-a.imm)||(a.vague-b.vague)||((b.hi.inbound&&!b.m.stale)-(a.hi.inbound&&!a.m.stale))||(a.d-b.d));
   return out; }
 const fromWhere=()=>HOME?t('mc_f_n',slotName(ACTIVE)):t('mc_f_kyiv');
@@ -3168,6 +3171,7 @@ function rowSub(r){ const m=r.m, bits=[];
   if(r.hi.inbound) bits.push(t('mc_course',homeName()));
   else if(m.target&&!m.approach) bits.push(t('mc_course',tgtName(m)));
   else if(m.heading!=null&&!m.approach) bits.push(dirName(m.heading));
+  if(m.held) bits.push(t('mc_held'));                                                       // 1.58.7
   bits.push(m.stale?t('lt_lost'):t('tp_ago',Math.max(0,Math.round(agoMin(m.pos_ts||m.ts)))));   // 1.38: the age of the position
   if(r.chs>1) bits.push(tn('mc_ch',r.chs));
   return bits.join(' · '); }

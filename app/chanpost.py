@@ -1,22 +1,28 @@
-"""1.58: the owner's private Telegram channel — one post per target over Kyiv and Kyiv oblast, with a picture of the
-map around it, edited as new reports of the same target come in.
+"""1.58: the owner's private Telegram channel — a post for each target over Kyiv and Kyiv oblast, with a picture of the
+map around it; 1.58.7: a new post for each new report of it, in reply to the one before, and a closing line.
 
 The owner: "a small private Telegram channel that posts alerts like the channels we read, with a 'screenshot' of the
-app where the drone is (Kyiv and Kyiv oblast only)"; of the ways asked, "one post per target, updated" and "the app's
-style, drawn on the server" (app/mapshot.py).
+app where the drone is (Kyiv and Kyiv oblast only)"; of the ways asked, "the app's style, drawn on the server"
+(app/mapshot.py). 1.58.7: "instead of editing the post, we need to add a screenshot every time — it's better to keep
+track of what's going on"; "when the alarm is over, or it exploded or fell, or the threat is no longer here, we should
+mark it too"; "no need to say the source of info".
 
 Its rules (docs/SAFETY.md §the channel):
   - it repeats what the map shows and nothing more: the type and the place a post gave, a course only when a post
     stated one (a target town, compass words) — never a course the app worked out from two reports —, the height a
-    post gave, the channel it came from, "from channel posts, not radar";
-  - it never publishes an outcome (shot down, an explosion, a hit) nor where one happened, and never an air-defence
-    position: a target leaves the channel with "no new reports since HH:MM", whatever became of it;
-  - the official alerts are drawn as the app draws them; the channel never says that an alert starts or ends;
+    post gave, "from channel posts, not radar"; not the channel a post came from (the owner: no need);
+  - a target's last word is what the map shows of it: the outcome a post reported (shot down / landed, an explosion,
+    lost from tracking, the area reported clear), in the app's own words and without the place it happened, or the
+    official all-clear of the area it was in, or "no new reports since HH:MM". Never an air-defence position, never
+    where a strike landed, and no picture is drawn of an outcome;
+  - the official alerts are drawn as the app draws them; an all-clear is said only from the official data, after a
+    minute without the alert (a flicker of the feed is no all-clear), and only for an alert this run saw;
   - the bot's token is the owner's: set by scripts/set-telegram-channel.bat into Fly's secrets (TG_BOT_TOKEN,
     TG_CHANNEL_ID), read from the environment, never written to the database, a log or an answer. The server's
-    bot only posts and edits in that one channel; it reads nothing (the channels are read as before).
+    bot only posts in that one channel; it reads nothing (the channels are read as before).
 """
 import json
+import math
 import os
 import threading
 import time
@@ -29,13 +35,19 @@ try:
     import mapshot
 except Exception:  # pragma: no cover
     mapshot = None
+try:
+    import areas
+except Exception:  # pragma: no cover
+    areas = None
 
 SCOPE = ("31", "14")                       # Kyiv city, Kyiv oblast
 TYPES = ("drones", "ballistic_missiles", "cruise_missiles", "unspecified_missiles", "banderol_missiles",
          "supersonic_missiles", "unknown")
-FRESH_S = 5 * 60                           # a target is posted only if its report is this recent (no backlog)
-EDIT_EVERY_S = 45                          # a post is redrawn at most this often
-END_AFTER_S = 5 * 60                       # gone from the map this long → its post is closed ("no new reports")
+FRESH_S = 5 * 60                           # a report is posted only if it is this recent (no backlog)
+UPDATE_EVERY_S = 60                        # 1.58.7: a target's new report is a new post, at most this often
+END_AFTER_S = 5 * 60                       # gone from the map this long → its closing line ("no new reports")
+CLEAR_AFTER_S = 60                         # an area's alert gone this long → its all-clear (a feed's flicker is not one)
+OUTCOME_WINDOW_S = 40 * 60                 # kyiv.html linkStatus: an outcome up to 40 min after the target's report
 KEEP_S = 24 * 3600                         # what the store remembers of the posts
 BUDGET = 18                                # calls a minute (Telegram allows ~20 messages a minute in one channel)
 TICK_S = 5
@@ -54,6 +66,16 @@ ALT_STATE = {"low": "низько", "high": "високо", "descending": "зн�
 # mark) is drawn on the map with its own caveat, but the channel says only what a post said
 DERIVED = ("bearing between the two latest reports", "the destination a later post named")
 WARN = "⚠️ З дописів каналів, не радар. Сирена й офіційна тривога — головне."
+# 1.58.7: what became of a target, in the Tactical page's own Ukrainian words (i18n.js st_down … st_clear — tests check)
+OUTCOME = {"down": ("⬇️", "Збито / Приземлено"), "impact": ("💥", "Вибух (влучання або перехоплення — невідомо)"),
+           "lost": ("❔", "Локаційно втрачено"), "clear": ("✅", "Повідомлено: у районі чисто")}
+# the official alert areas a target can be in: Kyiv city, a raion of Kyiv oblast, "14:*" — somewhere in the oblast
+AREA_UK = {"kyiv-city": "Київ", "brovary": "Броварський район", "boryspil": "Бориспільський район",
+           "bucha": "Бучанський район", "vyshhorod": "Вишгородський район", "obukhiv": "Обухівський район",
+           "bila-tserkva": "Білоцерківський район", "fastiv": "Фастівський район", "14:*": "Київщина"}
+OBL14 = ("brovary", "boryspil", "bucha", "vyshhorod", "obukhiv", "bila-tserkva", "fastiv")
+# kyiv.html's projection (static/kyiv-map.json): kilometres east and south of Kyiv's centre
+KM_C, KM_X, KM_Y = (30.52, 50.45), 70.67939956918688, 111.0
 
 
 def esc(s):
@@ -153,15 +175,16 @@ def label_of(m):
     return LABEL.get(t, LABEL["unknown"])
 
 
-def caption(m, first_t, public_url, ended_t=None):
-    """The post's text (Telegram HTML). Only what the post said; nothing about what became of it."""
+def head_line(m):
     emo, name = label_of(m)
     n = m.get("count")
-    head = f"{emo} <b>{esc(name)}{' ×' + str(n) if isinstance(n, int) and n > 1 else ''}</b> · {esc(place_text(m))}"
-    lines = []
-    if ended_t:
-        lines.append(f"⏹ Нових дописів після {hhmm(ended_t)} немає")
-    lines.append(head)
+    return f"{emo} <b>{esc(name)}{' ×' + str(n) if isinstance(n, int) and n > 1 else ''}</b> · {esc(place_text(m))}"
+
+
+def caption(m, first_t, public_url):
+    """A report's post (Telegram HTML): only what the post said. 1.58.7: not the channel it came from (the owner: "no
+    need to say the source of info"); a target held off the map (server.State._hold) says so."""
+    lines = [head_line(m)]
     c = stated_course(m)
     if c:
         lines.append(f"➡️ {esc(c)} (так у дописі)")
@@ -169,6 +192,8 @@ def caption(m, first_t, public_url, ended_t=None):
         lines.append("📍 Де саме зараз — у дописі не сказано")
     elif part_of_oblast(m):
         lines.append("📍 Точного місця в дописі немає — лише частина області")
+    if m.get("held"):
+        lines.append("⚪ Офіційної тривоги там поки немає — значка на мапі немає, доки її не оголосять")
     alt = m.get("alt") or {}
     if isinstance(alt, dict) and (alt.get("m") or alt.get("state") in ALT_STATE):
         lines.append("↕️ Висота: " + (f"~{int(alt['m'])} м" if alt.get("m") else ALT_STATE[alt["state"]]) + " (у дописі)")
@@ -176,20 +201,111 @@ def caption(m, first_t, public_url, ended_t=None):
     when = hhmm(t) if t else "?"
     if first_t and t and hhmm(first_t) != when:
         when += f" (перший допис {hhmm(first_t)})"
-    ch = m.get("channel")
-    lines.append(f"🕒 {when}" + (f" · за @{esc(ch)}" if ch else ""))
+    lines.append(f"🕒 {when}")
     lines.append(WARN)
     lines.append(f'🗺 <a href="{esc(public_url.rstrip("/"))}/m">Мапа Heimdall</a>')
     return "\n".join(lines)[:1024]
 
 
+def end_text(m, end):
+    """1.58.7: a target's closing line, in reply to its last post — what became of it, as the map shows it.
+    `end`: {"k": "quiet", "t": its last report} | {"k": "outcome", "status": …, "t": the outcome's report}."""
+    if end.get("k") == "outcome" and end.get("status") in OUTCOME:
+        emo, word = OUTCOME[end["status"]]
+        first = f"{emo} <b>{esc(word)}</b> — так у дописі о {hhmm(end['t'])}"
+    else:
+        first = f"⏹ Нових дописів після {hhmm(end['t'])} немає"
+    return first + "\n" + head_line(m)
+
+
+def allclear_text(area, t):
+    """1.58.7: the official all-clear of an area the channel had a target in — the official data's, never a post's."""
+    return f"✅ <b>Відбій тривоги</b> о {hhmm(t)} · {esc(AREA_UK.get(area, area))} (офіційно)"
+
+
 def signature(m):
-    """What a redraw is for: a new place, a new course, a new count or height — not a new id of the same report."""
+    """What a new post is for: a new place, a new course, a new count or height, held or drawn — not a new id of the
+    same report."""
     alt = m.get("alt") or {}
     hist = [(round(h.get("lon") or 0, 3), round(h.get("lat") or 0, 3)) for h in (m.get("history") or [])[-6:]]
     return json.dumps([round(m["lon"], 3), round(m["lat"], 3), m.get("place"), stated_course(m), m.get("count"),
                        m.get("type"), m.get("jet"), alt.get("m") if isinstance(alt, dict) else None, hist,
-                       int(report_t(m) // 60)], ensure_ascii=False)
+                       int(report_t(m) // 60), bool(m.get("held"))], ensure_ascii=False)
+
+
+def area_of(m):
+    """The official alert area a channel target is in, for its all-clear: "kyiv-city", a raion of Kyiv oblast, "14:*"
+    for a target placed only in a part of the oblast — or None (no area of Kyiv or its oblast)."""
+    if m.get("lon") is None or m.get("lat") is None:
+        return None
+    if part_of_oblast(m):
+        return "14:*"
+    a = areas.area_at(m["lon"], m["lat"]) if areas else None
+    if not a:
+        return None
+    if a[0] == "31":
+        return "kyiv-city"
+    return a[1] if a[0] == "14" and a[1] in AREA_UK else None
+
+
+def area_on(area, fills):
+    if area == "14:*":
+        return any(k in fills for k in OBL14)
+    return area in fills
+
+
+def _km(m):
+    return ((m["lon"] - KM_C[0]) * KM_X, -(m["lat"] - KM_C[1]) * KM_Y)
+
+
+def link_outcomes(marks, extra=()):
+    """kyiv.html's linkStatus, the same rules: each outcome a post reported (down, impact, lost, clear) closes the one
+    target it most plausibly ends — same family, reported 2 min before to 40 min after the target's report, within
+    60 km and (with a course, beyond 8 km) roughly ahead of it, "clear" within 25 km; the nearest and soonest.
+    `extra`: (key, mark) of targets the channel posted that the map no longer has (gone, or faded out). → {key: outcome}"""
+    tracks = {}
+    for m in marks:
+        if not m.get("status") and m.get("lon") is not None and m.get("lat") is not None:
+            k = key_of(m)
+            if k not in tracks or (parse_ts(m.get("ts")) or 0) > (parse_ts(tracks[k].get("ts")) or 0):
+                tracks[k] = m
+    for k, m in extra:
+        if k not in tracks and m.get("lon") is not None and m.get("lat") is not None:
+            tracks[k] = m
+    ended = {}
+    for s_ in marks:
+        if s_.get("status") not in OUTCOME or s_.get("lon") is None or s_.get("lat") is None:
+            continue
+        st = parse_ts(s_.get("ts"))
+        if st is None:
+            continue
+        sx, sy = _km(s_)
+        best = None
+        for k, t in tracks.items():
+            tt = parse_ts(t.get("ts"))
+            if k in ended or tt is None:
+                continue
+            dt = (st - tt) / 60
+            if dt < -2 or dt > 40:
+                continue
+            if (t.get("type") == "drones") != (s_.get("type") == "drones"):
+                continue
+            tx, ty = _km(t)
+            d = math.hypot(sx - tx, sy - ty)
+            if d > 60:
+                continue
+            if t.get("heading") is not None and d > 8:
+                b = (math.degrees(math.atan2(sx - tx, -(sy - ty))) + 360) % 360
+                if abs(((t["heading"] - b) + 540) % 360 - 180) > 55:
+                    continue
+            if s_.get("status") == "clear" and d > 25:
+                continue
+            score = d + dt * 0.5
+            if best is None or score < best[0]:
+                best = (score, k)
+        if best:
+            ended[best[1]] = s_
+    return ended
 
 
 class TgError(Exception):
@@ -243,8 +359,8 @@ def _multipart(fields, files):
 
 
 class ChannelPoster(threading.Thread):
-    """Every few seconds: the marks of the moment → a new post for a new target, a redraw for a target reported
-    again, a closing line for a target gone from the map."""
+    """Every few seconds: the marks of the moment → a post for a new target, a new post (in reply to its last one) for
+    a target reported again, a closing line for a target that came down or is gone, an all-clear for its area."""
 
     def __init__(self, state, token, chat_id, public_url, api=None, shot=None, log=print, clock=time.time,
                  kv=None, ssl_ctx=None, sat=None):
@@ -263,9 +379,14 @@ class ChannelPoster(threading.Thread):
         self.calls = []                    # times of the last minute's calls
         self.missiles = []                 # (lon, lat) of the missiles on the map, this pass
         self.cur = {}                      # the targets the channel shows, this pass (key → mark)
+        # 1.58.7: the areas under an official alert this run has seen with a channel target in them (area → keys), and
+        # since when an area's alert has been gone. Kept in memory only: after a restart an area must be seen under
+        # alert again before its all-clear is said — the first passes after a start have no alerts read yet
+        self.watch = {}
+        self.clear_since = {}
         self.pause_until = 0.0
-        self.stats = {"posted": 0, "edited": 0, "closed": 0, "errors": 0, "last_error": None, "last_post": None,
-                      "failing": False}
+        self.stats = {"posted": 0, "updates": 0, "closed": 0, "allclear": 0, "errors": 0, "last_error": None,
+                      "last_post": None, "failing": False}
         self.posts = self._load()
 
     # ---- the store -----------------------------------------------------------------------------------------------
@@ -298,9 +419,8 @@ class ChannelPoster(threading.Thread):
         except TgError as e:
             if e.retry_after:
                 self.pause_until = self.clock() + float(e.retry_after) + 1
-            if "message is not modified" not in (e.desc or ""):
-                self.stats.update(errors=self.stats["errors"] + 1, last_error=e.desc[:200], failing=True)
-                self.log("channel:", e.desc[:200])
+            self.stats.update(errors=self.stats["errors"] + 1, last_error=e.desc[:200], failing=True)
+            self.log("channel:", e.desc[:200])
             raise
         self.stats["failing"] = False
         return r
@@ -312,7 +432,8 @@ class ChannelPoster(threading.Thread):
         return {"name": "telegram channel (posting)", "ok": ok, "last": st["last_post"],
                 "error": None if ok else st["last_error"],
                 "note": ("switched OFF on the dashboard · " if not self.enabled() else "")
-                        + f"posted {st['posted']} · redrawn {st['edited']} · closed {st['closed']}"
+                        + f"targets {st['posted']} · new reports {st['updates']} · closed {st['closed']}"
+                        + f" · all-clears {st['allclear']}"
                         + ("" if self.shot else " · text only (no Pillow)")}
 
     # ---- one pass ------------------------------------------------------------------------------------------------
@@ -330,9 +451,12 @@ class ChannelPoster(threading.Thread):
             return None
         try:
             k = key_of(m)
-            others = [o for kk, o in (self.cur or {}).items() if kk != k]     # 1.58.5: what else is in the sky
+            # 1.58.5: what else is in the sky — as the map shows it (a target held off the map is not drawn)
+            others = [o for kk, o in (self.cur or {}).items() if kk != k and not o.get("held")]
             if part_of_oblast(m):                 # 1.58.6: a part of the oblast is an area, not a point
                 m = dict(m, place=place_text(m), _area_km=AREA_KM)
+            if m.get("held"):                     # 1.58.7: no silhouette at a place it has not been seen at
+                m = dict(m, _held=True)
             return self.shot.render(m, active, hhmm(report_t(m) or self.clock()),
                                     ray=stated_course(m) is not None and not approach(m), missiles=self.missiles,
                                     others=others)
@@ -341,8 +465,8 @@ class ChannelPoster(threading.Thread):
             return None
 
     def enabled(self):
-        """The dashboard's switch (Live tab): off, the channel makes no call at all — no post, no redraw, no closing line.
-        Read on every pass, so it takes effect within one (5 s). Unreadable: on, as before the switch existed."""
+        """The dashboard's switch (Live tab): off, the channel makes no call at all — no post, no closing line, no
+        all-clear. Read on every pass, so it takes effect within one (5 s). Unreadable: on, as before the switch existed."""
         try:
             return (self.kv.kv_get(KV_ON) if self.kv else None) != "0"
         except Exception:
@@ -350,6 +474,7 @@ class ChannelPoster(threading.Thread):
 
     def tick(self):
         if not self.enabled():
+            self.watch, self.clear_since = {}, {}   # switched on again: no all-clear of an alert that ended meanwhile
             return
         now = self.clock()
         marks = self.marks() or []
@@ -365,9 +490,15 @@ class ChannelPoster(threading.Thread):
             if m.get("type") == "unknown":
                 cur[k] = dict(m, _drone=mapshot.as_drone(m, self.missiles) if mapshot else True)
         self.cur = cur
-        active = None
+        # what the map says became of the targets: the outcomes, linked as kyiv.html links them, the channel's
+        # targets the map no longer has included (their last report, kept with the post)
+        extra = [(k, p["m"]) for k, p in self.posts.items() if k not in cur and (p.get("m") or {}).get("lon") is not None
+                 and now - (p.get("last") or 0) <= OUTCOME_WINDOW_S + 120]
+        outcomes = link_outcomes(marks, extra)
+        active = self.active()
+        fills = mapshot.alert_fill(active) if mapshot else {}
         changed = False
-        # 1. new targets first, the most recent report first
+        # 1. new targets first, the most recent report first — not one the map already shows as ended
         for k, m in sorted(cur.items(), key=lambda kv: -report_t(kv[1])):
             p = self.posts.get(k)
             if p and not p.get("ended"):
@@ -375,28 +506,40 @@ class ChannelPoster(threading.Thread):
                 continue
             if p and p.get("ended") and report_t(m) <= (p.get("last") or 0):
                 continue                               # the same report, already closed
-            if now - report_t(m) > FRESH_S or not self._room():
+            if k in outcomes or now - report_t(m) > FRESH_S or not self._room():
                 continue
-            active = self.active() if active is None else active
-            if self._send(k, m, active):
+            if self._send(k, m, active, reply_to=(p or {}).get("mid")):
                 changed = True
-        # 2. targets reported again: their post redrawn, at most every EDIT_EVERY_S
-        for k, m in cur.items():
+        # 2. what became of them: an outcome a post reported (once, even after "no new reports")
+        for k, s_ in outcomes.items():
             p = self.posts.get(k)
-            if not p or p.get("ended") or p.get("sig") == signature(m) or now - (p.get("edited") or 0) < EDIT_EVERY_S:
+            if not p or p.get("outcome") or (p.get("ended") and (p.get("end") or {}).get("k") != "quiet"):
                 continue
             if not self._room():
                 break
-            active = self.active() if active is None else active
-            if self._edit(k, m, active):
+            if self._end(k, p, {"k": "outcome", "status": s_.get("status"), "t": parse_ts(s_.get("ts")) or now}):
                 changed = True
-        # 3. targets gone from the map: closed, without a word on what became of them
+        # 3. the official all-clear of an area a target was in
+        if self._allclears(now, fills):
+            changed = True
+        # 4. targets reported again: a new post, in reply to the last one, at most every UPDATE_EVERY_S
+        for k, m in sorted(cur.items(), key=lambda kv: (self.posts.get(kv[0]) or {}).get("sent") or 0):
+            p = self.posts.get(k)
+            if not p or p.get("ended") or k in outcomes or p.get("sig") == signature(m):
+                continue
+            if now - (p.get("sent") or 0) < UPDATE_EVERY_S or now - report_t(m) > FRESH_S:
+                continue
+            if not self._room():
+                break
+            if self._send(k, m, active, reply_to=p.get("mid"), update=True):
+                changed = True
+        # 5. targets gone from the map: "no new reports since"
         for k, p in list(self.posts.items()):
             if p.get("ended") or k in cur or now - (p.get("seen") or 0) < END_AFTER_S:
                 continue
             if not self._room():
                 break
-            if self._close(k, p):
+            if self._end(k, p, {"k": "quiet", "t": p.get("last") or p.get("first") or now}):
                 changed = True
         cut = now - KEEP_S
         for k in [k for k, p in self.posts.items() if (p.get("seen") or 0) < cut]:
@@ -405,69 +548,97 @@ class ChannelPoster(threading.Thread):
         if changed:
             self._save()
 
-    def _send(self, k, m, active):
+    def _allclears(self, now, fills):
+        """An area under an official alert with a channel target in it is watched; a minute after its alert is gone
+        (the official data), one line says so, in reply to the last post of a target there, and the targets still open
+        there are closed by it."""
+        changed = False
+        for k, p in self.posts.items():
+            a = p.get("area")
+            if a and not p.get("ended") and area_on(a, fills):
+                self.watch.setdefault(a, set()).add(k)
+        for a in list(self.watch):
+            if area_on(a, fills):
+                self.clear_since.pop(a, None)
+                continue
+            t0 = self.clear_since.setdefault(a, now)
+            if now - t0 < CLEAR_AFTER_S:
+                continue
+            keys = [k for k in self.watch[a] if k in self.posts]
+            if keys:
+                if not self._room():
+                    continue
+                last = max(keys, key=lambda k: self.posts[k].get("sent") or 0)
+                try:
+                    r = self._call("sendMessage", self._reply({"chat_id": self.chat_id, "text": allclear_text(a, t0),
+                                                               "parse_mode": "HTML",
+                                                               "link_preview_options": {"is_disabled": True}},
+                                                              self.posts[last].get("mid")))
+                except TgError:
+                    continue
+                self.stats["allclear"] += 1
+                for k in keys:
+                    p = self.posts[k]
+                    if not p.get("ended") and p.get("area") == a:
+                        p.update(ended=True, end={"k": "allclear", "t": t0, "area": a})
+                        self.stats["closed"] += 1
+                if (r or {}).get("message_id"):
+                    self.posts[last]["mid"] = r["message_id"]
+            del self.watch[a]
+            self.clear_since.pop(a, None)
+            changed = True
+        return changed
+
+    @staticmethod
+    def _reply(fields, mid):
+        if mid:
+            fields["reply_parameters"] = {"message_id": mid, "allow_sending_without_reply": True}
+        return fields
+
+    def _send(self, k, m, active, reply_to=None, update=False):
+        """A post for this report of the target — 1.58.7: always a new one, never an edit of the last (the owner:
+        "better to keep track of what's going on"), in reply to the target's last post."""
         t = report_t(m)
-        cap = caption(m, t, self.public_url)
+        p = self.posts.get(k) if update else None
+        first = (p or {}).get("first") or t
+        cap = caption(m, first, self.public_url)
         png = self.picture(m, active)
         try:
             if png:
-                r = self._call("sendPhoto", {"chat_id": self.chat_id, "caption": cap, "parse_mode": "HTML"},
-                               {"photo": ("map.jpg", png, "image/jpeg")})
+                r = self._call("sendPhoto", self._reply({"chat_id": self.chat_id, "caption": cap, "parse_mode": "HTML"},
+                                                        reply_to), {"photo": ("map.jpg", png, "image/jpeg")})
             else:
-                r = self._call("sendMessage", {"chat_id": self.chat_id, "text": cap, "parse_mode": "HTML",
-                                               "link_preview_options": {"is_disabled": True}})
+                r = self._call("sendMessage", self._reply({"chat_id": self.chat_id, "text": cap, "parse_mode": "HTML",
+                                                           "link_preview_options": {"is_disabled": True}}, reply_to))
         except TgError:
             return False
         now = self.clock()
-        self.posts[k] = {"mid": (r or {}).get("message_id"), "photo": bool(png), "sig": signature(m), "first": t,
-                         "last": t, "seen": now, "edited": now, "m": _slim(m)}
-        self.stats["posted"] += 1
+        mid = (r or {}).get("message_id")
+        if update:
+            p.update(mid=mid or p.get("mid"), sig=signature(m), last=t, seen=now, sent=now, m=_slim(m),
+                     area=area_of(m), n=(p.get("n") or 1) + 1)
+            self.stats["updates"] += 1
+        else:
+            self.posts[k] = {"mid": mid, "first_mid": mid, "sig": signature(m), "first": t, "last": t, "seen": now,
+                             "sent": now, "m": _slim(m), "area": area_of(m), "n": 1}
+            self.stats["posted"] += 1
         self.stats["last_post"] = datetime.fromtimestamp(now, timezone.utc).isoformat(timespec="seconds")
         return True
 
-    def _edit(self, k, m, active):
-        p = self.posts[k]
-        cap = caption(m, p.get("first"), self.public_url)
-        png = self.picture(m, active) if p.get("photo") else None
+    def _end(self, k, p, end):
+        """Its closing line, in reply to its last post: what the map shows became of it. An outcome after a quiet
+        close is said too, once."""
         try:
-            if p.get("photo") and png:
-                self._call("editMessageMedia", {"chat_id": self.chat_id, "message_id": p["mid"],
-                                                "media": {"type": "photo", "media": "attach://photo", "caption": cap,
-                                                          "parse_mode": "HTML"}},
-                           {"photo": ("map.jpg", png, "image/jpeg")})
-            elif p.get("photo"):
-                self._call("editMessageCaption", {"chat_id": self.chat_id, "message_id": p["mid"], "caption": cap,
-                                                  "parse_mode": "HTML"})
-            else:
-                self._call("editMessageText", {"chat_id": self.chat_id, "message_id": p["mid"], "text": cap,
-                                               "parse_mode": "HTML", "link_preview_options": {"is_disabled": True}})
-        except TgError as e:
-            if "message is not modified" in (e.desc or ""):
-                p.update(sig=signature(m), edited=self.clock())
-                return True
-            if "not found" in (e.desc or "") or "can't be edited" in (e.desc or ""):
-                p["ended"] = True                     # deleted by the owner, or too old: left alone
-                return True
+            r = self._call("sendMessage", self._reply({"chat_id": self.chat_id, "text": end_text(p.get("m") or {}, end),
+                                                       "parse_mode": "HTML",
+                                                       "link_preview_options": {"is_disabled": True}}, p.get("mid")))
+        except TgError:
             return False
-        p.update(sig=signature(m), last=report_t(m), seen=self.clock(), edited=self.clock(), m=_slim(m))
-        self.stats["edited"] += 1
-        return True
-
-    def _close(self, k, p):
-        m = p.get("m") or {}
-        cap = caption(m, p.get("first"), self.public_url, ended_t=p.get("last") or p.get("first"))
-        try:
-            if p.get("photo"):
-                self._call("editMessageCaption", {"chat_id": self.chat_id, "message_id": p["mid"], "caption": cap,
-                                                  "parse_mode": "HTML"})
-            else:
-                self._call("editMessageText", {"chat_id": self.chat_id, "message_id": p["mid"], "text": cap,
-                                               "parse_mode": "HTML", "link_preview_options": {"is_disabled": True}})
-        except TgError as e:
-            if not any(s in (e.desc or "") for s in ("not found", "can't be edited", "message is not modified")):
-                return False
-        p["ended"] = True
-        self.stats["closed"] += 1
+        if not p.get("ended"):
+            self.stats["closed"] += 1
+        p.update(ended=True, end=end, mid=(r or {}).get("message_id") or p.get("mid"))
+        if end.get("k") == "outcome":
+            p["outcome"] = True
         return True
 
     def run(self):
@@ -483,13 +654,19 @@ class ChannelPoster(threading.Thread):
 
 
 def _slim(m):
-    """What a closing line needs of a mark, kept with the post (no text of the post, no evidence beyond the course)."""
-    keep = ("type", "jet", "_drone", "count", "place", "target", "dest_only", "approach", "heading", "alt", "channel", "ts",
-            "pos_ts")
+    """What a closing line and the outcome's link need of a mark, kept with the post (no text of the post, no evidence
+    beyond the course and the part of the oblast)."""
+    keep = ("type", "jet", "_drone", "count", "place", "target", "dest_only", "approach", "heading", "alt", "ts",
+            "pos_ts", "lon", "lat", "oblast_uid", "held")
     out = {k: m.get(k) for k in keep if m.get(k) is not None}
-    hv = (m.get("evidence") or {}).get("heading")
-    if hv:
-        out["evidence"] = {"heading": {k: hv.get(k) for k in ("matched", "method", "confidence")}}
+    ev = m.get("evidence") or {}
+    hv, pv = ev.get("heading"), ev.get("position") or {}
+    if hv or pv.get("quad"):
+        out["evidence"] = {}
+        if hv:
+            out["evidence"]["heading"] = {k: hv.get(k) for k in ("matched", "method", "confidence")}
+        if pv.get("quad"):
+            out["evidence"]["position"] = {"quad": pv["quad"]}
     return out
 
 

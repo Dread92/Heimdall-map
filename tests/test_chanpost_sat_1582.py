@@ -91,6 +91,7 @@ def test_tiles_are_kept_once_decoded_and_never_a_failed_one():
 
 def test_an_alert_is_tinted_once_where_two_shapes_meet():
     shot = mapshot.MapShot(sat=FakeSat(colour=(90, 90, 90)))
+    shot.villages = []                       # the tint alone: no village name (1.58.7) over the pixels read
     act = [{"oblast_uid": "14", "location_type": "oblast"}, {"oblast_uid": "31", "location_type": "city"}]
     jpg = shot.render(drone(), act, "21:40")
     im = Image.open(io.BytesIO(jpg)).convert("RGB")

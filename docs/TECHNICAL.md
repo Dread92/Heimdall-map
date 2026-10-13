@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-13 (1.58.6)
+**Documented version: 1.58** · last updated 2026-10-13 (1.58.7)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -129,8 +129,9 @@ clear-sky/
 │   ├── geo.py              Ukrainian parsing: gazetteer, declensions, types, headings, counts, phases, altitude
 │   ├── translate.py        offline UK→EN glossary; DeepL / Google machine translation with a circuit breaker
 │   ├── ai_reader.py        1.50: the AI reader in shadow mode (OpenRouter) — prompt, schema, checks, comparison (§7.7)
-│   ├── chanpost.py         1.58: the owner's private Telegram channel — one post per target, edited (§9c)
+│   ├── chanpost.py         1.58: the owner's private Telegram channel — a post per report, its outcome, the all-clear (§9c)
 │   ├── mapshot.py          1.58: its picture — the map around one target, drawn with Pillow in the app's style (§9c)
+│   ├── areas.py            1.58.7: which official alert area a point is in, and is it under alert (`held`, §7.4; §9c)
 │   └── push.py             Web Push: VAPID ES256 JWT + RFC 8291 aes128gcm, on `cryptography` only
 ├── static/
 │   ├── kyiv.html           Tactical page (one self-contained file)
@@ -212,7 +213,7 @@ clear-sky/
 | `streams` | **every open page's live line** (`StreamHub`, §5.4): one thread, non-blocking sockets (epoll), the data sent as changes | events + every 15 / 5 / 2 s |
 | `proximity` | per-subscriber distance checks → push | continuous |
 | `warm` | 1.58.3: 45 s after a start, `/api/stats`'s 14 days once in the background — the first ask after a start parsed four days of posts for the explosions while a reader waited (16.6 s after the 1.58 deploy) | once |
-| `channel` | 1.58, with `TG_BOT_TOKEN` and `TG_CHANNEL_ID`: the owner's private Telegram channel (§9c) — a post per target over Kyiv and its oblast with the map around it (`mapshot.py`), redrawn as it is reported again, closed when it is gone; at most 18 calls a minute | 5 s |
+| `channel` | 1.58, with `TG_BOT_TOKEN` and `TG_CHANNEL_ID`: the owner's private Telegram channel (§9c) — a post per target over Kyiv and its oblast with the map around it (`mapshot.py`); 1.58.7: a new post for each new report, in reply to the last, then what became of it (an outcome, the official all-clear, no new reports); at most 18 calls a minute | 5 s |
 | `AlertsInUa.backfill` | a month of history for the favourite regions | once at start |
 | `AFBackfill` | the Air Force summaries of the last 14 days that `af_reports` lacks: first from the stored feed, then from `t.me/s/kpszsu?before=…` pages (at most 240, stops once nothing is missing); since 1.33 also the carriers (`parse_air_report`) in every stored post, once per parser version (`kv.air_parsed`) | 60 s after start, then daily |
 | `bridges` | every 5 s: a Kyiv bridge whose state rose (nothing → near → at, §9b) is written to `bridge_events` and pushed to the phones that asked for the bridges (topic `bridges`, in their language), at most once per bridge every 10 min — a "near" turning "at" excepted | 5 s |
@@ -834,7 +835,16 @@ within 150 km).
    `REGIONAL_STALE_MIN` = 10 min and dropped after `REGIONAL_GONE_MIN` = 25 (an unknown after 10) — the trackers
    post every five to twenty minutes; it carries `slow: true`, and the map fades it on the same clock (grey at 10,
    fainter at 15, "contact lost" at 20). The oblast's all-clear still ends it at once;
-4. outcomes (down, impact, lost) close the track they belong to.
+4. outcomes (down, impact, lost) close the track they belong to;
+5. 1.58.7, `State._hold`: a drone, a weapon not stated or a Banderol (`HOLD_TYPES`) whose post said only where it is
+   heading (`approach`, `dest_only`, a place "→ Київ" — drawn at that place) is marked `held` while that place has no
+   official alert (`areas.under_alert` with `areas.alert_fill` of `State.active`: the city, Kyiv oblast's raions, the
+   oblasts and raions around — the shapes the pages paint; a point in no known shape is never held). The owner, of a
+   jet drone the Air Force put "на сході Київщини, в напрямку столиці", drawn on Kyiv with no alert there: "alarm ALWAYS
+   is better … why put a drone icon here, it's dangerous" — picked: off the map until the alert. The Tactical and Light
+   maps do not draw a held mark; the Near list keeps it, without a distance, "position not stated — on the map once
+   that place is under alert" (`mc_held`); no "near you" push is sent for it (`proximity_watch`). A missile is never
+   held: its alert follows within a minute or two, and a ballistic warning must not wait for it.
 
 **1.45: a target reported for a whole oblast is a region, not a point.** A mark with `place == "область"` ("БпЛА на
 Харківщині", "з Чернігівщини курсом на Київ") still carries the oblast centre as its coordinates, for the server's
@@ -1557,9 +1567,11 @@ reported", never "safe".
 ## 9c. The owner's private Telegram channel (1.58)
 
 The owner: "a small private Telegram channel that posts alerts like the channels we read, with a 'screenshot' of the
-app where the drone is (Kyiv and Kyiv oblast only)" — one post per target, updated, with a picture in the app's style
-drawn on the server. Off unless `TG_BOT_TOKEN` and `TG_CHANNEL_ID` are set; then `main()` starts `ChannelPoster`
-(`app/chanpost.py`, thread `channel`). Its rules are SAFETY.md's "The private channel says what the map says".
+app where the drone is (Kyiv and Kyiv oblast only)" — a post per target, with a picture in the app's style drawn on the
+server. Off unless `TG_BOT_TOKEN` and `TG_CHANNEL_ID` are set; then `main()` starts `ChannelPoster` (`app/chanpost.py`,
+thread `channel`). Its rules are SAFETY.md's "The private channel says what the map says". 1.58.7, the owner:
+"instead of editing the post, we need to add a screenshot every time — it's better to keep track of what's going on",
+and "when the alarm is over, or it exploded or fell, or the threat is no longer here, we should mark it too".
 
 **What it posts.** Every 5 s it takes the marks as the pages see them (`State.markers_now()`) and keeps
 (`chanpost.eligible`) the ones over Kyiv city or Kyiv oblast (`oblast_uid` 31 / 14) at a named place, of a flying type
@@ -1567,37 +1579,62 @@ drawn on the server. Off unless `TG_BOT_TOKEN` and `TG_CHANNEL_ID` are set; then
 (`superseded_by`), no oblast-wide guess, no reading still waiting for its context. A target whose post named only where
 it is heading ("Балістика на Київ!": `approach`, a place "→ Київ") is posted as the app draws it — at that town,
 fainter, set off on the side a post named, no course ray — and its caption says "📍 Де саме зараз — у дописі не
-сказано". They are grouped by target tag (`tag.night` + `tag.id`, else the mark's id): one post per target.
+сказано"; 1.58.7: while that place has no official alert (`held`, §7.4) it has no silhouette there and the caption says
+"⚪ Офіційної тривоги там поки немає — значка на мапі немає, доки її не оголосять"; the alert starting is a new post, with
+it. They are grouped by target tag (`tag.night` + `tag.id`, else the mark's id): one thread of posts per target.
 
 | When | Call | What |
 |---|---|---|
-| a new target, reported in the last 5 min (`FRESH_S`) | `sendPhoto` | the picture and the caption; the phone rings |
-| the same target reported again (a new place, course, count, height, path or minute) | `editMessageMedia` | the same message redrawn, at most every 45 s (`EDIT_EVERY_S`) |
-| gone from the flying marks for 5 min (`END_AFTER_S`) — faded, shot at, merged, anything | `editMessageCaption` | "⏹ Нових дописів після HH:MM немає" above the last caption; nothing on what became of it |
+| a new target, reported in the last 5 min (`FRESH_S`), not already ended by an outcome | `sendPhoto` | the picture and the caption; the phone rings. A target closed before and reported again: a new thread, in reply to its last line |
+| the same target reported again (a new place, course, count, height, path, minute, held or drawn) | `sendPhoto` with `reply_parameters` | 1.58.7: a new post, in reply to its last one, at most every 60 s (`UPDATE_EVERY_S`) and only for a report of the last 5 min — never an edit |
+| an outcome a post reported, linked to it as kyiv.html's `linkStatus` links it (`link_outcomes`: down, impact, lost, clear; same family, −2…40 min, ≤ 60 km, ahead of a stated course beyond 8 km, "clear" ≤ 25 km; one each) | `sendMessage`, in reply | 1.58.7: "⬇️ **Збито / Приземлено** — так у дописі о HH:MM" (the app's `st_*` words: "💥 Вибух (влучання або перехоплення — невідомо)", "❔ Локаційно втрачено", "✅ Повідомлено: у районі чисто") and the target's line. Not where it happened, no picture. Also once after "no new reports" (a target gone from the map is linked by its last report) |
+| the official alert of the target's area gone for 60 s (`CLEAR_AFTER_S`) | `sendMessage`, in reply to the area's last post | 1.58.7: "✅ **Відбій тривоги** о HH:MM · Броварський район (офіційно)" — once per area and alert, closing the targets still open there |
+| gone from the flying marks for 5 min (`END_AFTER_S`) | `sendMessage`, in reply | "⏹ Нових дописів після HH:MM немає" and the target's line |
 
 The caption (Telegram HTML, Ukrainian): the type as the app names it (Шахед, Реактивний дрон, Балістична ракета,
 Бандероль (реактивний дрон), "Ймовірно, дрон — тип не вказано" — as `asDrone`: no missile within 150 km), the count,
 the place; a course **only when a post stated it** (`stated_course`: a target town, or compass words with a confidence —
 never the bearing the app worked out between two reports, nor a destination a later post gave a carried mark); the
-height a post gave; the time of the report (Kyiv) and of the first one; the channel; "З дописів каналів, не радар.
-Сирена й офіційна тривога — головне."; a link to `/m` (`PUBLIC_URL`).
+height a post gave; the time of the report (Kyiv) and of the first one; "З дописів каналів, не радар. Сирена й офіційна
+тривога — головне."; a link to `/m` (`PUBLIC_URL`). 1.58.7, the owner: "no need to say the source of info" — the channel
+a post came from is no longer named (nor in a closing line).
 
-**The picture** (`app/mapshot.py`, `MapShot.render`, ~0.15 s): a 1080 × 1080 JPEG (Telegram makes every photo one),
-drawn at twice the size and scaled down.
+**Areas and the all-clear** (`app/areas.py`, 1.58.7): `area_at(lon, lat)` finds the shape of `static/kyiv-map.json` a
+point is in — the shapes the Tactical page paints the alerts on, Kyiv oblast's raions and the city first —, and
+`under_alert` says whether `alert_fill` (moved here from `mapshot.py`, shared with the server) paints it. A channel
+target's area (`area_of`): "kyiv-city", a raion of Kyiv oblast, or "14:*" for one placed only in a part of the oblast
+(the oblast is "on" while any of its raions is). An area under alert with a target in it is watched
+(`ChannelPoster.watch`); its alert gone for a minute (a flicker of the feed is no all-clear), one line says so. The
+watches live in memory only: after a restart the alerts are not read yet, so an area must be seen under alert again
+before its all-clear can be said; the kill switch clears them (no all-clear of an alert that ended while it was off).
+
+**The picture** (`app/mapshot.py`, `MapShot.render`, ~0.15 s plain, ~0.5 s over the satellite): a 1080 × 1080 JPEG
+(Telegram makes every photo one), drawn at twice the size and scaled down.
 The data the pages draw: the oblasts and raions of `static/kyiv-map.json`, the city districts of `kyiv-districts.json`
 (names when the view is under 60 km), the rivers of `map-ua.json`, the towns of kyiv.html's `TOWNS` (Ukrainian names
 from i18n.js), the raion labels (`RAION_LBL`, `RAION_ADJ` + "р-н"), the silhouettes of `static/glyphs.js` (checked
 shape by shape by the tests), the colours of the Tactical page. The official alerts of the moment are painted as
 `alertMap()` paints them (`alert_fill`: the city; Kyiv oblast's raions — oblast-wide, by raion, a hromada's raion; the
-oblasts around, fainter). The view (1.58.5, the owner: "the map isn't zoomed out enough, we get no situational
-awareness"): the target, its last six reported places (a dotted path) and always Kyiv, ×1.3 + 20 km, between 40 km
-(a target in the city: the whole city) or 90 km and 220 km — centred on the target past that. The other targets of the
-moment (the channel's own, `ChannelPoster.cur`) are drawn too, smaller and fainter, under the one the post is about; a
-town name beside one moves to its other side rather than vanish. 1.58.6: a target placed only in a part of Kyiv oblast ("на сході
-Київщини") is posted as that part ("Схід Київщини", "📍 Точного місця в дописі немає — лише частина області"), drawn
-with a dashed circle of 35 km round the point (`AREA_KM`). The silhouette turns as `orientOf()` turns it; the course
-ray is drawn only with a stated course. The place the post named stands in a pill beside it; town names that would
-cover it are left out; the places it was reported at before are named beside their dots where there is room. Header: HEIMDALL · Київ · Київщина · the report's time; foot: the warning and the map's
+oblasts around, fainter). The view: the target, its last six reported places (a dotted path) and Kyiv when the target
+is within 70 km, ×1.5, between 30 km (a target in the city) or 50 km and 150 km — centred on the target past that.
+(1.58.5 widened it to Kyiv always, 90–220 km — "no situational awareness"; 1.58.7, the owner: "it needs to be zoomed as
+it was before, but mark the name of the villages at least so people can orient themselves" — the closer view is back.)
+**Villages** (1.58.7, `MapShot.villages`): after the towns, the places of Kyiv oblast the channels name (`geo.PLACES`),
+the towns of 10,000+ around (`towns-ua.json`), then every village of Kyiv oblast (GeoNames, `data/extra_places.json`).
+The owner, of the first try (every village with room): "far too many places named, it's unreadable" — at most 10
+(`VIL_MAX`), the nearest to the target first (a village no channel names counts as 1.4 × farther, `VIL_TIER2`), each at
+least 65 px from any other named dot (`VIL_GAP`), never on a target, never a name the pill or a reported place already
+gives (a name with ’ and ' is one). The silhouette is 2.6 px a unit (`GLYPH_SC`; 3.9 until the owner: "the Shahed is far
+too big"), the others of the moment 1.7 (`OTHER_SC`), the halo 36 px (`HALO`), the course ray 80 px. The other targets of the moment (the channel's own, `ChannelPoster.cur`, not a held one) are drawn too, smaller
+and fainter, under the one the post is about; a town name beside one moves to its other side rather than vanish.
+1.58.6: a target placed only in a part of Kyiv oblast ("на сході Київщини") is posted as that part ("Схід Київщини",
+"📍 Точного місця в дописі немає — лише частина області"), drawn with a dashed circle of 35 km round the point
+(`AREA_KM`). The silhouette turns as `orientOf()` turns it; the course ray is drawn only with a stated course. The
+place the post named stands in a pill beside it — 1.58.7, the owner: "display altitude on the screenshot": with the
+height a post gave under it ("↕ ~150 м", "↕ низько", `alt_text`; the caption's words). A held target (1.58.7): no
+silhouette, halo or course at the place it is heading for — the places it was reported at before, and the pill.
+Town names that would cover the target are left out; the places it was reported at before are named beside their
+dots where there is room. Header: HEIMDALL · Київ · Київщина · the report's time; foot: the warning and the map's
 credits. Without Pillow (or the font) the channel posts its text alone. The image installs `fonts-dejavu-core`.
 
 1.58.2, the owner: "il faudrait idéalement la vision map satellite". **Under the map, the satellite picture**: the app's
@@ -1607,20 +1644,22 @@ its own corners in the map's kilometres, then dimmed as the Tactical page dims i
 saturate .82, contrast 1.04 — `SAT_LOOK`). The areas are not filled; the alerts' tint is drawn in one layer of its own
 (over the picture, two shapes meeting at an edge or an enclave would otherwise be tinted twice); the rivers are the
 picture's. The last 200 decoded tiles are kept (~40 MB; a bad tile is not). Credits: "Знімки: ESA WorldCover 2021,
-modified Copernicus Sentinel data (2021) · межі: OCHA, geoBoundaries · © OpenStreetMap". ~0.3–0.5 s a picture. No
-file on the volume (a local run): the plain map, as before.
+modified Copernicus Sentinel data (2021) · межі: OCHA, geoBoundaries · © OpenStreetMap". No file on the volume (a local
+run): the plain map, as before.
 
-**Limits**: 18 calls a minute (`BUDGET`; Telegram's is ~20 messages a minute per channel), new targets first, the most
-recent first; a 429's `retry_after` is obeyed. **State**: `kv` `chan_posts` — per target, the message id, first / last
-report, what was drawn (`signature`), a trimmed copy of the mark for the closing line; 24 h, kept over a restart so a
-deploy neither reposts nor forgets a post. **Health**: the dashboard's official sources list "telegram channel
-(posting)" — working or failing (the last call to Telegram), posted / redrawn / closed counts.
+**Limits**: 18 calls a minute (`BUDGET`; Telegram's is ~20 messages a minute per channel), in this order: new targets
+(the most recent first), outcomes, all-clears, new reports (the longest-waiting first), "no new reports"; a 429's
+`retry_after` is obeyed. **State**: `kv` `chan_posts` — per target, the last message id (what the next post replies
+to), first / last report, what was drawn (`signature`), its area, how it ended, a trimmed copy of the mark for the
+closing line and the outcome's link (place, point, course, part of the oblast); 24 h, kept over a restart so a deploy
+neither reposts nor forgets a post. **Health**: the dashboard's official sources list "telegram channel (posting)" —
+working or failing (the last call to Telegram), targets / new reports / closed / all-clears counts.
 
 **Kill switch** (1.58.3, the owner: "il faudrait faire un killswitch"): dashboard → Live, "Private Telegram channel —
 ON / OFF" (`POST /api/admin/channel_switch` 🔒, `kv` `chan_on`). Off: from its next pass (≤ 5 s) the channel makes no
-call at all — no post, no redraw, no closing line; the bot and its secrets stay. On again: it carries on with what is
-reported from then — nothing first reported more than 5 min ago is posted late, and the posts of targets gone meanwhile
-are closed. Without the secrets the block says "not set up" and how to set it up.
+call at all — no post, no closing line, no all-clear; the bot and its secrets stay. On again: it carries on with what is
+reported from then — nothing first reported more than 5 min ago is posted late, and the targets gone meanwhile get
+their closing line. Without the secrets the block says "not set up" and how to set it up.
 
 **Setup** (`scripts/set-telegram-channel.bat`, once): @BotFather /newbot → a private channel → the bot as an
 administrator ("Post messages", "Edit messages of others") → a message in the channel → the script: the token asked

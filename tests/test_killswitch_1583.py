@@ -33,7 +33,7 @@ def test_off_the_channel_makes_no_call_at_all_and_on_it_carries_on():
     kv.kv_set(chanpost.KV_ON, "0")
     clk.t += 60
     st.marks = [mark(place="Княжичі", lon=30.75, lat=50.47, t=clk.t), mark(place="Бровари", tag="#13", t=clk.t)]
-    p.tick()                                            # a redraw and a new target: nothing sent
+    p.tick()                                            # a new report and a new target: nothing sent
     clk.t += chanpost.END_AFTER_S + 60
     st.marks = []
     p.tick()                                            # a closing line: nothing sent either
@@ -41,7 +41,7 @@ def test_off_the_channel_makes_no_call_at_all_and_on_it_carries_on():
     assert p.health()["note"].startswith("switched OFF on the dashboard")
     kv.kv_set(chanpost.KV_ON, "1")
     p.tick()                                            # on again: the target gone meanwhile is closed …
-    assert [c[0] for c in api.calls] == ["sendPhoto", "editMessageCaption"]
+    assert [c[0] for c in api.calls] == ["sendPhoto", "sendMessage"]      # 1.58.7: its closing line, in reply
     st.marks = [mark(place="Ірпінь", tag="#14", t=clk.t - 30 * 60)]
     p.tick()                                            # … and nothing reported while it was off is posted late
     assert len(api.calls) == 2

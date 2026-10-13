@@ -502,7 +502,7 @@ function paint(){
   const live=link(MKS.map(m=>({...m})));
   const rows=[], far=[], imm=[];
   for(const m of live){ if(m.lat==null||m.lon==null) continue;
-    if(m.place==='\u043e\u0431\u043b\u0430\u0441\u0442\u044c'&&!IMMEDIATE.has(m.type)) continue;
+    if((m.place==='\u043e\u0431\u043b\u0430\u0441\u0442\u044c'||m.held)&&!IMMEDIATE.has(m.type)) continue;   // 1.58.7: held — position not stated, its place under no alert
     const d=km(p.lat,p.lon,m.lat,m.lon);
     if(IMMEDIATE.has(m.type)){ if(d<=REGION_R) imm.push(m); continue; }
     const toHere=statedCourse(m)&&(d<=10||angDiff(m.heading,brg(m.lat,m.lon,p.lat,p.lon))<=28);

@@ -111,8 +111,8 @@ def test_a_target_reported_for_a_whole_oblast_marks_the_region_not_a_point():
     assert "vague:m.place==='область'" in PAGE and "km=(r.imm||r.vague)?'—'" in PAGE
     assert "o?o+' · '+t(m.oblast_uid==='31'?'city_somewhere':'obl_somewhere')" in PAGE   # 1.49: Kyiv city, "in the city"
     # a push never says "within 15 km of you" for it, and the Light radar does not draw it
-    assert 'elif m.get("place") != "область" and d <= radius + HOME_CELL_KM / 2:' in SRV
-    assert "if(m.place==='\\u043e\\u0431\\u043b\\u0430\\u0441\\u0442\\u044c'&&!IMMEDIATE.has(m.type)) continue;" in LIGHT
+    assert 'elif m.get("place") != "область" and not m.get("held") and d <= radius + HOME_CELL_KM / 2:' in SRV   # 1.58.7
+    assert "if((m.place==='\\u043e\\u0431\\u043b\\u0430\\u0441\\u0442\\u044c'||m.held)&&!IMMEDIATE.has(m.type)) continue;" in LIGHT
 
 
 def test_the_villages_layer_covers_every_oblast_on_the_map():

@@ -179,18 +179,18 @@ def test_a_course_is_said_only_when_a_post_stated_one():
     assert "➡️ Курс на Київ (так у дописі)" in chanpost.caption(mark(target="Київ"), T0, url)
 
 
-def test_the_caption_says_what_and_where_and_never_what_became_of_it():
+def test_the_caption_says_what_and_where():
     url = "https://kyiv-air-watch-gb.fly.dev"
     cap = chanpost.caption(mark(count=3, alt={"m": 100, "state": None}), T0 - 300, url)
     assert "🛵 <b>Шахед ×3</b> · Бровари" in cap and "Висота: ~100 м (у дописі)" in cap
-    assert "за @kyivoda" in cap and "(перший допис" in cap
+    assert "kyivoda" not in cap and "(перший допис" in cap               # 1.58.7: no channel named (the owner)
     assert chanpost.WARN in cap and 'href="https://kyiv-air-watch-gb.fly.dev/m"' in cap
     assert chanpost.label_of(mark(type="banderol_missiles"))[1] == "Бандероль (реактивний дрон)"   # never a cruise missile
     assert chanpost.label_of(mark(jet=True))[1] == "Реактивний дрон"
     assert chanpost.label_of(dict(mark(type="unknown"), _drone=True))[1].startswith("Ймовірно, дрон")
-    closed = chanpost.caption(mark(), T0, url, ended_t=T0)
-    assert closed.startswith("⏹ Нових дописів після ") and closed.endswith("</a>")
-    for c in (cap, closed):
+    closed = chanpost.end_text(mark(), {"k": "quiet", "t": T0})
+    assert closed.startswith("⏹ Нових дописів після ") and "🛵 <b>Шахед</b> · Бровари" in closed
+    for c in (cap, closed):                    # what became of it is said by an outcome's own line (1.58.7) only
         for word in ("збит", "знищ", "влуч", "вибух", "приліт", "ППО", "уражен", "безпечн"):
             assert word not in c.lower(), word
     assert "<script" not in chanpost.caption(mark(place="<script>"), T0, url)                     # escaped
@@ -255,40 +255,43 @@ def poster(api=None, kv=None, clock=None, logs=None, shot=Shot()):
     return p, st
 
 
-def test_one_post_per_target_redrawn_as_it_is_reported_again_then_closed():
+def test_a_post_for_each_new_report_in_reply_to_the_last_then_closed():
+    # 1.58.7, the owner: "instead of editing the post, we need to add a screenshot every time"
     clk, api, kv = Clock(), API(), KV()
     p, st = poster(api, kv, clk)
     st.marks = [mark(t=T0 - 30)]
     p.tick()
     assert [c[0] for c in api.calls] == ["sendPhoto"] and api.calls[0][2]["photo"][1] == b"\x89PNG-" + "Бровари".encode()
-    # the same target (its tag), reported again 20 s later: not redrawn yet …
+    assert "reply_parameters" not in api.calls[0][1]
+    # the same target (its tag), reported again 20 s later: not posted yet …
     clk.t += 20
     st.marks = [mark(place="Княжичі", lon=30.75, lat=50.47, t=clk.t - 5, history=[{"lon": 30.79, "lat": 50.51, "ts": 1}])]
     p.tick()
     assert len(api.calls) == 1
-    # … then redrawn, once, in the same message
-    clk.t += 30
+    # … then a new post, once, in reply to the first — never an edit
+    clk.t += chanpost.UPDATE_EVERY_S
     p.tick()
     p.tick()
-    assert [c[0] for c in api.calls] == ["sendPhoto", "editMessageMedia"]
+    assert [c[0] for c in api.calls] == ["sendPhoto", "sendPhoto"]
     f = api.calls[1][1]
-    assert f["message_id"] == 101 and f["media"]["media"] == "attach://photo" and "Княжичі" in f["media"]["caption"]
-    # an outcome: the target leaves the map's flying marks — the channel says nothing about it …
-    clk.t += 60
-    st.marks = [dict(st.marks[0], status="impact")]
+    assert f["reply_parameters"] == {"message_id": 101, "allow_sending_without_reply": True} and "Княжичі" in f["caption"]
+    assert not any(c[0].startswith("edit") for c in api.calls)
+    # the same report again: nothing new to post
+    clk.t += chanpost.UPDATE_EVERY_S
     p.tick()
     assert len(api.calls) == 2
-    # … and, gone for five minutes, its post is closed with the time of its last report, nothing more
+    # gone for five minutes: its closing line, in reply to its last post, with the time of its last report
+    st.marks = []
     clk.t += chanpost.END_AFTER_S + 1
     p.tick()
     m, f, _ = api.calls[2]
-    assert m == "editMessageCaption" and f["caption"].startswith("⏹ Нових дописів після ")
-    assert "Княжичі" in f["caption"]
+    assert m == "sendMessage" and f["text"].startswith("⏹ Нових дописів після ") and "Княжичі" in f["text"]
+    assert f["reply_parameters"]["message_id"] == 102
     p.tick()
     assert len(api.calls) == 3
     # a restart (a deploy) keeps the posts: nothing is posted twice
     p2, st2 = poster(api, kv, clk)
-    st2.marks = [dict(st.marks[0], status=None)]
+    st2.marks = [mark(place="Княжичі", lon=30.75, lat=50.47, t=T0 + 20 - 5)]
     p2.tick()
     assert len(api.calls) == 3
 

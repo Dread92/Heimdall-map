@@ -59,6 +59,10 @@ try:
     import chanpost
 except Exception:  # pragma: no cover
     chanpost = None
+try:
+    import areas
+except Exception:  # pragma: no cover
+    areas = None
 
 
 def to_en(text):
@@ -438,7 +442,9 @@ def parse_iso(s):
 
 BUILD_FILES = ("static/kyiv.html", "static/light.html", "static/light-map.json", "static/glyphs.js", "static/i18n.js", "static/live.js",
                "static/nuke.js", "static/sw.js", "static/shelters.js", "app/server.py", "app/geo.py", "app/push.py",
-               "static/light-map-x.json", "data/regional_places.json", "static/map-ua.json")
+               "static/light-map-x.json", "data/regional_places.json", "static/map-ua.json",
+               # 1.58.7: the service's other modules — a change there is a new version too (the server panel's restarts)
+               "app/chanpost.py", "app/mapshot.py", "app/areas.py", "app/ai_reader.py", "app/translate.py")
 
 
 def build_id():
@@ -3285,6 +3291,30 @@ class State:
     _impact_cache = {}
     _impact_res = {}
 
+    HOLD_TYPES = ("drones", "unknown", "banderol_missiles")
+
+    def _hold(self, marks):
+        """1.58.7 (the owner, of 1.58.6): "alarm ALWAYS is better, you see Kyiv isn't under alarm yet so why put a drone icon here,
+        it's dangerous". A drone whose post said only where it is heading ("шахед на Київ" — an approach, drawn at that
+        place) is `held` while that place has no official alert: the pages keep it in their lists, "position not
+        stated", and draw it once the place is under alert. A missile is never held: its alert follows within a minute
+        or two, and a ballistic warning must not wait for it."""
+        if not areas:
+            return
+        with self.lock:
+            fills = areas.alert_fill(list(self.active.values()))
+        for m in marks:
+            m.pop("held", None)
+            if m.get("status") or m.get("type") not in self.HOLD_TYPES or m.get("lon") is None:
+                continue
+            if not (m.get("approach") or m.get("dest_only") or str(m.get("place") or "").startswith("→")):
+                continue
+            try:
+                if not areas.under_alert(m["lon"], m["lat"], fills):
+                    m["held"] = True
+            except Exception:
+                pass
+
     def markers(self):
         ttl = int(self.cfg.get("marker_ttl_minutes", 45))
         if not geo:
@@ -3307,6 +3337,7 @@ class State:
             m.pop("reports", None)
             m.pop("origin_t", None)
             m.pop("first_uid", None)
+        self._hold(out)
         out.sort(key=lambda m: m["ts"], reverse=True)
         # Keep what the app decided, not just what it was told. INSERT OR IGNORE keyed on the marker id, so
         # recomputing the same window many times a minute writes each marker exactly once.
@@ -7403,7 +7434,9 @@ def proximity_watch(state, interval=20):
                             urgent.append((d, m))
                     # 1.45: a post that named the oblast and no town has no position — its point is the oblast
                     # centre, nothing more. "Within 15 km of you" from that would be a distance nobody reported.
-                    elif m.get("place") != "область" and d <= radius + HOME_CELL_KM / 2:
+                    # 1.58.7: nor from a target held off the map — only where it is heading was said, and that place
+                    # has no official alert yet (State._hold): it is not "near you" anywhere a post put it
+                    elif m.get("place") != "область" and not m.get("held") and d <= radius + HOME_CELL_KM / 2:
                         near.append((d, m))
                 if not (near or urgent):
                     continue

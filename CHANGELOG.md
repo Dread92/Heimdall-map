@@ -2,6 +2,39 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.7 — 2026-10-13
+
+### Changed
+- **The private channel keeps track: a new post for each new report** — the owner: "instead of editing the post, we
+  need to add a screenshot every time — it's better to keep track of what's going on". A target reported again gets a
+  new post with its new picture, in reply to its last one (at most one a minute per target, never a report older than
+  5 min); nothing is edited any more.
+- **What became of it is marked** — the owner: "when the alarm is over, or it exploded or fell, or the threat is no
+  longer here, we should mark it too". A closing line, in reply to the target's last post: the outcome a post reported,
+  linked as the Tactical page links it and in its words ("⬇️ Збито / Приземлено — так у дописі о 21:47", "💥 Вибух
+  (влучання або перехоплення — невідомо)", "❔ Локаційно втрачено", "✅ Повідомлено: у районі чисто") — never where it
+  happened, never a picture of it —; the **official all-clear** of the target's area ("✅ Відбій тривоги о 22:10 ·
+  Броварський район (офіційно)", once per area, after a minute without the alert, only for an alert the running server
+  saw); or "⏹ Нових дописів після HH:MM немає".
+- **The closer view again, with the villages named** — the owner: "it needs to be zoomed as it was before, but mark
+  the name of the villages at least so people can orient themselves". The picture is 50 km of the oblast again (30 km
+  of the city, Kyiv in it when near), and names a few villages to orient by — then the owner: "far too many places
+  named, it's unreadable": at most 10, the nearest to the target first (the places the channels name before the
+  others), well apart.
+- **A smaller target** — the owner: "the Shahed is far too big". The silhouette is two thirds of its old size, the halo
+  and the course ray shorter, the other targets of the moment smaller too.
+- **The height on the picture** — the owner: "display altitude on the screenshot". The height a post gave stands under
+  the place's name ("↕ ~150 м", "↕ низько").
+- **No channel named** — the owner: "no need to say the source of info". "за @channel" is gone from the posts;
+  "from channel posts, not radar" stays.
+- **A drone said only to be heading somewhere is off the map until that place is under alert** — the owner's choice
+  after 1.58.6 ("alarm ALWAYS is better … why put a drone icon here, it's dangerous"). A drone, a weapon not stated or a
+  Banderol whose post said only where it is heading (shown at that place, as an approach) is `held` while the place has
+  no official alert: the Tactical and Light maps do not draw it, the Near list keeps it ("position not stated — on the
+  map once that place is under alert"), no "near you" push is sent for it, and the channel posts it without its
+  silhouette, saying why — then again, drawn, when the alert starts. Missiles are never held. New `app/areas.py`:
+  which official alert area a point is in, shared by the server and the channel.
+
 ## 1.58.6 — 2026-10-13
 
 ### Fixed
