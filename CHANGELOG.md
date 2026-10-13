@@ -2,6 +2,14 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.13 — 2026-10-13
+
+### Changed
+- **The channel's picture focuses on the activity** — the owner, of the whole-oblast picture: "the image is too zoomed
+  out — ideally a bit more focus on where the activity is". Still only Kyiv oblast and the city, but framed on the target,
+  the places it was reported at, the other targets within 60 km of it and Kyiv when it is near: at least 110 km, up to
+  the whole oblast when the activity spreads that wide.
+
 ## 1.58.12 — 2026-10-13
 
 ### Changed

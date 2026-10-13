@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-13 (1.58.12)
+**Documented version: 1.58** · last updated 2026-10-13 (1.58.13)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -1624,8 +1624,12 @@ before its all-clear can be said; the kill switch clears them (no all-clear of a
 **The picture** (`app/mapshot.py`, `MapShot.render`, ~0.3 s plain, ~0.5 s over the satellite): a 1080 × 1350 JPEG
 (1.58.10: portrait, 4:5 — the oblast is taller than wide), drawn at twice the size and scaled down. **The view**
 (1.58.10, the owner: "a change of tactics, it's too unreadable — we'll take a snapshot of the oblast and show the whole
-oblast on the screenshot, but ONLY Kyiv oblast and the city of Kyiv"): the same for every post — Kyiv oblast and the
-city whole, Slavutych included, 3 % of margin (`MapShot.view`, `PAD`; ~4.4 px a km) —, and **nothing else**: the
+oblast on the screenshot, but ONLY Kyiv oblast and the city of Kyiv"): Kyiv oblast and the city, Slavutych included
+(`MapShot.extent`, 3 % of margin, `PAD`) — 1.58.13, the owner: "the image is too zoomed out, ideally a bit more focus on
+where the activity is": framed on the activity (`MapShot.view(m, others)`): the target, its last six reported places,
+the other targets within 60 km of it (`FOCUS_NEAR_KM`) and Kyiv when it is within 50 km (`KYIV_NEAR_KM`), ×1.3 + 15 km
+each side, at least 110 km tall (`FOCUS_MIN_KM`, ~10 px a km), the picture's 0.91 width to height, kept inside the
+oblast's extent; activity wider than the oblast, the whole of it —, and **nothing else**: the
 oblasts around are neither drawn nor tinted, their towns not named, the satellite picture and the rivers are cut to the
 oblast's shape (`_oblast_mask`, kept), outside it the plain background (`OUT_BG`). (1.58–1.58.9 framed each target,
 30–220 km round it, and 1.58.7 named villages — the owner: "far too many places named, it's unreadable"; both gone.)

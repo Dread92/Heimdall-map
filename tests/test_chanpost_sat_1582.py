@@ -57,17 +57,17 @@ def test_the_picture_is_drawn_over_the_apps_satellite_tiles_dimmed_as_the_page_d
     sat = FakeSat()
     shot = mapshot.MapShot(sat=sat)
     jpg = shot.render(drone(), [], "21:40")
-    r, g, b = pixel(jpg, tuple(map(int, shot.to_pixel(29.65, 49.62))))   # inside the oblast, away from every name
+    r, g, b = pixel(jpg, tuple(map(int, shot.to_pixel(31.12, 50.70, drone()))))   # inside the oblast, away from names
     assert g > r + 30 and g > b + 30 and g < GREEN[1]    # the ground, darker than the tile itself
     # the tiles of the view only, at a zoom as sharp as the picture and no sharper
     zs = {z for z, x, y in sat.asked}
-    assert len(zs) == 1 and 9 <= zs.pop() <= 13 and 4 <= len(sat.asked) <= 80
+    assert len(zs) == 1 and 9 <= zs.pop() <= 13 and 4 <= len(sat.asked) <= 120     # 1.58.13: ~90 at 110 km
 
 
 def test_without_the_file_it_is_the_plain_map():
     shot = mapshot.MapShot(sat=FakeSat(zmax=None))
     plain = shot.render(drone(), [], "21:40")
-    r, g, b = pixel(plain, tuple(map(int, shot.to_pixel(29.65, 49.62))))
+    r, g, b = pixel(plain, tuple(map(int, shot.to_pixel(31.12, 50.70, drone()))))
     assert abs(r - g) < 12 and abs(g - b) < 12          # the dark map's grey, no picture under it
     assert mapshot.MapShot().render(drone(), [], "21:40")[:3] == b"\xff\xd8\xff"
 
@@ -95,11 +95,12 @@ def test_an_alert_is_tinted_once_where_two_shapes_meet():
     shot = mapshot.MapShot(sat=FakeSat(colour=(90, 90, 90)))
     shot.towns, shot.raion_lbl = [], []      # the tint alone: no name over the pixels read
     act = [{"oblast_uid": "14", "location_type": "oblast"}, {"oblast_uid": "31", "location_type": "city"}]
-    jpg = shot.render(drone(), act, "21:40")
+    bc = drone(place="Біла Церква", lon=30.11, lat=49.80)
+    jpg = shot.render(bc, act, "21:40")
     im = Image.open(io.BytesIO(jpg)).convert("RGB")
     # every tinted pixel of Kyiv oblast is the same red over the same grey: one layer, not one per shape
-    pts = [shot.to_pixel(29.4 + i * 0.1, 49.75) for i in range(22)]
-    reds = {im.getpixel((int(x), int(y))) for x, y in pts}
+    pts = [shot.to_pixel(29.4 + i * 0.1, 49.62, bc) for i in range(22)]
+    reds = {im.getpixel((int(x), int(y))) for x, y in pts if 0 <= x < mapshot.W and 0 <= y < mapshot.H}
     reds = {p for p in reds if p[0] > p[1] + 25}
     assert len(reds) >= 1 and max(p[0] for p in reds) - min(p[0] for p in reds) <= 30
 

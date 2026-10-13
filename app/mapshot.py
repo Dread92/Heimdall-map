@@ -1,5 +1,5 @@
-"""1.58: a picture of the map with one target — for the private Telegram channel (app/chanpost.py). 1.58.10: the whole of
-Kyiv oblast and the city, and nothing else, in every picture.
+"""1.58: a picture of the map with one target — for the private Telegram channel (app/chanpost.py). 1.58.10: Kyiv oblast
+and the city, and nothing else; 1.58.13: framed on the activity round the target, up to the whole oblast.
 
 The owner: "a small private Telegram channel that posts alerts like the channels we read, with a 'screenshot' of the
 app where the drone is (Kyiv and Kyiv oblast only)" — and, of the two ways asked, "the app's style, drawn on the server".
@@ -216,12 +216,16 @@ class MapShot:
 
     # ---- the view ---------------------------------------------------------------------------------------------
     PAD = 0.03                                    # the oblast's edge to the picture's, a share of its size
+    # 1.58.13, the owner, of the whole-oblast picture: "the image is too zoomed out — ideally a bit more focus on where
+    # the activity is". The view frames the activity — the target, the places it was reported at, the other targets
+    # within FOCUS_NEAR_KM of it, Kyiv when it is near — and never less than FOCUS_MIN_KM tall, never more than the oblast
+    FOCUS_MIN_KM = 110.0
+    FOCUS_NEAR_KM = 60.0
+    FOCUS_MARGIN_KM = 15.0
+    KYIV_NEAR_KM = 50.0
 
-    def view(self, m=None):
-        """1.58.10, the owner: "a change of tactics, it's too unreadable — we'll take a snapshot of the oblast and show
-        the whole oblast on the screenshot (but ONLY Kyiv oblast and the city of Kyiv)". The same view for every post:
-        Kyiv oblast and the city whole (their shapes' extent, a little margin) → (centre x, centre y, width, height) in
-        km. (1.58–1.58.9 framed each target: 30–220 km round it, villages named — read as clutter.)"""
+    def extent(self):
+        """Kyiv oblast and the city whole (their shapes' extent, a little margin) → (centre x, centre y, width, height)."""
         if self._extent is None:
             pts = [p for raion, obl, key, rings in self.features if raion for r in rings for p in r]
             xs, ys = [p[0] for p in pts], [p[1] for p in pts]
@@ -229,30 +233,64 @@ class MapShot:
             self._extent = ((max(xs) + min(xs)) / 2, (max(ys) + min(ys)) / 2, w * (1 + 2 * self.PAD), h * (1 + 2 * self.PAD))
         return self._extent
 
-    def _frame(self, m=None):
+    def view(self, m=None, others=()):
+        """(centre x, centre y, width, height) in km of the picture's map. Only ever Kyiv oblast and the city (1.58.10:
+        "but ONLY Kyiv oblast and the city of Kyiv" — what is outside them is not drawn); within it, 1.58.13: the
+        activity round the target, at least FOCUS_MIN_KM tall, up to the whole oblast (`extent`, also with no target)."""
+        ecx, ecy, ew, eh = self.extent()
+        if not m or m.get("lon") is None or m.get("lat") is None:
+            return self.extent()
+        here = self.proj(m["lon"], m["lat"])
+        pts = [here]
+        for h in (m.get("history") or [])[-6:]:
+            if h.get("lon") is not None and h.get("lat") is not None:
+                pts.append(self.proj(h["lon"], h["lat"]))
+        for o in others or ():
+            if o.get("lon") is not None and o.get("lat") is not None:
+                q = self.proj(o["lon"], o["lat"])
+                if math.dist(q, here) <= self.FOCUS_NEAR_KM:
+                    pts.append(q)
+        kyiv = self.proj(30.52, 50.45)
+        if math.dist(here, kyiv) <= self.KYIV_NEAR_KM:      # the reader's landmark
+            pts.append(kyiv)
+        xs, ys = [p[0] for p in pts], [p[1] for p in pts]
+        aspect = W * SS / ((H - FOOT - HEAD) * SS)          # the map's width to its height
+        w = (max(xs) - min(xs)) * 1.3 + 2 * self.FOCUS_MARGIN_KM
+        h = (max(ys) - min(ys)) * 1.3 + 2 * self.FOCUS_MARGIN_KM
+        h = max(h, w / aspect, self.FOCUS_MIN_KM)
+        if h >= eh:
+            return self.extent()
+        w = h * aspect
+        cx, cy = (max(xs) + min(xs)) / 2, (max(ys) + min(ys)) / 2
+        # kept inside the oblast's extent: no more of the dark outside than the oblast's own shape leaves
+        cx = min(max(cx, ecx - ew / 2 + w / 2), ecx + ew / 2 - w / 2) if ew > w else ecx
+        cy = min(max(cy, ecy - eh / 2 + h / 2), ecy + eh / 2 - h / 2)
+        return cx, cy, w, h
+
+    def _frame(self, m=None, others=()):
         """(x0, y0) the km at the map's top left, k its drawing pixels a km, and the view's height in km."""
-        cx, cy, wkm, hkm = self.view(m)
+        cx, cy, wkm, hkm = self.view(m, others)
         top, bottom = HEAD * SS, (H - FOOT) * SS
-        k = min((bottom - top) / hkm, W * SS / wkm)   # pixels per km: the whole oblast between the two bands
+        k = min((bottom - top) / hkm, W * SS / wkm)   # pixels per km, the map between the two bands
         return cx - W * SS / k / 2, cy - (bottom - top) / k / 2, k, hkm
 
-    def to_pixel(self, lon, lat):
-        """Where a point is in the picture (its 1080 × 1350 pixels)."""
-        x0, y0, k, _ = self._frame()
+    def to_pixel(self, lon, lat, m=None, others=()):
+        """Where a point is in the picture of `m` (its 1080 × 1350 pixels; no `m`: the whole oblast's)."""
+        x0, y0, k, _ = self._frame(m, others)
         x, y = self.proj(lon, lat)
         return ((x - x0) * k / SS, HEAD + (y - y0) * k / SS)
 
-    def _oblast_mask(self, SW, SH, px):
-        """Kyiv oblast and the city, white on black, in this picture's pixels (the same for every picture: kept)."""
-        if self._mask is None or self._mask.size != (SW, SH):
+    def _oblast_mask(self, SW, SH, px, key=None):
+        """Kyiv oblast and the city, white on black, in this picture's pixels (the last one kept, by its view)."""
+        if self._mask is None or self._mask[0] != (SW, SH, key):
             mk = Image.new("L", (SW, SH), 0)
             md = ImageDraw.Draw(mk)
-            for raion, obl, key, rings in self.features:
+            for raion, obl, key_, rings in self.features:
                 if raion:
                     for r in rings:
                         md.polygon([px(p) for p in r], fill=255)
-            self._mask = mk
-        return self._mask
+            self._mask = ((SW, SH, key), mk)
+        return self._mask[1]
 
     # ---- the picture ---------------------------------------------------------------------------------------------
     def render(self, m, active=(), when="", ray=True, missiles=(), others=()):
@@ -263,7 +301,7 @@ class MapShot:
         fainter, so that the picture says what else is in the sky around."""
         if Image is None:
             return None
-        x0, y0, k, span = self._frame(m)
+        x0, y0, k, span = self._frame(m, others)
         SW, SH = W * SS, H * SS
         top, bottom = HEAD * SS, (H - FOOT) * SS
 
@@ -303,7 +341,7 @@ class MapShot:
             for w, ln in self.rivers:
                 d.line([px(p) for p in ln], fill=RIVER, width=w * SS, joint="curve")
         # everything outside the oblast and the city: the plain background, nothing else
-        mask = self._oblast_mask(SW, SH, px)
+        mask = self._oblast_mask(SW, SH, px, (round(x0, 3), round(y0, 3), round(k, 5)))
         img = Image.composite(img, Image.new("RGB", img.size, OUT_BG), mask)
         d = ImageDraw.Draw(img, "RGBA")
         for raion, obl, key, rings in mine:

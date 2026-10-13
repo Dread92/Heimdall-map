@@ -65,33 +65,54 @@ def inside(shot, view, lon, lat):
     return x0 <= x <= x0 + span and y0 <= y <= y0 + span
 
 
-def test_the_whole_oblast_and_only_it():
-    # 1.58.10, the owner: "a change of tactics, it's too unreadable — a snapshot of the oblast, the whole oblast on the
-    # screenshot (but ONLY Kyiv oblast and the city of Kyiv)" — the closer views and the villages are gone
+def _inside(shot, view, lon, lat):
+    cx, cy, w, h = view
+    x, y = shot.proj(lon, lat)
+    return abs(x - cx) <= w / 2 + 1e-6 and abs(y - cy) <= h / 2 + 1e-6
+
+
+def test_only_kyiv_oblast_and_the_city_framed_on_the_activity():
+    # 1.58.10, the owner: "a snapshot of the oblast … but ONLY Kyiv oblast and the city of Kyiv"; 1.58.13: "the image is
+    # too zoomed out — ideally a bit more focus on where the activity is"
     shot = mapshot.MapShot()
     assert not hasattr(shot, "villages") and not hasattr(mapshot, "VIL_MAX")
-    assert shot.view(mark(place="Переяслав", lon=31.45, lat=50.07)) == shot.view(mark(place="Оболонь", lon=30.5,
-                                                                                         lat=50.51, uid="31"))
+    ecx, ecy, ew, eh = ext = shot.extent()
+    assert shot.view() == ext
     for lon, lat in ((30.52, 50.45), (30.73, 51.52), (29.3, 50.6), (31.9, 50.2), (30.0, 49.25)):   # Kyiv, Slavutych,
-        x, y = shot.to_pixel(lon, lat)                                      # the west, the east, the south of the oblast
-        assert 0 <= x <= mapshot.W and mapshot.HEAD <= y <= mapshot.H - mapshot.FOOT, (lon, lat)
+        assert _inside(shot, ext, lon, lat), (lon, lat)                    # the west, the east, the south of the oblast
+    # the target, where it was reported, the others near it, Kyiv when it is near — at least 110 km tall
+    byk = mark(place="Биківня", lon=30.69, lat=50.47, uid="31", history=[{"lon": 30.80, "lat": 50.56, "ts": 1}])
+    near, far = mark(place="Жуляни", lon=30.42, lat=50.40, tag="#2"), mark(place="Ставище", lon=30.19, lat=49.39, tag="#3")
+    v = shot.view(byk, [near, far])
+    assert shot.FOCUS_MIN_KM <= v[3] < eh
+    assert all(_inside(shot, v, lo, la) for lo, la in ((30.69, 50.47), (30.80, 50.56), (30.42, 50.40), (30.52, 50.45)))
+    assert not _inside(shot, v, 30.19, 49.39)                                # 120 km away: not framed
+    assert abs(v[2] / v[3] - mapshot.W / (mapshot.H - mapshot.HEAD - mapshot.FOOT)) < 1e-6
+    # never beyond the oblast's extent; activity across the oblast: the whole of it
+    edge = shot.view(mark(place="Славутич", lon=30.73, lat=51.52))
+    assert edge[1] - edge[3] / 2 >= ecy - eh / 2 - 1e-6 and _inside(shot, edge, 30.73, 51.52)
+    long_track = mark(place="Тараща", lon=30.0, lat=49.3, history=[{"lon": 30.6, "lat": 51.4, "ts": 1}])
+    assert shot.view(long_track) == ext
     drawn = []
     real = shot._label
     shot._label = lambda d, q, text, font, colour, boxes, bounds, anchor="lm": (
         real(d, q, text, font, colour, boxes, bounds, anchor) and (drawn.append(text) or True))
-    jpg = shot.render(mark(place="Переяслав", lon=31.45, lat=50.07), [], "21:40")
-    assert {"Київ", "Бровари", "Біла Церква"} <= set(drawn)
-    assert not set(drawn) & {"Житомир", "Чернігів", "Ніжин", "Прилуки", "Черкаси", "Коростень"}   # no town around
-    # and nothing of the oblasts around is drawn: outside it, the plain background
+    pere = mark(place="Переяслав", lon=31.45, lat=50.07)
+    jpg = shot.render(pere, [], "21:40")
+    assert not set(drawn) & {"Черкаси", "Канів", "Золотоноша", "Ніжин", "Прилуки"}            # no town around
+    # nothing of the oblasts around is drawn: outside it, the plain background
     import io as _io
 
     from PIL import Image as _Image
     im = _Image.open(_io.BytesIO(jpg)).convert("RGB")
-    for lon, lat in ((28.9, 50.3), (32.6, 50.9), (31.0, 49.3)):            # Zhytomyr, Chernihiv, Cherkasy oblasts
-        x, y = shot.to_pixel(lon, lat)
+    seen = 0
+    for lon, lat in ((31.6, 49.75), (32.0, 49.85), (31.9, 49.70)):           # Cherkasy oblast, south of Pereiaslav
+        x, y = shot.to_pixel(lon, lat, pere)
         if 0 <= x < mapshot.W and mapshot.HEAD < y < mapshot.H - mapshot.FOOT:
+            seen += 1
             px_ = im.getpixel((int(x), int(y)))
             assert all(abs(a - b) <= 8 for a, b in zip(px_, mapshot.OUT_BG)), (lon, lat, px_)
+    assert seen
 
 
 def test_the_target_is_drawn_smaller():

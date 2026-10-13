@@ -127,8 +127,8 @@ def test_the_picture_is_a_photo_of_the_whole_oblast():
         jpg = shot.render(m, act, "21:40")
         assert jpg[:3] == b"\xff\xd8\xff" and len(jpg) < 900_000
         assert Image.open(io.BytesIO(jpg)).size == (1080, 1350)            # 1.58.10: portrait, 4:5
-    # 1.58.10: the same view whatever the target — Kyiv oblast and the city whole (tests/test_channel_1587.py)
-    assert shot.view(mark(place="Фастів", lon=29.92, lat=50.08)) == shot.view(mark())
+    # 1.58.10: Kyiv oblast and the city only; 1.58.13: framed on the activity round the target (tests/test_channel_1587.py)
+    assert shot.view() == shot.extent() and shot.view(mark())[3] < shot.extent()[3]
 
 
 # ---- what the channel says ---------------------------------------------------------------------------------------

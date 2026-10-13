@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Heimdall (Kyiv Air Watch) — the full technical documentation, with a map of the system.">
-<meta name="heimdall-version" content="1.58.12">
-<meta name="heimdall-docs" content="80f16adbef3513ad">
+<meta name="heimdall-version" content="1.58.13">
+<meta name="heimdall-docs" content="96193f18d65029ee">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Heimdall Technical Manual</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -237,7 +237,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
 <header class="top">
   <div class="wrap">
     <a class="brand" href="#top"><b>Heimdall</b><span>Technical manual</span></a>
-    <span class="ver">1.58.12</span>
+    <span class="ver">1.58.13</span>
     <nav class="nav" aria-label="Sections">
       <a href="#map">Map</a><a href="#journeys">Journeys</a><a href="#rules">Rules</a><a href="#reference">Reference</a><a href="#safety">Safety</a>
     </nav>
@@ -256,7 +256,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
       <h1 class="title">How Heimdall works</h1>
       <p class="lead">An unofficial air-threat map for Kyiv and the oblasts around it. One Python process reads the official
       alert data and the channels that track drones and missiles, stores every post before it reads it, rebuilds the map
-      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.12, 13 October 2026:
+      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.13, 13 October 2026:
       the map first, then everything in full.</p>
     </div>
     <dl class="facts">
@@ -645,7 +645,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
     <div class="doc" id="doc">
 <section class="part" id="tech" data-label="Reference"><p class="partlabel">Part I · The reference</p>
 <h1 id="heimdall--technical-documentation">Heimdall — technical documentation</h1>
-<p><strong>Documented version: 1.58</strong> · last updated 2026-10-13 (1.58.12)</p>
+<p><strong>Documented version: 1.58</strong> · last updated 2026-10-13 (1.58.13)</p>
 <p>Heimdall was called <strong>Clear Sky</strong> until 1.29; the repository, the Fly app (<code>kyiv-air-watch-gb</code>) and some
 internal names still carry the old name.</p>
 <p>This is the complete technical reference: what runs, where the data comes from, how a Telegram post becomes a
@@ -2657,8 +2657,12 @@ before its all-clear can be said; the kill switch clears them (no all-clear of a
 <p><strong>The picture</strong> (<code>app/mapshot.py</code>, <code>MapShot.render</code>, ~0.3 s plain, ~0.5 s over the satellite): a 1080 × 1350 JPEG
 (1.58.10: portrait, 4:5 — the oblast is taller than wide), drawn at twice the size and scaled down. <strong>The view</strong>
 (1.58.10, the owner: &quot;a change of tactics, it's too unreadable — we'll take a snapshot of the oblast and show the whole
-oblast on the screenshot, but ONLY Kyiv oblast and the city of Kyiv&quot;): the same for every post — Kyiv oblast and the
-city whole, Slavutych included, 3 % of margin (<code>MapShot.view</code>, <code>PAD</code>; ~4.4 px a km) —, and <strong>nothing else</strong>: the
+oblast on the screenshot, but ONLY Kyiv oblast and the city of Kyiv&quot;): Kyiv oblast and the city, Slavutych included
+(<code>MapShot.extent</code>, 3 % of margin, <code>PAD</code>) — 1.58.13, the owner: &quot;the image is too zoomed out, ideally a bit more focus on
+where the activity is&quot;: framed on the activity (<code>MapShot.view(m, others)</code>): the target, its last six reported places,
+the other targets within 60 km of it (<code>FOCUS_NEAR_KM</code>) and Kyiv when it is within 50 km (<code>KYIV_NEAR_KM</code>), ×1.3 + 15 km
+each side, at least 110 km tall (<code>FOCUS_MIN_KM</code>, ~10 px a km), the picture's 0.91 width to height, kept inside the
+oblast's extent; activity wider than the oblast, the whole of it —, and <strong>nothing else</strong>: the
 oblasts around are neither drawn nor tinted, their towns not named, the satellite picture and the rivers are cut to the
 oblast's shape (<code>_oblast_mask</code>, kept), outside it the plain background (<code>OUT_BG</code>). (1.58–1.58.9 framed each target,
 30–220 km round it, and 1.58.7 named villages — the owner: &quot;far too many places named, it's unreadable&quot;; both gone.)
@@ -4965,7 +4969,7 @@ d'alerte ne sont pas des préférences de style.</p>
 </section>
     </div>
   </div>
-  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.12, 13 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
+  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.13, 13 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
 </main>
 
 <script>
