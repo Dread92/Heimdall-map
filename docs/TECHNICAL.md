@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-13 (1.58.11)
+**Documented version: 1.58** · last updated 2026-10-13 (1.58.12)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -1574,10 +1574,12 @@ thread `channel`). Its rules are SAFETY.md's "The private channel says what the 
 "instead of editing the post, we need to add a screenshot every time — it's better to keep track of what's going on",
 and "when the alarm is over, or it exploded or fell, or the threat is no longer here, we should mark it too".
 
-**One source** (1.58.9, the owner: "for the Telegram bot we'll take a single source: t.me/chyste_nebo"): `SOURCES =
-("chyste_nebo",)` — only a mark whose latest report is @chyste_nebo's is posted (a target another channel reported
-last waits for this one's next report; gone from it 5 min, "no new reports"), and only its outcomes close a target
-(`link_outcomes` over its marks alone). The official alerts and all-clears are the official data's, as before; the
+**Its sources** (1.58.9, the owner: "for the Telegram bot we'll take a single source: t.me/chyste_nebo"; 1.58.12, after
+@chyste_nebo fell silent at 03:59 while kyiv_airdef and kievinfo_kyiv reported a drone towards Boryspil, his pick: "all
+the Kyiv sources"): `SOURCES = ("chyste_nebo", "kyiv_airdef", "kievinfo_kyiv")`, the three Kyiv live trackers — only a
+mark whose latest report is one of theirs is posted (a target the Air Force or a regional channel reported last waits
+for theirs; gone from them 5 min, "no new reports"), and only their outcomes close a target (`link_outcomes` over their
+marks alone). The official alerts and all-clears are the official data's, as before; the
 posts still name no channel.
 
 **What it posts.** Every 5 s it takes the marks as the pages see them (`State.markers_now()`) and keeps
@@ -1604,7 +1606,7 @@ the place; a course **only when a post stated it** (`stated_course`: a target to
 never the bearing the app worked out between two reports, nor a destination a later post gave a carried mark); the
 height a post gave — 1.58.9, the owner: "I see the altitude is not shown most of the time": @chyste_nebo gives a
 height in a post of its own ("3800", "Бондарня другий 4600") and names only places after it, so when this report gave
-none, the latest one an earlier report of the same track gave (its own word), with its time ("~4600 м (у дописі о
+none, the latest one an earlier report of the same track gave (one of its sources'), with its time ("~4600 м (у дописі о
 00:44)", `stated_alt`), only if said at most 4 minutes before this report (`ALT_MAX_S`, the maps' `ALT_MAX_MIN`); on the
 picture "↕ ~4600 м · 00:44" —; the time of the report (Kyiv) and of the first one; "З дописів каналів, не радар. Сирена й офіційна
 тривога — головне."; a link to `/m` (`PUBLIC_URL`). 1.58.7, the owner: "no need to say the source of info" — the channel

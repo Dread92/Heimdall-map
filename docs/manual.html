@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Heimdall (Kyiv Air Watch) — the full technical documentation, with a map of the system.">
-<meta name="heimdall-version" content="1.58.11">
-<meta name="heimdall-docs" content="b69136e37928c8e4">
+<meta name="heimdall-version" content="1.58.12">
+<meta name="heimdall-docs" content="80f16adbef3513ad">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Heimdall Technical Manual</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -237,7 +237,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
 <header class="top">
   <div class="wrap">
     <a class="brand" href="#top"><b>Heimdall</b><span>Technical manual</span></a>
-    <span class="ver">1.58.11</span>
+    <span class="ver">1.58.12</span>
     <nav class="nav" aria-label="Sections">
       <a href="#map">Map</a><a href="#journeys">Journeys</a><a href="#rules">Rules</a><a href="#reference">Reference</a><a href="#safety">Safety</a>
     </nav>
@@ -256,7 +256,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
       <h1 class="title">How Heimdall works</h1>
       <p class="lead">An unofficial air-threat map for Kyiv and the oblasts around it. One Python process reads the official
       alert data and the channels that track drones and missiles, stores every post before it reads it, rebuilds the map
-      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.11, 13 October 2026:
+      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.12, 13 October 2026:
       the map first, then everything in full.</p>
     </div>
     <dl class="facts">
@@ -645,7 +645,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
     <div class="doc" id="doc">
 <section class="part" id="tech" data-label="Reference"><p class="partlabel">Part I · The reference</p>
 <h1 id="heimdall--technical-documentation">Heimdall — technical documentation</h1>
-<p><strong>Documented version: 1.58</strong> · last updated 2026-10-13 (1.58.11)</p>
+<p><strong>Documented version: 1.58</strong> · last updated 2026-10-13 (1.58.12)</p>
 <p>Heimdall was called <strong>Clear Sky</strong> until 1.29; the repository, the Fly app (<code>kyiv-air-watch-gb</code>) and some
 internal names still carry the old name.</p>
 <p>This is the complete technical reference: what runs, where the data comes from, how a Telegram post becomes a
@@ -2583,9 +2583,12 @@ server. Off unless <code>TG_BOT_TOKEN</code> and <code>TG_CHANNEL_ID</code> are 
 thread <code>channel</code>). Its rules are SAFETY.md's &quot;The private channel says what the map says&quot;. 1.58.7, the owner:
 &quot;instead of editing the post, we need to add a screenshot every time — it's better to keep track of what's going on&quot;,
 and &quot;when the alarm is over, or it exploded or fell, or the threat is no longer here, we should mark it too&quot;.</p>
-<p><strong>One source</strong> (1.58.9, the owner: &quot;for the Telegram bot we'll take a single source: t.me/chyste_nebo&quot;): <code>SOURCES = (&quot;chyste_nebo&quot;,)</code> — only a mark whose latest report is @chyste_nebo's is posted (a target another channel reported
-last waits for this one's next report; gone from it 5 min, &quot;no new reports&quot;), and only its outcomes close a target
-(<code>link_outcomes</code> over its marks alone). The official alerts and all-clears are the official data's, as before; the
+<p><strong>Its sources</strong> (1.58.9, the owner: &quot;for the Telegram bot we'll take a single source: t.me/chyste_nebo&quot;; 1.58.12, after
+@chyste_nebo fell silent at 03:59 while kyiv_airdef and kievinfo_kyiv reported a drone towards Boryspil, his pick: &quot;all
+the Kyiv sources&quot;): <code>SOURCES = (&quot;chyste_nebo&quot;, &quot;kyiv_airdef&quot;, &quot;kievinfo_kyiv&quot;)</code>, the three Kyiv live trackers — only a
+mark whose latest report is one of theirs is posted (a target the Air Force or a regional channel reported last waits
+for theirs; gone from them 5 min, &quot;no new reports&quot;), and only their outcomes close a target (<code>link_outcomes</code> over their
+marks alone). The official alerts and all-clears are the official data's, as before; the
 posts still name no channel.</p>
 <p><strong>What it posts.</strong> Every 5 s it takes the marks as the pages see them (<code>State.markers_now()</code>) and keeps
 (<code>chanpost.eligible</code>) the ones of its source over Kyiv city or Kyiv oblast (<code>oblast_uid</code> 31 / 14) at a named place, of a flying type
@@ -2638,7 +2641,7 @@ the place; a course <strong>only when a post stated it</strong> (<code>stated_co
 never the bearing the app worked out between two reports, nor a destination a later post gave a carried mark); the
 height a post gave — 1.58.9, the owner: &quot;I see the altitude is not shown most of the time&quot;: @chyste_nebo gives a
 height in a post of its own (&quot;3800&quot;, &quot;Бондарня другий 4600&quot;) and names only places after it, so when this report gave
-none, the latest one an earlier report of the same track gave (its own word), with its time (&quot;~4600 м (у дописі о
+none, the latest one an earlier report of the same track gave (one of its sources'), with its time (&quot;~4600 м (у дописі о
 00:44)&quot;, <code>stated_alt</code>), only if said at most 4 minutes before this report (<code>ALT_MAX_S</code>, the maps' <code>ALT_MAX_MIN</code>); on the
 picture &quot;↕ ~4600 м · 00:44&quot; —; the time of the report (Kyiv) and of the first one; &quot;З дописів каналів, не радар. Сирена й офіційна
 тривога — головне.&quot;; a link to <code>/m</code> (<code>PUBLIC_URL</code>). 1.58.7, the owner: &quot;no need to say the source of info&quot; — the channel
@@ -3991,7 +3994,9 @@ the channel. A post that said only where a target is heading (&quot;Баліст
 shows it, with no course ray, and the caption says that where it is now was not said. No ETA, no &quot;towards your area&quot;,
 no distance to anybody. 1.58.7, the owner: &quot;no need to say the source of info&quot; — the channel a post came from is no
 longer named; every post still says &quot;from channel posts, not radar&quot;. 1.58.9, the owner: &quot;for the Telegram bot we'll
-take a single source: t.me/chyste_nebo&quot; — the channel posts that channel's reports and its outcomes alone.</li>
+take a single source: t.me/chyste_nebo&quot;; 1.58.12, his pick after @chyste_nebo fell silent: &quot;all the Kyiv sources&quot; —
+the channel posts the three Kyiv live trackers' reports (@chyste_nebo, @kyiv_airdef, @kievinfo_kyiv) and their
+outcomes alone.</li>
 <li><strong>A height, only as said and only while it is fresh</strong> (1.58.9): when a report gives none, the height the same
 channel gave for the same track a moment before is carried, with its time, and only if it is at most 4 minutes old —
 the maps' rule (&quot;A height is shown for 4 minutes at most&quot;); older, none.</li>
@@ -4960,7 +4965,7 @@ d'alerte ne sont pas des préférences de style.</p>
 </section>
     </div>
   </div>
-  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.11, 13 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
+  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.12, 13 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
 </main>
 
 <script>

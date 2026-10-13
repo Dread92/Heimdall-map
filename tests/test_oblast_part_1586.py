@@ -47,7 +47,7 @@ def test_only_a_destination_is_still_an_approach():
 
 def test_the_channel_posts_it_as_the_part_of_the_oblast():
     m = dict(one(AF), channel="kpszsu", ts="2026-10-12T23:38:00+00:00", history=[])
-    assert not chanpost.eligible(m)                         # 1.58.9: the channel's one source is @chyste_nebo
+    assert not chanpost.eligible(m)                         # 1.58.9: the channel's sources are the Kyiv trackers
     m["channel"] = "chyste_nebo"
     assert chanpost.eligible(m) and chanpost.place_text(m) == "Схід Київщини"
     cap = chanpost.caption(m, None, "https://kyiv-air-watch-gb.fly.dev")

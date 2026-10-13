@@ -371,22 +371,24 @@ def test_the_docs_say_it(doc):
 
 
 # ---- 1.58.9: one source, and the height it gave -------------------------------------------------------------------------
-def test_the_channel_posts_chyste_nebo_alone():
-    # the owner: "for the Telegram bot we'll take a single source: t.me/chyste_nebo"
-    assert chanpost.SOURCES == ("chyste_nebo",)
-    assert chanpost.eligible(mark()) and not chanpost.eligible(mark(channel="kyiv_airdef"))
+def test_the_channel_posts_the_kyiv_trackers_alone():
+    # the owner: "for the Telegram bot we'll take a single source: t.me/chyste_nebo" (1.58.9) — then, chyste_nebo silent
+    # from 03:59 while the two others reported a drone towards Boryspil: "all the Kyiv sources" (1.58.12)
+    assert chanpost.SOURCES == ("chyste_nebo", "kyiv_airdef", "kievinfo_kyiv")
+    assert chanpost.eligible(mark()) and chanpost.eligible(mark(channel="kyiv_airdef"))
+    assert chanpost.eligible(mark(channel="kievinfo_kyiv")) and not chanpost.eligible(mark(channel="kpszsu"))
     clk, api = Clock(), API()
     p, st = poster(api=api, clock=clk)
     st.marks = [mark(place="Бровари", tag="#1", t=clk.t), mark(place="Бориспіль", lon=30.95, lat=50.35, tag="#2",
                                                               channel="kpszsu", t=clk.t)]
     p.tick()
     assert len(api.calls) == 1 and "Бровари" in api.calls[0][1]["caption"]
-    # an outcome another channel reported is not this one's word
+    # an outcome another channel reported is not their word
     clk.t += 60
-    st.marks.append(outcome("down", place="Бровари", lon=30.79, lat=50.5, t=clk.t, channel="kyiv_airdef"))
+    st.marks.append(outcome("down", place="Бровари", lon=30.79, lat=50.5, t=clk.t, channel="war_monitor"))
     p.tick()
     assert len(api.calls) == 1
-    st.marks[-1]["channel"] = "chyste_nebo"
+    st.marks[-1]["channel"] = "kyiv_airdef"
     p.tick()
     assert api.calls[-1][1]["text"].startswith("⬇️")
 
@@ -401,7 +403,7 @@ def test_a_height_an_earlier_report_gave_is_carried_with_its_time():
     cap = chanpost.caption(m, None, "https://h")
     assert f"↕️ Висота: ~4600 м (у дописі о {chanpost.hhmm(T0 - 240)})" in cap
     assert chanpost.stated_alt(mark(alt={"m": 3800}, history=[h]))[0]["m"] == 3800          # its own first
-    assert chanpost.stated_alt(mark(history=[dict(h, channel="kyiv_airdef")])) == (None, None)  # one source
+    assert chanpost.stated_alt(mark(history=[dict(h, channel="war_monitor")])) == (None, None)  # its sources only
     assert chanpost.stated_alt(mark(history=[dict(h, alt_m=None)])) == (None, None)            # never guessed
     old = dict(h, ts=iso(T0 - 5 * 60))                                                         # 5 min: too old (4 max)
     assert chanpost.stated_alt(mark(history=[old])) == (None, None)

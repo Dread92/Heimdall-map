@@ -41,10 +41,12 @@ except Exception:  # pragma: no cover
     areas = None
 
 SCOPE = ("31", "14")                       # Kyiv city, Kyiv oblast
-# 1.58.9, the owner: "for the Telegram bot we'll take a single source: t.me/chyste_nebo". The channel posts the targets
-# of this channel's reports alone — a target whose latest report is another channel's waits for this one's next — and
-# what became of them by this channel's word (its outcomes). The official data (alerts, all-clears) stays the official.
-SOURCES = ("chyste_nebo",)
+# 1.58.9, the owner: "for the Telegram bot we'll take a single source: t.me/chyste_nebo" — then, @chyste_nebo silent
+# from 03:59 while kyiv_airdef and kievinfo_kyiv reported a drone towards Boryspil (1.58.12, his pick): "all the Kyiv
+# sources". The channel posts the targets of the three Kyiv live trackers' reports alone — a target whose latest report
+# is another channel's (the Air Force, a regional one) waits for theirs — and what became of them by their word (their
+# outcomes). The official data (alerts, all-clears) stays the official.
+SOURCES = ("chyste_nebo", "kyiv_airdef", "kievinfo_kyiv")
 TYPES = ("drones", "ballistic_missiles", "cruise_missiles", "unspecified_missiles", "banderol_missiles",
          "supersonic_missiles", "unknown")
 FRESH_S = 5 * 60                           # a report is posted only if it is this recent (no backlog)
@@ -119,7 +121,7 @@ def eligible(m):
     no oblast-wide guess, no reading that still waits for its context."""
     if m.get("oblast_uid") not in SCOPE or m.get("lon") is None or m.get("lat") is None:
         return False
-    if m.get("channel") not in SOURCES:          # 1.58.9: one source
+    if m.get("channel") not in SOURCES:          # 1.58.9: its sources only (1.58.12: the three Kyiv trackers)
         return False
     if m.get("type") not in TYPES or m.get("status") or m.get("stale") or m.get("superseded_by"):
         return False
@@ -184,7 +186,7 @@ def label_of(m):
 
 def stated_alt(m):
     """(the height a post gave, when — None for this report) — this report's, else (1.58.9) the latest an earlier report
-    of the same track gave, by the channel's own word. The owner: "I see the altitude is not shown most of the time":
+    of the same track gave, by one of its sources' word. The owner: "I see the altitude is not shown most of the time":
     @chyste_nebo gives a height in a post of its own ("3800", "Бондарня другий 4600") and its next report names a place
     only, so the height said two minutes ago was dropped from the post. It is carried, with its time — and, as on the
     maps (SAFETY.md "A height is shown for 4 minutes at most", ALT_MAX_MIN), only when it was said at most 4 minutes
@@ -527,7 +529,7 @@ class ChannelPoster(threading.Thread):
         # targets the map no longer has included (their last report, kept with the post)
         extra = [(k, p["m"]) for k, p in self.posts.items() if k not in cur and (p.get("m") or {}).get("lon") is not None
                  and now - (p.get("last") or 0) <= OUTCOME_WINDOW_S + 120]
-        outcomes = link_outcomes([m for m in marks if m.get("channel") in SOURCES], extra)   # 1.58.9: its word only
+        outcomes = link_outcomes([m for m in marks if m.get("channel") in SOURCES], extra)   # 1.58.9: their word only
         active = self.active()
         fills = mapshot.alert_fill(active) if mapshot else {}
         changed = False

@@ -2,6 +2,15 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.12 — 2026-10-13
+
+### Changed
+- **The private channel follows the three Kyiv trackers again** — the owner: "no screenshot is published on the
+  Telegram bot any more". It was working, and following @chyste_nebo alone (1.58.9): @chyste_nebo had posted nothing since
+  03:59 ("Не спостерігається"), while kyiv_airdef and kievinfo_kyiv reported a drone towards Boryspil at 04:25–04:32. His
+  pick: "all the Kyiv sources" — @chyste_nebo, @kyiv_airdef and @kievinfo_kyiv, their reports and their outcomes; the Air
+  Force and the regional channels stay out of the channel.
+
 ## 1.58.11 — 2026-10-13
 
 ### Changed
