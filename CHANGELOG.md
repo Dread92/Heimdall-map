@@ -2,6 +2,16 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.14 — 2026-10-13
+
+### Fixed
+- **The Map background on a phone that crashed with it** — a reader, through the owner (Oppo Reno 15 Pro): "with the
+  Map background it crashes — solid artifacts, and it falls out to the lock screen". Not reproduced (no such phone
+  here); the Map is made lighter and can no longer crash the app at every opening: the older street-map tiles kept while
+  new ones load are counted by their memory (37 of Esri's 512-pixel tiles at most, not 150), the night mode dims the
+  map tile by tile instead of filtering it as one picture, and a page that died on the screen with the Map background
+  opens next time on the satellite, saying so — the Map is one tap away in Layers.
+
 ## 1.58.13 — 2026-10-13
 
 ### Changed

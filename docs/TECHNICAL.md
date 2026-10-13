@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-13 (1.58.13)
+**Documented version: 1.58** · last updated 2026-10-13 (1.58.14)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -1767,7 +1767,15 @@ the page is told each (`state.config.esri`, `esri_st`), and the log and the dash
 ("HTTP 403: You do not have permissions…"). On the page, when every Esri name or map tile of the view fails, or three
 in a row, it does without them for two minutes (`esriSeen`, `stOK()`): the Map falls back to the OSM streets and our
 own names come back over the imagery. A tile that fails never takes the older picture away (`tileSweep` waits for
-every new tile to have **loaded**; a server restart or a refusal leaves the previous zoom's picture in place). Where Esri's names are drawn (`svg.lbld`, `svg.mapd`) our own town and village
+every new tile to have **loaded**; a server restart or a refusal leaves the previous zoom's picture in place).
+1.58.14, a reader's phone (Oppo Reno 15 Pro), through the owner: "with the Map background it crashes — solid artifacts,
+and it falls out to the lock screen" (not reproduced: no such phone here). The older pictures kept are counted by their
+memory (`placeTiles(…, px)`: 150 of 256 pixels, a quarter as many 512-pixel tiles of Esri's map and names — 37); the
+night mode dims the street map and the names tile by tile (`#emap image`, `#lbl image`: opacity .55) instead of
+filtering each whole group as one picture; and **a page that died on the screen with the Map background opens next time
+on the satellite** (`run_v1` in localStorage: what background the opening shows and whether it ended well — hidden or
+left, `visibilitychange` / `pagehide`, it did), with a quiet toast (`map_fell_t`, `map_fell_b`: no tone) — the Map is one
+tap away again, never a crash at every opening. Where Esri's names are drawn (`svg.lbld`, `svg.mapd`) our own town and village
 names step aside — the same names twice, a few pixels apart, could not be read. Credited "Powered by Esri · Esri,
 TomTom, Garmin, FAO, NOAA, USGS, © OpenStreetMap contributors, and the GIS User Community".
 

@@ -482,7 +482,7 @@ svg.deep .ring,svg.deep .zone,svg.deep .ob.occ,svg.deep #oblevt .obring,svg.deep
 svg.deep .ob.occ{fill:rgba(26,32,42,.6)}
 /* 1.49: Esri's names over the imagery or on its map: our own town and village names step aside (the same names twice) */
 svg.lbld #towns,svg.mapd #towns,svg.lbld #minorg,svg.lbld #villg,svg.mapd #minorg,svg.mapd #villg{display:none}
-#lbl{filter:brightness(.9)}body.m-day #lbl{filter:none}body.m-night #lbl,body.m-night #emap{filter:brightness(.55) saturate(.5)}
+#lbl{filter:brightness(.9)}body.m-day #lbl{filter:none}body.m-night #lbl{filter:none}body.m-night #lbl image,body.m-night #emap image{opacity:.55}
 /* 1.49: Layers → Background, one of three */
 .layermenu label[hidden]{display:none}
 .lbase{padding:10px 16px 12px;border-bottom:1px solid var(--line)}.lbase .lbh{display:block;font:600 11px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);margin-bottom:8px}
@@ -1673,6 +1673,23 @@ const LAYERS={sat:true,tiles:false,trails:false,selpath:true,cones:true,rivers:f
 try{Object.assign(LAYERS,JSON.parse(localStorage.getItem('layers')||'{}')); if(!localStorage.getItem('layers_v2')){LAYERS.minor=false;localStorage.setItem('layers_v2','1');localStorage.setItem('layers',JSON.stringify(LAYERS));}
   if(!localStorage.getItem('layers_v3')){LAYERS.sat=true;LAYERS.tiles=false;localStorage.setItem('layers_v3','1');localStorage.setItem('layers',JSON.stringify(LAYERS));}}catch(e){}
 LAYERS.heat=false;   // 1.33: the heat map is never remembered — every opening starts on the live picture
+// 1.58.14, a reader's phone (Oppo Reno 15 Pro): "with the Map background it crashes — solid artifacts, and it falls out
+// to the lock screen". Each opening writes what background it shows and that it is not over yet; hidden (the home
+// button, the lock, another app, a reload) it writes that it ended well. A page that died while it was on the screen with
+// the Map background opens the next time on the satellite, and says so: never a crash at every opening — the Map is one
+// tap away again in Layers.
+const RUN_K='run_v1'; let RUN_FELL=false;
+try{ const pr=JSON.parse(localStorage.getItem(RUN_K)||'null');
+  if(pr&&pr.bg==='map'&&pr.ok===false&&LAYERS.tiles){ LAYERS.tiles=false; LAYERS.sat=true; RUN_FELL=true;
+    localStorage.setItem('layers',JSON.stringify(Object.assign({},LAYERS,{heat:false}))); } }catch(e){}
+function runMark(ok){ try{ localStorage.setItem(RUN_K,JSON.stringify({bg:LAYERS.sat?'sat':LAYERS.tiles?'map':'none',ok:!!ok,t:Date.now()})); }catch(e){} }
+runMark(document.visibilityState==='hidden');
+document.addEventListener('visibilitychange',()=>runMark(document.visibilityState==='hidden'));
+addEventListener('pagehide',()=>runMark(true));
+function toastQuiet(title,body){ const el=$('toast'); if(!el) return; el.style.borderLeftColor='var(--yellow)';
+  el.innerHTML=`<b>${esc(title)}</b><div style="color:var(--muted);font-size:13.5px;margin-top:3px">${esc(body||'')}</div>`;
+  el.classList.add('show'); el.onclick=()=>el.classList.remove('show'); clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('show'),12000); }
+if(RUN_FELL) setTimeout(()=>toastQuiet(t('map_fell_t'),t('map_fell_b')),2500);
 function applyLayers(){for(const [l,on] of Object.entries(LAYERS)){svg.classList.toggle('no-'+l,!on);const cb=document.querySelector(`#layerbox input[data-l="${l}"]`);if(cb)cb.checked=on;}
   {const b=LAYERS.sat?'sat':LAYERS.tiles?'map':'none'; const rb=document.querySelector(`#lbase input[value="${b}"]`); if(rb) rb.checked=true;}if(typeof updateTiles==='function')updateTiles();if(typeof drawHeat==='function')drawHeat();}
 const saveLayers=()=>{try{localStorage.setItem('layers',JSON.stringify(Object.assign({},LAYERS,{heat:false})))}catch(e){}};
@@ -1680,7 +1697,7 @@ document.querySelectorAll('#layerbox input[data-l]').forEach(cb=>cb.onchange=()=
   saveLayers();   // 1.48: 1.47.1 had left this line inside a comment
   applyLayers();});
 document.querySelectorAll('#lbase input').forEach(rb=>rb.onchange=()=>{ if(!rb.checked) return;
-  LAYERS.sat=rb.value==='sat'; LAYERS.tiles=rb.value==='map'; saveLayers(); applyLayers(); });
+  LAYERS.sat=rb.value==='sat'; LAYERS.tiles=rb.value==='map'; saveLayers(); runMark(false); applyLayers(); });
 applyLayers();
 $('zkyiv').onclick=()=>{if(CITY)toggleCity(false); if(HOME){ const [hx,hy]=proj(HOME.lon,HOME.lat); setView(hx,hy,60); return; } const o=(MAP.oblasts||[]).find(x=>x.uid===MYOBL.uid); if(o&&MYOBL.uid!=='14') setView(o.cx,o.cy,260); else setView(0,0,110);};
 // Kyiv city map: a separate, simplified map — the 10 districts (OSM boundaries), the city outline, targets, nothing else
@@ -2898,12 +2915,12 @@ function attribSync(){ const a=$('attrib'); if(!a) return; const p=[], e=[], c=s
 // 1.48: more than that (a large screen), one zoom out, down to zmin, rather than nothing.
 // 1.49: the tiles of the zoom before stay under the new ones until all of those have come (4 s at most): zooming no
 // longer shows the black background between two pictures. Those out of the view go at once.
-function placeTiles(g,z,url,max,zmin){
+function placeTiles(g,z,url,max,zmin,px){
   const n=2**z; const lon2x=lon=>(lon+180)/360*n; const lat2y=lat=>{const f=lat*Math.PI/180;return (1-Math.log(Math.tan(f)+1/Math.cos(f))/Math.PI)/2*n;};
   const y2lat=y=>Math.atan(Math.sinh(Math.PI*(1-2*y/n)))*180/Math.PI; const x2lon=x=>x/n*360-180;
   const [lonA,latA]=unproj(VB.x,VB.y),[lonB,latB]=unproj(VB.x+VB.w,VB.y+VB.h);
   const x0=Math.max(0,Math.floor(lon2x(lonA))),x1=Math.min(n-1,Math.floor(lon2x(lonB))),y0=Math.max(0,Math.floor(lat2y(latA))),y1=Math.min(n-1,Math.floor(lat2y(latB)));
-  if((x1-x0+1)*(y1-y0+1)>max){ if(zmin!=null&&z>zmin) return placeTiles(g,z-1,url,max,zmin); g.innerHTML='';return;}
+  if((x1-x0+1)*(y1-y0+1)>max){ if(zmin!=null&&z>zmin) return placeTiles(g,z-1,url,max,zmin,px); g.innerHTML='';return;}
   const want=new Set(); const have={}; g.querySelectorAll('image').forEach(im=>have[im.dataset.k]=im);
   for(let x=x0;x<=x1;x++)for(let y=y0;y<=y1;y++){ const k=`${z}/${x}/${y}`; want.add(k); if(have[k]){ have[k].classList.remove('old'); continue; }
     const [px,py]=proj(x2lon(x),y2lat(y)),[qx,qy]=proj(x2lon(x+1),y2lat(y+1));
@@ -2916,8 +2933,10 @@ function placeTiles(g,z,url,max,zmin){
   for(const [k,im] of Object.entries(have)) if(!want.has(k)){
     const x=+im.getAttribute('x'), y=+im.getAttribute('y'), inView=x<vx1&&x+(+im.getAttribute('width'))>VB.x&&y<vy1&&y+(+im.getAttribute('height'))>VB.y;
     if(inView&&+im.dataset.z!==z&&im.dataset.ok==='1') im.classList.add('old'); else im.remove(); }
-  const olds=[...g.querySelectorAll('image.old')];
-  if(olds.length>150) olds.sort((a,b)=>Math.abs(+b.dataset.z-z)-Math.abs(+a.dataset.z-z)).slice(0,olds.length-150).forEach(i=>i.remove());
+  // 1.58.14: the older pictures kept are counted by their size — 150 of 256 pixels, a quarter as many of Esri's 512 (a
+  // 512-pixel tile is four times the memory: 150 of them, 150 MB on a phone that crashed in the Map background)
+  const olds=[...g.querySelectorAll('image.old')], keep=Math.round(150*(256/(px||256))**2);
+  if(olds.length>keep) olds.sort((a,b)=>Math.abs(+b.dataset.z-z)-Math.abs(+a.dataset.z-z)).slice(0,olds.length-keep).forEach(i=>i.remove());
   g.dataset.z=z; tileSweep(g);
 }
 function tileDone(e){ const im=e.target, g=im.parentNode, ok=e.type==='load'; im.dataset.ok=ok?'1':'0';
@@ -3003,13 +3022,13 @@ function updateLbl(){
   svg.classList.toggle('lbld',!!on);
   if(!on){g.innerHTML='';return;}
   if(g.dataset.src!==LANG){ g.innerHTML=''; g.dataset.src=LANG; }
-  placeTiles(g,Math.min(18,z),(z,x,y)=>`/tiles/esri/lbl/${z}/${x}/${y}.png?lang=${LANG}`,60,9);
+  placeTiles(g,Math.min(18,z),(z,x,y)=>`/tiles/esri/lbl/${z}/${x}/${y}.png?lang=${LANG}`,60,9,512);
 }
 function updateMap(){
   const g=$('emap'); if(!g) return; const on=LAYERS.tiles&&stOK()&&MAP&&!CITY&&!LITE_ON(); svg.classList.toggle('mapd',!!on);
   if(!on){g.innerHTML='';return;}
   const kind=MODE==='day'?'map':'mapn'; if(g.dataset.src!==kind+LANG){ g.innerHTML=''; g.dataset.src=kind+LANG; }
-  placeTiles(g,Math.max(4,Math.min(18,tileZoom()-1)),(z,x,y)=>`/tiles/esri/${kind}/${z}/${x}/${y}.png?lang=${LANG}`,60,4);
+  placeTiles(g,Math.max(4,Math.min(18,tileZoom()-1)),(z,x,y)=>`/tiles/esri/${kind}/${z}/${x}/${y}.png?lang=${LANG}`,60,4,512);
 }
 // ---- place-label collision pass: bigger places win, an overlapping smaller label is hidden until you zoom in ----
 function layoutTownLabels(){

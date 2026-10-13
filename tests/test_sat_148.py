@@ -176,7 +176,7 @@ def test_the_page_draws_esri_over_sentinel_from_zoom_14_and_zooms_to_a_kilometre
             '    <g id="tiles" clip-path="url(#uaclip)"></g>') in PAGE
     assert "const z=ESRI_OK&&svg.classList.contains('satd')?tileZoom():0; const on=z>=14;" in PAGE
     assert "placeTiles(g,Math.max(14,Math.min(18,z)),(z,x,y)=>`/tiles/esri/${z}/${x}/${y}.jpg`,140,14);" in PAGE
-    assert "if(zmin!=null&&z>zmin) return placeTiles(g,z-1,url,max,zmin);" in PAGE     # a large screen: one zoom out, not nothing
+    assert "if(zmin!=null&&z>zmin) return placeTiles(g,z-1,url,max,zmin,px);" in PAGE     # a large screen: one zoom out, not nothing
     assert "Powered by Esri" in PAGE and "Esri, Maxar, Earthstar Geographics, and the GIS User Community" in PAGE
     assert "if(c.contains('esrid')) e.push(ESRI_IMG);" in PAGE and "if(e.length) p.push('Powered by Esri · '+e.join(' · '));" in PAGE
     assert "a.classList.toggle('long',p.length>1||e.length>1);" in PAGE and ".attrib.long{max-width:calc(100vw - 72px);bottom:34px}" in PAGE

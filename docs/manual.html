@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Heimdall (Kyiv Air Watch) — the full technical documentation, with a map of the system.">
-<meta name="heimdall-version" content="1.58.13">
-<meta name="heimdall-docs" content="96193f18d65029ee">
+<meta name="heimdall-version" content="1.58.14">
+<meta name="heimdall-docs" content="d5a6e5f905b3dea4">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Heimdall Technical Manual</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -237,7 +237,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
 <header class="top">
   <div class="wrap">
     <a class="brand" href="#top"><b>Heimdall</b><span>Technical manual</span></a>
-    <span class="ver">1.58.13</span>
+    <span class="ver">1.58.14</span>
     <nav class="nav" aria-label="Sections">
       <a href="#map">Map</a><a href="#journeys">Journeys</a><a href="#rules">Rules</a><a href="#reference">Reference</a><a href="#safety">Safety</a>
     </nav>
@@ -256,7 +256,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
       <h1 class="title">How Heimdall works</h1>
       <p class="lead">An unofficial air-threat map for Kyiv and the oblasts around it. One Python process reads the official
       alert data and the channels that track drones and missiles, stores every post before it reads it, rebuilds the map
-      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.13, 13 October 2026:
+      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.14, 13 October 2026:
       the map first, then everything in full.</p>
     </div>
     <dl class="facts">
@@ -645,7 +645,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
     <div class="doc" id="doc">
 <section class="part" id="tech" data-label="Reference"><p class="partlabel">Part I · The reference</p>
 <h1 id="heimdall--technical-documentation">Heimdall — technical documentation</h1>
-<p><strong>Documented version: 1.58</strong> · last updated 2026-10-13 (1.58.13)</p>
+<p><strong>Documented version: 1.58</strong> · last updated 2026-10-13 (1.58.14)</p>
 <p>Heimdall was called <strong>Clear Sky</strong> until 1.29; the repository, the Fly app (<code>kyiv-air-watch-gb</code>) and some
 internal names still carry the old name.</p>
 <p>This is the complete technical reference: what runs, where the data comes from, how a Telegram post becomes a
@@ -2790,7 +2790,15 @@ the page is told each (<code>state.config.esri</code>, <code>esri_st</code>), an
 (&quot;HTTP 403: You do not have permissions…&quot;). On the page, when every Esri name or map tile of the view fails, or three
 in a row, it does without them for two minutes (<code>esriSeen</code>, <code>stOK()</code>): the Map falls back to the OSM streets and our
 own names come back over the imagery. A tile that fails never takes the older picture away (<code>tileSweep</code> waits for
-every new tile to have <strong>loaded</strong>; a server restart or a refusal leaves the previous zoom's picture in place). Where Esri's names are drawn (<code>svg.lbld</code>, <code>svg.mapd</code>) our own town and village
+every new tile to have <strong>loaded</strong>; a server restart or a refusal leaves the previous zoom's picture in place).
+1.58.14, a reader's phone (Oppo Reno 15 Pro), through the owner: &quot;with the Map background it crashes — solid artifacts,
+and it falls out to the lock screen&quot; (not reproduced: no such phone here). The older pictures kept are counted by their
+memory (<code>placeTiles(…, px)</code>: 150 of 256 pixels, a quarter as many 512-pixel tiles of Esri's map and names — 37); the
+night mode dims the street map and the names tile by tile (<code>#emap image</code>, <code>#lbl image</code>: opacity .55) instead of
+filtering each whole group as one picture; and <strong>a page that died on the screen with the Map background opens next time
+on the satellite</strong> (<code>run_v1</code> in localStorage: what background the opening shows and whether it ended well — hidden or
+left, <code>visibilitychange</code> / <code>pagehide</code>, it did), with a quiet toast (<code>map_fell_t</code>, <code>map_fell_b</code>: no tone) — the Map is one
+tap away again, never a crash at every opening. Where Esri's names are drawn (<code>svg.lbld</code>, <code>svg.mapd</code>) our own town and village
 names step aside — the same names twice, a few pixels apart, could not be read. Credited &quot;Powered by Esri · Esri,
 TomTom, Garmin, FAO, NOAA, USGS, © OpenStreetMap contributors, and the GIS User Community&quot;.</p>
 <p><strong>The towns of every oblast (1.49).</strong> <code>TOWNS</code> (in the page) names every town of Kyiv oblast and the oblast and
@@ -4969,7 +4977,7 @@ d'alerte ne sont pas des préférences de style.</p>
 </section>
     </div>
   </div>
-  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.13, 13 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
+  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.14, 13 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
 </main>
 
 <script>

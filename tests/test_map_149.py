@@ -107,7 +107,7 @@ def test_the_background_is_one_choice_of_three():
     assert ('<div class="lbase" id="lbase" role="radiogroup"><span class="lbh" data-t="l_base">Background</span><div class="lbopts">'
             '<label data-b="sat" hidden><input type="radio" name="lbase" value="sat">') in PAGE
     assert '<input type="radio" name="lbase" value="map">' in PAGE and '<input type="radio" name="lbase" value="none">' in PAGE
-    assert "LAYERS.sat=rb.value==='sat'; LAYERS.tiles=rb.value==='map'; saveLayers(); applyLayers();" in PAGE
+    assert "LAYERS.sat=rb.value==='sat'; LAYERS.tiles=rb.value==='map'; saveLayers(); runMark(false); applyLayers();" in PAGE
     assert "const b=LAYERS.sat?'sat':LAYERS.tiles?'map':'none';" in PAGE
     assert ".layermenu label[hidden]{display:none}" in PAGE            # the satellite stays hidden until the server has it
     for s in ("l_base:'Background',l_sat:'Satellite',l_map:'Map',l_plain:'Plain'", "l_base:'Підкладка',l_sat:'Супутник',l_map:'Карта'",
@@ -120,9 +120,9 @@ def test_the_streets_over_the_imagery_and_the_map_with_esri_and_osm_without():
     i = PAGE.index('<g id="sat"')
     order = [PAGE.index(f'<g id="{g}" clip-path="url(#uaclip)"></g>') for g in ("sat", "esri", "tiles", "emap", "lbl")]
     assert order == sorted(order) and order[0] == i
-    assert "placeTiles(g,Math.min(18,z),(z,x,y)=>`/tiles/esri/lbl/${z}/${x}/${y}.png?lang=${LANG}`,60,9);" in PAGE
+    assert "placeTiles(g,Math.min(18,z),(z,x,y)=>`/tiles/esri/lbl/${z}/${x}/${y}.png?lang=${LANG}`,60,9,512);" in PAGE
     assert "const kind=MODE==='day'?'map':'mapn';" in PAGE
-    assert "placeTiles(g,Math.max(4,Math.min(18,tileZoom()-1)),(z,x,y)=>`/tiles/esri/${kind}/${z}/${x}/${y}.png?lang=${LANG}`,60,4);" in PAGE
+    assert "placeTiles(g,Math.max(4,Math.min(18,tileZoom()-1)),(z,x,y)=>`/tiles/esri/${kind}/${z}/${x}/${y}.png?lang=${LANG}`,60,4,512);" in PAGE
     assert "const on=LAYERS.tiles&&stOK()&&MAP&&!CITY&&!LITE_ON();" in PAGE
     # our own names step aside where Esri's are drawn
     assert "svg.lbld #towns,svg.mapd #towns,svg.lbld #minorg,svg.lbld #villg,svg.mapd #minorg,svg.mapd #villg{display:none}" in PAGE
