@@ -44,6 +44,8 @@ RN, RN_LINE, CITY_LINE = (20, 25, 32), (43, 51, 64), (143, 180, 255)
 KD_LINE, RIVER = (51, 65, 92), (42, 74, 115)
 INK, INK2, INK3 = (232, 230, 223), (181, 179, 171), (143, 141, 134)
 OUT_BG = (9, 11, 15)           # 1.58.10: outside Kyiv oblast and the city — nothing drawn
+# 1.58.11, the owner: "put the names of the towns / raions a bit smaller" — font sizes (px of the picture)
+BIG_PX, TOWN_PX, RAION_PX = 22, 16, 14      # Kyiv, a town, a raion's name (26, 19, 17 before)
 RED_T, YEL_T = (229, 72, 77, 72), (245, 185, 64, 60)
 ORANGE, AMBER, MSL = (255, 138, 61), (255, 177, 92), (255, 90, 90)
 STROKE = (8, 11, 16)
@@ -206,7 +208,7 @@ class MapShot:
             for k, x, y in re.findall(r"'?([\w-]+)'?:\[(-?[\d.]+),(-?[\d.]+)\]", lbl.group(1)):
                 if k in adj:
                     self.raion_lbl.append(((adj[k] + " р-н").upper(), (float(x), float(y))))
-        self.f = {s: _font(FONTS, s * SS) for s in (15, 17, 19, 22, 26, 30)}
+        self.f = {s: _font(FONTS, s * SS) for s in (14, 15, 16, 17, 19, 22, 26, 30)}
         self.fb = {s: _font(FONTS_B, s * SS) for s in (19, 22, 26, 30, 34)}
 
     def proj(self, lon, lat):
@@ -330,15 +332,16 @@ class MapShot:
         if span > 60:
             for text, p in self.raion_lbl:
                 q = px(p)
-                self._label(d, q, text, self.f[17], (205, 214, 228) if on_sat else (138, 150, 170), boxes, bounds, anchor="mm")
+                self._label(d, q, text, self.f[RAION_PX], (205, 214, 228) if on_sat else (138, 150, 170), boxes, bounds,
+                            anchor="mm")
         # the towns of the oblast and the city, the big ones first; a name that would cover another is left out
         for name, p, big in sorted(self.towns, key=lambda t: not t[2]):
             q = px(p)
             if not (top <= q[1] <= bottom) or not inside(q):
                 continue
-            r = (5 if big else 3.5) * SS
+            r = (4.5 if big else 3) * SS
             under = boxes[0][0] <= q[0] <= boxes[0][2] and boxes[0][1] <= q[1] <= boxes[0][3]   # under the target
-            font, ink = (self.fb[26], INK) if big else (self.f[19], INK2)
+            font, ink = (self.fb[BIG_PX], INK) if big else (self.f[TOWN_PX], INK2)
             g = r + 5 * SS                         # right of the dot, else left, above, below (1.58.5: a target beside)
             placed = any(self._label(d, (q[0] + dx, q[1] + dy), name, font, ink, boxes, bounds, anchor=an)
                          for gg in (g, 31 * SS)        # and clear of a target drawn on the town

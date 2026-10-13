@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-13 (1.58.10)
+**Documented version: 1.58** · last updated 2026-10-13 (1.58.11)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -1635,7 +1635,8 @@ Kyiv oblast's raions — oblast-wide, by raion, a hromada's raion). The target, 
 path) and the other targets of the moment (the channel's own, `ChannelPoster.cur`, not a held one — smaller and
 fainter, under the one the post is about): the whole situation over the oblast in one picture. The silhouette is 2.6 px
 a unit (`GLYPH_SC`; 3.9 until the owner: "the Shahed is far too big"), the others 1.7 (`OTHER_SC`), the halo 36 px
-(`HALO`), the course ray 80 px. `to_pixel(lon, lat)`: where a point is in the picture (the tests).
+(`HALO`), the course ray 80 px; the names (1.58.11, the owner: "a bit smaller, please") Kyiv 22 px, a town 16, a raion 14
+(`BIG_PX`, `TOWN_PX`, `RAION_PX`). `to_pixel(lon, lat)`: where a point is in the picture (the tests).
 1.58.6: a target placed only in a part of Kyiv oblast ("на сході Київщини") is posted as that part ("Схід Київщини",
 "📍 Точного місця в дописі немає — лише частина області"), drawn with a dashed circle of 35 km round the point
 (`AREA_KM`). The silhouette turns as `orientOf()` turns it; the course ray is drawn only with a stated course. The

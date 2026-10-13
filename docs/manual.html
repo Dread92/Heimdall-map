@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Heimdall (Kyiv Air Watch) — the full technical documentation, with a map of the system.">
-<meta name="heimdall-version" content="1.58.10">
-<meta name="heimdall-docs" content="fe10bef1aa81c03e">
+<meta name="heimdall-version" content="1.58.11">
+<meta name="heimdall-docs" content="b69136e37928c8e4">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Heimdall Technical Manual</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -237,7 +237,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
 <header class="top">
   <div class="wrap">
     <a class="brand" href="#top"><b>Heimdall</b><span>Technical manual</span></a>
-    <span class="ver">1.58.10</span>
+    <span class="ver">1.58.11</span>
     <nav class="nav" aria-label="Sections">
       <a href="#map">Map</a><a href="#journeys">Journeys</a><a href="#rules">Rules</a><a href="#reference">Reference</a><a href="#safety">Safety</a>
     </nav>
@@ -256,7 +256,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
       <h1 class="title">How Heimdall works</h1>
       <p class="lead">An unofficial air-threat map for Kyiv and the oblasts around it. One Python process reads the official
       alert data and the channels that track drones and missiles, stores every post before it reads it, rebuilds the map
-      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.10, 13 October 2026:
+      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.11, 13 October 2026:
       the map first, then everything in full.</p>
     </div>
     <dl class="facts">
@@ -645,7 +645,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
     <div class="doc" id="doc">
 <section class="part" id="tech" data-label="Reference"><p class="partlabel">Part I · The reference</p>
 <h1 id="heimdall--technical-documentation">Heimdall — technical documentation</h1>
-<p><strong>Documented version: 1.58</strong> · last updated 2026-10-13 (1.58.10)</p>
+<p><strong>Documented version: 1.58</strong> · last updated 2026-10-13 (1.58.11)</p>
 <p>Heimdall was called <strong>Clear Sky</strong> until 1.29; the repository, the Fly app (<code>kyiv-air-watch-gb</code>) and some
 internal names still carry the old name.</p>
 <p>This is the complete technical reference: what runs, where the data comes from, how a Telegram post becomes a
@@ -2667,7 +2667,8 @@ Kyiv oblast's raions — oblast-wide, by raion, a hromada's raion). The target, 
 path) and the other targets of the moment (the channel's own, <code>ChannelPoster.cur</code>, not a held one — smaller and
 fainter, under the one the post is about): the whole situation over the oblast in one picture. The silhouette is 2.6 px
 a unit (<code>GLYPH_SC</code>; 3.9 until the owner: &quot;the Shahed is far too big&quot;), the others 1.7 (<code>OTHER_SC</code>), the halo 36 px
-(<code>HALO</code>), the course ray 80 px. <code>to_pixel(lon, lat)</code>: where a point is in the picture (the tests).
+(<code>HALO</code>), the course ray 80 px; the names (1.58.11, the owner: &quot;a bit smaller, please&quot;) Kyiv 22 px, a town 16, a raion 14
+(<code>BIG_PX</code>, <code>TOWN_PX</code>, <code>RAION_PX</code>). <code>to_pixel(lon, lat)</code>: where a point is in the picture (the tests).
 1.58.6: a target placed only in a part of Kyiv oblast (&quot;на сході Київщини&quot;) is posted as that part (&quot;Схід Київщини&quot;,
 &quot;📍 Точного місця в дописі немає — лише частина області&quot;), drawn with a dashed circle of 35 km round the point
 (<code>AREA_KM</code>). The silhouette turns as <code>orientOf()</code> turns it; the course ray is drawn only with a stated course. The
@@ -4959,7 +4960,7 @@ d'alerte ne sont pas des préférences de style.</p>
 </section>
     </div>
   </div>
-  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.10, 13 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
+  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.11, 13 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
 </main>
 
 <script>

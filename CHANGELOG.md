@@ -2,6 +2,13 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.11 — 2026-10-13
+
+### Changed
+- **Smaller names on the channel's picture** — the owner, of the whole-oblast picture: "excellent — but the towns' and
+  raions' names a bit smaller, please". Kyiv 22 px, a town 16, a raion 14 (26, 19 and 17 before), the towns' dots a
+  little smaller too.
+
 ## 1.58.10 — 2026-10-13
 
 ### Changed
