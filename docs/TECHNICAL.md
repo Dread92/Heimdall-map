@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-13 (1.58.9)
+**Documented version: 1.58** · last updated 2026-10-13 (1.58.10)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -1619,25 +1619,23 @@ target's area (`area_of`): "kyiv-city", a raion of Kyiv oblast, or "14:*" for on
 watches live in memory only: after a restart the alerts are not read yet, so an area must be seen under alert again
 before its all-clear can be said; the kill switch clears them (no all-clear of an alert that ended while it was off).
 
-**The picture** (`app/mapshot.py`, `MapShot.render`, ~0.15 s plain, ~0.5 s over the satellite): a 1080 × 1080 JPEG
-(Telegram makes every photo one), drawn at twice the size and scaled down.
-The data the pages draw: the oblasts and raions of `static/kyiv-map.json`, the city districts of `kyiv-districts.json`
-(names when the view is under 60 km), the rivers of `map-ua.json`, the towns of kyiv.html's `TOWNS` (Ukrainian names
-from i18n.js), the raion labels (`RAION_LBL`, `RAION_ADJ` + "р-н"), the silhouettes of `static/glyphs.js` (checked
-shape by shape by the tests), the colours of the Tactical page. The official alerts of the moment are painted as
-`alertMap()` paints them (`alert_fill`: the city; Kyiv oblast's raions — oblast-wide, by raion, a hromada's raion; the
-oblasts around, fainter). The view: the target, its last six reported places (a dotted path) and Kyiv when the target
-is within 70 km, ×1.5, between 30 km (a target in the city) or 50 km and 150 km — centred on the target past that.
-(1.58.5 widened it to Kyiv always, 90–220 km — "no situational awareness"; 1.58.7, the owner: "it needs to be zoomed as
-it was before, but mark the name of the villages at least so people can orient themselves" — the closer view is back.)
-**Villages** (1.58.7, `MapShot.villages`): after the towns, the places of Kyiv oblast the channels name (`geo.PLACES`),
-the towns of 10,000+ around (`towns-ua.json`), then every village of Kyiv oblast (GeoNames, `data/extra_places.json`).
-The owner, of the first try (every village with room): "far too many places named, it's unreadable" — at most 10
-(`VIL_MAX`), the nearest to the target first (a village no channel names counts as 1.4 × farther, `VIL_TIER2`), each at
-least 65 px from any other named dot (`VIL_GAP`), never on a target, never a name the pill or a reported place already
-gives (a name with ’ and ' is one). The silhouette is 2.6 px a unit (`GLYPH_SC`; 3.9 until the owner: "the Shahed is far
-too big"), the others of the moment 1.7 (`OTHER_SC`), the halo 36 px (`HALO`), the course ray 80 px. The other targets of the moment (the channel's own, `ChannelPoster.cur`, not a held one) are drawn too, smaller
-and fainter, under the one the post is about; a town name beside one moves to its other side rather than vanish.
+**The picture** (`app/mapshot.py`, `MapShot.render`, ~0.3 s plain, ~0.5 s over the satellite): a 1080 × 1350 JPEG
+(1.58.10: portrait, 4:5 — the oblast is taller than wide), drawn at twice the size and scaled down. **The view**
+(1.58.10, the owner: "a change of tactics, it's too unreadable — we'll take a snapshot of the oblast and show the whole
+oblast on the screenshot, but ONLY Kyiv oblast and the city of Kyiv"): the same for every post — Kyiv oblast and the
+city whole, Slavutych included, 3 % of margin (`MapShot.view`, `PAD`; ~4.4 px a km) —, and **nothing else**: the
+oblasts around are neither drawn nor tinted, their towns not named, the satellite picture and the rivers are cut to the
+oblast's shape (`_oblast_mask`, kept), outside it the plain background (`OUT_BG`). (1.58–1.58.9 framed each target,
+30–220 km round it, and 1.58.7 named villages — the owner: "far too many places named, it's unreadable"; both gone.)
+The data the pages draw: Kyiv oblast's raions and the city of `static/kyiv-map.json`, the rivers of `map-ua.json`, the
+towns of kyiv.html's `TOWNS` inside the oblast (Ukrainian names from i18n.js), the raion labels (`RAION_LBL`,
+`RAION_ADJ` + "р-н"), the silhouettes of `static/glyphs.js` (checked shape by shape by the tests), the colours of the
+Tactical page. The official alerts of the moment are painted as `alertMap()` paints them (`alert_fill`: the city;
+Kyiv oblast's raions — oblast-wide, by raion, a hromada's raion). The target, its last six reported places (a dotted
+path) and the other targets of the moment (the channel's own, `ChannelPoster.cur`, not a held one — smaller and
+fainter, under the one the post is about): the whole situation over the oblast in one picture. The silhouette is 2.6 px
+a unit (`GLYPH_SC`; 3.9 until the owner: "the Shahed is far too big"), the others 1.7 (`OTHER_SC`), the halo 36 px
+(`HALO`), the course ray 80 px. `to_pixel(lon, lat)`: where a point is in the picture (the tests).
 1.58.6: a target placed only in a part of Kyiv oblast ("на сході Київщини") is posted as that part ("Схід Київщини",
 "📍 Точного місця в дописі немає — лише частина області"), drawn with a dashed circle of 35 km round the point
 (`AREA_KM`). The silhouette turns as `orientOf()` turns it; the course ray is drawn only with a stated course. The
@@ -1650,7 +1648,7 @@ credits. Without Pillow (or the font) the channel posts its text alone. The imag
 
 1.58.2, the owner: "il faudrait idéalement la vision map satellite". **Under the map, the satellite picture**: the app's
 own Sentinel-2 tiles (`SAT`, the MBTiles file on the volume, §10.1 — no map provider is asked, Esri's are never used
-here), at the zoom as sharp as the picture (~z10 for a 150 km view, ~z12 for 30 km; 10–60 tiles), each tile placed by
+here), at the zoom as sharp as the picture (~z9–10 for the whole oblast; 10–60 tiles), each tile placed by
 its own corners in the map's kilometres, then dimmed as the Tactical page dims its layer (`#sat`: brightness .62,
 saturate .82, contrast 1.04 — `SAT_LOOK`). The areas are not filled; the alerts' tint is drawn in one layer of its own
 (over the picture, two shapes meeting at an edge or an enclave would otherwise be tinted twice); the rivers are the

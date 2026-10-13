@@ -55,8 +55,9 @@ def test_the_picture_is_drawn_over_the_apps_satellite_tiles_dimmed_as_the_page_d
     assert "#sat,#esri{filter:brightness(.62) saturate(.82) contrast(1.04)}" in TAC
     assert mapshot.SAT_LOOK == (0.62, 0.82, 1.04)
     sat = FakeSat()
-    jpg = mapshot.MapShot(sat=sat).render(drone(), [], "21:40")
-    r, g, b = pixel(jpg, (1060, 100))                   # a corner of the map, away from every name
+    shot = mapshot.MapShot(sat=sat)
+    jpg = shot.render(drone(), [], "21:40")
+    r, g, b = pixel(jpg, tuple(map(int, shot.to_pixel(29.65, 49.62))))   # inside the oblast, away from every name
     assert g > r + 30 and g > b + 30 and g < GREEN[1]    # the ground, darker than the tile itself
     # the tiles of the view only, at a zoom as sharp as the picture and no sharper
     zs = {z for z, x, y in sat.asked}
@@ -64,8 +65,9 @@ def test_the_picture_is_drawn_over_the_apps_satellite_tiles_dimmed_as_the_page_d
 
 
 def test_without_the_file_it_is_the_plain_map():
-    plain = mapshot.MapShot(sat=FakeSat(zmax=None)).render(drone(), [], "21:40")
-    r, g, b = pixel(plain, (1060, 100))
+    shot = mapshot.MapShot(sat=FakeSat(zmax=None))
+    plain = shot.render(drone(), [], "21:40")
+    r, g, b = pixel(plain, tuple(map(int, shot.to_pixel(29.65, 49.62))))
     assert abs(r - g) < 12 and abs(g - b) < 12          # the dark map's grey, no picture under it
     assert mapshot.MapShot().render(drone(), [], "21:40")[:3] == b"\xff\xd8\xff"
 
@@ -91,14 +93,15 @@ def test_tiles_are_kept_once_decoded_and_never_a_failed_one():
 
 def test_an_alert_is_tinted_once_where_two_shapes_meet():
     shot = mapshot.MapShot(sat=FakeSat(colour=(90, 90, 90)))
-    shot.villages = []                       # the tint alone: no village name (1.58.7) over the pixels read
+    shot.towns, shot.raion_lbl = [], []      # the tint alone: no name over the pixels read
     act = [{"oblast_uid": "14", "location_type": "oblast"}, {"oblast_uid": "31", "location_type": "city"}]
     jpg = shot.render(drone(), act, "21:40")
     im = Image.open(io.BytesIO(jpg)).convert("RGB")
     # every tinted pixel of Kyiv oblast is the same red over the same grey: one layer, not one per shape
-    reds = {im.getpixel((x, 600)) for x in range(80, 1000, 40)}
+    pts = [shot.to_pixel(29.4 + i * 0.1, 49.75) for i in range(22)]
+    reds = {im.getpixel((int(x), int(y))) for x, y in pts}
     reds = {p for p in reds if p[0] > p[1] + 25}
-    assert reds and max(p[0] for p in reds) - min(p[0] for p in reds) <= 30
+    assert len(reds) >= 1 and max(p[0] for p in reds) - min(p[0] for p in reds) <= 30
 
 
 def test_the_credits_follow_the_picture():

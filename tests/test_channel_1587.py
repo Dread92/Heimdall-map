@@ -65,34 +65,33 @@ def inside(shot, view, lon, lat):
     return x0 <= x <= x0 + span and y0 <= y <= y0 + span
 
 
-def test_the_closer_view_of_1_58_is_back():
+def test_the_whole_oblast_and_only_it():
+    # 1.58.10, the owner: "a change of tactics, it's too unreadable — a snapshot of the oblast, the whole oblast on the
+    # screenshot (but ONLY Kyiv oblast and the city of Kyiv)" — the closer views and the villages are gone
     shot = mapshot.MapShot()
-    assert (shot.VIEW_MIN_CITY, shot.VIEW_MIN, shot.VIEW_MAX, shot.KYIV_NEAR) == (30.0, 50.0, 150.0, 70.0)
-    pere = mark(place="Переяслав", lon=31.45, lat=50.07)                 # 78 km from Kyiv: the oblast's 50 km, not Kyiv
-    v = shot.view(pere)
-    assert v[2] == 50.0 and not inside(shot, v, 30.52, 50.45)
-    brov = mark(place="Бровари")                                       # 20 km: Kyiv, the reader's landmark, with it
-    assert inside(shot, shot.view(brov), 30.52, 50.45)
-    assert shot.view(mark(place="Оболонь", lon=30.5, lat=50.51, uid="31"))[2] == 30.0
-
-
-def test_the_villages_are_named_where_there_is_room():
-    shot = mapshot.MapShot()
-    names = {v[0] for v in shot.villages}
-    assert len(shot.villages) > 500                                    # Kyiv oblast's villages (GeoNames) …
-    assert {"Велика Димерка", "Княжичі", "Гоголів"} <= names           # … the places the channels name among them
-    tiers = [v[2] for v in shot.villages]
-    assert tiers == sorted(tiers)                                      # the channels' places first
-    assert not names & {t[0] for t in shot.towns}                      # no town twice
+    assert not hasattr(shot, "villages") and not hasattr(mapshot, "VIL_MAX")
+    assert shot.view(mark(place="Переяслав", lon=31.45, lat=50.07)) == shot.view(mark(place="Оболонь", lon=30.5,
+                                                                                         lat=50.51, uid="31"))
+    for lon, lat in ((30.52, 50.45), (30.73, 51.52), (29.3, 50.6), (31.9, 50.2), (30.0, 49.25)):   # Kyiv, Slavutych,
+        x, y = shot.to_pixel(lon, lat)                                      # the west, the east, the south of the oblast
+        assert 0 <= x <= mapshot.W and mapshot.HEAD <= y <= mapshot.H - mapshot.FOOT, (lon, lat)
     drawn = []
     real = shot._label
     shot._label = lambda d, q, text, font, colour, boxes, bounds, anchor="lm": (
-        real(d, q, text, font, colour, boxes, bounds, anchor) and (drawn.append((text, q)) or True))
-    shot.render(mark(place="Переяслав", lon=31.45, lat=50.07), [], "21:40")
-    vil = [t for t, _ in drawn if t in names]
-    # the owner, of every village with room: "far too many places named, it's unreadable" — a few, well apart
-    assert 4 <= len(vil) <= mapshot.VIL_MAX, vil
-    assert "Переяслав" not in vil                                      # the pill names it already
+        real(d, q, text, font, colour, boxes, bounds, anchor) and (drawn.append(text) or True))
+    jpg = shot.render(mark(place="Переяслав", lon=31.45, lat=50.07), [], "21:40")
+    assert {"Київ", "Бровари", "Біла Церква"} <= set(drawn)
+    assert not set(drawn) & {"Житомир", "Чернігів", "Ніжин", "Прилуки", "Черкаси", "Коростень"}   # no town around
+    # and nothing of the oblasts around is drawn: outside it, the plain background
+    import io as _io
+
+    from PIL import Image as _Image
+    im = _Image.open(_io.BytesIO(jpg)).convert("RGB")
+    for lon, lat in ((28.9, 50.3), (32.6, 50.9), (31.0, 49.3)):            # Zhytomyr, Chernihiv, Cherkasy oblasts
+        x, y = shot.to_pixel(lon, lat)
+        if 0 <= x < mapshot.W and mapshot.HEAD < y < mapshot.H - mapshot.FOOT:
+            px_ = im.getpixel((int(x), int(y)))
+            assert all(abs(a - b) <= 8 for a, b in zip(px_, mapshot.OUT_BG)), (lon, lat, px_)
 
 
 def test_the_target_is_drawn_smaller():

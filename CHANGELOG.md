@@ -2,6 +2,16 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.10 — 2026-10-13
+
+### Changed
+- **The channel's picture is the whole of Kyiv oblast, and only it** — the owner: "a change of tactics, it's too
+  unreadable — we'll take a snapshot of the oblast and show the whole oblast on the screenshot (but ONLY Kyiv oblast and
+  the city of Kyiv)". Every post now shows the same view: Kyiv oblast and the city whole, in a portrait picture
+  (1080 × 1350), with the target, its reported path, the other targets of the moment, the official alerts by raion and
+  the oblast's towns. Nothing of the oblasts around is drawn — no shape, no tint, no town, no satellite picture. The
+  per-target zoom and the village names are gone.
+
 ## 1.58.9 — 2026-10-13
 
 ### Changed

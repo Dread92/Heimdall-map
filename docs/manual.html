@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Heimdall (Kyiv Air Watch) — the full technical documentation, with a map of the system.">
-<meta name="heimdall-version" content="1.58.9">
-<meta name="heimdall-docs" content="b511bea3c74df611">
+<meta name="heimdall-version" content="1.58.10">
+<meta name="heimdall-docs" content="fe10bef1aa81c03e">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Heimdall Technical Manual</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -237,7 +237,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
 <header class="top">
   <div class="wrap">
     <a class="brand" href="#top"><b>Heimdall</b><span>Technical manual</span></a>
-    <span class="ver">1.58.9</span>
+    <span class="ver">1.58.10</span>
     <nav class="nav" aria-label="Sections">
       <a href="#map">Map</a><a href="#journeys">Journeys</a><a href="#rules">Rules</a><a href="#reference">Reference</a><a href="#safety">Safety</a>
     </nav>
@@ -256,7 +256,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
       <h1 class="title">How Heimdall works</h1>
       <p class="lead">An unofficial air-threat map for Kyiv and the oblasts around it. One Python process reads the official
       alert data and the channels that track drones and missiles, stores every post before it reads it, rebuilds the map
-      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.9, 13 October 2026:
+      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.10, 13 October 2026:
       the map first, then everything in full.</p>
     </div>
     <dl class="facts">
@@ -645,7 +645,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
     <div class="doc" id="doc">
 <section class="part" id="tech" data-label="Reference"><p class="partlabel">Part I · The reference</p>
 <h1 id="heimdall--technical-documentation">Heimdall — technical documentation</h1>
-<p><strong>Documented version: 1.58</strong> · last updated 2026-10-13 (1.58.9)</p>
+<p><strong>Documented version: 1.58</strong> · last updated 2026-10-13 (1.58.10)</p>
 <p>Heimdall was called <strong>Clear Sky</strong> until 1.29; the repository, the Fly app (<code>kyiv-air-watch-gb</code>) and some
 internal names still carry the old name.</p>
 <p>This is the complete technical reference: what runs, where the data comes from, how a Telegram post becomes a
@@ -2651,25 +2651,23 @@ target's area (<code>area_of</code>): &quot;kyiv-city&quot;, a raion of Kyiv obl
 (<code>ChannelPoster.watch</code>); its alert gone for a minute (a flicker of the feed is no all-clear), one line says so. The
 watches live in memory only: after a restart the alerts are not read yet, so an area must be seen under alert again
 before its all-clear can be said; the kill switch clears them (no all-clear of an alert that ended while it was off).</p>
-<p><strong>The picture</strong> (<code>app/mapshot.py</code>, <code>MapShot.render</code>, ~0.15 s plain, ~0.5 s over the satellite): a 1080 × 1080 JPEG
-(Telegram makes every photo one), drawn at twice the size and scaled down.
-The data the pages draw: the oblasts and raions of <code>static/kyiv-map.json</code>, the city districts of <code>kyiv-districts.json</code>
-(names when the view is under 60 km), the rivers of <code>map-ua.json</code>, the towns of kyiv.html's <code>TOWNS</code> (Ukrainian names
-from i18n.js), the raion labels (<code>RAION_LBL</code>, <code>RAION_ADJ</code> + &quot;р-н&quot;), the silhouettes of <code>static/glyphs.js</code> (checked
-shape by shape by the tests), the colours of the Tactical page. The official alerts of the moment are painted as
-<code>alertMap()</code> paints them (<code>alert_fill</code>: the city; Kyiv oblast's raions — oblast-wide, by raion, a hromada's raion; the
-oblasts around, fainter). The view: the target, its last six reported places (a dotted path) and Kyiv when the target
-is within 70 km, ×1.5, between 30 km (a target in the city) or 50 km and 150 km — centred on the target past that.
-(1.58.5 widened it to Kyiv always, 90–220 km — &quot;no situational awareness&quot;; 1.58.7, the owner: &quot;it needs to be zoomed as
-it was before, but mark the name of the villages at least so people can orient themselves&quot; — the closer view is back.)
-<strong>Villages</strong> (1.58.7, <code>MapShot.villages</code>): after the towns, the places of Kyiv oblast the channels name (<code>geo.PLACES</code>),
-the towns of 10,000+ around (<code>towns-ua.json</code>), then every village of Kyiv oblast (GeoNames, <code>data/extra_places.json</code>).
-The owner, of the first try (every village with room): &quot;far too many places named, it's unreadable&quot; — at most 10
-(<code>VIL_MAX</code>), the nearest to the target first (a village no channel names counts as 1.4 × farther, <code>VIL_TIER2</code>), each at
-least 65 px from any other named dot (<code>VIL_GAP</code>), never on a target, never a name the pill or a reported place already
-gives (a name with ’ and ' is one). The silhouette is 2.6 px a unit (<code>GLYPH_SC</code>; 3.9 until the owner: &quot;the Shahed is far
-too big&quot;), the others of the moment 1.7 (<code>OTHER_SC</code>), the halo 36 px (<code>HALO</code>), the course ray 80 px. The other targets of the moment (the channel's own, <code>ChannelPoster.cur</code>, not a held one) are drawn too, smaller
-and fainter, under the one the post is about; a town name beside one moves to its other side rather than vanish.
+<p><strong>The picture</strong> (<code>app/mapshot.py</code>, <code>MapShot.render</code>, ~0.3 s plain, ~0.5 s over the satellite): a 1080 × 1350 JPEG
+(1.58.10: portrait, 4:5 — the oblast is taller than wide), drawn at twice the size and scaled down. <strong>The view</strong>
+(1.58.10, the owner: &quot;a change of tactics, it's too unreadable — we'll take a snapshot of the oblast and show the whole
+oblast on the screenshot, but ONLY Kyiv oblast and the city of Kyiv&quot;): the same for every post — Kyiv oblast and the
+city whole, Slavutych included, 3 % of margin (<code>MapShot.view</code>, <code>PAD</code>; ~4.4 px a km) —, and <strong>nothing else</strong>: the
+oblasts around are neither drawn nor tinted, their towns not named, the satellite picture and the rivers are cut to the
+oblast's shape (<code>_oblast_mask</code>, kept), outside it the plain background (<code>OUT_BG</code>). (1.58–1.58.9 framed each target,
+30–220 km round it, and 1.58.7 named villages — the owner: &quot;far too many places named, it's unreadable&quot;; both gone.)
+The data the pages draw: Kyiv oblast's raions and the city of <code>static/kyiv-map.json</code>, the rivers of <code>map-ua.json</code>, the
+towns of kyiv.html's <code>TOWNS</code> inside the oblast (Ukrainian names from i18n.js), the raion labels (<code>RAION_LBL</code>,
+<code>RAION_ADJ</code> + &quot;р-н&quot;), the silhouettes of <code>static/glyphs.js</code> (checked shape by shape by the tests), the colours of the
+Tactical page. The official alerts of the moment are painted as <code>alertMap()</code> paints them (<code>alert_fill</code>: the city;
+Kyiv oblast's raions — oblast-wide, by raion, a hromada's raion). The target, its last six reported places (a dotted
+path) and the other targets of the moment (the channel's own, <code>ChannelPoster.cur</code>, not a held one — smaller and
+fainter, under the one the post is about): the whole situation over the oblast in one picture. The silhouette is 2.6 px
+a unit (<code>GLYPH_SC</code>; 3.9 until the owner: &quot;the Shahed is far too big&quot;), the others 1.7 (<code>OTHER_SC</code>), the halo 36 px
+(<code>HALO</code>), the course ray 80 px. <code>to_pixel(lon, lat)</code>: where a point is in the picture (the tests).
 1.58.6: a target placed only in a part of Kyiv oblast (&quot;на сході Київщини&quot;) is posted as that part (&quot;Схід Київщини&quot;,
 &quot;📍 Точного місця в дописі немає — лише частина області&quot;), drawn with a dashed circle of 35 km round the point
 (<code>AREA_KM</code>). The silhouette turns as <code>orientOf()</code> turns it; the course ray is drawn only with a stated course. The
@@ -2681,7 +2679,7 @@ dots where there is room. Header: HEIMDALL · Київ · Київщина · th
 credits. Without Pillow (or the font) the channel posts its text alone. The image installs <code>fonts-dejavu-core</code>.</p>
 <p>1.58.2, the owner: &quot;il faudrait idéalement la vision map satellite&quot;. <strong>Under the map, the satellite picture</strong>: the app's
 own Sentinel-2 tiles (<code>SAT</code>, the MBTiles file on the volume, §10.1 — no map provider is asked, Esri's are never used
-here), at the zoom as sharp as the picture (~z10 for a 150 km view, ~z12 for 30 km; 10–60 tiles), each tile placed by
+here), at the zoom as sharp as the picture (~z9–10 for the whole oblast; 10–60 tiles), each tile placed by
 its own corners in the map's kilometres, then dimmed as the Tactical page dims its layer (<code>#sat</code>: brightness .62,
 saturate .82, contrast 1.04 — <code>SAT_LOOK</code>). The areas are not filled; the alerts' tint is drawn in one layer of its own
 (over the picture, two shapes meeting at an edge or an enclave would otherwise be tinted twice); the rivers are the
@@ -4961,7 +4959,7 @@ d'alerte ne sont pas des préférences de style.</p>
 </section>
     </div>
   </div>
-  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.9, 13 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
+  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.10, 13 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
 </main>
 
 <script>

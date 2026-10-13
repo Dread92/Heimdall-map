@@ -1,4 +1,5 @@
-"""1.58: a picture of the map around one target — for the private Telegram channel (app/chanpost.py).
+"""1.58: a picture of the map with one target — for the private Telegram channel (app/chanpost.py). 1.58.10: the whole of
+Kyiv oblast and the city, and nothing else, in every picture.
 
 The owner: "a small private Telegram channel that posts alerts like the channels we read, with a 'screenshot' of the
 app where the drone is (Kyiv and Kyiv oblast only)" — and, of the two ways asked, "the app's style, drawn on the server".
@@ -34,7 +35,7 @@ FONTS = ("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", "/usr/share/fonts/TT
 FONTS_B = ("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", "/usr/share/fonts/TTF/DejaVuSans-Bold.ttf",
            "/usr/share/fonts/dejavu/DejaVuSans-Bold.ttf")
 
-W = 1080                       # the picture's side, in pixels (Telegram shows a square photo whole)
+W, H = 1080, 1350              # the picture, in pixels — 1.58.10: portrait (4:5), the whole oblast taller than wide
 SS = 2                         # drawn twice as large, then scaled down: smooth edges
 HEAD, FOOT = 74, 86            # the title band and the foot band (two lines: the warning, the credits)
 
@@ -42,10 +43,7 @@ BG, NB, NB_LINE = (11, 13, 17), (14, 17, 22), (26, 31, 40)
 RN, RN_LINE, CITY_LINE = (20, 25, 32), (43, 51, 64), (143, 180, 255)
 KD_LINE, RIVER = (51, 65, 92), (42, 74, 115)
 INK, INK2, INK3 = (232, 230, 223), (181, 179, 171), (143, 141, 134)
-VIL_INK = (196, 194, 186)      # 1.58.7: a village's name — between the towns' and the credits', readable on the satellite
-VIL_MAX = 10                   # 1.58.7: at most this many village names in a picture …
-VIL_GAP = 130                  # … each this far (drawing px, half that in the picture) from any other named dot
-VIL_TIER2 = 1.4                # a village no channel names counts as this much farther from the target
+OUT_BG = (9, 11, 15)           # 1.58.10: outside Kyiv oblast and the city — nothing drawn
 RED_T, YEL_T = (229, 72, 77, 72), (245, 185, 64, 60)
 ORANGE, AMBER, MSL = (255, 138, 61), (255, 177, 92), (255, 90, 90)
 STROKE = (8, 11, 16)
@@ -74,11 +72,6 @@ HALO = 36                      # the ring around the target, in pixels (1.58.7: 
 GLYPH_SC, OTHER_SC = 2.6, 1.7  # 1.58.7: px a glyph unit — the target (3.9 before) and the others of the moment (2.3)
 # 1.58.7: the height a post gave, as the caption says it (app/chanpost.py ALT_STATE — tests check they agree)
 ALT_UK = {"low": "низько", "high": "високо", "descending": "знижується", "climbing": "набирає висоту"}
-
-
-def _norm(name):
-    """A name as compared: Зазим'я and Зазим’я are one village."""
-    return re.sub(r"[’ʼ'`]", "'", name).lower()
 
 
 def alt_text(m):
@@ -182,6 +175,7 @@ class MapShot:
         # → WebP bytes); the picture is drawn over them as the Tactical page's satellite view. None: the plain map.
         self.sat = sat
         self._tiles = collections.OrderedDict()
+        self._extent = self._mask = None
         base = json.load(open(os.path.join(static, "kyiv-map.json"), encoding="utf-8"))
         self.c0, self.c1 = base["center"]
         self.kx, self.ky = base["kx"], base["ky"]
@@ -205,11 +199,6 @@ class MapShot:
         uk = _js_dict(i18n, "TOWN_UK")
         self.towns = [(uk.get(t[0], t[0]), self.proj(t[1], t[2]), len(t) > 3 and t[3] == 1) for t in _js_list(page, "TOWNS")
                       if len(t) < 4 or t[3] in (1, None)]
-        # 1.58.7, the owner, of the wider picture of 1.58.5: "it needs to be zoomed as it was before, but mark the name
-        # of the villages at least so people can orient themselves". After the towns: the places of Kyiv oblast the
-        # channels name (app/geo.py's gazetteer), the other towns of 10,000+ around (towns-ua.json), then any village
-        # of Kyiv oblast (GeoNames, data/extra_places.json) — each where its name has room, the first ones first.
-        self.villages = self._villages(static, {t[0] for t in self.towns})
         adj = _js_dict(page, "RAION_ADJ")
         lbl = re.search(r"const RAION_LBL=\{(.*?)\};", page, re.S)
         self.raion_lbl = []
@@ -223,58 +212,45 @@ class MapShot:
     def proj(self, lon, lat):
         return ((lon - self.c0) * self.kx, -(lat - self.c1) * self.ky)
 
-    def _villages(self, static, have):
-        out, seen = [], set(have)
-
-        seen = {_norm(n) for n in seen}
-
-        def add(name, lon, lat, tier):
-            if name and _norm(name) not in seen and 29.0 <= lon <= 32.5 and 49.0 <= lat <= 51.7:
-                seen.add(_norm(name))
-                out.append((name, self.proj(lon, lat), tier))
-        try:
-            import geo  # the server has it loaded already
-            for name, v in geo.PLACES.items():
-                if v[2] == "14" and name.lower() not in ("область", "київщина", "київська область"):
-                    add(name, v[0], v[1], 1)
-        except Exception:
-            pass
-        try:
-            for t in json.load(open(os.path.join(static, "towns-ua.json"), encoding="utf-8"))["towns"]:
-                add(t[0], t[1], t[2], 1)
-        except (OSError, ValueError, KeyError, IndexError):
-            pass
-        try:
-            extra = os.path.join(os.path.dirname(static), "data", "extra_places.json")
-            for t in json.load(open(extra, encoding="utf-8"))["oblasts"].get("14", []):
-                add(t[0], t[1], t[2], 2)
-        except (OSError, ValueError, KeyError, IndexError):
-            pass
-        return out
-
     # ---- the view ---------------------------------------------------------------------------------------------
-    VIEW_MIN_CITY, VIEW_MIN, VIEW_MAX = 30.0, 50.0, 150.0     # km, the picture's height
-    KYIV_NEAR = 70.0                                          # km: Kyiv is in the picture when the target is this near
+    PAD = 0.03                                    # the oblast's edge to the picture's, a share of its size
 
-    def view(self, m):
-        """A square of the map around the target: where it is, where it was reported before, Kyiv when it is near.
-        1.58.7, the owner, of the wider picture of 1.58.5 (never less than 90 km, Kyiv always in it): "it needs to be
-        zoomed as it was before, but mark the name of the villages at least" — the closer view of 1.58 again (50 km of
-        the oblast, 30 km of the city, up to 150 km), with the villages named (render)."""
-        pts = [self.proj(m["lon"], m["lat"])]
-        for h in (m.get("history") or [])[-6:]:
-            if h.get("lon") is not None and h.get("lat") is not None:
-                pts.append(self.proj(h["lon"], h["lat"]))
-        kyiv = self.proj(30.52, 50.45)
-        if math.dist(pts[0], kyiv) < self.KYIV_NEAR:     # most of the oblast: the city is the reader's landmark
-            pts.append(kyiv)
-        xs, ys = [p[0] for p in pts], [p[1] for p in pts]
-        span = max(max(xs) - min(xs), max(ys) - min(ys)) * 1.5
-        span = min(max(span, self.VIEW_MIN_CITY if m.get("oblast_uid") == "31" else self.VIEW_MIN), self.VIEW_MAX)
-        cx, cy = (max(xs) + min(xs)) / 2, (max(ys) + min(ys)) / 2
-        if span >= self.VIEW_MAX:                 # a long track: the target stays in view, centred
-            cx, cy = pts[0]
-        return cx - span / 2, cy - span / 2, span
+    def view(self, m=None):
+        """1.58.10, the owner: "a change of tactics, it's too unreadable — we'll take a snapshot of the oblast and show
+        the whole oblast on the screenshot (but ONLY Kyiv oblast and the city of Kyiv)". The same view for every post:
+        Kyiv oblast and the city whole (their shapes' extent, a little margin) → (centre x, centre y, width, height) in
+        km. (1.58–1.58.9 framed each target: 30–220 km round it, villages named — read as clutter.)"""
+        if self._extent is None:
+            pts = [p for raion, obl, key, rings in self.features if raion for r in rings for p in r]
+            xs, ys = [p[0] for p in pts], [p[1] for p in pts]
+            w, h = max(xs) - min(xs), max(ys) - min(ys)
+            self._extent = ((max(xs) + min(xs)) / 2, (max(ys) + min(ys)) / 2, w * (1 + 2 * self.PAD), h * (1 + 2 * self.PAD))
+        return self._extent
+
+    def _frame(self, m=None):
+        """(x0, y0) the km at the map's top left, k its drawing pixels a km, and the view's height in km."""
+        cx, cy, wkm, hkm = self.view(m)
+        top, bottom = HEAD * SS, (H - FOOT) * SS
+        k = min((bottom - top) / hkm, W * SS / wkm)   # pixels per km: the whole oblast between the two bands
+        return cx - W * SS / k / 2, cy - (bottom - top) / k / 2, k, hkm
+
+    def to_pixel(self, lon, lat):
+        """Where a point is in the picture (its 1080 × 1350 pixels)."""
+        x0, y0, k, _ = self._frame()
+        x, y = self.proj(lon, lat)
+        return ((x - x0) * k / SS, HEAD + (y - y0) * k / SS)
+
+    def _oblast_mask(self, SW, SH, px):
+        """Kyiv oblast and the city, white on black, in this picture's pixels (the same for every picture: kept)."""
+        if self._mask is None or self._mask.size != (SW, SH):
+            mk = Image.new("L", (SW, SH), 0)
+            md = ImageDraw.Draw(mk)
+            for raion, obl, key, rings in self.features:
+                if raion:
+                    for r in rings:
+                        md.polygon([px(p) for p in r], fill=255)
+            self._mask = mk
+        return self._mask
 
     # ---- the picture ---------------------------------------------------------------------------------------------
     def render(self, m, active=(), when="", ray=True, missiles=(), others=()):
@@ -285,83 +261,80 @@ class MapShot:
         fainter, so that the picture says what else is in the sky around."""
         if Image is None:
             return None
-        x0, y0, span = self.view(m)
-        S = W * SS
-        top, bottom = HEAD * SS, (W - FOOT) * SS
-        k = (bottom - top) / span                       # pixels per km, the map between the two bands
-        x0 -= ((S / k) - span) / 2                      # the map is wider than tall: widen the view to fill it
+        x0, y0, k, span = self._frame(m)
+        SW, SH = W * SS, H * SS
+        top, bottom = HEAD * SS, (H - FOOT) * SS
 
         def px(p):
             return ((p[0] - x0) * k, top + (p[1] - y0) * k)
 
-        img = Image.new("RGB", (S, S), BG)
-        sat = self._satellite(S, top, bottom, x0, y0, k)
+        img = Image.new("RGB", (SW, SH), BG)
+        sat = self._satellite(SW, top, bottom, x0, y0, k)
         on_sat = sat is not None
         if on_sat:
             img.paste(sat, (0, top))
         d = ImageDraw.Draw(img, "RGBA")
         fills = alert_fill(active)
-        # outlines: the oblasts around, Kyiv oblast's raions, the city — tinted by the official alerts. Over the
-        # satellite picture the areas are not filled: the ground shows through, under the alerts' tint
-        nb_line = (225, 230, 240, 70) if on_sat else NB_LINE
+        # 1.58.10: only Kyiv oblast and the city — their raions; nothing of the oblasts around is drawn, filled or tinted
+        mine = [f for f in self.features if f[0]]
         rn_line = (215, 225, 245, 150) if on_sat else RN_LINE
-        if not on_sat:                                # the plain map: the oblasts around, then Kyiv oblast's raions
-            for raion, obl, key, rings in sorted(self.features, key=lambda f: bool(f[0])):
+        if not on_sat:                                # the plain map: Kyiv oblast's raions and the city
+            for raion, obl, key, rings in mine:
                 for r in rings:
-                    d.polygon([px(p) for p in r], fill=RN if raion else NB)
+                    d.polygon([px(p) for p in r], fill=RN)
         # the alerts' tint, in one layer of its own: two shapes over each other (an enclave, a shared edge) are not
         # tinted twice — over the satellite picture that showed as brighter patches
         tint = Image.new("RGBA", img.size, (0, 0, 0, 0))
         td = ImageDraw.Draw(tint)
         tinted = False
-        for raion, obl, key, rings in sorted(self.features, key=lambda f: bool(f[0])):
-            lvl = fills.get(raion) if raion else (fills.get("nb:" + (key or "")) or fills.get("obl:" + (obl or "")))
+        for raion, obl, key, rings in mine:
+            lvl = fills.get(raion)
             if not lvl:
                 continue
             col = RED_T if lvl == "R" else YEL_T
             for r in rings:
-                td.polygon([px(p) for p in r], fill=col if raion else col[:3] + (40,))
+                td.polygon([px(p) for p in r], fill=col)
             tinted = True
         if tinted:
             img.paste(tint, (0, 0), tint)
-        for raion, obl, key, rings in sorted(self.features, key=lambda f: bool(f[0])):
-            for r in rings:
-                d.line([px(p) for p in r] + [px(r[0])],
-                       fill=(CITY_LINE if raion == "kyiv-city" else rn_line) if raion else nb_line,
-                       width=(3 if raion == "kyiv-city" else 2 if raion else 1) * SS)
-        if span <= 60:
-            for name, cx, cy, rings in self.districts:
-                for r in rings:
-                    d.line([px(p) for p in r] + [px(r[0])], fill=(225, 232, 245, 70) if on_sat else KD_LINE, width=SS)
-        if not on_sat:                                # the picture shows the rivers itself
+        if not on_sat:
             for w, ln in self.rivers:
                 d.line([px(p) for p in ln], fill=RIVER, width=w * SS, joint="curve")
+        # everything outside the oblast and the city: the plain background, nothing else
+        mask = self._oblast_mask(SW, SH, px)
+        img = Image.composite(img, Image.new("RGB", img.size, OUT_BG), mask)
+        d = ImageDraw.Draw(img, "RGBA")
+        for raion, obl, key, rings in mine:
+            for r in rings:
+                d.line([px(p) for p in r] + [px(r[0])], fill=CITY_LINE if raion == "kyiv-city" else rn_line,
+                       width=(3 if raion == "kyiv-city" else 2) * SS)
+
+        def inside(q):
+            return 0 <= q[0] < SW and 0 <= q[1] < SH and mask.getpixel((int(q[0]), int(q[1]))) > 0
         # the target's own room and the scale's are kept first: no name is written over them
         here = px(self.proj(m["lon"], m["lat"]))
         room = 12 if m.get("_held") else HALO     # held (1.58.7): nothing drawn there — the town under it keeps its name
         boxes = [(here[0] - room * SS, here[1] - room * SS, here[0] + room * SS, here[1] + room * SS),
                  (0, bottom - 52 * SS, 300 * SS, bottom)]
-        bounds = (0, top, S, bottom)
+        bounds = (0, top, SW, bottom)
         tag = self._tag(d, m, here, boxes, bounds)
         # the other targets of the moment: their room is kept too, so that no town name is written under them
-        oth, rooms = [], [boxes[0]]                   # rooms: the targets' own, where no village dot goes either
+        oth = []
         for o in others or ():
             if o.get("lon") is None or o.get("lat") is None:
                 continue
             q = px(self.proj(o["lon"], o["lat"]))
-            if 0 <= q[0] <= S and top <= q[1] <= bottom and math.dist(q, here) > 20 * SS:
+            if 0 <= q[0] <= SW and top <= q[1] <= bottom and math.dist(q, here) > 20 * SS:
                 oth.append((o, q))
                 boxes.append((q[0] - 20 * SS, q[1] - 20 * SS, q[0] + 20 * SS, q[1] + 20 * SS))
-                rooms.append(boxes[-1])
         if span > 60:
             for text, p in self.raion_lbl:
                 q = px(p)
                 self._label(d, q, text, self.f[17], (205, 214, 228) if on_sat else (138, 150, 170), boxes, bounds, anchor="mm")
-        # the towns, the big ones first; a name that would cover another is left out
-        dots = []
+        # the towns of the oblast and the city, the big ones first; a name that would cover another is left out
         for name, p, big in sorted(self.towns, key=lambda t: not t[2]):
             q = px(p)
-            if not (0 <= q[0] <= S and top <= q[1] <= bottom):
+            if not (top <= q[1] <= bottom) or not inside(q):
                 continue
             r = (5 if big else 3.5) * SS
             under = boxes[0][0] <= q[0] <= boxes[0][2] and boxes[0][1] <= q[1] <= boxes[0][3]   # under the target
@@ -372,46 +345,13 @@ class MapShot:
                          for dx, dy, an in ((gg, 0, "lm"), (-gg, 0, "rm"), (0, -gg, "mb"), (0, gg, "mt")))
             if placed or (big and not under):
                 d.ellipse([q[0] - r, q[1] - r, q[0] + r, q[1] + r], fill=INK if big else INK2, outline=STROKE, width=SS)
-                dots.append(q)
-        # 1.58.7: the villages, where their names have room — never under the target or another one. The owner, of the
-        # first try (every village with room): "far too many places named, it's unreadable" — at most VIL_MAX, the
-        # nearest to the target first (the channels' places before any village), each well apart from the others
-        vf, vr = self.f[17], 2.5 * SS
-        cand = []
-        said = {_norm(str(x)) for x in [m.get("place")] + [h.get("place") for h in (m.get("history") or [])] if x}
-        for name, p, tier in self.villages:
-            if _norm(name) in said:               # named already, in the pill or beside a reported place
-                continue
-            q = px(p)
-            if not (0 <= q[0] <= S and top <= q[1] <= bottom) or any(b[0] <= q[0] <= b[2] and b[1] <= q[1] <= b[3]
-                                                                     for b in rooms):
-                continue
-            cand.append((math.dist(q, here) * (1.0 if tier == 1 else VIL_TIER2), name, q, tier))
-        placed = list(dots)
-        for _, name, q, tier in sorted(cand):
-            if len(placed) - len(dots) >= VIL_MAX:
-                break
-            if any(math.dist(q, o) < VIL_GAP * SS for o in placed):
-                continue
-            g = vr + 5 * SS
-            if any(self._label(d, (q[0] + dx, q[1] + dy), name, vf, INK2 if tier == 1 else VIL_INK, boxes, bounds,
-                               anchor=an)
-                   for dx, dy, an in ((g, 0, "lm"), (-g, 0, "rm"), (0, -g, "mb"), (0, g, "mt"))):
-                d.ellipse([q[0] - vr, q[1] - vr, q[0] + vr, q[1] + vr], fill=INK2 if tier == 1 else VIL_INK,
-                          outline=STROKE, width=SS)
-                placed.append(q)
-        if span <= 60:                            # the city's districts, quietly, where there is room
-            for name, cx, cy, _rings_ in self.districts:
-                if cx is not None:
-                    self._label(d, px((cx, cy)), name.replace(" район", ""), self.f[17],
-                                (196, 205, 220) if on_sat else (120, 132, 152), boxes, bounds, anchor="mm")
         for o, q in oth:                             # the other targets first, under the one this post is about
             self._glyph(d, o, q, OTHER_SC * SS, 175, as_drone(o, missiles))
         self._target(d, m, px, here, ray, as_drone(m, missiles), k, boxes, bounds)
         if tag:
             self._pill(d, *tag)
         self._bands(d, when, k, SAT_CREDIT if on_sat else MAP_CREDIT)
-        out = img.resize((W, W), Image.LANCZOS)
+        out = img.resize((W, H), Image.LANCZOS)
         buf = io.BytesIO()
         # JPEG, full colour resolution so the names stay sharp: Telegram re-encodes every photo as JPEG anyway, and
         # a PNG of this map took half the drawing time to compress
@@ -618,8 +558,8 @@ class MapShot:
         d.text((250 * SS, HEAD * SS / 2), "Київ · Київщина", font=self.f[26], fill=INK2, anchor="lm")
         if when:
             d.text((S - 26 * SS, HEAD * SS / 2), when, font=self.fb[34], fill=INK, anchor="rm")
-        y = (W - FOOT) * SS
-        d.rectangle([0, y, S, S], fill=(18, 21, 27))
+        y = (H - FOOT) * SS
+        d.rectangle([0, y, S, H * SS], fill=(18, 21, 27))
         d.line([0, y, S, y], fill=(36, 40, 48), width=SS)
         d.text((26 * SS, y + 30 * SS), "З дописів каналів, не радар · сирена й офіційна тривога — головне",
                font=self.f[19], fill=INK2, anchor="lm")

@@ -114,7 +114,7 @@ def test_the_official_alerts_are_painted_as_the_page_paints_them():
     assert f([]) == {}
 
 
-def test_the_picture_is_a_square_photo():
+def test_the_picture_is_a_photo_of_the_whole_oblast():
     pytest.importorskip("PIL")
     from PIL import Image
     shot = mapshot.MapShot()
@@ -126,11 +126,9 @@ def test_the_picture_is_a_square_photo():
               mark(type="banderol_missiles", place="Вишгород", lon=30.49, lat=50.58)):
         jpg = shot.render(m, act, "21:40")
         assert jpg[:3] == b"\xff\xd8\xff" and len(jpg) < 900_000
-        assert Image.open(io.BytesIO(jpg)).size == (1080, 1080)
-    # the view: the target, its reported places, Kyiv when it is in the oblast around
-    x0, y0, span = shot.view(mark(place="Фастів", lon=29.92, lat=50.08))
-    kx, ky = shot.proj(30.52, 50.45)
-    assert x0 <= kx <= x0 + span and y0 <= ky <= y0 + span and span <= 220
+        assert Image.open(io.BytesIO(jpg)).size == (1080, 1350)            # 1.58.10: portrait, 4:5
+    # 1.58.10: the same view whatever the target — Kyiv oblast and the city whole (tests/test_channel_1587.py)
+    assert shot.view(mark(place="Фастів", lon=29.92, lat=50.08)) == shot.view(mark())
 
 
 # ---- what the channel says ---------------------------------------------------------------------------------------
