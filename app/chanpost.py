@@ -41,6 +41,10 @@ except Exception:  # pragma: no cover
     areas = None
 
 SCOPE = ("31", "14")                       # Kyiv city, Kyiv oblast
+# 1.58.9, the owner: "for the Telegram bot we'll take a single source: t.me/chyste_nebo". The channel posts the targets
+# of this channel's reports alone — a target whose latest report is another channel's waits for this one's next — and
+# what became of them by this channel's word (its outcomes). The official data (alerts, all-clears) stays the official.
+SOURCES = ("chyste_nebo",)
 TYPES = ("drones", "ballistic_missiles", "cruise_missiles", "unspecified_missiles", "banderol_missiles",
          "supersonic_missiles", "unknown")
 FRESH_S = 5 * 60                           # a report is posted only if it is this recent (no backlog)
@@ -62,6 +66,7 @@ LABEL = {"drones": ("🛵", "Шахед"), "jet": ("🛩", "Реактивний
          "unknown_dr": ("❔", "Ймовірно, дрон — тип не вказано"), "unknown": ("❔", "Дрон чи ракета — тип не вказано")}
 COMPASS = ("північ", "північний схід", "схід", "південний схід", "південь", "південний захід", "захід", "північний захід")
 ALT_STATE = {"low": "низько", "high": "високо", "descending": "знижується", "climbing": "набирає висоту"}
+ALT_MAX_S = 4 * 60                         # 1.58.9: a height an earlier report gave, at most this old (i18n.js ALT_MAX_MIN)
 # a course the app worked out itself (two reports of a live channel; a destination a later post gave a carried
 # mark) is drawn on the map with its own caveat, but the channel says only what a post said
 DERIVED = ("bearing between the two latest reports", "the destination a later post named")
@@ -113,6 +118,8 @@ def eligible(m):
     heading for ("→ Київ", drawn there by the app as an approach) —, flying: no outcome, no faded or superseded mark,
     no oblast-wide guess, no reading that still waits for its context."""
     if m.get("oblast_uid") not in SCOPE or m.get("lon") is None or m.get("lat") is None:
+        return False
+    if m.get("channel") not in SOURCES:          # 1.58.9: one source
         return False
     if m.get("type") not in TYPES or m.get("status") or m.get("stale") or m.get("superseded_by"):
         return False
@@ -175,6 +182,28 @@ def label_of(m):
     return LABEL.get(t, LABEL["unknown"])
 
 
+def stated_alt(m):
+    """(the height a post gave, when — None for this report) — this report's, else (1.58.9) the latest an earlier report
+    of the same track gave, by the channel's own word. The owner: "I see the altitude is not shown most of the time":
+    @chyste_nebo gives a height in a post of its own ("3800", "Бондарня другий 4600") and its next report names a place
+    only, so the height said two minutes ago was dropped from the post. It is carried, with its time — and, as on the
+    maps (SAFETY.md "A height is shown for 4 minutes at most", ALT_MAX_MIN), only when it was said at most 4 minutes
+    before this report: older, it is probably no longer its height. Never guessed."""
+    a = m.get("alt") or {}
+    if isinstance(a, dict) and (a.get("m") or a.get("state") in ALT_STATE):
+        return a, None
+    t = report_t(m)
+    for h in reversed(m.get("history") or []):
+        if h.get("channel") not in SOURCES:
+            continue
+        if h.get("alt_m") or h.get("alt_state") in ALT_STATE:
+            ht = parse_ts(h.get("ts"))
+            if ht is None or not t or t - ht > ALT_MAX_S:
+                return None, None                 # the latest height it gave is too old: none
+            return {"m": h.get("alt_m"), "state": h.get("alt_state")}, ht
+    return None, None
+
+
 def head_line(m):
     emo, name = label_of(m)
     n = m.get("count")
@@ -194,9 +223,10 @@ def caption(m, first_t, public_url):
         lines.append("📍 Точного місця в дописі немає — лише частина області")
     if m.get("held"):
         lines.append("⚪ Офіційної тривоги там поки немає — значка на мапі немає, доки її не оголосять")
-    alt = m.get("alt") or {}
-    if isinstance(alt, dict) and (alt.get("m") or alt.get("state") in ALT_STATE):
-        lines.append("↕️ Висота: " + (f"~{int(alt['m'])} м" if alt.get("m") else ALT_STATE[alt["state"]]) + " (у дописі)")
+    alt, at = stated_alt(m)
+    if alt:
+        lines.append("↕️ Висота: " + (f"~{int(alt['m'])} м" if alt.get("m") else ALT_STATE[alt["state"]])
+                     + (f" (у дописі о {hhmm(at)})" if at else " (у дописі)"))
     t = report_t(m)
     when = hhmm(t) if t else "?"
     if first_t and t and hhmm(first_t) != when:
@@ -226,10 +256,10 @@ def allclear_text(area, t):
 def signature(m):
     """What a new post is for: a new place, a new course, a new count or height, held or drawn — not a new id of the
     same report."""
-    alt = m.get("alt") or {}
+    alt = stated_alt(m)[0] or {}
     hist = [(round(h.get("lon") or 0, 3), round(h.get("lat") or 0, 3)) for h in (m.get("history") or [])[-6:]]
     return json.dumps([round(m["lon"], 3), round(m["lat"], 3), m.get("place"), stated_course(m), m.get("count"),
-                       m.get("type"), m.get("jet"), alt.get("m") if isinstance(alt, dict) else None, hist,
+                       m.get("type"), m.get("jet"), alt.get("m") or alt.get("state"), hist,
                        int(report_t(m) // 60), bool(m.get("held"))], ensure_ascii=False)
 
 
@@ -457,6 +487,9 @@ class ChannelPoster(threading.Thread):
                 m = dict(m, place=place_text(m), _area_km=AREA_KM)
             if m.get("held"):                     # 1.58.7: no silhouette at a place it has not been seen at
                 m = dict(m, _held=True)
+            alt, at = stated_alt(m)               # 1.58.9: a height an earlier report gave, with its time
+            if alt and at:
+                m = dict(m, alt=alt, _alt_t=hhmm(at))
             return self.shot.render(m, active, hhmm(report_t(m) or self.clock()),
                                     ray=stated_course(m) is not None and not approach(m), missiles=self.missiles,
                                     others=others)
@@ -494,7 +527,7 @@ class ChannelPoster(threading.Thread):
         # targets the map no longer has included (their last report, kept with the post)
         extra = [(k, p["m"]) for k, p in self.posts.items() if k not in cur and (p.get("m") or {}).get("lon") is not None
                  and now - (p.get("last") or 0) <= OUTCOME_WINDOW_S + 120]
-        outcomes = link_outcomes(marks, extra)
+        outcomes = link_outcomes([m for m in marks if m.get("channel") in SOURCES], extra)   # 1.58.9: its word only
         active = self.active()
         fills = mapshot.alert_fill(active) if mapshot else {}
         changed = False

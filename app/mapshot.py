@@ -86,9 +86,10 @@ def alt_text(m):
     a = m.get("alt") or {}
     if not isinstance(a, dict):
         return None
+    when = f" · {m['_alt_t']}" if m.get("_alt_t") else ""       # 1.58.9: given by an earlier report, at that time
     if a.get("m"):
-        return f"↕ ~{int(a['m'])} м"
-    return "↕ " + ALT_UK[a["state"]] if a.get("state") in ALT_UK else None
+        return f"↕ ~{int(a['m'])} м{when}"
+    return "↕ " + ALT_UK[a["state"]] + when if a.get("state") in ALT_UK else None
 
 
 def as_drone(m, missiles=()):

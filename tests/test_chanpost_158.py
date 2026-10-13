@@ -32,8 +32,8 @@ def iso(t):
 
 
 def mark(place="Бровари", lon=30.79, lat=50.51, t=T0, uid="14", tag="#12", **kw):
-    m = {"id": f"kyivoda/1#{place}", "type": "drones", "place": place, "lon": lon, "lat": lat, "oblast_uid": uid,
-         "ts": iso(t), "pos_ts": iso(t), "channel": "kyivoda", "tag": {"night": "2026-10-12", "id": tag},
+    m = {"id": f"chyste_nebo/1#{place}", "type": "drones", "place": place, "lon": lon, "lat": lat, "oblast_uid": uid,
+         "ts": iso(t), "pos_ts": iso(t), "channel": "chyste_nebo", "tag": {"night": "2026-10-12", "id": tag},
          "history": [], "heading": None, "evidence": {"heading": {"confidence": "none"}}}
     m.update(kw)
     return m
@@ -183,7 +183,7 @@ def test_the_caption_says_what_and_where():
     url = "https://kyiv-air-watch-gb.fly.dev"
     cap = chanpost.caption(mark(count=3, alt={"m": 100, "state": None}), T0 - 300, url)
     assert "🛵 <b>Шахед ×3</b> · Бровари" in cap and "Висота: ~100 м (у дописі)" in cap
-    assert "kyivoda" not in cap and "(перший допис" in cap               # 1.58.7: no channel named (the owner)
+    assert "chyste_nebo" not in cap and "(перший допис" in cap               # 1.58.7: no channel named (the owner)
     assert chanpost.WARN in cap and 'href="https://kyiv-air-watch-gb.fly.dev/m"' in cap
     assert chanpost.label_of(mark(type="banderol_missiles"))[1] == "Бандероль (реактивний дрон)"   # never a cruise missile
     assert chanpost.label_of(mark(jet=True))[1] == "Реактивний дрон"

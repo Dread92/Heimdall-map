@@ -52,8 +52,8 @@ def poster(active=(), api=None, kv=None, clock=None, shot=Shot()):
 
 
 def outcome(status, place="Княжичі", lon=30.75, lat=50.47, t=T0, typ="drones", **kw):
-    m = {"id": f"kyivoda/9#{status}", "type": typ, "status": status, "place": place, "lon": lon, "lat": lat,
-         "oblast_uid": "14", "ts": iso(t), "channel": "kyivoda"}
+    m = {"id": f"chyste_nebo/9#{status}", "type": typ, "status": status, "place": place, "lon": lon, "lat": lat,
+         "oblast_uid": "14", "ts": iso(t), "channel": "chyste_nebo"}
     m.update(kw)
     return m
 
@@ -114,8 +114,8 @@ def test_the_height_a_post_gave_is_on_the_picture():
 
 
 def test_no_channel_is_named_in_a_post():
-    cap = chanpost.caption(mark(channel="kyivoda"), T0, "https://h")
-    assert "kyivoda" not in cap and "за @" not in cap
+    cap = chanpost.caption(mark(channel="chyste_nebo"), T0, "https://h")
+    assert "chyste_nebo" not in cap and "за @" not in cap
     assert chanpost.WARN in cap                                        # "from channel posts, not radar" stays
 
 
@@ -262,7 +262,7 @@ def test_an_outcome_is_marked_in_reply_without_where_it_happened():
     m, f, files = api.calls[-1]
     assert m == "sendMessage" and files is None and f["reply_parameters"]["message_id"] == 101
     assert f["text"].startswith("⬇️ <b>Збито / Приземлено</b> — так у дописі о ") and "Бровари" in f["text"]
-    assert "Княжичі" not in f["text"] and "kyivoda" not in f["text"]                # not where, not who said it
+    assert "Княжичі" not in f["text"] and "chyste_nebo" not in f["text"]                # not where, not who said it
     n = len(api.calls)
     clk.t += chanpost.END_AFTER_S + 60
     p.tick()
@@ -369,3 +369,60 @@ def test_the_docs_say_it(doc):
     s = open(os.path.join(ROOT, "docs", doc), encoding="utf-8").read()
     assert "1.58.7" in s
     assert re.search(r"held", s)
+
+
+# ---- 1.58.9: one source, and the height it gave -------------------------------------------------------------------------
+def test_the_channel_posts_chyste_nebo_alone():
+    # the owner: "for the Telegram bot we'll take a single source: t.me/chyste_nebo"
+    assert chanpost.SOURCES == ("chyste_nebo",)
+    assert chanpost.eligible(mark()) and not chanpost.eligible(mark(channel="kyiv_airdef"))
+    clk, api = Clock(), API()
+    p, st = poster(api=api, clock=clk)
+    st.marks = [mark(place="Бровари", tag="#1", t=clk.t), mark(place="Бориспіль", lon=30.95, lat=50.35, tag="#2",
+                                                              channel="kpszsu", t=clk.t)]
+    p.tick()
+    assert len(api.calls) == 1 and "Бровари" in api.calls[0][1]["caption"]
+    # an outcome another channel reported is not this one's word
+    clk.t += 60
+    st.marks.append(outcome("down", place="Бровари", lon=30.79, lat=50.5, t=clk.t, channel="kyiv_airdef"))
+    p.tick()
+    assert len(api.calls) == 1
+    st.marks[-1]["channel"] = "chyste_nebo"
+    p.tick()
+    assert api.calls[-1][1]["text"].startswith("⬇️")
+
+
+def test_a_height_an_earlier_report_gave_is_carried_with_its_time():
+    # the owner: "I see the altitude is not shown most of the time" — @chyste_nebo: "Бондарня другий 4600", then "На
+    # Клавдієво", "Другий Бородянка": the height was said once, then only places
+    h = {"lon": 30.0, "lat": 50.7, "ts": iso(T0 - 240), "channel": "chyste_nebo", "place": "Бондарня", "alt_m": 4600}
+    m = mark(place="Бородянка", lon=29.92, lat=50.65, history=[h])
+    alt, at = chanpost.stated_alt(m)
+    assert alt["m"] == 4600 and at == T0 - 240
+    cap = chanpost.caption(m, None, "https://h")
+    assert f"↕️ Висота: ~4600 м (у дописі о {chanpost.hhmm(T0 - 240)})" in cap
+    assert chanpost.stated_alt(mark(alt={"m": 3800}, history=[h]))[0]["m"] == 3800          # its own first
+    assert chanpost.stated_alt(mark(history=[dict(h, channel="kyiv_airdef")])) == (None, None)  # one source
+    assert chanpost.stated_alt(mark(history=[dict(h, alt_m=None)])) == (None, None)            # never guessed
+    old = dict(h, ts=iso(T0 - 5 * 60))                                                         # 5 min: too old (4 max)
+    assert chanpost.stated_alt(mark(history=[old])) == (None, None)
+    assert chanpost.ALT_MAX_S == 4 * 60 and "const ALT_MAX_MIN=4;" in I18N
+    assert chanpost.signature(m) != chanpost.signature(dict(m, history=[dict(h, alt_m=3800)]))
+    got = []
+
+    class Rec:
+        def render(self, m, active, when, ray=True, missiles=(), others=()):
+            got.append(mapshot.alt_text(m))
+            return b"jpg"
+    pp, _ = poster(shot=Rec())
+    pp.picture(m, [])
+    assert got == [f"↕ ~4600 м · {chanpost.hhmm(T0 - 240)}"]
+
+
+def test_a_height_said_as_on_n_metres_is_read():
+    import geo
+    for text, want in (("Від Пирятина йде повільна на 300 метрах", 300), ("Ірпінь на 400 м", 400),
+                       ("Бровари на 500м", 500), ("Висота 2200", 2200)):
+        got = [(m.get("alt") or {}).get("m") for m in geo.parse_for_channel("chyste_nebo", text)]
+        assert want in got, (text, got)
+    assert geo.parse_altitude("на 300 м від мосту") is None                                  # a distance

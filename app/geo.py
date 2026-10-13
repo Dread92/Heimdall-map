@@ -1363,8 +1363,11 @@ ALT_RX = [
 ]
 # The channels write the height both ways round — "висота 2200" and "2200 висота" — and in a follow-up post
 # they drop the word entirely: "1600, Вороньків". All three are read; nothing is guessed when none appear.
+# 1.58.9: and "на 300 метрах" — @chyste_nebo, "Від Пирятина йде повільна на 300 метрах" (12 Oct, 21:55), read as no height
+# at all (a figure and "metres" after "на"; "на 300 м від мосту" is a distance, not a height)
 ALT_M_RX = re.compile(r"висот\w*\s*(?:бл\.|близько|~|приблизно)?\s*(\d{2,5})\s*(м|метр\w*|км)?"
-                      r"|(\d{3,5})\s*(?:м|метр\w*)?\s*висот\w*", re.I)
+                      r"|(\d{3,5})\s*(?:м|метр\w*)?\s*висот\w*"
+                      r"|(?<![а-яіїєґ])на\s+(\d{3,4})\s*(?:метр\w*|м(?![а-яіїєґ]))(?!\s*(?:від|до)\b)", re.I)
 # ...and in kilometres, often with a decimal comma: "висота 4,4км", "висота 5км" (war_monitor on jet drones).
 # Read before the metre pattern, which cannot see a single digit and read "4,4км" as nothing at all.
 ALT_KM_RX = re.compile(r"висот\w*\s*(?:бл\.|близько|~|приблизно)?\s*(\d{1,2}(?:[.,]\d{1,2})?)\s*км\b"
@@ -1392,7 +1395,7 @@ def parse_altitude(seg):
         v = int(round(float((mk.group(1) or mk.group(2)).replace(",", ".")) * 1000))
         hit = mk
     elif mm:
-        v = int(mm.group(1) or mm.group(3))
+        v = int(mm.group(1) or mm.group(3) or mm.group(4))
         if (mm.group(2) or "").lower().startswith("км"):
             v *= 1000
         hit = mm

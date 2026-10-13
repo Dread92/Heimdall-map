@@ -2,6 +2,22 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.9 — 2026-10-13
+
+### Changed
+- **The private channel has one source: @chyste_nebo** — the owner: "for the Telegram bot we'll take a single source:
+  t.me/chyste_nebo". It posts that channel's reports and outcomes alone; the official alerts and all-clears are still
+  the official data's. The posts still name no channel.
+- **The height is shown far more often** — the owner: "I see the altitude is not shown most of the time". @chyste_nebo
+  gives a height in a post of its own ("3800", "Бондарня другий 4600") and then names only places, so the next post had
+  none. A height the same track was given at most 4 minutes before is now carried, with its time ("~4600 м (у дописі о
+  00:44)", on the picture "↕ ~4600 м · 00:44") — older, none, as on the maps. Never guessed.
+
+### Fixed
+- **"на 300 метрах" is a height** — "Від Пирятина йде повільна на 300 метрах" (@chyste_nebo, 12 Oct, 21:55) was read
+  with no height at all; "на 300 метрах", "на 400 м" now are ("на 300 м від мосту" is a distance and stays one). On the
+  maps too.
+
 ## 1.58.8 — 2026-10-13
 
 ### Changed

@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-13 (1.58.8)
+**Documented version: 1.58** · last updated 2026-10-13 (1.58.9)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -628,7 +628,8 @@ block for every value:
   in ("на сході Київщини, в напрямку столиці") is where it is — the oblast centre shifted ~70 km to that side, with
   its `quad` — and the destination is its course (`side_stated`); the side is never read as the course.
 - **Count**, **altitude** (only when written: "знижується", "низько", metres "висота 2200", a bare "1600, Вороньків"
-  in a short live post, kilometres "висота 4,4км"), **phase** (`PHASE_LADDER`:
+  in a short live post, kilometres "висота 4,4км", 1.58.9: "на 300 метрах" / "на 400 м" — not "на 300 м від …", a
+  distance), **phase** (`PHASE_LADDER`:
   prep → launch → entering…, with a per-sentence hedge guard: "може відбутись" is preparation, not a launch).
 - **The oblast, then its towns** (1.42.1): "курсом на Київщину, Макарів / Наливайківку" — a town the post names
   right after the oblast it is in is the destination, not the oblast's centre.
@@ -1573,8 +1574,14 @@ thread `channel`). Its rules are SAFETY.md's "The private channel says what the 
 "instead of editing the post, we need to add a screenshot every time — it's better to keep track of what's going on",
 and "when the alarm is over, or it exploded or fell, or the threat is no longer here, we should mark it too".
 
+**One source** (1.58.9, the owner: "for the Telegram bot we'll take a single source: t.me/chyste_nebo"): `SOURCES =
+("chyste_nebo",)` — only a mark whose latest report is @chyste_nebo's is posted (a target another channel reported
+last waits for this one's next report; gone from it 5 min, "no new reports"), and only its outcomes close a target
+(`link_outcomes` over its marks alone). The official alerts and all-clears are the official data's, as before; the
+posts still name no channel.
+
 **What it posts.** Every 5 s it takes the marks as the pages see them (`State.markers_now()`) and keeps
-(`chanpost.eligible`) the ones over Kyiv city or Kyiv oblast (`oblast_uid` 31 / 14) at a named place, of a flying type
+(`chanpost.eligible`) the ones of its source over Kyiv city or Kyiv oblast (`oblast_uid` 31 / 14) at a named place, of a flying type
 (drones, the missiles, Banderol, a weapon not stated) — no outcome (`status`), no faded mark (`stale`), no merged one
 (`superseded_by`), no oblast-wide guess, no reading still waiting for its context. A target whose post named only where
 it is heading ("Балістика на Київ!": `approach`, a place "→ Київ") is posted as the app draws it — at that town,
@@ -1595,7 +1602,11 @@ The caption (Telegram HTML, Ukrainian): the type as the app names it (Шахед
 Бандероль (реактивний дрон), "Ймовірно, дрон — тип не вказано" — as `asDrone`: no missile within 150 km), the count,
 the place; a course **only when a post stated it** (`stated_course`: a target town, or compass words with a confidence —
 never the bearing the app worked out between two reports, nor a destination a later post gave a carried mark); the
-height a post gave; the time of the report (Kyiv) and of the first one; "З дописів каналів, не радар. Сирена й офіційна
+height a post gave — 1.58.9, the owner: "I see the altitude is not shown most of the time": @chyste_nebo gives a
+height in a post of its own ("3800", "Бондарня другий 4600") and names only places after it, so when this report gave
+none, the latest one an earlier report of the same track gave (its own word), with its time ("~4600 м (у дописі о
+00:44)", `stated_alt`), only if said at most 4 minutes before this report (`ALT_MAX_S`, the maps' `ALT_MAX_MIN`); on the
+picture "↕ ~4600 м · 00:44" —; the time of the report (Kyiv) and of the first one; "З дописів каналів, не радар. Сирена й офіційна
 тривога — головне."; a link to `/m` (`PUBLIC_URL`). 1.58.7, the owner: "no need to say the source of info" — the channel
 a post came from is no longer named (nor in a closing line).
 

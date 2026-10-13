@@ -138,7 +138,11 @@ the map around them. A post in a channel is forwarded, screenshotted and read wi
   the channel. A post that said only where a target is heading ("Балістика на Київ!") is shown at that town as the app
   shows it, with no course ray, and the caption says that where it is now was not said. No ETA, no "towards your area",
   no distance to anybody. 1.58.7, the owner: "no need to say the source of info" — the channel a post came from is no
-  longer named; every post still says "from channel posts, not radar".
+  longer named; every post still says "from channel posts, not radar". 1.58.9, the owner: "for the Telegram bot we'll
+  take a single source: t.me/chyste_nebo" — the channel posts that channel's reports and its outcomes alone.
+- **A height, only as said and only while it is fresh** (1.58.9): when a report gives none, the height the same
+  channel gave for the same track a moment before is carried, with its time, and only if it is at most 4 minutes old —
+  the maps' rule ("A height is shown for 4 minutes at most"); older, none.
 - **A new post for each new report** (1.58.7, the owner: "instead of editing the post, we need to add a screenshot every
   time — it's better to keep track of what's going on"), in reply to the target's last one: what was posted stays as it
   was posted, and the thread is the target's track as the posts gave it. At most one a minute per target, and never a
