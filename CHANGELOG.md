@@ -2,6 +2,30 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.25 — 2026-10-14
+
+### Added
+- **@nikalert — Nikopol and Dnipro, straight on the map** — the owner: "we'll add t.me/nikalert for Dnipro — on the map
+  directly" ("Nikopol/Dnipro"). "ТРИВОГА Нікополь DNiPRO" (~17 K readers, some 30 posts an hour) is the 25th default
+  channel, for Dnipropetrovsk oblast, read by rules of its own after 75 of its posts were read against them:
+  - **Nikopol's own reports (🪖)**: FPV and strike drones from across the reservoir. A threat is a list, newest line
+    first — one target, at its newest place ("Загроза ФПВ ◼️ с. Покровське" is the Покровське of Nikopol raion, not the
+    one 160 km away); a hromada or a landmark of the city alone is no place. "Нкпл: Атака ударних БпЛА" is at Nikopol.
+  - **The same list struck through (⭕️) once the threat is over** is no target — only how it ended: an explosion, a
+    drone down, its signal lost, or no threat any more, which closes the target on the map.
+  - **The monitors it relays (Ⓜ️)** — Dnipro city, Kryvyi Rih, Zaporizhzhia: their label is whose report it is, not where
+    ("Dнпр: Обухівка 🛵" is at Obukhivka); only what is in Dnipropetrovsk oblast is placed; "КР «Бандероль»" is a
+    Banderol, a jet drone.
+  - **Nothing** for shelling, for its news, history and service posts (not even kept), or for the official alerts it
+    relays (an alert's colour comes from the official data alone).
+  - Its two streams are kept apart: a jet drone "на Дніпро" from the Dnipro monitor is no longer moved onto the FPV it
+    reported a minute before at Pokrovske.
+
+### Fixed
+- **A village far from the town of its name was unreachable** — the gazetteer merged a village into the core town of
+  its name in the same oblast whatever the distance: Покровське of Nikopol raion, a hromada centre, was the other
+  Покровське 160 km away, and its other name, Нова Січ, found that one. Only a place within 25 km is that town now.
+
 ## 1.58.24 — 2026-10-14
 
 ### Fixed

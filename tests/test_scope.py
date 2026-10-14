@@ -30,7 +30,9 @@ def test_the_default_channels_and_only_them():
         # 1.45: Kherson, Kirovohrad, Khmelnytskyi, Ternopil, Rivne, Lviv, Volyn
         "kherson_monitoring", "controlkrop", "radarhmel", "radarofternopil", "rivne_radar", "ppoualviv", "lutsk_radar",
         # 1.57.3: a fourth Kyiv tracker, the owner's choice
-        "vseok450"}
+        "vseok450",
+        # 1.58.25: Nikopol and Dnipro, the owner's choice
+        "nikalert"}
     assert set(server.CHANNEL_HOME_DEFAULT) == set(server.AUTHORITATIVE_CHANNELS)
 
 

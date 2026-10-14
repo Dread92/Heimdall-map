@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-14 (1.58.24)
+**Documented version: 1.58** · last updated 2026-10-14 (1.58.25)
 
 The repository is **Dread92/Heimdall-map**. The Fly app keeps its first name, `kyiv-air-watch-gb`: Fly cannot rename
 an app (§15 has the move to a domain of its own).
@@ -47,8 +47,9 @@ around them (the six around Kyiv, then Odesa, Kharkiv, Dnipro, Mykolaiv and, sin
 Python process — standard library only, plus `cryptography` for Web Push — reads:
 
 - the **official «Повітряна тривога» alert data** (which raions are under alert, at which level),
-- **24 public Telegram channels** that report where drones and missiles are: the four Kyiv live trackers, three
-  country-wide channels (the Air Force among them) and one live tracker per oblast (§7.1) — most through their
+- **25 public Telegram channels** that report where drones and missiles are: the four Kyiv live trackers, three
+  country-wide channels (the Air Force among them) and one live tracker per oblast — two for Dnipropetrovsk oblast
+  since 1.58.25, @nikalert for Nikopol (§7.1) — most through their
   `t.me/s/` previews, three through the Telegram API,
 - the Air Force's summaries and the carriers' take-offs and launches, read from those posts (§7.5, §7.6), and the
   nights' weather (Open-Meteo, §7.6),
@@ -555,6 +556,7 @@ event of a Trial post carries `tags: ["trial"]` only. Both readers take the list
 | `chyste_nebocherkasy` | live tracker of Cherkasy oblast (1.43) | `_parse_live(·, "24")`; its preview is off like `chyste_nebo`'s — read through the Telegram API when it is configured (`CHANNEL_VIA_DEFAULT`) |
 | `radar_kharkov` | live tracker of Kharkiv city and oblast, **in Russian** (1.43) | `_parse_live(·, "22")` after `geo.prepare`; the city's districts by their Russian names |
 | `RadarDnepr` | live tracker of Dnipro city and oblast (1.43) | `_parse_live(·, "9")`; mixed with news and fundraising, which the news guard drops |
+| `nikalert` | Nikopol and its raion (🪖: FPV and strike drones from across the reservoir, shelling) and the Dnipro, Kryvyi Rih, Zaporizhzhia monitors it relays (Ⓜ️), 1.58.25 — straight on the map, the owner's choice | `parse_nikalert` (§7.3c): a threat list's newest place; a recap (⭕️) never a target; shelling, its news, history and service posts, the official alerts it relays: no mark; marks in Dnipropetrovsk oblast only; a shared name is the one near Nikopol (Dnipro, Kryvyi Rih for those monitors); each stream its own previous report (`context_stream`) |
 | `kabusumy` | live tracker of Sumy city and oblast — guided bombs (KAB) and drones by village (1.44) | `_parse_live(·, "20")`; its preview is off — read through the Telegram API (`CHANNEL_VIA_DEFAULT`); "Впали" after a KAB report is an impact, never a shoot-down |
 | `air_alert_mk` | Mykolaiv oblast: the Air Force's lines for the oblast and a few of its own (1.44) | `_parse_live(·, "17")` → `parse_post`; no village-level tracker of Mykolaiv was found |
 | `PoltavaRadar` | live tracker of Poltava oblast (1.44) | `_parse_live(·, "19")`; "Не фіксується." = lost; "з Дніпропетровщини на X" reads X in Poltava oblast first |
@@ -816,6 +818,47 @@ No ETA is worked out for it (`speedBand` has none for an unstated type): a jet d
 countdown on a guess could be late. While missiles are reported near it it is the red ⚠ "drone or missile" again. Light:
 `lDr(m)`, with `lMsl(m)`: a MiG-31K or strategic aviation on the map, or `mslNear(m, marks)` (i18n.js: a missile mark
 within 150 km).
+
+### 7.3c @nikalert: Nikopol and the oblast's monitors (1.58.25)
+
+The owner: "we'll add t.me/nikalert for Dnipro — straight on the map" (Nikopol / Dnipro). "ТРИВОГА Нікополь DNiPRO"
+(~17 K readers) posts some 30 times an hour, two streams told apart by their first sign — read by `geo.parse_nikalert`
+(registered in `CHANNEL_PARSER`, and called before the generic artillery rule and the "next target" split, so a list
+is read whole):
+
+- **🪖 — Nikopol and its raion**, across the Kakhovka reservoir from the occupied bank: FPV and strike drones, shelling.
+  "Нкпл:" is Nikopol, "Мгнц" Marhanets, "Нов🍅павлівка" Novopavlivka (its own spelling). A threat is a **list, newest
+  line first** — "🪖⛔️ Загроза ФПВ / ◼️ 17:43 с. Покровське / ◻️ 17:39 Покровська ТГ": its kind is the lines above
+  the list, its place **the newest line's place the gazetteer knows**, within 5 minutes of the newest (`NIK_LIST_MIN`);
+  a hromada line ("Покровська ТГ") is an area, never a place; a landmark of the city ("Яхтклуб", "3-я Дільниця") is
+  passed over for the next line. One mark per list — the list is one threat, not a count. A post of its own without a
+  list is read with its heading's town when it names no other: "Нкпл: 🟠 Увага! Атака ударних БпЛА" is at Nikopol,
+  "Нкпл: Падіння дрону без детонації в с. Капулівка" a drone down at Kapulivka; "Детонація дрону" an explosion. Its
+  own posts name a weapon when they report one: a bare direction ("Напрямок р-н 33 квадрати") places nothing.
+- **⭕️ — the same list once the threat is over** ("🪖⭕️ ~~загроза фпв~~ / ◻️ 17:19 Дрон впав з детонацією / ◻️ 17:18
+  Автошкола / … / ◻️ 17:10 Нікополь"): where the drone went, ending "Дрон впав", "Сигнал втрачено", "Без загроз". **A
+  recap is never a target** (read whole, it was a drone shot down at Nikopol, "×37" from its time, 17:37) — **only how
+  it ended** (`_nik_recap`): its newest line as the outcome the map knows ("Дрон впав з детонацією" an explosion, "Дрон
+  впав" down, "Сигнал втрачено" lost, "Без загроз" clear) at the list's newest place the gazetteer knows, so the target
+  it ends is closed rather than left to fade; a shelling recap ("~~обстріл~~") places nothing.
+- **Ⓜ️ — monitors relayed**: Dnipro city ("Dнпр:"), Kryvyi Rih ("Кр.Ріг"), Zaporizhzhia ("Зпр:"), Kherson ("Хрсн"), the
+  oblast's Shaheds (🛵) and Banderols. The label says whose report it is, not where the target is: it is dropped before
+  reading ("Dнпр: Обухівка 🛵" is at Obukhivka, not at Dnipro). A threat it says was lifted ("Загрозу балістики зняли")
+  is no threat. "КР «Бандероль»" is a Banderol — a jet drone, never a cruise missile.
+- **No mark**: shelling and artillery ("Обстріл", "загроза артобстрілу"); its news, history and service posts (🗞, 🗺,
+  📣, a "Forwarded from", its "Тривога 🇺🇦НІКОПОЛЬ | Підпис…" footer — not even stored: `is_relevant`); the official
+  alerts it relays (🅰️, ✅ — an alert's colour comes from the official data alone).
+- **Dnipropetrovsk oblast only**: what it relays from Zaporizhzhia or Kherson oblast is not placed there (those oblasts
+  are not covered yet); a hamlet named like a city ("Запоріжжя", Kryvyi Rih raion) read for the city is the city — and
+  so not placed.
+- **A name several places share is the one near the channel's town** (`_nik_near`, 45 km): Nikopol for 🪖, Dnipro or
+  Kryvyi Rih for their monitors — the Покровське of Nikopol raion, not the one of Synelnykove raion 160 km away. The
+  gazetteer had merged that hromada centre into the other (`geo._load_regional` merged a village file's place into the
+  core town of its name in the same oblast whatever the distance; 1.58.25: only within 25 km, `_MERGE_KM` — Нова Січ,
+  its other name, now finds it).
+- **Each stream is its own previous report** (`geo.context_stream`: "/nik", "/m:<label>"): the server's "this channel's
+  previous report" — where a "на Дніпро" target is drawn, which way a target turned — is the stream's, so a jet drone
+  "на Дніпро" from the Dnipro monitor is not moved onto the FPV reported a minute before at Pokrovske.
 
 ### 7.4 Scope, chaining, staleness
 

@@ -244,7 +244,9 @@ AUTHORITATIVE_CHANNELS = ["kyiv_airdef", "chyste_nebo", "kievinfo_kyiv", "war_mo
                           "kherson_monitoring", "controlkrop", "radarhmel", "radarofternopil", "rivne_radar", "ppoualviv",
                           "lutsk_radar",
                           # 1.57.3, the owner: "4.5.0" (@vseok450), a live tracker of Kyiv and its oblast — on trial first
-                          "vseok450"]
+                          "vseok450",
+                          # 1.58.25, the owner: "t.me/nikalert for Dnipro — straight on the map" (Nikopol and Dnipro)
+                          "nikalert"]
 
 # 1.43: the dashboard groups the channels by the oblast they speak for, and switches an oblast on or off as a whole.
 # "31" is Kyiv — the city and its oblast, always on; "ua" the channels that cover the whole country. A channel's
@@ -255,7 +257,7 @@ CHANNEL_HOME_DEFAULT = {"kyiv_airdef": "31", "chyste_nebo": "31", "kievinfo_kyiv
                         "radar_kharkov": "22", "RadarDnepr": "9",
                         "kabusumy": "20", "air_alert_mk": "17", "PoltavaRadar": "19", "vinnytsiappo": "4", "zt_radar": "10",
                         "kherson_monitoring": "23", "controlkrop": "15", "radarhmel": "3", "radarofternopil": "21",
-                        "rivne_radar": "5", "ppoualviv": "27", "lutsk_radar": "8", "vseok450": "31"}
+                        "rivne_radar": "5", "ppoualviv": "27", "lutsk_radar": "8", "vseok450": "31", "nikalert": "9"}
 # 1.57.3: a channel's mode until the dashboard sets one — a new tracker is on trial (its posts in the feed, flagged; no
 # mark, no warning, no push) until its posts have been read against the rules and the owner puts it on the map
 CHANNEL_MODE_DEFAULT = {"vseok450": "trial"}
@@ -291,6 +293,8 @@ def is_relevant(text, tags, channel=None):
     official alert message. Everything else (news, fundraising, culture, ads) is dropped before storage."""
     if "af_summary" in tags or "retract" in tags:
         return True
+    if channel == "nikalert" and geo and geo.NIK_NOISE_RX.search(text or ""):
+        return False         # 1.58.25: its news, history and service posts (🗞, 🗺, 📣, a forward, its footer)
     if NOT_SKY_RX.search(text or "") and not (WEAPON_TAGS & set(tags)) and not _STRIKE_RX.search(text or ""):
         return False
     if channel in NEWS_CHANNELS:
@@ -3451,7 +3455,8 @@ class State:
                       and not x.get("status") and not x.get("dest_only")), None)
             t = parse_iso(p["ts"]) if m else None
             if t:
-                out.setdefault(p["channel"], []).append((t, m["lon"], m["lat"]))
+                ck = p["channel"] + (geo.context_stream(p["channel"], p.get("text")) if geo else "")
+                out.setdefault(ck, []).append((t, m["lon"], m["lat"]))
         return out
 
     def _marks_from_posts(self, posts, kyiv_ends, cache, evidence=True):
@@ -3472,6 +3477,7 @@ class State:
         near_by_channel = {}     # 1.45: the oblasts each channel named (or reported in) lately — geo's `near`
         ahead = None             # 1.54.7: each channel's placed reports, for a shared name's next report (_reports_ahead)
         for p in posts:
+            ck = p["channel"] + (geo.context_stream(p["channel"], p.get("text")) if geo else "")   # 1.58.25: the channel's stream
             pts = parse_iso(p["ts"])
             ms = cache.get(p["post_id"])
             if ms is None:
@@ -3495,12 +3501,12 @@ class State:
                 nb.extend((pts, u) for u in named)
                 nb.extend((pts, m["oblast_uid"]) for m in ms if m.get("oblast_uid") and m.get("lon") is not None)
                 del nb[:-12]
-            ctx = last_by_channel.get(p["channel"])
+            ctx = last_by_channel.get(ck)
             # the official all-clear for Kyiv city ends every position a channel holds inside the city: whatever is
             # said after it is about another target, or about nothing
             if ctx and pts and ctx[1].get("oblast_uid") == "31" and any(ctx[0] < e <= pts for e in kyiv_ends):
                 ctx = None
-                last_by_channel.pop(p["channel"], None)
+                last_by_channel.pop(ck, None)
             fixed = []
             n_here = sum(1 for m in ms if not m.get("status"))      # 1.56.3: how many targets this post reports
             for m in ms:
@@ -3521,7 +3527,7 @@ class State:
                     if pts:
                         if ahead is None:
                             ahead = self._reports_ahead(posts, cache)
-                        nxt = next(((lo, la, (t_ - pts).total_seconds() / 60) for t_, lo, la in ahead.get(p["channel"], ())
+                        nxt = next(((lo, la, (t_ - pts).total_seconds() / 60) for t_, lo, la in ahead.get(ck, ())
                                     if 0 < (t_ - pts).total_seconds() <= 15 * 60), None)
                         if nxt:
                             near_pts.append(((nxt[0], nxt[1]), nxt[2]))
@@ -3565,7 +3571,7 @@ class State:
                 elif m.get("needs_context"):
                     if ctx and pts and (pts - ctx[0]).total_seconds() <= 8 * 60:
                         m.update(lon=ctx[1]["lon"], lat=ctx[1]["lat"], place=ctx[1]["place"], oblast_uid=ctx[1].get("oblast_uid"), pos_ts=ctx[2])
-                        wpn = weapon_by_channel.get(p["channel"])
+                        wpn = weapon_by_channel.get(ck)
                         kab = ctx[1].get("type") == "guided_aerial_bombs" or (
                             wpn and wpn[1] == "guided_aerial_bombs" and (pts - wpn[0]).total_seconds() <= 15 * 60)
                         if kab and m.get("status") == "down":
@@ -3611,17 +3617,17 @@ class State:
                             m["evidence"] = ev
                 if m.get("lon") is not None and not m.get("status") and not m.get("approach"):
                     # a carried position keeps the time it was reported at; only a newly named place resets the clock
-                    last_by_channel[p["channel"]] = ctx if (m.get("pos_ts") and ctx) else (pts, m, p["ts"], n_here)
+                    last_by_channel[ck] = ctx if (m.get("pos_ts") and ctx) else (pts, m, p["ts"], n_here)
                 fixed.append(m)
             ms = fixed
             if pts:
                 said = geo.prepare(p.get("text") or "", p["channel"]).lower()
                 wpn = next((n for n, rx in geo.TYPE_RX if rx.search(said)), None)
                 if wpn:
-                    weapon_by_channel[p["channel"]] = (pts, wpn)
+                    weapon_by_channel[ck] = (pts, wpn)
             # the channel said the target fell, was destroyed, is lost, or that the sky is clear: its position ends here
             if any(m.get("status") in ("down", "lost", "clear") for m in ms) or "clear" in (p.get("tags") or []):
-                last_by_channel.pop(p["channel"], None)
+                last_by_channel.pop(ck, None)
             # one post, one marker per place: identical (type, position, status) items collapse (counts add up);
             # official administrations never place a target at an oblast centre; a missile needs a named place or a heading
             official_kind = geo.OFFICIAL_PARSERS.get(p["channel"], (None,))[0]

@@ -583,6 +583,9 @@ def _ru_variants(alias):
     return out
 
 
+_MERGE_KM = 25         # a village file's place this close to the core town of its name is that town
+
+
 def _load_regional(path=None):
     path = path or os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "regional_places.json")
     try:
@@ -603,6 +606,11 @@ def _load_regional(path=None):
         for i, (uid, r) in enumerate(entries):
             _, lon, lat, kind, pop, raion, aliases = r
             core = core_norm.get((_norm(name), uid))
+            # 1.58.25: a namesake far from the core town is a place of its own — Покровське of Nikopol raion, a hromada
+            # centre 163 km from the Покровське the core gazetteer has, was merged into it and could not be reached
+            # (its other name, Нова Січ, found the wrong one). The core town still comes first for the name alone.
+            if core and _km((lon, lat), dict.__getitem__(PLACES, core)[:2]) > _MERGE_KM:
+                core = None
             if core:
                 key = core               # a town the core gazetteer has: its Russian name now finds it too
             else:
@@ -2401,11 +2409,208 @@ def parse_eradar(text):
     return out
 
 
+# 1.58.25, the owner: "we'll add t.me/nikalert — Nikopol / Dnipro — straight on the map". @nikalert ("ТРИВОГА Нікополь
+# DNiPRO") writes two kinds of post, each marked by its first sign:
+#   🪖 — Nikopol and its raion, across the reservoir from the occupied bank: FPV and strike drones, shelling ("Нкпл:" is
+#        Nikopol, "Мгнц" Marhanets). A threat is a list, the newest line first — "🪖⛔️ Загроза ФПВ\n◼️ 17:43 с. Покровське\n
+#        ◻️ 17:39 Покровська ТГ" — and "🪖⭕️ ~~загроза фпв~~ …" is the same list once the threat is over: a recap, never a
+#        target (its lines are where the drone went, ending "Дрон впав", "Сигнал втрачено", "Без загроз").
+#   Ⓜ️ — monitors relayed: Dnipro city ("Dнпр:"), Kryvyi Rih ("Кр.Ріг"), Zaporizhzhia ("Зпр:"), Kherson ("Хрсн"), the
+#        oblast's Shaheds (🛵) and Banderols.
+# The rest is its news, history and service posts (🗞, 🗺, 📣, "Forwarded from", its "Тривога 🇺🇦НІКОПОЛЬ | Підпис…"
+# footer) and the official alerts it relays (🅰️, ✅ — an alert's colour never comes from a channel): no mark.
+# Its marks are in Dnipropetrovsk oblast only (the other oblasts' monitors it relays are read where they are, or not
+# yet); a village several places share is the one near the channel's own town — Nikopol, or Dnipro, Kryvyi Rih for
+# their monitors — the Покровське of Nikopol raion, not the one of Synelnykove raion 160 km away.
+NIK_NOISE_RX = re.compile(r"^\W*(?:\U0001f5de|\U0001f5fa|\U0001f4e3|\U0001f4f0|\U0001f4da)|^\s*forwarded from|"
+                          r"тривога\s*(?:\U0001f1fa\U0001f1e6)?\s*нікополь\s*\|", re.I)          # 🗞 🗺 📣 📰 📚
+NIK_AIR_RX = re.compile(r"бпла|шахед|дрон|фпв|\bfpv\b|реактив|реакт\w*|бандерол|ракет|баліст|\bкаб|мопед|\U0001f6f5", re.I)
+NIK_ARTY_RX = re.compile(r"обстріл|артобстріл|артилері|міномет", re.I)
+NIK_LINE_RX = re.compile(r"^\W*([◼◻])️?\s*(\d{1,2}):(\d{2})\s*(.*)$")       # ◼️ / ◻️ 17:43 …
+NIK_ABBR = ((re.compile(r"(?<![а-яіїєґ'])нкпл\b\.?", re.I), "Нікополь"), (re.compile(r"(?<![а-яіїєґ'])мгнц\b\.?", re.I), "Марганець"),
+            (re.compile(r"(?<![а-яіїєґ'a-z])d[нn]пр\b\.?", re.I), "Дніпро"), (re.compile(r"кр\.\s*ріг", re.I), "Кривий Ріг"),
+            (re.compile(r"нов\U0001f345павлівк", re.I), "Новопавлівк"))                        # its own spelling, a 🍅 for the "о"
+NIK_ANCHOR = {"Нікополь": (34.3913, 47.5683), "Дніпро": (35.04, 48.46), "Кривий Ріг": (33.39, 47.91)}
+# a relayed monitor's label — "Dнпр:", "Кр.Ріг :", "Зпр:", "Хрсн" — says whose report it is, not where the target is
+NIK_LABEL_RX = re.compile(r"^\W*(?:(?:d[нn]пр|кр\.\s*ріг|зпр|хрсн|мгнц)\b\.?\s*:?|ванёк\b)", re.I)
+NIK_LIFTED_RX = re.compile(r"[^.!\n,]*(?:загроз\w*\s+(?:\w+\s+){0,2}зня\w*|по\s+баліст\w*\s+(?:поки\s+)?без\s+загроз\w*)[^.!\n,]*[.!,]?", re.I)
+NIK_KM = 45            # a namesake this close to the channel's town is the one it means
+NIK_LIST_MIN = 5       # the list's lines this many minutes older than its newest are where the target was, not is
+
+
+def _nik_clean(s):
+    """A line as the parser reads it: no time, no pictograms but the channels' signs for a weapon (🛵 🛸 🚀 💣 …), the
+    channel's abbreviations spelled out, and no threat it says was lifted ("Загрозу балістики зняли")."""
+    for rx, full in NIK_ABBR:
+        s = rx.sub(full, s)
+    s = NIK_LIFTED_RX.sub(" ", s)
+    s = re.sub(r"\b\d{1,2}:\d{2}\b", " ", s)
+    s = re.sub(r"[^\w\s'’ʼ.,:;!?()«»\"\-—–/+№\U0001f6f8\U0001f6f5\U0001f3cd\U0001f681\U0001f17f\U0001f680\U0001f4a3]", " ", s)
+    return re.sub(r"[ \t]+", " ", s).strip()
+
+
+def _nik_namesakes(base, uid="9"):
+    base = _norm(base)
+    out = [n for n, v in dict.items(PLACES) if v[2] == uid and _norm(n.split(" (")[0]) == base]
+    out += [k for k, v in REGIONAL.items() if v[2] == uid and _norm(re.sub(r" \d+$", "", k.split(" (")[0])) == base]
+    return list(dict.fromkeys(out))
+
+
+def _nik_near(ms, anchor):
+    """The namesake near the channel's town, for a place several villages share (the default or the ambiguity token)."""
+    a = NIK_ANCHOR.get(anchor)
+    if not a:
+        return ms
+    for m in ms:
+        moved = None
+        for fld in ("place", "target"):
+            v = m.get(fld)
+            if not isinstance(v, str) or not v:
+                continue
+            pre = "→ " if v.startswith("→ ") else ""
+            key = v[len(pre):]
+            city = next((c for c in AMBIG[key]["keys"] if dict.__contains__(PLACES, c) and PLACES[c][2] != "9"), None) \
+                if key in AMBIG else None
+            base = key.split(" (")[0]
+            if not city and key in PLACES and not dict.__contains__(PLACES, key) and dict.__contains__(PLACES, base) \
+                    and PLACES[base][2] != "9":
+                city = base          # a hamlet called Запоріжжя, read for the city: the city
+            if city:
+                # the town a name is known for, in another oblast ("в бік … Запоріжжя"), not a hamlet of this one
+                m[fld] = pre + city
+                if fld == "place":
+                    moved = city
+                continue
+            if key in AMBIG:
+                cands = list(AMBIG[key]["keys"])
+            elif key in PLACES and PLACES[key][2] == "9":         # a town of another oblast stays that town
+                cands = _nik_namesakes(key.split(" (")[0])
+            else:
+                continue
+            cands = [c for c in cands if c in PLACES]
+            if not cands:
+                continue
+            best = min(cands, key=lambda c: _km(PLACES[c][:2], a))
+            if _km(PLACES[best][:2], a) > NIK_KM:
+                continue
+            if key in AMBIG or (key != best and _km(PLACES[key][:2], a) > NIK_KM):
+                m[fld] = pre + best
+                if fld == "place":
+                    moved = best
+        if moved:
+            lo, la, uid = PLACES[moved]
+            m.update(lon=round(lo, 3), lat=round(la, 3), oblast_uid=uid)
+            if m.get("target") in PLACES and m.get("heading") is not None and not m.get("dest_only"):
+                tl, tt, _ = PLACES[m["target"]]
+                m["heading"] = round(bearing(lo, la, tl, tt))
+            ev = dict(m.get("evidence") or {})
+            pos = dict(ev.get("position") or {}, place=moved)
+            pos["method"] = (pos.get("method") or "") + f" — of the places called {moved.split(' (')[0]}, the one near {anchor} (@nikalert's own)"
+            ev["position"] = pos
+            m["evidence"] = ev
+    return ms
+
+
+def context_stream(channel, text):
+    """1.58.25: which of a channel's streams a post is in — its previous report (where a "на Дніпро" target is, which
+    way it turned) is that stream's. @nikalert writes Nikopol's own targets (🪖) and relays the oblast's monitors (Ⓜ️):
+    a jet drone "на Дніпро" from the Dnipro monitor is not the FPV it reported a minute before at Pokrovske."""
+    if channel != "nikalert" or not text:
+        return ""
+    if text.lstrip().startswith("\U0001fa96"):
+        return "/nik"
+    m = NIK_LABEL_RX.match(re.sub(r"^\W+", "", text))
+    return "/m:" + _norm(re.sub(r"[\s.:]", "", m.group(0)))[:6] if m else "/m"
+
+
+# how a recap ends (its newest line) → the outcome the map already knows, written as its rules read it
+NIK_END = ((re.compile(r"впав\w*\s+(?:з|із)\s+\W*детонац|детонац", re.I), "вибух дрону"), (re.compile(r"впав|падінн", re.I), "дрон впав"),
+           (re.compile(r"сигнал\w*\s+втрач|втрачен", re.I), "сигнал втрачено"), (re.compile(r"без\s+загроз", re.I), "чисто"))
+
+
+def _nik_recap(lines):
+    """"🪖⭕️ ~~загроза фпв~~ / ◻️ 17:19 Дрон впав з 💥детонацією / ◻️ 17:18 Автошкола / … / ◻️ 17:10 Нікополь": no target —
+    the outcome its newest line says (an explosion, a drone down, its signal lost, no threat any more), at the newest
+    place of the list the gazetteer knows, so the target it ends is closed on the map rather than left to fade."""
+    kind = _nik_clean(lines[0])
+    if not NIK_AIR_RX.search(_norm(kind)):
+        return []                               # "~~обстріл~~ … Без загроз": shelling, not the sky
+    items = [mt for mt in (NIK_LINE_RX.match(ln) for ln in lines[1:]) if mt]
+    if len(items) < 2:
+        return []
+    said = next((w for rx, w in NIK_END if rx.search(items[0].group(4))), None)
+    if not said:
+        return []
+    for mt in items[1:]:
+        where = _nik_clean(mt.group(4))
+        if not where or re.search(r"(?<![а-яіїєґ'])тг\b|громад", _norm(where)):
+            continue
+        got = [m for m in _parse_live(f"{said} {where}", "9") if m.get("status") and m.get("oblast_uid") == "9"
+               and m.get("lon") is not None]
+        if got:
+            m = got[0]
+            m["type"] = "drones"                # the list's kind: FPV, Shaheds — a drone
+            m["jet"] = False
+            return _nik_near([m], "Нікополь")
+    return []
+
+
+def parse_nikalert(text):
+    if not text or NIK_NOISE_RX.search(text):
+        return []
+    lines = [ln for ln in text.split("\n") if ln.strip()]
+    head = lines[0] if lines else ""
+    if "⭕" in head:                       # ⭕️: the threat is over — the list is a recap, never a target
+        return _nik_recap(lines)
+    nik = text.lstrip().startswith("\U0001fa96")                                                   # 🪖
+    anchor = "Нікополь" if nik else next((n for n in ("Дніпро", "Кривий Ріг") if n in _nik_clean(head)), None)
+    if not nik:
+        text = NIK_LABEL_RX.sub("", re.sub(r"^\W+", "", text), count=1)
+    n = _norm(text)
+    if NIK_ARTY_RX.search(n) and not NIK_AIR_RX.search(n):
+        return []                              # shelling, artillery: not the sky this app watches
+    items = [(i, NIK_LINE_RX.match(ln)) for i, ln in enumerate(lines)]
+    items = [(i, mt) for i, mt in items if mt]
+    ms = []
+    if items:
+        # a threat list: what it is (the lines above the list), and where — its newest place the gazetteer knows,
+        # within NIK_LIST_MIN minutes of its newest line (a hromada, "Покровська ТГ", is an area, not a place)
+        kind = _nik_clean(" ".join(lines[:items[0][0]]))
+        if not NIK_AIR_RX.search(_norm(kind)):
+            return []
+        mins = [int(mt.group(2)) * 60 + int(mt.group(3)) for _, mt in items]
+        top = mins[0]
+        for (_, mt), t_ in zip(items, mins):
+            if (top - t_) % 1440 > NIK_LIST_MIN:
+                break
+            where = _nik_clean(mt.group(4))
+            if not where or re.search(r"(?<![а-яіїєґ'])тг\b|громад", _norm(where)):
+                continue
+            got = [m for m in _parse_live(f"{kind} {where}", "9") if m.get("oblast_uid") == "9" and m.get("type") not in (None, "unknown")]
+            if got:
+                ms = got[:1]
+                break
+    else:
+        body = _nik_clean(text)
+        if nik and not NIK_AIR_RX.search(_norm(body)):
+            return []                          # its own posts name a weapon when they report one
+        # "Детонація дрону" is an explosion (unknown whether a hit); "без детонації" is a drone that fell
+        body = re.sub(r"\s*без\s+детонаці\w*", "", body, flags=re.I)
+        body = re.sub(r"детонаці\w*", "вибух", body, flags=re.I)
+        own = re.sub(r"^\W*нікополь\s*:\s*", "", body, flags=re.I) if nik else body
+        ms = _parse_live(own, "9")
+        if nik and not any(m.get("lon") is not None for m in ms):
+            # "Нкпл: 🟠 17:42 Увага! Атака ударних БпЛА" — no place of its own: the heading's, Nikopol
+            ms = _parse_live("Нікополь: " + own, "9")
+        ms = [m for m in ms if not nik or m.get("type") not in (None, "unknown")]
+    return [m for m in _nik_near(ms, anchor) if m.get("oblast_uid") == "9"]
+
+
 # kievinfo_kyiv and chyste_nebo post the same way kyiv_airdef does: a place, sometimes a route, an outcome word.
 CHANNEL_PARSER = {"povitryanatrivogaaa": parse_arrows, "kyiv_airdef": parse_kyiv_airdef, "eRadarrua": parse_eradar,
                   "kievinfo_kyiv": parse_kyiv_airdef, "chyste_nebo": parse_kyiv_airdef, "vseok450": parse_kyiv_airdef,
                   "cherkasy_monitor": lambda t: _parse_live(t, "24"), "sumy_alerts": lambda t: _parse_live(t, "20"),
-                  "xydessa_live": lambda t: _parse_live(t, "18")}
+                  "xydessa_live": lambda t: _parse_live(t, "18"), "nikalert": parse_nikalert}
 
 
 # The carriers never fly over Ukraine: a Tu-95, a Tu-160, a Tu-22M3 or a MiG-31K is over Russia, Crimea or the sea
@@ -2694,6 +2899,8 @@ def _parse_for_channel(channel, text, near=None):
     text = drop_friendly(text)                      # 1.43.1: our own drone is no target
     if not text:
         return []
+    if channel == "nikalert":
+        return parse_nikalert(text)                 # 1.58.25: its own conventions, read whole (a recap is not split)
     # 1.45: artillery and mortars ("артобстріл по Корабельному району Херсона з ТОТ") are not in the sky this app watches
     if ARTY_RX.search(_norm(text)) and not AIR_TARGET_RX.search(_norm(text)) and not re.search(r"fpv|фпв|ланцет|молні", _norm(text)):
         return []
