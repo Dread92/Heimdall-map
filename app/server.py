@@ -3721,9 +3721,10 @@ class State:
     # it, serialised and compressed once, and the same bytes go to every page.
     _resp = {}
     _resp_locks = {}
+    _resp_used = {}
     _resp_guard = threading.Lock()
 
-    RESP_MAX = 400          # 1.58.17: answers kept for parameters ("stats:14", "hist:24:14,31"); the oldest go first
+    RESP_MAX = 400          # 1.58.17: answers kept for parameters ("stats:14", "hist:24:14,31"); 1.58.24: the longest unused go first
 
     def cached(self, name, ttl, build, ver=None, gate=None):
         """(built_at, body, gzipped body or None, object) for `build()`; rebuilt when `ver` changes or `ttl`
@@ -3731,27 +3732,38 @@ class State:
 
         1.58.17: `gate()` is asked before a rebuild — the client's allowance (app/limits.py). Refused, the last copy
         there is is given, stale; with none, None (the caller answers 429). What a reader needs is never refused:
-        everybody asking the usual question shares one copy."""
+        everybody asking the usual question shares one copy.
+        1.58.24: asked by the one thread that builds, under the lock — the others waiting for the same answer spend
+        nothing (100 pages behind one address opening at once after a restart got 40 refusals); and a copy that is
+        still asked for is never the one pushed out by odd questions (`_resp_used`)."""
         hit = self._resp.get(name)
-        if hit and hit[4] == ver and time.time() - hit[0] < ttl:
-            return hit
-        if gate is not None and not gate():
-            return hit
+        if hit:
+            self._resp_used[name] = time.time()          # only for a copy that is kept: nothing grows for a refusal
+            if hit[4] == ver and time.time() - hit[0] < ttl:
+                return hit
         with self._resp_guard:
             lk = self._resp_locks.setdefault(name, threading.Lock())
         with lk:
             hit = self._resp.get(name)
             if hit and hit[4] == ver and time.time() - hit[0] < ttl:
                 return hit
+            if gate is not None and not gate():
+                if hit is None:
+                    with self._resp_guard:                  # nothing kept for a refused question: no lock left behind
+                        self._resp_locks.pop(name, None)
+                return hit
             obj = build()
             body = json.dumps(obj, ensure_ascii=False).encode("utf-8")
             hit = (time.time(), body, gzip.compress(body, 5) if len(body) > 1400 else None, obj, ver)
             self._resp[name] = hit
+            self._resp_used[name] = hit[0]
             if len(self._resp) > self.RESP_MAX:
-                keyed = sorted((v[0], k) for k, v in list(self._resp.items()) if ":" in k and k != name)
+                used = self._resp_used
+                keyed = sorted((used.get(k, v[0]), k) for k, v in list(self._resp.items()) if ":" in k and k != name)
                 for _t, k in keyed[:len(self._resp) - self.RESP_MAX]:
                     self._resp.pop(k, None)
                     self._resp_locks.pop(k, None)
+                    used.pop(k, None)
             return hit
 
     _bridges_res = None
@@ -5548,6 +5560,8 @@ class SatTiles:
                     pass
             except sqlite3.Error as e:
                 log("satellite tiles unreadable:", e)
+                if self.conn:
+                    self.conn.close()               # 1.58.24: opened, then unreadable — closed, not left behind
                 self.conn = None
             self.sig = sig
         return self.conn
@@ -6595,7 +6609,7 @@ class TelegramAPI(threading.Thread):
             log("telegram api: TG_SESSION is not a valid session string")
             return
         client = TelegramClient(sess, int(self.cfg["tg_api_id"]), self.cfg["tg_api_hash"],
-                                device_model="Clear Sky server", app_version=APP_VERSION, receive_updates=False)
+                                device_model="Heimdall server", app_version=APP_VERSION, receive_updates=False)
         await client.connect()
         if not await client.is_user_authorized():
             self._status(False, error="Telegram session no longer valid — run scripts\\telegram-login.bat again")
@@ -8088,13 +8102,14 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", "0")
         self.end_headers()
 
-    def _admin_logout(self, everyone=False):
+    def _admin_logout(self, everyone=False, signed=True):
         ss = self.state.admin
         if everyone:
             ss.drop(everyone=True)
         else:
             ss.drop(token=adminauth.cookie_value(self.headers))
-        self._sec("logout_all" if everyone else "logout")
+        if signed:
+            self._sec("logout_all" if everyone else "logout")
         self.send_response(303)
         self.send_header("Location", "/admin")
         self.send_header("Cache-Control", "no-store")
@@ -8292,9 +8307,11 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send_gated(st.cached(f"hist:{hours}:{obl}", 20, lambda: {"alerts": st.store.history(hours, obl.split(",") if obl else None)},
                                                   ver=st.seq, gate=self._gate))
             if u.path == "/api/events_log":
-                if not self._allow("build"):
-                    return self._limited()
-                return self._json({"events": st.store.events(max(1, min(int(q.get("limit", ["200"])[0]), 500)))})
+                # 1.58.24: the desktop page asks after every alert event — one copy for every page, rebuilt when an
+                # alert changes (a mass alert refused it once the allowance was spent); the limit rounded up, as the feed's
+                n = int(q.get("limit", ["200"])[0]) if (q.get("limit", ["200"])[0]).isdigit() else 200
+                n = next(x for x in (60, 200, 500) if x >= min(max(n, 1), 500))
+                return self._send_gated(st.cached(f"evlog:{n}", 30, lambda: {"events": st.store.events(n)}, ver=st.seq, gate=self._gate))
             # Flagged readings are yours alone, on the same terms as the dashboard: they quote posts and
             # somebody's opinion of them, and neither belongs on an open endpoint.
             # The corpus, for reviewing from a browser instead of a terminal. The reading shown is computed
@@ -8397,7 +8414,7 @@ class Handler(BaseHTTPRequestHandler):
             return self._json({"error": "unauthorized"}, 401)
         try:
             n = int(self.headers.get("Content-Length") or 0)
-            if n > 65536:                                  # 1.58.17: no request of the pages is near this
+            if n < 0 or n > 65536:                         # 1.58.17: no request of the pages is near this (1.58.24: nor below 0 — read to the end)
                 return self._json({"error": "too large"}, 413)
             raw = self.rfile.read(n) if n else b""
             # 1.58.21: what changes something on the dashboard's side comes from this site's own pages only
@@ -8408,9 +8425,10 @@ class Handler(BaseHTTPRequestHandler):
             if u.path == "/admin/login":
                 return self._admin_login(raw)
             if u.path == "/admin/logout":
-                if not self._admin_ok(q):
-                    return self._json({"error": "unauthorized"}, 401)
-                return self._admin_logout(everyone=(parse_qs(raw.decode("utf-8", "replace")).get("all") or [""])[0] == "1")
+                # 1.58.24: a session that has already ended signs out too — back to the sign-in page, never a bare 401
+                ok = self._admin_ok(q)
+                return self._admin_logout(everyone=ok and (parse_qs(raw.decode("utf-8", "replace")).get("all") or [""])[0] == "1",
+                                          signed=ok)
             data = json.loads(raw.decode("utf-8") or "{}") if raw else {}
             if adm and self._admin_ok(q):
                 self._sec("action", u.path)

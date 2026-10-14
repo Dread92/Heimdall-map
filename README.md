@@ -7,8 +7,6 @@
 **Unofficial air-raid and drone tracker — Kyiv first, and 18 oblasts around and beyond it: Kyiv oblast, Chernihiv,
 Sumy, Kharkiv, Poltava, Cherkasy, Dnipro, Kirovohrad, Mykolaiv, Kherson, Odesa, Vinnytsia, Zhytomyr, Khmelnytskyi,
 Ternopil, Rivne, Volyn and Lviv.**
-*Formerly Clear Sky — same app, same address, new name (1.29). Repository: [Dread92/Heimdall-map](https://github.com/Dread92/Heimdall-map)
-(it was `clear-sky` until October 2026).*
 
 **Live:** <https://kyiv-air-watch-gb.fly.dev/m> (Tactical) · <https://kyiv-air-watch-gb.fly.dev/light> (Light) ·
 <https://kyiv-air-watch-gb.fly.dev/guide> (what to do).

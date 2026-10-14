@@ -1,6 +1,6 @@
 """Official alerts by raion, not by oblast.
 
-On 24 Sep 2026 at 22:07 the government app lifted the alert over Boryspil raion. At 22:21 Clear Sky still
+On 24 Sep 2026 at 22:07 the government app lifted the alert over Boryspil raion. At 22:21 Heimdall still
 showed the whole of Kyiv oblast red, and a person in Vyshenky (Boryspil raion) read "AIR RAID ALERT … since
 22:17". Both halves were wrong: the only official source running was the ubilling mirror, which says one thing
 per oblast — "something in Kyiv oblast is under alert" (Brovary and Vyshhorod raions, on the yellow drone level)

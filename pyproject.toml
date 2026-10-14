@@ -1,5 +1,5 @@
 [project]
-name = "clear-sky"
+name = "heimdall"
 version = "1.0.0"
 description = "Unofficial air-raid and drone tracker for Kyiv and all of Ukraine"
 readme = "README.md"

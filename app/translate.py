@@ -312,7 +312,7 @@ def _deepl(text, target="en"):
     host = "api-free.deepl.com" if key.endswith(":fx") else "api.deepl.com"
     body = _json.dumps({"text": [text], "source_lang": "UK", "target_lang": _TARGET[target][0], "preserve_formatting": True}).encode()
     req = _ur.Request(f"https://{host}/v2/translate", data=body, method="POST",
-                      headers={"Authorization": "DeepL-Auth-Key " + key, "Content-Type": "application/json", "User-Agent": "clear-sky"})
+                      headers={"Authorization": "DeepL-Auth-Key " + key, "Content-Type": "application/json", "User-Agent": "heimdall"})
     with _ur.urlopen(req, timeout=10, context=_CTX) as r:
         return _json.loads(r.read().decode("utf-8"))["translations"][0]["text"]
 
@@ -320,7 +320,7 @@ def _deepl(text, target="en"):
 def _google_cloud(text, target="en"):
     body = _json.dumps({"q": text, "source": "uk", "target": _TARGET[target][1], "format": "text"}).encode()
     req = _ur.Request("https://translation.googleapis.com/language/translate/v2?key=" + _up.quote(KEYS["google_cloud"]), data=body,
-                      method="POST", headers={"Content-Type": "application/json", "User-Agent": "clear-sky"})
+                      method="POST", headers={"Content-Type": "application/json", "User-Agent": "heimdall"})
     with _ur.urlopen(req, timeout=10, context=_CTX) as r:
         return _json.loads(r.read().decode("utf-8"))["data"]["translations"][0]["translatedText"]
 

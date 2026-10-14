@@ -2229,7 +2229,8 @@ function paintOblEvents(){
   const g=$('oblevt'); if(!g||!MAP) return;
   const uids=Object.keys(OBLEVT);
   // 1.54: the name of an oblast with a target somewhere in it lights up (a classList toggle that changes nothing is free)
-  const hot=new Set(uids.filter(u=>OBLEVT[u].some(m=>!m.status)));
+  // 1.58.24: a target placed at a town in it too — over the whole country on a phone, only the lit names stay
+  const hot=new Set(uids.filter(u=>OBLEVT[u].some(m=>!m.status)).concat(Object.keys(OBLPLACED)));
   document.querySelectorAll('#obllbl .oblbl').forEach(e=>e.classList.toggle('hot',hot.has(e.dataset.o)));
   if(!uids.length){ if(g.innerHTML){g.innerHTML='';g._sig='';} return; }
   // tick() runs several times a second. Rebuilding this layer every frame replaced the nodes between a
@@ -2458,7 +2459,7 @@ function tick(){
     return false;                                    // never a pin on the oblast centre, whatever it is
   }); OBLEVT=g;
   // 1.58.20: the drones placed in each oblast, for its badge's estimate (as the map's totals count them)
-  const pc={}; for(const m of live){ if(m.status||m.endedBy||m.type!=='drones'||!m.oblast_uid) continue;
+  const pc={}; for(const m of live){ if(m.status||m.endedBy||m.stale||m.type!=='drones'||!m.oblast_uid) continue;   // 1.58.24: not a stale one (the totals' "?")
     const o=pc[m.oblast_uid]=pc[m.oblast_uid]||{}, k=m.jet?'t:jet':'t:drones'; o[k]=(o[k]||0)+(m.count||1); }
   OBLPLACED=pc;}
   // outcome markers at the same place within 20 min collapse into one (✸ Impact ×3) — one glyph, not a pile
@@ -2573,7 +2574,7 @@ function tick(){
     else{b.trail.setAttribute('x1',x0.toFixed(2));b.trail.setAttribute('y1',y0.toFixed(2));b.trail.setAttribute('x2',x.toFixed(2));b.trail.setAttribute('y2',y.toFixed(2));b.trail.setAttribute('class','trail'+(info.inbound?' inbound':''));}
     b.g.querySelector('.halo').setAttribute('r',kx((/missile/.test(m.type)?17:13)*MSK));
     // the tap area stays a finger's size (14 px at the least) however small the glyph is
-    {const h2=b.g.querySelector('.halo2'); if(h2) h2.setAttribute('r',kx(17*MSK));} b.g.querySelector('.hit').setAttribute('r',kx(Math.max(18*MSK,14*KPX)));
+    {const h2=b.g.querySelector('.halo2'); if(h2) h2.setAttribute('r',kx(17*MSK));} b.g.querySelector('.hit').setAttribute('r',kx(Math.max(18*MSK,18*KPX)));   // 1.58.24: never under 18 px, zoomed out included
     b.g.querySelector('.lbl').setAttribute('x',kx(14*MSK)); b.g.querySelector('.lbl').setAttribute('y',kx(-6*KPX)); b.g.querySelector('.lbl2').setAttribute('x',kx(14*MSK)); b.g.querySelector('.lbl2').setAttribute('y',kx(6*KPX));
     const kind=(m.type==='drones'?(m.jet?t('k_jet'):t('k_shahed')):m.type==='unknown'?(mslCtx(m)?'⚠ '+t('unk_mix'):t('unk_likely')):THREAT[m.type]?.[1]||m.type);
     const name=m.status?(({down:t('mk_down'),impact:t('mk_impact'),lost:t('mk_lost'),clear:t('mk_clear'),damage:t('mk_damage'),fire:t('mk_fire')})[m.status]||statusName(m.status)+((m.cluster||1)>1?` ×${m.cluster}`:m.count>1?` ×${m.count}`:'')):kind+((m.csum||m.count||1)>1?` ×${m.csum||m.count}`:'');
@@ -3880,7 +3881,7 @@ $('geobtn').onclick=()=>{closePanels();geoSheet();};
 // (static/live.js applies it), and one arrives at least every `hb` seconds (15, 5 with cruise missiles up, 2 with
 // a ballistic one) as the heartbeat. While it beats, the page asks nothing; the version check below becomes a
 // once-a-minute safety net. If it stops, the page goes back to asking every 15 / 5 / 1 s, as before 1.29.
-let es, trT=null, histT=null;
+let es, esT=null, esFail=0, trT=null, histT=null;
 const H={mk:null,st:null,fd:null};            // the server's version (hash) of each part this page holds
 let LIVE_SYNC=false, liveLast=0, liveHb=15, lastPingAt=0;
 const liveOK=()=>LIVE_SYNC&&Date.now()-liveLast<Math.max(3*liveHb*1000,8000);
@@ -3924,10 +3925,14 @@ function showNotice(n){ const el=$('notice'); if(!el) return; let gone=null; try
     el.querySelector('.nx').onclick=()=>{ try{localStorage.setItem('notice_x',n.id);}catch(e){} el.hidden=true; syncTop(); }; }
   if(el.hidden!==hide){ el.hidden=hide; syncTop(); } }
 function histSoon(){ if(histT) return; histT=setTimeout(()=>{histT=null;loadHist();},2000+Math.random()*18000); }
+// 1.58.24: one live line at a time (a new one closes the old), and a line that keeps failing is asked again later and
+// later — 3 s, 6, 12, 24, then every 30 s, spread — while the pulse keeps the page current: after a restart every page
+// came back at the same second, and a line refused (too many from one address) was asked again every 3 s for ever
 function connect(){
+  clearTimeout(esT); try{ es&&es.close(); }catch(e){}
   const qs=['sync='+(LITE?'mk,st':'mk,st,fd')]; if(LANG!=='uk') qs.push('lang='+LANG);
   es=new EventSource('/api/stream?'+qs.join('&'));
-  es.addEventListener('hello',ev=>{const d=JSON.parse(ev.data); liveBeat(d); const h=d.h||{};
+  es.addEventListener('hello',ev=>{const d=JSON.parse(ev.data); esFail=0; liveBeat(d); const h=d.h||{};
     if('mk' in h&&h.mk!==H.mk) loadMarkers(); if('st' in h&&h.st!==H.st) loadState(); if('fd' in h&&h.fd!==H.fd) loadFeed(false);});
   es.addEventListener('sync',ev=>{const d=JSON.parse(ev.data); liveBeat(d); applySync(d);});
   es.addEventListener('tr',ev=>{const d=JSON.parse(ev.data); if(d.lang!==LANG||(LIVE_SYNC&&!LITE)) return; clearTimeout(trT); trT=setTimeout(()=>loadFeed(false),2500);});
@@ -3939,7 +3944,7 @@ function connect(){
   ['start','end','threat','update'].forEach(k=>es.addEventListener(k,onA(k)));
   es.addEventListener('eradar',()=>{ if(!LIVE_SYNC) loadState(); });
   es.addEventListener('feed',ev=>{const d=JSON.parse(ev.data);if(!LIVE_SYNC||LITE)loadFeed(true);if(!LIVE_SYNC)loadMarkers();if(!HOME&&(d.post.tags||[]).includes('kyiv')&&!(d.post.tags||[]).includes('official'))notify(t('n_kyivarea')+' — '+(CH[d.post.channel]||d.post.channel),ptxt(d.post).slice(0,160),'threat');});
-  es.onerror=()=>{LIVE_SYNC=false;es.close();setTimeout(connect,3000);};
+  es.onerror=()=>{LIVE_SYNC=false;es.close();esT=setTimeout(connect,Math.min(30000,3000*2**Math.min(esFail++,4))*(0.75+Math.random()*0.5));};
 }
 // 1.42: the switch to Light and back can keep this page in the browser's memory (back/forward cache). The live line is
 // closed when the page is put away and opened again when it comes back; what changed meanwhile arrives with 'hello'.

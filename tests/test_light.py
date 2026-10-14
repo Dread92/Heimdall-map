@@ -1,4 +1,4 @@
-"""Clear Sky Light: one place, what concerns it, nothing else.
+"""Heimdall Light: one place, what concerns it, nothing else.
 
 It inherits every promise the full app makes and adds two of its own: it has to be readable in seconds on a
 phone in a corridor, and it must never learn more about where somebody is than the full app does — which is
@@ -68,8 +68,9 @@ def test_it_stays_light():
     # load static/lightmap.js when a reader asks for it (the tiles and their code are not part of the page)
     # 1.58.16 raised it by 0.7 KB: a hromada's alert on the hromada itself — the few lines that load static/hromadas.js
     # once an alert names a hromada (the outlines and their test are not part of the page)
+    # 1.58.24 raised the sum by 0.1 KB: a live line that keeps failing is asked again later and later, one at a time
     assert page < 26_300, f"the light page is no longer light ({page} B gzipped)"
-    assert page + extra < 67_200, f"page + map data = {page + extra} B gzipped"   # 1.58.16: the same 0.6 KB
+    assert page + extra < 67_300, f"page + map data = {page + extra} B gzipped"   # 1.58.16: the same 0.6 KB
     # 1.29: the live line is allowed — the light variant only (alerts and marks, no feed, no raw events). An open
     # line costs the server nothing any more (one thread holds them all) and the phone ~100 bytes every 15 s,
     # against ~8 KB every 15 s for asking.

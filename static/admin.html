@@ -875,7 +875,7 @@ function drawChanSw(){ const box=$('chsw'), c=ON&&ON.channel; if(!box) return;
 let SEC=null;
 async function loadSec(){ try{ const r=await fetch('/api/admin/security',{cache:'no-store'}); if(r.status===401){ location.reload(); return; } SEC=await r.json(); }catch(e){} drawSec(); }
 async function secPost(body){ try{ const r=await fetch('/api/admin/security',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-  if(r.status===401){ location.reload(); return; } SEC=await r.json(); }catch(e){} drawSec(); }
+  if(r.status===401||(r.ok&&body.everyone)){ location.reload(); return; } SEC=await r.json(); }catch(e){} drawSec(); }   // 1.58.24: everyone out, this page too
 function drawSec(){ const el=$('sec_d'); if(!el) return; if(!SEC){ el.textContent='—'; return; }
   const tm=s=>new Date(s*1000).toLocaleString(L==='uk'?'uk-UA':'en-GB',{timeZone:'Europe/Kyiv',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
   const ss=SEC.sessions||[], evs=(SEC.events||[]).slice(0,10);

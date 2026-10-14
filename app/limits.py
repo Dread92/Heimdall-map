@@ -20,6 +20,7 @@ writes itself), kept in memory only, never stored or logged; the salt changes ev
 machine itself (no proxy header, a loopback address) are not limited.
 """
 import hashlib
+import ipaddress
 import os
 import threading
 import time
@@ -77,12 +78,20 @@ class Limits:
 
 
 def client_ip(headers, peer):
-    """The reader's address for the limits: Fly's own header, else the connection's. None for this machine itself."""
-    ip = (headers.get("Fly-Client-IP") or "").strip()
-    if ip:
-        return ip
+    """The reader's address for the limits: on Fly, Fly's own header; elsewhere the connection's. None — never
+    limited — for this machine and for a proxy in front of it.
+
+    1.58.24: the header is believed on Fly alone, where Fly's proxy writes it. Anywhere else a client writes it
+    himself (a new value, a new allowance), and behind another host's proxy (Render, a reverse proxy before Docker)
+    the connection comes from a private address: every reader at once, limited as one — never limit that."""
     if os.environ.get("FLY_APP_NAME"):
-        return None          # on Fly without the header the peer is Fly's proxy: everybody at once — never limit that
-    if not peer or peer in ("127.0.0.1", "::1") or peer.startswith("127."):
+        return (headers.get("Fly-Client-IP") or "").strip() or None    # without it the peer is Fly's proxy
+    if not peer:
+        return None
+    try:
+        a = ipaddress.ip_address(peer.split("%")[0])
+    except ValueError:
+        return None
+    if a.is_loopback or a.is_private or a.is_link_local:
         return None
     return peer

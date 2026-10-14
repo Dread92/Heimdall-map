@@ -17,12 +17,12 @@ Manually, anywhere:
 
 ```bash
 fly auth login
-fly apps create clear-sky --org personal
-fly volumes create data --size 1 --region ams --yes -a clear-sky
-fly secrets set ADMIN_KEY=a-long-random-string -a clear-sky     # protects /admin only; the map stays public
-fly secrets set DEEPL_KEY=your-deepl-key -a clear-sky            # optional: clear EN/FR translation
-fly secrets set UKRAINEALARM_KEY=your-key -a clear-sky           # optional: official API instead of the proxy
-fly deploy -a clear-sky --ha=false
+fly apps create my-heimdall --org personal
+fly volumes create data --size 1 --region ams --yes -a my-heimdall
+fly secrets set ADMIN_KEY=a-long-random-string -a my-heimdall     # protects /admin only; the map stays public
+fly secrets set DEEPL_KEY=your-deepl-key -a my-heimdall            # optional: clear EN/FR translation
+fly secrets set UKRAINEALARM_KEY=your-key -a my-heimdall           # optional: official API instead of the proxy
+fly deploy -a my-heimdall --ha=false
 ```
 
 Change `app = "…"` in `fly.toml` to your app name.
@@ -90,10 +90,10 @@ problem.
 Useful:
 
 ```bash
-fly logs -a clear-sky          # live logs
-fly status -a clear-sky        # machine state
-fly ssh console -a clear-sky   # shell inside the machine
-fly ssh console -a clear-sky -C "ls -la /data"   # the database on the volume
+fly logs -a kyiv-air-watch-gb                              # live logs
+fly status -a kyiv-air-watch-gb                            # machine state
+fly ssh console -a kyiv-air-watch-gb                       # shell inside the machine
+fly ssh console -a kyiv-air-watch-gb -C "ls -la /data"     # the database on the volume
 ```
 
 ### Its own address (domain)
@@ -123,7 +123,7 @@ deployment is public.
 `FLY_API_TOKEN` exists. Create one with:
 
 ```bash
-fly tokens create deploy -a clear-sky
+fly tokens create deploy -a kyiv-air-watch-gb
 ```
 
 then add it under *Settings → Secrets and variables → Actions → New repository secret*. Without the
@@ -138,12 +138,12 @@ secret the job is skipped, so the workflow is harmless until you want it.
 ## Docker anywhere
 
 ```bash
-docker build -t clear-sky .
-docker run -d --name clear-sky -p 8080:8080 \
-  -v clear-sky-data:/data \
+docker build -t heimdall .
+docker run -d --name heimdall -p 8080:8080 \
+  -v heimdall-data:/data \
   -e ACCESS_KEY=a-long-random-string \
   -e ALERTS_IN_UA_TOKEN=your-token \
-  clear-sky
+  heimdall
 ```
 
 The image contains `app/` and `static/` only; the database lives on the volume at `/data`.

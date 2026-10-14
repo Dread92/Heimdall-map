@@ -1,4 +1,4 @@
-# Working on Heimdall (formerly Clear Sky) — notes for Claude sessions
+# Working on Heimdall — notes for Claude sessions
 
 Heimdall is used live by people deciding whether to take cover. Read `docs/SAFETY.md` and
 `docs/TECHNICAL.md` before changing `app/` or `static/`.

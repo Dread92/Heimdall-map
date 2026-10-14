@@ -85,7 +85,7 @@ def test_light_opens_a_mark_on_a_tap():
 
 
 def test_the_new_logo_is_the_app_icon_and_the_partner_logos_stay():
-    """1.29: Heimdall's radar is the app icon everywhere (it was Clear Sky's since 1.19); 07300 and Black Flame stay."""
+    """1.29: Heimdall's radar is the app icon everywhere; 07300 and Black Flame stay (the old name: test_old_name_15824)."""
     for man in ("manifest.json", "light.webmanifest"):
         m = json.load(open(os.path.join(ROOT, "static", man), encoding="utf-8"))
         assert m["short_name"].startswith("Heimdall")
@@ -97,11 +97,9 @@ def test_the_new_logo_is_the_app_icon_and_the_partner_logos_stay():
     assert json.load(open(os.path.join(ROOT, "static", "manifest.json"), encoding="utf-8"))["id"] == "/m"
     for page in (PAGE, LIGHT):
         assert 'rel="apple-touch-icon" href="/static/heimdall-apple-180.png"' in page     # an iPhone's home screen
-        assert "Clear Sky" not in page
     assert 'src="/static/logo-64.png" alt="07300"' in PAGE          # NGO 07300 stays in the header
     assert "/static/bf-logo.png" in I18N and "footerHTML(" in PAGE  # Black Flame stays in the credits (1.39: the shared footer)
     assert '"heimdall-64.png"' in SRC                                 # the favicon
-    assert "Clear Sky" not in I18N
 
 
 def test_mark_labels_are_spaced_from_what_is_drawn_not_from_a_copy_of_the_css():

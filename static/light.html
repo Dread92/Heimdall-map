@@ -680,18 +680,19 @@ $('list').addEventListener('click',e=>{ const r=e.target.closest('.row[data-id]'
   const id=r.dataset.id; if(OPEN.has(id)) OPEN.delete(id); else OPEN.add(id); r.classList.toggle('open'); const tp=r.querySelector('.tap'); if(tp) tp.remove(); });
 
 // The live line (1.29, static/live.js): what changed, a beat every 15 s; if it stops the page asks every 15 s itself.
-const HL={mk:null,st:null}; let LIVE_ON=false, liveLast=0, liveHb=15, esL=null;
+const HL={mk:null,st:null}; let LIVE_ON=false, liveLast=0, liveHb=15, esL=null, esT=null, esF=0;
 const liveOK=()=>LIVE_ON&&Date.now()-liveLast<Math.max(3*liveHb*1000,8000);
 function liveBeat(d){ LIVE_ON=true; liveLast=Date.now(); liveHb=d.hb||15; LAST_OK=Date.now(); $('off').hidden=true; }
 function connectLive(){ if(typeof EventSource==='undefined'||!window.LiveSync) return;
+  clearTimeout(esT); try{ esL&&esL.close(); }catch(e){}
   try{ esL=new EventSource('/api/stream?p=light&ev=0&sync=mk,st'); }catch(e){ return; }
-  esL.addEventListener('hello',ev=>{ const d=JSON.parse(ev.data); liveBeat(d); const h=d.h||{};
+  esL.addEventListener('hello',ev=>{ const d=JSON.parse(ev.data); esF=0; liveBeat(d); const h=d.h||{};
     if(h.mk!==HL.mk||h.st!==HL.st) refresh(true); });
   esL.addEventListener('sync',ev=>{ const d=JSON.parse(ev.data); liveBeat(d); let full=false, changed=false;
     if(d.mk){ const r=LiveSync.part('mk',d.mk,HL.mk,MKS); if(r===null) full=true; else if(r!=='same'){ MKS=r.v; HL.mk=d.mk.h; changed=true; } }
     if(d.st){ const r=LiveSync.part('st',d.st,HL.st,STATE); if(r===null) full=true; else if(r!=='same'){ STATE=r.v; HL.st=d.st.h; changed=true; } }
     if(full) refresh(true); else { upd(); if(changed) paint(); } });
-  esL.onerror=()=>{ LIVE_ON=false; try{esL.close();}catch(e){} setTimeout(connectLive,5000); }; }
+  esL.onerror=()=>{ LIVE_ON=false; try{esL.close();}catch(e){} esT=setTimeout(connectLive,Math.min(3e4,5e3*2**esF++)*(.75+Math.random()/2)); }; }
 // 1.42: back/forward cache: the live line closes with the page and opens on its return
 addEventListener('pagehide',e=>{ if(e.persisted) try{ esL&&esL.close(); }catch(_){} });
 addEventListener('pageshow',e=>{ if(e.persisted){ LIVE_ON=false; connectLive(); refresh(true); } });

@@ -14,7 +14,7 @@ SAFETY = open(os.path.join(ROOT, "docs", "SAFETY.md"), encoding="utf-8").read()
 def test_the_badge_counts_what_is_reported_in_the_oblast_as_an_estimate():
     # the drones placed in each oblast, counted as the map's totals count them (each mark's own count)
     assert "OBLPLACED=pc;" in PAGE and "o[k]=(o[k]||0)+(m.count||1);" in PAGE
-    assert "if(m.status||m.endedBy||m.type!=='drones'||!m.oblast_uid) continue;" in PAGE
+    assert "if(m.status||m.endedBy||m.stale||m.type!=='drones'||!m.oblast_uid) continue;" in PAGE   # 1.58.24: not a stale one
     # the larger of the two, never their sum (a channel's oblast total is often the same drones as the placed ones)
     assert "Math.max(by[k],(OBLPLACED[uid]||{})[k]||0)" in PAGE and "by[k]+(OBLPLACED" not in PAGE
     # written "~12": an estimate, and only for drones and jet drones; an outcome keeps its count

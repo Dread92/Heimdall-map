@@ -2,6 +2,44 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.24 — 2026-10-14
+
+### Fixed
+- **Stabilisation** — the owner: "let's try to make stabilization". A review of 1.58.16 → 1.58.23 found these, each
+  reproduced before it was fixed, each with its test (`tests/test_stability_15824.py`):
+  - **Pages opening together behind one address were refused the usual answers.** Every page that found the places,
+    the history or the statistics not built yet (after a restart) spent its allowance on them, though one page was
+    building them for all: 100 pages at once got 40 refusals, and the Light page's place picker stayed empty. Only the
+    page that builds pays now; the others wait for its answer. An answer still asked for is no longer pushed out by
+    odd questions, and a refused question leaves nothing behind on the server.
+  - **The Fly address header was believed anywhere.** Off Fly a client writes it himself — a new value, a new
+    allowance — and behind another host's proxy every reader was one client. It is believed on Fly alone; a proxy's
+    address is never limited.
+  - **The desktop page's event log was refused in a mass alert** (a query for each event): one copy now, rebuilt when an
+    alert changes.
+  - **A live line that fails is asked again later and later** — 3 s, 6, 12, 24, then every 30 s, spread — and a page
+    keeps one at a time: after a restart every page came back on the same second, and a refused line was asked again
+    every 3 s for ever. The page stays current meanwhile, as before.
+  - **The channel's picture left part of an alerted hromada clear** — a hromada in two pieces (Borshchahivska,
+    Brovarska) was tinted on the first. And **a raion was announced clear in the channel while one of its hromadas was
+    still under alert**: the hromada's alert keeps its raion on now.
+  - **An oblast's "~N" counted drones the map already shows as stale** ("?" in the totals); **a target placed in an
+    oblast did not light its name**, so on a phone over the whole country an oblast with 30 placed drones had none;
+    **a target was harder to tap zoomed out** (14 px instead of 18).
+  - A negative request length is refused like a too long one; signing out of a dashboard session that had already
+    ended showed a bare error — it goes back to the sign-in page, and "sign everyone out" leaves the page at once; the
+    satellite file, opened and found unreadable, is closed.
+  - The suite (1,000 tests, ~35 s) ran eight times: one failure, a flaky check — an address's hash "does not contain
+    203" fails by chance about once in 270 runs (a hash of 16 hex digits). It checks that it is a hash now.
+
+### Changed
+- **The old name is gone** — the owner: "remove mentions of 'clearsky' since it's no longer relevant". Heimdall was
+  Clear Sky until 1.29; what still said so — a docstring, two User-Agents, the push contact (`mailto:heimdall@…`, the
+  phones stay subscribed: it is not part of a subscription), the Telegram session's device name ("Heimdall server", as
+  the login script already named it), the package name, the deployment examples, six unused icons (`logo-cs-*`), the
+  old master logo and a stale Ukrainian review sheet — was renamed or removed. The icon recipe in TECHNICAL §16 is the
+  Heimdall one. `tests/test_old_name_15824.py` keeps it gone; this file keeps the history.
+
 ## 1.58.23 — 2026-10-14
 
 ### Fixed

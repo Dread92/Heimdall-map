@@ -2,7 +2,6 @@
 setlocal enabledelayedexpansion
 cd /d "%~dp0.."
 REM Publishes this folder to GitHub as <you>/Heimdall-map (private), or pushes the changes if it is already there.
-REM (The repository was called clear-sky until October 2026; GitHub sends the old address to the new one.)
 set "REPO=Heimdall-map"
 REM Needs GitHub CLI: winget install GitHub.cli   (then run this script; it logs you in via the browser)
 where gh >nul 2>nul || (echo GitHub CLI not found. Run:  winget install GitHub.cli  and re-run this script. & pause & exit /b 1)

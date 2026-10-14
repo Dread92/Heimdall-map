@@ -56,7 +56,7 @@ def load_regions(path):
     if path:
         with open(path, encoding="utf-8") as f:
             return json.load(f)
-    req = urllib.request.Request("https://siren.pp.ua/api/v3/regions", headers={"User-Agent": "clear-sky-build"})
+    req = urllib.request.Request("https://siren.pp.ua/api/v3/regions", headers={"User-Agent": "heimdall-build"})
     with urllib.request.urlopen(req, timeout=30) as r:
         return json.loads(r.read().decode("utf-8"))
 

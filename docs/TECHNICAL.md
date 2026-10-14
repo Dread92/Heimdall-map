@@ -1,10 +1,9 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-14 (1.58.23)
+**Documented version: 1.58** · last updated 2026-10-14 (1.58.24)
 
-The repository is **Dread92/Heimdall-map** (it was `clear-sky` until October 2026; GitHub sends the old address on).
-Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
-internal names still carry the old name.
+The repository is **Dread92/Heimdall-map**. The Fly app keeps its first name, `kyiv-air-watch-gb`: Fly cannot rename
+an app (§15 has the move to a domain of its own).
 
 This is the complete technical reference: what runs, where the data comes from, how a Telegram post becomes a
 mark on a map, how an official alert becomes a colour, what is stored, what is sent, and how to change any of
@@ -161,7 +160,7 @@ Heimdall-map/
 │   ├── guide.html          what to do, weapon by weapon (/guide, 1.35): self-contained, content in its JSON block
 │   ├── sw.js               service worker: push display, notification clicks, the pages and the guide kept for when the server is unreachable
 │   ├── manifest.json, light.webmanifest   the two PWAs
-│   ├── logo-cs*.png        the Clear Sky logo: app icons (any / maskable), favicon, badge, the notice
+│   ├── heimdall-*.png      the app icons (any / maskable / iPhone), the favicon; logo-hd-badge.png Android's badge
 │   └── logo*.png (NGO 07300), bf-logo*.png (Black Flame Studio), ukraine-map.LICENSE.md
 ├── data/
 │   ├── ua_regions.json     official region id → oblast / parent raion / map shape (built)
@@ -276,7 +275,10 @@ The pages: while the line beats (a message within 3 × `hb`), they ask nothing; 
 reopened, and the page asks at its old cadence until it beats again. The Light page takes `sync=mk,st` without
 events (`p=light&ev=0`); the Tactical page in blackout mode takes `mk,st` and still fetches its 25-post feed.
 
-A page that stops reading is dropped once 512 KB are waiting for it (its EventSource reconnects). Nothing
+A page that stops reading is dropped once 512 KB are waiting for it (its EventSource reconnects). 1.58.24: a page
+keeps one line at a time (opening one closes the one before), and a line that keeps failing is opened again later and
+later — 3 s (Light: 5 s), doubled at each failure up to 30 s, ±25 % so the pages do not come back on the same
+second after a restart — while the pulse keeps the page current; a line that said `hello` starts again from 3 s. Nothing
 about a reader is kept: a connection is a socket, a language and which page it is; `/api/online` counts them.
 
 Measured on the demo feed (one core, 2026-09-28): 9,000 open pages — **8 threads, 62 MB**, ~80 ms of CPU per
@@ -336,7 +338,7 @@ Environment variables win over `config.json`. On Fly they are set as **secrets**
 | `ANDROID_CERT_SHA256` | 1.57.6: the SHA-256 fingerprint(s) of the Android app's signing key (§10.8), as keytool or apksigner prints them, several separated by commas — set with `scripts/set-android-key.bat`. Public, not a secret. Unset: `/.well-known/assetlinks.json` is an empty list. |
 | `ANDROID_PACKAGE` | 1.57.6: the Android app's identifier, default `com.blackflamestudio.heimdall`. |
 | `ADMIN_KEY` | Protects `/admin` and its APIs only. The map stays public. 1.58.21: typed at the sign-in page (§12.2), or sent by a script in an `X-Admin-Key` header — never in an address. |
-| `FLY_APP_NAME` | Set by Fly itself. 1.58.17: without Fly's `Fly-Client-IP` header nobody is limited (the peer would be Fly's proxy); 1.58.21: the dashboard's session cookie is `Secure`. |
+| `FLY_APP_NAME` | Set by Fly itself. 1.58.17: without Fly's `Fly-Client-IP` header nobody is limited (the peer would be Fly's proxy); 1.58.24: that header is believed only when this is set (§12.1); 1.58.21: the dashboard's session cookie is `Secure`. |
 | `ACCESS_KEY` | Puts the whole app behind a key. **Never on the public app.** |
 | `ALERTS_IN_UA_TOKEN` | alerts.in.ua token. |
 | `UKRAINEALARM_KEY` | Official ukrainealarm API key. |
@@ -480,7 +482,8 @@ oblast gzipped. A page fetches an oblast's file only once an official alert ther
 `HROMADA.need`); until it is here, and for a hromada with no outline, the alert colours its raion as before. The server
 reads them too (`areas.py`: `hromada_of`, `in_hromada`): `alert_fill` gives a hromada with an outline as
 `hr:<oblast>:<id>` instead of its raion, so the held rule (§7.4) and the channel's picture (§9c) follow the hromada as
-the pages do. **A place within 1.5 km of a hromada's outline belongs to it** (`BORDER_KM`, the Light page's raion rule).
+the pages do — the picture filling every ring of it even-odd as the pages do (1.58.24: a hromada in two pieces,
+Borshchahivska or Brovarska, was tinted on the first alone). **A place within 1.5 km of a hromada's outline belongs to it** (`BORDER_KM`, the Light page's raion rule).
 
 An id not in the table is **kept, never dropped**, placed as well as its name allows, and logged once
 ("rebuild ua_regions.json"). Oblast uids follow alerts.in.ua: 31 Kyiv city, 14 Kyiv oblast, 10 Zhytomyr,
@@ -1624,7 +1627,7 @@ it. They are grouped by target tag (`tag.night` + `tag.id`, else the mark's id):
 | a new target, reported in the last 5 min (`FRESH_S`), not already ended by an outcome | `sendPhoto` | the picture and the caption; the phone rings. A target closed before and reported again: a new thread, in reply to its last line |
 | the same target reported again (a new place, course, count, height, path, minute, held or drawn) | `sendPhoto` with `reply_parameters` | 1.58.7: a new post, in reply to its last one, at most every 60 s (`UPDATE_EVERY_S`) and only for a report of the last 5 min — never an edit |
 | an outcome a post reported, linked to it as kyiv.html's `linkStatus` links it (`link_outcomes`: down, impact, lost, clear; same family, −2…40 min, ≤ 60 km, ahead of a stated course beyond 8 km, "clear" ≤ 25 km; one each) | `sendMessage`, in reply | 1.58.7: "⬇️ **Збито / Приземлено** — так у дописі о HH:MM" (the app's `st_*` words: "💥 Вибух (влучання або перехоплення — невідомо)", "❔ Локаційно втрачено", "✅ Повідомлено: у районі чисто") and the target's line. Not where it happened, no picture. Also once after "no new reports" (a target gone from the map is linked by its last report) |
-| the official alert of the target's area gone for 60 s (`CLEAR_AFTER_S`) | `sendMessage`, in reply to the area's last post | 1.58.7: "✅ **Відбій тривоги** о HH:MM · Броварський район (офіційно)" — once per area and alert, closing the targets still open there |
+| the official alert of the target's area gone for 60 s (`CLEAR_AFTER_S`) — 1.58.24: an alert of one of its hromadas keeps a raion on (`area_on`) | `sendMessage`, in reply to the area's last post | 1.58.7: "✅ **Відбій тривоги** о HH:MM · Броварський район (офіційно)" — once per area and alert, closing the targets still open there |
 | gone from the flying marks for 5 min (`END_AFTER_S`) | `sendMessage`, in reply | "⏹ Нових дописів після HH:MM немає" and the target's line |
 
 The caption (Telegram HTML, Ukrainian): the type as the app names it (Шахед, Реактивний дрон, Балістична ракета,
@@ -1995,15 +1998,17 @@ Main parts:
   left out (`nolbl`). The boxes (`LBLBOX`) hide the town names under them (`layoutTownLabels`);
 - **an oblast's badge counts the drones reported in it** (1.58.20, the owner: "how many are reported within the oblast now,
   with a '~' to show it is an estimate"): `OBLPLACED`, filled in `tick()`, is per oblast the drones and jet drones the map
-  has placed there (each mark's `count`, as the map's totals count them; a mark's `oblast_uid`); for a drone kind the badge
+  has placed there (each mark's `count`, as the map's totals count them; a mark's `oblast_uid`; 1.58.24: never a stale
+  one — the totals put those under "?"); for a drone kind the badge
   shows the larger of that and the oblast-wide reports' own number (`est`) — never their sum — written "~12", the line
   under it "reported in the oblast now" (`obl_now`) instead of "somewhere in the oblast" once placed ones are in it, the
   card the sentence `obl_est`. Outcomes keep "×3". The badges are still drawn only for an oblast with an oblast-wide
   report;
 - **the oblast names step back zoomed out** (1.58.20, the owner: "we don't need it zoomed out, or make it more
   discreet"): `svg.far` 11 px, `svg.veryfar` 9.5 px letter-spaced; over the satellite or the map half-toned
-  (`fill-opacity` .62 / .48, a thinner outline); a lit name (a target in the oblast) stays readable; on a phone over the
-  whole country (`svg.dense`, over 2.2 km a pixel) only the lit names are drawn;
+  (`fill-opacity` .62 / .48, a thinner outline); a lit name (a target in the oblast: an oblast-wide report, or — 1.58.24
+  — one placed at a town of it, `OBLPLACED`) stays readable; on a phone over the whole country (`svg.dense`, over 2.2 km
+  a pixel) only the lit names are drawn;
 - **less on the screen** (1.58.19, the owner, Kyiv oblast on a phone: "too much information on the screen"): a raion's
   name is the least of the names — 9.5 px, letter-spaced, quieter (`.rnlbl`) — and `layoutTownLabels` places it last,
   leaving it out where a town, a target, a badge, the home's name (`#homeg .hl`) or the map's buttons (`.mapctl`) are;
@@ -2017,7 +2022,7 @@ Main parts:
   arrow, halo, count badge, tag, height and the labels' offset (the label layout's boxes too, the replay's glyphs,
   the Crimea Cossack). Texts shrink less (`--mzt`, never under 0.8: the height, the compact tag, the count's digits),
   the oblast badges as a whole by `--mzc` (never under 0.75; their shift apart stays in screen pixels), and the tap
-  area never under 14 px. On a computer the whole country is about 0.62;
+  area never under 18 px (1.58.24: it was 14 zoomed out, against the 18 of before). On a computer the whole country is about 0.62;
 - the map's own pictograms are vector shapes, not the phone's emoji (1.39): the airfields, power plants and nuclear
   plants of the infrastructure layer (`POIS`, `POI_G`: a plane, a lightning bolt, a trefoil; shown zoomed in, hidden
   at night and in blackout) and the watched place's house — the same on every phone. 1.57.7: Kyiv oblast's `POIS` are
@@ -2383,7 +2388,7 @@ Android app at once**; a new APK is needed only for its name, icon, address or A
 - The Telegram session (`TG_SESSION`) is a key to a whole Telegram account. It is created on the owner's PC by
   `scripts/telegram-login.bat` and goes straight into Fly's secret store (`fly secrets import`, read from stdin):
   never on a command line, in a file, in the logs, in `config.json` or in the repository. Revoke it in Telegram:
-  Settings → Devices → "Clear Sky server" → Terminate.
+  Settings → Devices → "Heimdall server" → Terminate.
 - Usage counters (`usage`, `usage_seen`): a daily salted hash, no IP address, no location, no per-person
   history. A page the browser loads ahead of a tap (prerender, `Sec-Purpose: prefetch`) is not counted (1.40).
 - Flags and the corpus review are behind `ADMIN_KEY`.
@@ -2436,7 +2441,7 @@ All JSON unless stated. Public unless marked 🔒 (`ADMIN_KEY`).
 | `POST /api/flag` | "this reading is wrong" report |
 | `GET /admin` | 1.58.21: the sign-in page (`static/admin-login.html`) until a session is open, then the dashboard (§12.2); `?key=` in the address is never accepted — the page says so |
 | `POST /admin/login` | 1.58.21: `key=` (form) or `{key}` (JSON) → 303 to `/admin` with the session cookie; 401 for a wrong key (a second's wait), 429 past 5 tries |
-| 🔒 `POST /admin/logout` | 1.58.21: ends this session (`all=1`: every session) → 303 to `/admin` |
+| 🔒 `POST /admin/logout` | 1.58.21: ends this session (`all=1`: every session) → 303 to `/admin`; 1.58.24: a session already ended is signed out too (no 401) |
 | 🔒 `GET /api/admin/security` | 1.58.21: `{sessions: [{id, at, seen, ua, net, mine}], events: [{t, e, ua, net, d}], fails_24h, ttl_h}`; `POST {end: id}` ends one session, `{everyone: true}` all of them |
 | 🔒 `GET /api/usage` | usage counters |
 | 🔒 `GET /api/health` | official sources (ok, last check, detail), every channel read (posts / marks 24 h, share read 7 d, last post, reader state, `mode`, `read_via`, `builtin`, `home`), the compartments (`regions`: `id`, `name`, `en`, `on`, `locked`, `channels`), translation backends, lead time over the official alert in Kyiv + oblast (30 days), the imagery (`imagery`, 1.48) and the AI reader's state (`ai_reader`, 1.50) |
@@ -2465,22 +2470,29 @@ away in the middle of an attack. `app/limits.py` limits what **costs the server*
 
 | Kind | What counts | Allowance |
 |---|---|---|
-| `build` | an answer computed because no copy of it is fresh: `/api/replay`, `/api/stats`, `/api/history`, `/api/impacts`, `/api/drone_heat`, `/api/places`; and `/api/trail`, `/api/events_log` (a query each time) | 60 at once, 1 more a second |
+| `build` | an answer computed because no copy of it is fresh: `/api/replay`, `/api/stats`, `/api/history`, `/api/impacts`, `/api/drone_heat`, `/api/places`, `/api/events_log` (1.58.24: one copy, rebuilt when an alert changes or after 30 s); and `/api/trail` (a query each time) | 60 at once, 1 more a second |
 | `write` | `POST /api/flag` | 20 at once, 2 a minute |
 | `push` | `POST /api/push/*` — a whole carrier's NAT subscribing in a raid stays under it | 300 at once, 5 a second |
 | `stream` | open `/api/stream` lines | 200 at a time (`limits.STREAMS`); refused, the page asks on its own |
 
-- **A usual question is never refused.** `State.cached(…, gate=)` asks the allowance only before a rebuild, and a
-  refused client is given the last copy there is, stale by seconds or minutes; only an answer that was never built —
-  parameters nobody else asks for — is refused: **429**, `Retry-After`, `{error, retry_after}`. Everybody asking the
-  usual window, the usual days, shares one copy.
+- **A usual question is never refused.** `State.cached(…, gate=)` asks the allowance only before a rebuild — 1.58.24:
+  by the one thread that builds, under the answer's lock, so the pages waiting for the same answer spend nothing (100
+  pages behind one address opening together after a restart got 40 refusals) — and a refused client is given the last
+  copy there is, stale by seconds or minutes; only an answer that was never built — parameters nobody else asks for —
+  is refused: **429**, `Retry-After`, `{error, retry_after}`, and nothing is kept for it. Everybody asking the usual
+  window, the usual days, shares one copy.
 - **Never limited**: `/api/state` (the official alerts), `/api/markers`, `/api/feed` (rounded up to the sizes the
   pages ask: 25, 80, 120, 150, 200), `/api/version`, `/healthz`, the pages and the static files.
 - **The client** is `Fly-Client-IP` (Fly's proxy sets it; `X-Forwarded-For` is what a client writes itself) as a
   salted daily hash. Not limited: this machine (no proxy header, a loopback peer), a request with the dashboard's key,
-  and — should Fly's header ever be missing — everybody, rather than everybody as one client.
-- **Bounds**: at most `State.RESP_MAX` (400) answers for parameters are kept, the oldest go first; `/api/places` and
-  `/api/history` take only known oblast uids; `/api/events_log` at most 500; a POST body at most 64 KB (413).
+  and — should Fly's header ever be missing — everybody, rather than everybody as one client. 1.58.24: the header is
+  believed on Fly alone (`FLY_APP_NAME`): anywhere else a client writes it himself, a new value for a new allowance.
+  There the connection's address counts, and a private one — the proxy of another host (Render, a reverse proxy in
+  front of Docker), every reader at once — is never limited.
+- **Bounds**: at most `State.RESP_MAX` (400) answers for parameters are kept, the longest unused go first (1.58.24:
+  the oldest built went first — the hourly `places:` copies every page asks for, pushed out by odd questions);
+  `/api/places` and `/api/history` take only known oblast uids; `/api/events_log` 60, 200 or 500 (the limit rounded
+  up); a POST body at most 64 KB, and none below 0 (413).
 - The dashboard's Server panel counts the refusals by kind since the start (`/api/online` → `limits`).
 
 ### 12.2 The dashboard's sign-in (1.58.21)
@@ -2600,9 +2612,8 @@ failing there). `static/i18n.js` must evaluate with no browser globals at all.
 
 ## 15. Deployment and the GitHub repository
 
-- **The working folder** is `Desktop\clear-sky-main` on the owner's PC (to be renamed `Desktop\Heimdall-map`): a Git
-  clone of the repository **Dread92/Heimdall-map** (it was `Dread92/clear-sky` until October 2026; the remote points to
-  the new name). Patches are committed there.
+- **The working folder** is `Desktop\Heimdall-map` on the owner's PC (`Desktop\clear-sky-main` until he renames it):
+  a Git clone of the repository **Dread92/Heimdall-map**. Patches are committed there.
 - **Shipping a patch**: double-click **`scripts\release.bat`**. It refuses to run if anything is not committed,
   deploys to Fly.io, pushes to GitHub, and prints the live `/api/version` — the version shown must be the
   new one. The image is built by Fly's own builder (`--depot=false`); if that deploy fails — its builder machine
@@ -2682,11 +2693,13 @@ is at its size budget, so the far oblasts' outlines are not in it).
 
 **Add a string**: all three blocks of `i18n.js`; `test_i18n` checks.
 
-**Regenerate the app icons** from the master logo `docs/brand/clear-sky-logo.png` (transparent PNG): the files
-are `static/logo-cs-512.png` / `-192` (logo on `#0b0d11`, 90 %), `logo-cs-maskable-512.png` (56 %, inside the
-maskable safe circle), `logo-cs-64.png` (the radar emblem alone, transparent — favicon), `logo-cs-badge.png`
-(white on transparent, for Android's notification badge) and `logo-cs.png` (280 px, the notice). The 07300 and
-Black Flame logos (`logo*.png`, `bf-logo*.png`) stay as they are.
+**Regenerate the app icons** from the emblem `docs/brand/heimdall-mark.png` (transparent PNG; `heimdall-logo.png`
+beside it is the full logo with the name, for the README): the files are `static/heimdall-512.png` / `-192` and
+`heimdall-apple-180.png` (the emblem on `#0b0d11`, 90 %), `heimdall-maskable-512.png` (77 %, inside the maskable
+safe circle), `heimdall-64.png` (transparent — the favicon), `heimdall-mark.png` (256 px, transparent) and
+`logo-hd-badge.png` (96 px, white on transparent: Android draws the notification badge from its alpha alone). The
+manifests' `id` stays `/m`, so a new icon reaches an installed app as an update. The 07300 and Black Flame logos
+(`logo*.png`, `bf-logo*.png`) stay as they are.
 
 **Official data by key instead of the proxy**: request a key at <https://api.ukrainealarm.com/>, then
 `fly secrets set UKRAINEALARM_KEY=…` — the same code reads the API directly.
@@ -2705,7 +2718,7 @@ Black Flame logos (`logo*.png`, `bf-logo*.png`) stay as they are.
 - 1.58.16: hromada alerts are painted on their own outlines once the page has fetched that oblast's (a second or two
   after the alert appears; offline, the raion is coloured). One official hromada has no outline (Sumy raion's
   Миколаївська — the GDB has two of that name there): its raion is coloured. The channel's all-clear is still by
-  raion and city: a hromada's alert is not its raion's.
+  raion and city; since 1.58.24 a raion is not "clear" there while one of its hromadas is still under alert.
 - 1.43: the regional villages come from GeoNames, whose Russian names are often transliterations and whose
   Ukrainian names are sometimes a renamed village's old one; a village GeoNames does not have (Cherkasy's Mytnytsia
   district) is not placed. `chyste_nebocherkasy` needs the Telegram API (its preview is off). The new trackers'

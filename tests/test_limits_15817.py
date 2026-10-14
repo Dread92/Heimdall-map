@@ -12,6 +12,7 @@ import urllib.request
 from unittest import mock
 
 import limits
+import pytest
 import server
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -38,15 +39,21 @@ def test_a_burst_then_the_refill():
     assert lim.report()["build"] == 1
 
 
-def test_the_address_is_fly_s_and_never_kept():
+def test_the_address_is_fly_s_and_never_kept(monkeypatch):
+    # on Fly (this file runs as on Fly — see _on_fly): Fly's own header; without it the peer is Fly's proxy
     assert limits.client_ip({"Fly-Client-IP": "203.0.113.7", "X-Forwarded-For": "1.2.3.4"}, "172.16.0.2") == "203.0.113.7"
-    assert limits.client_ip({"X-Forwarded-For": "1.2.3.4"}, "198.51.100.9") == "198.51.100.9"   # not what a client writes
-    assert limits.client_ip({}, "127.0.0.1") is None and limits.client_ip({}, "::1") is None   # this machine
-    with mock.patch.dict(os.environ, {"FLY_APP_NAME": "x"}):
-        assert limits.client_ip({}, "172.16.0.2") is None      # Fly's proxy: everybody at once — never limited
+    assert limits.client_ip({}, "172.16.0.2") is None      # Fly's proxy: everybody at once — never limited
+    # 1.58.24: anywhere else the header is the client's own words (a new value, a new allowance): the connection's
+    # address counts — and a proxy in front (a private address), or this machine, is never limited
+    monkeypatch.delenv("FLY_APP_NAME")
+    assert limits.client_ip({"Fly-Client-IP": "203.0.113.7"}, "151.101.1.1") == "151.101.1.1"
+    assert limits.client_ip({"X-Forwarded-For": "1.2.3.4"}, "151.101.1.1") == "151.101.1.1"   # not what a client writes
+    for peer in ("127.0.0.1", "::1", "10.0.0.5", "172.16.0.2", "192.168.1.4", "fe80::1", "", "not-an-address"):
+        assert limits.client_ip({"Fly-Client-IP": "203.0.113.7"}, peer) is None, peer
     lim = limits.Limits()
     h = lim.who("203.0.113.7")
-    assert len(h) == 16 and "203" not in h and h == lim.who("203.0.113.7")
+    # 1.58.24: a hash, not the address — the old check ("203" not in h) failed once in ~270 runs, a hash holds "203" by chance
+    assert len(h) == 16 and set(h) <= set("0123456789abcdef") and "203.0.113.7" not in h and h == lim.who("203.0.113.7")
     assert "203.0.113.7" not in repr(lim.b) and limits.Limits().who("203.0.113.7") != h   # salted per process and day
 
 
@@ -58,6 +65,12 @@ def test_full_buckets_are_forgotten():
     c.t += 5
     lim._prune(c())
     assert lim.b == {}
+
+
+@pytest.fixture(autouse=True)
+def _on_fly(monkeypatch):
+    """The limits believe Fly-Client-IP on Fly alone (1.58.24): these tests speak as Fly's proxy does."""
+    monkeypatch.setenv("FLY_APP_NAME", "heimdall-test")
 
 
 # ---- the cache: a refused rebuild is given the last copy ---------------------------------------------------------------

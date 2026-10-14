@@ -22,9 +22,9 @@ import re
 import sys
 
 try:
-    from PIL import Image, ImageDraw, ImageEnhance, ImageFont
+    from PIL import Image, ImageChops, ImageDraw, ImageEnhance, ImageFont
 except ImportError:            # optional: without it the channel sends text only
-    Image = ImageDraw = ImageEnhance = ImageFont = None
+    Image = ImageChops = ImageDraw = ImageEnhance = ImageFont = None
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from areas import RAION_STEM, alert_fill, hromada_raion, hromada_rings  # noqa: E402,F401  (1.58.7: shared with the server)
@@ -336,7 +336,9 @@ class MapShot:
                 td.polygon([px(p) for p in r], fill=col)
             tinted = True
         # 1.58.16: a hromada of Kyiv oblast under alert, on its own outline (the page's rule: not where its raion is
-        # already painted as strongly); its holes — another hromada inside it — keep what the raion has
+        # already painted as strongly); its holes — another hromada inside it — keep what is under them.
+        # 1.58.24: its rings are every part's outline and every hole, as the page fills them (even-odd): a hromada in
+        # two pieces (Borshchahivska, Brovarska) was painted on the first alone, the second left clear
         for fk, lvl in fills.items():                 # (not `k`: the frame's scale)
             if not fk.startswith("hr:14:"):
                 continue
@@ -346,9 +348,12 @@ class MapShot:
             under = fills.get(hromada_raion("14", fk[6:]) or "")
             if under == "R" or under == lvl:
                 continue
-            td.polygon([px(p) for p in rings[0]], fill=RED_T if lvl == "R" else YEL_T)
-            for r in rings[1:]:
-                td.polygon([px(p) for p in r], fill=(YEL_T if under == "Y" else (0, 0, 0, 0)))
+            area = Image.new("1", tint.size, 0)
+            for r in rings:
+                one = Image.new("1", tint.size, 0)
+                ImageDraw.Draw(one).polygon([px(p) for p in r], fill=1)
+                area = ImageChops.logical_xor(area, one)
+            tint.paste(RED_T if lvl == "R" else YEL_T, (0, 0) + tint.size, area)
             tinted = True
         if tinted:
             img.paste(tint, (0, 0), tint)

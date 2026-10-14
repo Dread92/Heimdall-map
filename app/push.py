@@ -14,6 +14,10 @@ import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from urllib.parse import urlparse
 
+# The VAPID "sub" claim: a contact for the push services (Apple wants a mailto: or https: one). It is not part of
+# a subscription, so changing it (1.58.24: it named the old app) keeps every phone subscribed.
+SUBJECT = "mailto:heimdall@example.com"
+
 try:
     from cryptography.hazmat.primitives import hashes, serialization
     from cryptography.hazmat.primitives.asymmetric import ec
@@ -47,7 +51,6 @@ def _load_priv(priv_b64):
 
 
 def vapid_headers(endpoint, priv_b64, pub_b64, subject):
-    from urllib.parse import urlparse
     u = urlparse(endpoint)
     aud = f"{u.scheme}://{u.netloc}"
     header = b64u(json.dumps({"typ": "JWT", "alg": "ES256"}).encode())
@@ -75,7 +78,7 @@ def encrypt(payload, p256dh_b64, auth_b64):
     return salt + struct.pack(">I", rs) + bytes([len(as_pub)]) + as_pub + ct
 
 
-def send(subscription, payload, priv_b64, pub_b64, subject="mailto:clear-sky@example.com", ttl=300, urgency="high"):
+def send(subscription, payload, priv_b64, pub_b64, subject=SUBJECT, ttl=300, urgency="high"):
     """subscription: the browser's PushSubscription JSON. Returns (status_code, gone) — gone=True when the
     subscription is dead (404/410) and should be deleted."""
     endpoint = subscription["endpoint"]
@@ -105,7 +108,7 @@ class Sender:
     on the push service and is valid for 12 h, so it is signed once an hour per service, not once per phone.
     Encryption stays per phone: every phone has its own keys, and nothing is shared between them."""
 
-    def __init__(self, priv_b64, pub_b64, subject="mailto:clear-sky@example.com", workers=32, timeout=10):
+    def __init__(self, priv_b64, pub_b64, subject=SUBJECT, workers=32, timeout=10):
         self.priv, self.pub, self.subject = priv_b64, pub_b64, subject
         self.timeout = timeout
         self.pool = ThreadPoolExecutor(max_workers=workers, thread_name_prefix="push")

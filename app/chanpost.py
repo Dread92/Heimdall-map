@@ -281,9 +281,17 @@ def area_of(m):
 
 
 def area_on(area, fills):
+    """Is this area (a raion key of Kyiv oblast, "14:*" for the whole oblast) under an official alert in `fills`?
+    1.58.24: a hromada's alert ("hr:14:<id>", 1.58.16) keeps its raion on — the raion's own alert ending while one of
+    its hromadas stays under alert is no all-clear for the raion."""
+    on = set(fills)
+    for k in fills:
+        if k.startswith("hr:14:"):
+            r = areas.hromada_raion("14", k[6:]) if areas else None
+            on.add(r or "14:hr")                      # no outline known: still somewhere in Kyiv oblast
     if area == "14:*":
-        return any(k in fills for k in OBL14)
-    return area in fills
+        return any(k in on for k in OBL14 + ("14:hr",))
+    return area in on
 
 
 def _km(m):

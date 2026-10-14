@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Heimdall (Kyiv Air Watch) — the full technical documentation, with a map of the system.">
-<meta name="heimdall-version" content="1.58.23">
-<meta name="heimdall-docs" content="e81e7941d2b7d64a">
+<meta name="heimdall-version" content="1.58.24">
+<meta name="heimdall-docs" content="4d9e0bf40a435f9b">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Heimdall Technical Manual</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -237,7 +237,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
 <header class="top">
   <div class="wrap">
     <a class="brand" href="#top"><b>Heimdall</b><span>Technical manual</span></a>
-    <span class="ver">1.58.23</span>
+    <span class="ver">1.58.24</span>
     <nav class="nav" aria-label="Sections">
       <a href="#map">Map</a><a href="#journeys">Journeys</a><a href="#rules">Rules</a><a href="#reference">Reference</a><a href="#safety">Safety</a>
     </nav>
@@ -256,7 +256,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
       <h1 class="title">How Heimdall works</h1>
       <p class="lead">An unofficial air-threat map for Kyiv and the oblasts around it. One Python process reads the official
       alert data and the channels that track drones and missiles, stores every post before it reads it, rebuilds the map
-      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.23, 14 October 2026:
+      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.24, 14 October 2026:
       the map first, then everything in full.</p>
     </div>
     <dl class="facts">
@@ -646,10 +646,9 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
     <div class="doc" id="doc">
 <section class="part" id="tech" data-label="Reference"><p class="partlabel">Part I · The reference</p>
 <h1 id="heimdall--technical-documentation">Heimdall — technical documentation</h1>
-<p><strong>Documented version: 1.58</strong> · last updated 2026-10-14 (1.58.23)</p>
-<p>The repository is <strong>Dread92/Heimdall-map</strong> (it was <code>clear-sky</code> until October 2026; GitHub sends the old address on).
-Heimdall was called <strong>Clear Sky</strong> until 1.29; the repository, the Fly app (<code>kyiv-air-watch-gb</code>) and some
-internal names still carry the old name.</p>
+<p><strong>Documented version: 1.58</strong> · last updated 2026-10-14 (1.58.24)</p>
+<p>The repository is <strong>Dread92/Heimdall-map</strong>. The Fly app keeps its first name, <code>kyiv-air-watch-gb</code>: Fly cannot rename
+an app (§15 has the move to a domain of its own).</p>
 <p>This is the complete technical reference: what runs, where the data comes from, how a Telegram post becomes a
 mark on a map, how an official alert becomes a colour, what is stored, what is sent, and how to change any of
 it safely. It is <strong>updated with every patch</strong> — see <a href="#18-the-patch-checklist">§18</a>. <code>tests/test_docs.py</code> fails
@@ -811,7 +810,7 @@ real post, and a fix to the rules applies to posts already in the database.</p>
 │   ├── guide.html          what to do, weapon by weapon (/guide, 1.35): self-contained, content in its JSON block
 │   ├── sw.js               service worker: push display, notification clicks, the pages and the guide kept for when the server is unreachable
 │   ├── manifest.json, light.webmanifest   the two PWAs
-│   ├── logo-cs*.png        the Clear Sky logo: app icons (any / maskable), favicon, badge, the notice
+│   ├── heimdall-*.png      the app icons (any / maskable / iPhone), the favicon; logo-hd-badge.png Android's badge
 │   └── logo*.png (NGO 07300), bf-logo*.png (Black Flame Studio), ukraine-map.LICENSE.md
 ├── data/
 │   ├── ua_regions.json     official region id → oblast / parent raion / map shape (built)
@@ -1011,7 +1010,10 @@ guessed. <code>tests/test_live.py</code> checks that the deltas rebuild exactly 
 <code>/api/version</code> once a minute (build, safety) and does a full reload every 10 minutes. A silent line is
 reopened, and the page asks at its old cadence until it beats again. The Light page takes <code>sync=mk,st</code> without
 events (<code>p=light&amp;ev=0</code>); the Tactical page in blackout mode takes <code>mk,st</code> and still fetches its 25-post feed.</p>
-<p>A page that stops reading is dropped once 512 KB are waiting for it (its EventSource reconnects). Nothing
+<p>A page that stops reading is dropped once 512 KB are waiting for it (its EventSource reconnects). 1.58.24: a page
+keeps one line at a time (opening one closes the one before), and a line that keeps failing is opened again later and
+later — 3 s (Light: 5 s), doubled at each failure up to 30 s, ±25 % so the pages do not come back on the same
+second after a restart — while the pulse keeps the page current; a line that said <code>hello</code> starts again from 3 s. Nothing
 about a reader is kept: a connection is a socket, a language and which page it is; <code>/api/online</code> counts them.</p>
 <p>Measured on the demo feed (one core, 2026-09-28): 9,000 open pages — <strong>8 threads, 62 MB</strong>, ~80 ms of CPU per
 second, a change reaching the last page ~0.1 s after the first; ~25 KB per page per minute under the demo's
@@ -1230,7 +1232,7 @@ the committed template.</p>
 </tr>
 <tr>
 <td><code>FLY_APP_NAME</code></td>
-<td>Set by Fly itself. 1.58.17: without Fly's <code>Fly-Client-IP</code> header nobody is limited (the peer would be Fly's proxy); 1.58.21: the dashboard's session cookie is <code>Secure</code>.</td>
+<td>Set by Fly itself. 1.58.17: without Fly's <code>Fly-Client-IP</code> header nobody is limited (the peer would be Fly's proxy); 1.58.24: that header is believed only when this is set (§12.1); 1.58.21: the dashboard's session cookie is <code>Secure</code>.</td>
 </tr>
 <tr>
 <td><code>ACCESS_KEY</code></td>
@@ -1454,7 +1456,8 @@ oblast gzipped. A page fetches an oblast's file only once an official alert ther
 <code>HROMADA.need</code>); until it is here, and for a hromada with no outline, the alert colours its raion as before. The server
 reads them too (<code>areas.py</code>: <code>hromada_of</code>, <code>in_hromada</code>): <code>alert_fill</code> gives a hromada with an outline as
 <code>hr:&lt;oblast&gt;:&lt;id&gt;</code> instead of its raion, so the held rule (§7.4) and the channel's picture (§9c) follow the hromada as
-the pages do. <strong>A place within 1.5 km of a hromada's outline belongs to it</strong> (<code>BORDER_KM</code>, the Light page's raion rule).</p>
+the pages do — the picture filling every ring of it even-odd as the pages do (1.58.24: a hromada in two pieces,
+Borshchahivska or Brovarska, was tinted on the first alone). <strong>A place within 1.5 km of a hromada's outline belongs to it</strong> (<code>BORDER_KM</code>, the Light page's raion rule).</p>
 <p>An id not in the table is <strong>kept, never dropped</strong>, placed as well as its name allows, and logged once
 (&quot;rebuild ua_regions.json&quot;). Oblast uids follow alerts.in.ua: 31 Kyiv city, 14 Kyiv oblast, 10 Zhytomyr,
 25 Chernihiv, 20 Sumy, 19 Poltava, 24 Cherkasy, 4 Vinnytsia.</p>
@@ -2658,7 +2661,7 @@ it. They are grouped by target tag (<code>tag.night</code> + <code>tag.id</code>
 <td>1.58.7: &quot;⬇️ <strong>Збито / Приземлено</strong> — так у дописі о HH:MM&quot; (the app's <code>st_*</code> words: &quot;💥 Вибух (влучання або перехоплення — невідомо)&quot;, &quot;❔ Локаційно втрачено&quot;, &quot;✅ Повідомлено: у районі чисто&quot;) and the target's line. Not where it happened, no picture. Also once after &quot;no new reports&quot; (a target gone from the map is linked by its last report)</td>
 </tr>
 <tr>
-<td>the official alert of the target's area gone for 60 s (<code>CLEAR_AFTER_S</code>)</td>
+<td>the official alert of the target's area gone for 60 s (<code>CLEAR_AFTER_S</code>) — 1.58.24: an alert of one of its hromadas keeps a raion on (<code>area_on</code>)</td>
 <td><code>sendMessage</code>, in reply to the area's last post</td>
 <td>1.58.7: &quot;✅ <strong>Відбій тривоги</strong> о HH:MM · Броварський район (офіційно)&quot; — once per area and alert, closing the targets still open there</td>
 </tr>
@@ -3022,15 +3025,17 @@ descending, others, outcomes); an ordinary label that fits nowhere loses its sec
 left out (<code>nolbl</code>). The boxes (<code>LBLBOX</code>) hide the town names under them (<code>layoutTownLabels</code>);</li>
 <li><strong>an oblast's badge counts the drones reported in it</strong> (1.58.20, the owner: &quot;how many are reported within the oblast now,
 with a '~' to show it is an estimate&quot;): <code>OBLPLACED</code>, filled in <code>tick()</code>, is per oblast the drones and jet drones the map
-has placed there (each mark's <code>count</code>, as the map's totals count them; a mark's <code>oblast_uid</code>); for a drone kind the badge
+has placed there (each mark's <code>count</code>, as the map's totals count them; a mark's <code>oblast_uid</code>; 1.58.24: never a stale
+one — the totals put those under &quot;?&quot;); for a drone kind the badge
 shows the larger of that and the oblast-wide reports' own number (<code>est</code>) — never their sum — written &quot;~12&quot;, the line
 under it &quot;reported in the oblast now&quot; (<code>obl_now</code>) instead of &quot;somewhere in the oblast&quot; once placed ones are in it, the
 card the sentence <code>obl_est</code>. Outcomes keep &quot;×3&quot;. The badges are still drawn only for an oblast with an oblast-wide
 report;</li>
 <li><strong>the oblast names step back zoomed out</strong> (1.58.20, the owner: &quot;we don't need it zoomed out, or make it more
 discreet&quot;): <code>svg.far</code> 11 px, <code>svg.veryfar</code> 9.5 px letter-spaced; over the satellite or the map half-toned
-(<code>fill-opacity</code> .62 / .48, a thinner outline); a lit name (a target in the oblast) stays readable; on a phone over the
-whole country (<code>svg.dense</code>, over 2.2 km a pixel) only the lit names are drawn;</li>
+(<code>fill-opacity</code> .62 / .48, a thinner outline); a lit name (a target in the oblast: an oblast-wide report, or — 1.58.24
+— one placed at a town of it, <code>OBLPLACED</code>) stays readable; on a phone over the whole country (<code>svg.dense</code>, over 2.2 km
+a pixel) only the lit names are drawn;</li>
 <li><strong>less on the screen</strong> (1.58.19, the owner, Kyiv oblast on a phone: &quot;too much information on the screen&quot;): a raion's
 name is the least of the names — 9.5 px, letter-spaced, quieter (<code>.rnlbl</code>) — and <code>layoutTownLabels</code> places it last,
 leaving it out where a town, a target, a badge, the home's name (<code>#homeg .hl</code>) or the map's buttons (<code>.mapctl</code>) are;
@@ -3044,7 +3049,7 @@ gives <code>MZ</code> — 1 at 0.6 km a pixel (<code>MZ_REF</code>, Kyiv oblast 
 arrow, halo, count badge, tag, height and the labels' offset (the label layout's boxes too, the replay's glyphs,
 the Crimea Cossack). Texts shrink less (<code>--mzt</code>, never under 0.8: the height, the compact tag, the count's digits),
 the oblast badges as a whole by <code>--mzc</code> (never under 0.75; their shift apart stays in screen pixels), and the tap
-area never under 14 px. On a computer the whole country is about 0.62;</li>
+area never under 18 px (1.58.24: it was 14 zoomed out, against the 18 of before). On a computer the whole country is about 0.62;</li>
 <li>the map's own pictograms are vector shapes, not the phone's emoji (1.39): the airfields, power plants and nuclear
 plants of the infrastructure layer (<code>POIS</code>, <code>POI_G</code>: a plane, a lightning bolt, a trefoil; shown zoomed in, hidden
 at night and in blackout) and the watched place's house — the same on every phone. 1.57.7: Kyiv oblast's <code>POIS</code> are
@@ -3386,7 +3391,7 @@ The bot posts and edits in that one channel; it reads nothing. Revoke it at @Bot
 <li>The Telegram session (<code>TG_SESSION</code>) is a key to a whole Telegram account. It is created on the owner's PC by
 <code>scripts/telegram-login.bat</code> and goes straight into Fly's secret store (<code>fly secrets import</code>, read from stdin):
 never on a command line, in a file, in the logs, in <code>config.json</code> or in the repository. Revoke it in Telegram:
-Settings → Devices → &quot;Clear Sky server&quot; → Terminate.</li>
+Settings → Devices → &quot;Heimdall server&quot; → Terminate.</li>
 <li>Usage counters (<code>usage</code>, <code>usage_seen</code>): a daily salted hash, no IP address, no location, no per-person
 history. A page the browser loads ahead of a tap (prerender, <code>Sec-Purpose: prefetch</code>) is not counted (1.40).</li>
 <li>Flags and the corpus review are behind <code>ADMIN_KEY</code>.</li>
@@ -3532,7 +3537,7 @@ every day — never stored, never logged; the dashboard sees counts of refusals 
 </tr>
 <tr>
 <td>🔒 <code>POST /admin/logout</code></td>
-<td>1.58.21: ends this session (<code>all=1</code>: every session) → 303 to <code>/admin</code></td>
+<td>1.58.21: ends this session (<code>all=1</code>: every session) → 303 to <code>/admin</code>; 1.58.24: a session already ended is signed out too (no 401)</td>
 </tr>
 <tr>
 <td>🔒 <code>GET /api/admin/security</code></td>
@@ -3624,7 +3629,7 @@ away in the middle of an attack. <code>app/limits.py</code> limits what <strong>
 <tbody>
 <tr>
 <td><code>build</code></td>
-<td>an answer computed because no copy of it is fresh: <code>/api/replay</code>, <code>/api/stats</code>, <code>/api/history</code>, <code>/api/impacts</code>, <code>/api/drone_heat</code>, <code>/api/places</code>; and <code>/api/trail</code>, <code>/api/events_log</code> (a query each time)</td>
+<td>an answer computed because no copy of it is fresh: <code>/api/replay</code>, <code>/api/stats</code>, <code>/api/history</code>, <code>/api/impacts</code>, <code>/api/drone_heat</code>, <code>/api/places</code>, <code>/api/events_log</code> (1.58.24: one copy, rebuilt when an alert changes or after 30 s); and <code>/api/trail</code> (a query each time)</td>
 <td>60 at once, 1 more a second</td>
 </tr>
 <tr>
@@ -3645,17 +3650,24 @@ away in the middle of an attack. <code>app/limits.py</code> limits what <strong>
 </tbody>
 </table></div>
 <ul>
-<li><strong>A usual question is never refused.</strong> <code>State.cached(…, gate=)</code> asks the allowance only before a rebuild, and a
-refused client is given the last copy there is, stale by seconds or minutes; only an answer that was never built —
-parameters nobody else asks for — is refused: <strong>429</strong>, <code>Retry-After</code>, <code>{error, retry_after}</code>. Everybody asking the
-usual window, the usual days, shares one copy.</li>
+<li><strong>A usual question is never refused.</strong> <code>State.cached(…, gate=)</code> asks the allowance only before a rebuild — 1.58.24:
+by the one thread that builds, under the answer's lock, so the pages waiting for the same answer spend nothing (100
+pages behind one address opening together after a restart got 40 refusals) — and a refused client is given the last
+copy there is, stale by seconds or minutes; only an answer that was never built — parameters nobody else asks for —
+is refused: <strong>429</strong>, <code>Retry-After</code>, <code>{error, retry_after}</code>, and nothing is kept for it. Everybody asking the usual
+window, the usual days, shares one copy.</li>
 <li><strong>Never limited</strong>: <code>/api/state</code> (the official alerts), <code>/api/markers</code>, <code>/api/feed</code> (rounded up to the sizes the
 pages ask: 25, 80, 120, 150, 200), <code>/api/version</code>, <code>/healthz</code>, the pages and the static files.</li>
 <li><strong>The client</strong> is <code>Fly-Client-IP</code> (Fly's proxy sets it; <code>X-Forwarded-For</code> is what a client writes itself) as a
 salted daily hash. Not limited: this machine (no proxy header, a loopback peer), a request with the dashboard's key,
-and — should Fly's header ever be missing — everybody, rather than everybody as one client.</li>
-<li><strong>Bounds</strong>: at most <code>State.RESP_MAX</code> (400) answers for parameters are kept, the oldest go first; <code>/api/places</code> and
-<code>/api/history</code> take only known oblast uids; <code>/api/events_log</code> at most 500; a POST body at most 64 KB (413).</li>
+and — should Fly's header ever be missing — everybody, rather than everybody as one client. 1.58.24: the header is
+believed on Fly alone (<code>FLY_APP_NAME</code>): anywhere else a client writes it himself, a new value for a new allowance.
+There the connection's address counts, and a private one — the proxy of another host (Render, a reverse proxy in
+front of Docker), every reader at once — is never limited.</li>
+<li><strong>Bounds</strong>: at most <code>State.RESP_MAX</code> (400) answers for parameters are kept, the longest unused go first (1.58.24:
+the oldest built went first — the hourly <code>places:</code> copies every page asks for, pushed out by odd questions);
+<code>/api/places</code> and <code>/api/history</code> take only known oblast uids; <code>/api/events_log</code> 60, 200 or 500 (the limit rounded
+up); a POST body at most 64 KB, and none below 0 (413).</li>
 <li>The dashboard's Server panel counts the refusals by kind since the start (<code>/api/online</code> → <code>limits</code>).</li>
 </ul>
 <h3 id="122-the-dashboards-sign-in-15821">12.2 The dashboard's sign-in (1.58.21)<a class="anc" href="#122-the-dashboards-sign-in-15821" aria-label="Link to this section">#</a></h3>
@@ -3895,9 +3907,8 @@ as on the job's Node 20 (Node 21+ has one: <code>static/i18n.js</code> read <cod
 failing there). <code>static/i18n.js</code> must evaluate with no browser globals at all.</p>
 <h2 id="15-deployment-and-the-github-repository">15. Deployment and the GitHub repository<a class="anc" href="#15-deployment-and-the-github-repository" aria-label="Link to this section">#</a></h2>
 <ul>
-<li><strong>The working folder</strong> is <code>Desktop\clear-sky-main</code> on the owner's PC (to be renamed <code>Desktop\Heimdall-map</code>): a Git
-clone of the repository <strong>Dread92/Heimdall-map</strong> (it was <code>Dread92/clear-sky</code> until October 2026; the remote points to
-the new name). Patches are committed there.</li>
+<li><strong>The working folder</strong> is <code>Desktop\Heimdall-map</code> on the owner's PC (<code>Desktop\clear-sky-main</code> until he renames it):
+a Git clone of the repository <strong>Dread92/Heimdall-map</strong>. Patches are committed there.</li>
 <li><strong>Shipping a patch</strong>: double-click <strong><code>scripts\release.bat</code></strong>. It refuses to run if anything is not committed,
 deploys to Fly.io, pushes to GitHub, and prints the live <code>/api/version</code> — the version shown must be the
 new one. The image is built by Fly's own builder (<code>--depot=false</code>); if that deploy fails — its builder machine
@@ -3965,11 +3976,13 @@ a fixed format gets a parser in <code>geo.py</code> registered in <code>CHANNEL_
 only for a place there — add the oblast's uid to <code>loadLMX</code>'s list in <code>static/light.html</code>; the base <code>light-map.json</code>
 is at its size budget, so the far oblasts' outlines are not in it).</p>
 <p><strong>Add a string</strong>: all three blocks of <code>i18n.js</code>; <code>test_i18n</code> checks.</p>
-<p><strong>Regenerate the app icons</strong> from the master logo <code>docs/brand/clear-sky-logo.png</code> (transparent PNG): the files
-are <code>static/logo-cs-512.png</code> / <code>-192</code> (logo on <code>#0b0d11</code>, 90 %), <code>logo-cs-maskable-512.png</code> (56 %, inside the
-maskable safe circle), <code>logo-cs-64.png</code> (the radar emblem alone, transparent — favicon), <code>logo-cs-badge.png</code>
-(white on transparent, for Android's notification badge) and <code>logo-cs.png</code> (280 px, the notice). The 07300 and
-Black Flame logos (<code>logo*.png</code>, <code>bf-logo*.png</code>) stay as they are.</p>
+<p><strong>Regenerate the app icons</strong> from the emblem <code>docs/brand/heimdall-mark.png</code> (transparent PNG; <code>heimdall-logo.png</code>
+beside it is the full logo with the name, for the README): the files are <code>static/heimdall-512.png</code> / <code>-192</code> and
+<code>heimdall-apple-180.png</code> (the emblem on <code>#0b0d11</code>, 90 %), <code>heimdall-maskable-512.png</code> (77 %, inside the maskable
+safe circle), <code>heimdall-64.png</code> (transparent — the favicon), <code>heimdall-mark.png</code> (256 px, transparent) and
+<code>logo-hd-badge.png</code> (96 px, white on transparent: Android draws the notification badge from its alpha alone). The
+manifests' <code>id</code> stays <code>/m</code>, so a new icon reaches an installed app as an update. The 07300 and Black Flame logos
+(<code>logo*.png</code>, <code>bf-logo*.png</code>) stay as they are.</p>
 <p><strong>Official data by key instead of the proxy</strong>: request a key at <a href="https://api.ukrainealarm.com/" target="_blank" rel="noopener">https://api.ukrainealarm.com/</a>, then
 <code>fly secrets set UKRAINEALARM_KEY=…</code> — the same code reads the API directly.</p>
 <h2 id="17-known-limitations-and-open-items">17. Known limitations and open items<a class="anc" href="#17-known-limitations-and-open-items" aria-label="Link to this section">#</a></h2>
@@ -3986,7 +3999,7 @@ terminal (<code>scripts/corpus.py</code>, <a href="#corpus">CORPUS.md</a>) when 
 <li>1.58.16: hromada alerts are painted on their own outlines once the page has fetched that oblast's (a second or two
 after the alert appears; offline, the raion is coloured). One official hromada has no outline (Sumy raion's
 Миколаївська — the GDB has two of that name there): its raion is coloured. The channel's all-clear is still by
-raion and city: a hromada's alert is not its raion's.</li>
+raion and city; since 1.58.24 a raion is not &quot;clear&quot; there while one of its hromadas is still under alert.</li>
 <li>1.43: the regional villages come from GeoNames, whose Russian names are often transliterations and whose
 Ukrainian names are sometimes a renamed village's old one; a village GeoNames does not have (Cherkasy's Mytnytsia
 district) is not placed. <code>chyste_nebocherkasy</code> needs the Telegram API (its preview is off). The new trackers'
@@ -4816,12 +4829,12 @@ the volume, asks for the dashboard key (<code>ADMIN_KEY</code>) and, optionally,
 then deploys.</p>
 <p>Manually, anywhere:</p>
 <pre><code class="language-bash">fly auth login
-fly apps create clear-sky --org personal
-fly volumes create data --size 1 --region ams --yes -a clear-sky
-fly secrets set ADMIN_KEY=a-long-random-string -a clear-sky     # protects /admin only; the map stays public
-fly secrets set DEEPL_KEY=your-deepl-key -a clear-sky            # optional: clear EN/FR translation
-fly secrets set UKRAINEALARM_KEY=your-key -a clear-sky           # optional: official API instead of the proxy
-fly deploy -a clear-sky --ha=false
+fly apps create my-heimdall --org personal
+fly volumes create data --size 1 --region ams --yes -a my-heimdall
+fly secrets set ADMIN_KEY=a-long-random-string -a my-heimdall     # protects /admin only; the map stays public
+fly secrets set DEEPL_KEY=your-deepl-key -a my-heimdall            # optional: clear EN/FR translation
+fly secrets set UKRAINEALARM_KEY=your-key -a my-heimdall           # optional: official API instead of the proxy
+fly deploy -a my-heimdall --ha=false
 </code></pre>
 <p>Change <code>app = &quot;…&quot;</code> in <code>fly.toml</code> to your app name.</p>
 <h3 id="d-the-satellite-layer-once">The satellite layer (once)<a class="anc" href="#d-the-satellite-layer-once" aria-label="Link to this section">#</a></h3>
@@ -4916,10 +4929,10 @@ files on the machine you deployed from were not the ones you edited — <code>gi
 tell you which version you actually shipped. This is much more often the cause than a Fly caching
 problem.</p>
 <p>Useful:</p>
-<pre><code class="language-bash">fly logs -a clear-sky          # live logs
-fly status -a clear-sky        # machine state
-fly ssh console -a clear-sky   # shell inside the machine
-fly ssh console -a clear-sky -C &quot;ls -la /data&quot;   # the database on the volume
+<pre><code class="language-bash">fly logs -a kyiv-air-watch-gb                              # live logs
+fly status -a kyiv-air-watch-gb                            # machine state
+fly ssh console -a kyiv-air-watch-gb                       # shell inside the machine
+fly ssh console -a kyiv-air-watch-gb -C &quot;ls -la /data&quot;     # the database on the volume
 </code></pre>
 <h3 id="d-its-own-address-domain">Its own address (domain)<a class="anc" href="#d-its-own-address-domain" aria-label="Link to this section">#</a></h3>
 <p>Fly cannot rename an app, and a new <code>*.fly.dev</code> name would be one more move for everybody who installed the
@@ -4942,7 +4955,7 @@ deployment is public.</p>
 <h2 id="d-github-actions-optional-automatic-deploy">GitHub Actions (optional automatic deploy)<a class="anc" href="#d-github-actions-optional-automatic-deploy" aria-label="Link to this section">#</a></h2>
 <p><code>.github/workflows/fly-deploy.yml</code> deploys on every push to <code>main</code> <strong>if</strong> the repository secret
 <code>FLY_API_TOKEN</code> exists. Create one with:</p>
-<pre><code class="language-bash">fly tokens create deploy -a clear-sky
+<pre><code class="language-bash">fly tokens create deploy -a kyiv-air-watch-gb
 </code></pre>
 <p>then add it under <em>Settings → Secrets and variables → Actions → New repository secret</em>. Without the
 secret the job is skipped, so the workflow is harmless until you want it.</p>
@@ -4951,12 +4964,12 @@ secret the job is skipped, so the workflow is harmless until you want it.</p>
 15 minutes idle, which is not what you want for an alert app — use a paid instance, or ping
 <code>/healthz</code> on a schedule.</p>
 <h2 id="d-docker-anywhere">Docker anywhere<a class="anc" href="#d-docker-anywhere" aria-label="Link to this section">#</a></h2>
-<pre><code class="language-bash">docker build -t clear-sky .
-docker run -d --name clear-sky -p 8080:8080 \
-  -v clear-sky-data:/data \
+<pre><code class="language-bash">docker build -t heimdall .
+docker run -d --name heimdall -p 8080:8080 \
+  -v heimdall-data:/data \
   -e ACCESS_KEY=a-long-random-string \
   -e ALERTS_IN_UA_TOKEN=your-token \
-  clear-sky
+  heimdall
 </code></pre>
 <p>The image contains <code>app/</code> and <code>static/</code> only; the database lives on the volume at <code>/data</code>.</p>
 <h2 id="d-on-your-own-pc">On your own PC<a class="anc" href="#d-on-your-own-pc" aria-label="Link to this section">#</a></h2>
@@ -5172,7 +5185,7 @@ d'alerte ne sont pas des préférences de style.</p>
 </section>
     </div>
   </div>
-  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.23, 14 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
+  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.24, 14 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
 </main>
 
 <script>
