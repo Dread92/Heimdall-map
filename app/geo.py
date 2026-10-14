@@ -1020,13 +1020,23 @@ def oblast_quadrant(text):
 # is how three Banderols reported north of Nizhyn were also drawn at the centre of Kyiv oblast, 150 km away:
 # one flight, two markers, and the second one over a region nothing had been reported in.
 _ONWARD_RX = re.compile(r"(?:дал[іе]|пот[іи]м|згодом|надал[іі]|наступн\w*|прямує\s+(?:до|в|у)|курс\w*\s+на|"
-                         # 1.45: "2 реактивних повз Смоліне вилітають на Черкащину" (@controlkrop) — where it goes next
-                         r"(?:ви|за|пере)літа\w*\s+(?:на|в|у|до)|(?:ви|за|пере)лет\w*\s+(?:на|в|у|до))\W{0,4}$")
+                         # 1.45: "2 реактивних повз Смоліне вилітають на Черкащину" (@controlkrop) — where it goes next.
+                         # 1.58.15: only "ви-" — leaving for it. "Залітає на Чернігівщину", "перелітає на Київщину" is
+                         # flying INTO it: it is there (@kudy_letyt, "Новий реактивний БпЛА з Брянщини залітає на
+                         # Чернігівщину", placed nowhere)
+                         r"виліта\w*\s+(?:на|в|у|до)|вилет\w*\s+(?:на|в|у|до))\W{0,4}$")
+
+
+# 1.58.15: "змійкою по межі з Харківщиною курсують від Чутового до Світлогірського" (@kudy_letyt, under "Полтавщина:")
+# — an oblast it flies along the border with is not where it is
+_BORDER_WITH_RX = re.compile(r"(?:меж\w*|кордон\w*)\s+(?:з|із|зі)\s+$")
 
 
 def _onward(text, pos):
-    """Is the oblast that starts at `pos` introduced as the NEXT area rather than the current one?"""
-    return bool(_ONWARD_RX.search(text[max(0, pos - 24):pos]))
+    """Is the oblast that starts at `pos` introduced as the NEXT area rather than the current one (or, 1.58.15, as the
+    one along whose border it flies)?"""
+    pre = text[max(0, pos - 24):pos]
+    return bool(_ONWARD_RX.search(pre) or _BORDER_WITH_RX.search(pre))
 
 
 def _find_oblasts_all(text, positional=False):
@@ -1283,17 +1293,35 @@ def looks_like_explainer(t):
     return bool(EXPLAIN_RX.search(t) or PLAN_RX.search(t))
 
 
+# 1.58.15: a tracker's list — oblast (or city) headings and one target a line, "2х БпЛА курсом на Кременчук" — is a long
+# post of sightings, not an article. @kudy_letyt's all-Ukraine lists run to 1,500 characters: read as news by their
+# length alone, they were never stored, and the channel the owner had just added placed nothing.
+_LIST_TARGET_RX = re.compile(r"бпла|шахед|дрон|реактив|ракет|\bкаб\b|мопед|балістик|крилат")
+_LIST_HEAD_RX = re.compile(r"^[а-яіїєґ' \-]{3,30}(?::|\s+-)\s*$")
+
+
+def looks_like_target_list(t):
+    lines = [x.strip() for x in t.split("\n") if x.strip()]
+    if len(lines) < 4:
+        return False
+    tgt = sum(1 for x in lines if len(x) <= 180 and _LIST_TARGET_RX.search(x))
+    head = sum(1 for x in lines if _LIST_HEAD_RX.match(x))
+    return tgt >= 3 and tgt + head >= 0.85 * len(lines)
+
+
 def looks_like_news(t):
     """A post about something rather than a sighting of something — whatever threat words it contains.
 
     Policy and money, a long post, a retrospective tally, an event, a court case; or the voice of a report
     (who said it, what happened as a result, when). A news item that mentions ballistic missiles in its fourth
-    sentence used to put a ballistic missile on the map and light the red strip telling people to shelter."""
-    if NEWS_RX.search(t) or NEWS_STRONG_RX.search(t) or len(t) > NEWS_MAX_CHARS or looks_like_summary(t) or looks_like_explainer(t) \
-            or FUNDRAISE_RX.search(t):
+    sentence used to put a ballistic missile on the map and light the red strip telling people to shelter.
+    1.58.15: a long list of targets, a line each, is not long the way an article is (`looks_like_target_list`)."""
+    lst = looks_like_target_list(t)
+    if NEWS_RX.search(t) or NEWS_STRONG_RX.search(t) or (len(t) > NEWS_MAX_CHARS and not lst) or looks_like_summary(t) \
+            or looks_like_explainer(t) or FUNDRAISE_RX.search(t):
         return True
     soft = len(NEWS_SOFT_RX.findall(t))
-    return soft >= 2 or (soft >= 1 and len(t) > NEWS_SOFT_LONG)
+    return soft >= 2 or (soft >= 1 and len(t) > NEWS_SOFT_LONG and not lst)
 
 
 def _status_of(t):

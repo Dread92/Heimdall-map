@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-13 (1.58.14)
+**Documented version: 1.58** · last updated 2026-10-14 (1.58.15)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -518,6 +518,7 @@ event of a Trial post carries `tags: ["trial"]` only. Both readers take the list
 | `chyste_nebo` | fast live tracker; **states drone heights** | same — its web preview is off, so it is read through the **Telegram API** (`TelegramAPI`, §7.2) once the `TG_*` secrets are set; without them it shows as a failed source |
 | `kievinfo_kyiv` | live tracker + news | same, with the news guard |
 | `war_monitor` | wider picture, jet drones | general `parse_post` |
+| `kudy_letyt` | all of Ukraine, added on the dashboard (1.58.15) — lists: an oblast or city heading ("Київщина:", "Київ:"), then a target a line, "2х БпЛА курсом на Кременчук" | general `parse_post`; a list is never news by its length (`looks_like_target_list`); "залітає на Чернігівщину" is in that oblast; "по межі з Харківщиною" is not |
 | `eRadarrua` | per-oblast group counts + live lines | `parse_eradar`, `parse_eradar_summary` (counts on oblast tags, never marks) |
 | `kpszsu` | the Air Force | general parser + its summaries, read weapon by weapon (`parse_af_report`, §7.5) |
 | `chernihiv_nebo` | live tracker of Chernihiv oblast (1.43) | `_parse_live(·, "25")` — Chernihiv's villages; "2 реакти … 1 реакт …" = two reports |

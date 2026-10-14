@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Heimdall (Kyiv Air Watch) — the full technical documentation, with a map of the system.">
-<meta name="heimdall-version" content="1.58.14">
-<meta name="heimdall-docs" content="d5a6e5f905b3dea4">
+<meta name="heimdall-version" content="1.58.15">
+<meta name="heimdall-docs" content="3ceedc9be5b436b9">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Heimdall Technical Manual</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -237,7 +237,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
 <header class="top">
   <div class="wrap">
     <a class="brand" href="#top"><b>Heimdall</b><span>Technical manual</span></a>
-    <span class="ver">1.58.14</span>
+    <span class="ver">1.58.15</span>
     <nav class="nav" aria-label="Sections">
       <a href="#map">Map</a><a href="#journeys">Journeys</a><a href="#rules">Rules</a><a href="#reference">Reference</a><a href="#safety">Safety</a>
     </nav>
@@ -256,7 +256,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
       <h1 class="title">How Heimdall works</h1>
       <p class="lead">An unofficial air-threat map for Kyiv and the oblasts around it. One Python process reads the official
       alert data and the channels that track drones and missiles, stores every post before it reads it, rebuilds the map
-      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.14, 13 October 2026:
+      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.15, 14 October 2026:
       the map first, then everything in full.</p>
     </div>
     <dl class="facts">
@@ -645,7 +645,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
     <div class="doc" id="doc">
 <section class="part" id="tech" data-label="Reference"><p class="partlabel">Part I · The reference</p>
 <h1 id="heimdall--technical-documentation">Heimdall — technical documentation</h1>
-<p><strong>Documented version: 1.58</strong> · last updated 2026-10-13 (1.58.14)</p>
+<p><strong>Documented version: 1.58</strong> · last updated 2026-10-14 (1.58.15)</p>
 <p>Heimdall was called <strong>Clear Sky</strong> until 1.29; the repository, the Fly app (<code>kyiv-air-watch-gb</code>) and some
 internal names still carry the old name.</p>
 <p>This is the complete technical reference: what runs, where the data comes from, how a Telegram post becomes a
@@ -1503,6 +1503,11 @@ event of a Trial post carries <code>tags: [&quot;trial&quot;]</code> only. Both 
 <td><code>war_monitor</code></td>
 <td>wider picture, jet drones</td>
 <td>general <code>parse_post</code></td>
+</tr>
+<tr>
+<td><code>kudy_letyt</code></td>
+<td>all of Ukraine, added on the dashboard (1.58.15) — lists: an oblast or city heading (&quot;Київщина:&quot;, &quot;Київ:&quot;), then a target a line, &quot;2х БпЛА курсом на Кременчук&quot;</td>
+<td>general <code>parse_post</code>; a list is never news by its length (<code>looks_like_target_list</code>); &quot;залітає на Чернігівщину&quot; is in that oblast; &quot;по межі з Харківщиною&quot; is not</td>
 </tr>
 <tr>
 <td><code>eRadarrua</code></td>
@@ -4287,7 +4292,8 @@ damaging a roof, with nothing said about what was intercepted, is damage.</p>
 <ul>
 <li><strong>An article produces no outcome of any kind.</strong> Policy vocabulary — уряд, кабмін, законопроєкт, страхування,
 компенсація, відшкодування, бюджет, пільговий кредит, млн/млрд грн — never appears in somebody reporting what
-is overhead, and neither does a post of more than 700 characters. Such a post produces no marker and no
+is overhead, and neither does a post of more than 700 characters — 1.58.15: unless it is a list of targets, a line
+each under oblast headings (@kudy_letyt's all-Ukraine lists run to 1,500 characters, and were never stored). Such a post produces no marker and no
 status, whatever destruction words it contains. The guard covers <strong>every</strong> status: a visit to a new fire
 station drew a fire marker beside Kyiv because the fire rule ran before the news check.</li>
 <li><strong>A fire needs a fire, not a fire station.</strong> The root <code>пожеж</code> is in the name of every fire service, engine
@@ -4977,7 +4983,7 @@ d'alerte ne sont pas des préférences de style.</p>
 </section>
     </div>
   </div>
-  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.14, 13 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
+  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.15, 14 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
 </main>
 
 <script>

@@ -461,7 +461,8 @@ Three rules now:
 
 - **An article produces no outcome of any kind.** Policy vocabulary — уряд, кабмін, законопроєкт, страхування,
   компенсація, відшкодування, бюджет, пільговий кредит, млн/млрд грн — never appears in somebody reporting what
-  is overhead, and neither does a post of more than 700 characters. Such a post produces no marker and no
+  is overhead, and neither does a post of more than 700 characters — 1.58.15: unless it is a list of targets, a line
+  each under oblast headings (@kudy_letyt's all-Ukraine lists run to 1,500 characters, and were never stored). Such a post produces no marker and no
   status, whatever destruction words it contains. The guard covers **every** status: a visit to a new fire
   station drew a fire marker beside Kyiv because the fire rule ran before the news check.
 - **A fire needs a fire, not a fire station.** The root `пожеж` is in the name of every fire service, engine

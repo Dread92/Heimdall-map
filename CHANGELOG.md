@@ -2,6 +2,20 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.15 — 2026-10-14
+
+### Fixed
+- **@kudy_letyt places its targets** — the owner: "I added this channel for all of Ukraine and allowed it on the map,
+  but it places nothing". Its posts are lists — an oblast heading, then a target a line ("2х БпЛА курсом на Кременчук")
+  — of up to 1,500 characters, and every post over 700 was read as news and never stored. A list of targets, a line
+  each, is no longer news by its length (an article still is).
+- **"Залітає на Чернігівщину" is in Chernihiv oblast** — "Новий реактивний БпЛА з Брянщини залітає на Чернігівщину"
+  placed nothing: flying into an oblast was read as where it goes next. Flying into it ("залітає", "залетів",
+  "перелітає") is being in it now; flying out to it ("вилітає") is still where it goes. "Група БпЛА залітає на
+  Полтавщину з Сумщини" is in Poltava oblast, no longer in Sumy.
+- **"По межі з Харківщиною" is not in Kharkiv oblast** — fifteen drones "along the border with Kharkiv oblast", under
+  "Полтавщина:", were drawn in Kharkiv oblast.
+
 ## 1.58.14 — 2026-10-13
 
 ### Fixed
