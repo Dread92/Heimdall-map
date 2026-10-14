@@ -54,11 +54,26 @@ def test_the_key_in_the_address_or_in_a_cookie_no_longer_opens_anything():
         assert _H()._admin_ok({"key": ["adm"]}) is False
         assert _H(cookie="uadm=adm")._admin_ok({}) is False
         h = _H()
-        token = h.state.admin.create("Chrome · Windows", "abcd1234")
+        token = h.state.admin.create("Chrome · Windows", "abcd1234", kp=adminauth.key_print("adm"))
         h.headers["Cookie"] = "other=1; hsess=" + token
         assert h._admin_ok({}) is True
         h.state.admin.drop(token=token)
         assert h._admin_ok({}) is False
+
+
+def test_a_new_key_ends_the_sessions_opened_with_the_old_one():
+    """1.58.22: scripts/set-admin-key.bat puts a new key in Fly's secrets; whoever signed in with the old one is out."""
+    with mock.patch.dict(os.environ, {"ADMIN_KEY": "old-key"}, clear=True):
+        h = _H()
+        token = h.state.admin.create("Chrome · Windows", "abcd1234", kp=adminauth.key_print("old-key"))
+        h.headers["Cookie"] = "hsess=" + token
+        assert h._admin_ok({}) is True
+    with mock.patch.dict(os.environ, {"ADMIN_KEY": "new-key"}, clear=True):
+        assert h._admin_ok({}) is False
+        assert not h.state.admin.s                      # and it is gone, not just refused
+    bat = open(os.path.join(ROOT, "scripts", "set-admin-key.bat"), encoding="utf-8").read()
+    assert "RandomNumberGenerator" in bat and "| fly secrets import" in bat     # made on the PC, stored from stdin
+    assert "fly secrets set ADMIN_KEY" not in bat and "?key=" not in bat
 
 
 def test_access_key_still_locks_the_whole_app_for_a_private_deployment():

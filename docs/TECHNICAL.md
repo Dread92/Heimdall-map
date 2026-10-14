@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-14 (1.58.21)
+**Documented version: 1.58** · last updated 2026-10-14 (1.58.22)
 
 The repository is **Dread92/Heimdall-map** (it was `clear-sky` until October 2026; GitHub sends the old address on).
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
@@ -180,6 +180,7 @@ Heimdall-map/
 │   ├── build_imagery.py    builds the satellite layer (imagery/sat-ua.mbtiles) from ESA WorldCover / Sentinel-2 (1.47)
 │   ├── upload-imagery.bat  puts imagery/sat-ua.mbtiles on the Fly volume (1.47)
 │   ├── set-esri-key.bat    one-time: the owner's Esri key for the closest zooms, into Fly's secrets (1.48)
+│   ├── set-admin-key.bat   1.58.22: a new dashboard key, made on the PC, shown once, into Fly's secrets (§12.2)
 │   ├── set-openrouter-key.bat  one-time: the owner's OpenRouter key for the AI reader, into Fly's secrets (1.50)
 │   ├── set-telegram-channel.bat one-time: the owner's bot token and private channel, into Fly's secrets (1.58, §9c)
 │   ├── build_manual.py     rebuilds docs/manual.html — the whole documentation as one page, with the system map (1.54.9)
@@ -2506,6 +2507,11 @@ the site's pages and sent with every request to the public map. `app/adminauth.p
   in the header.
 - **Scripts and tests** send the key in an `X-Admin-Key` header. `ACCESS_KEY` (the whole-app gate of a private
   deployment) is unchanged.
+- **Where the key is** (1.58.22): only in Fly's secrets (`ADMIN_KEY`), which are write-only — `fly secrets list`
+  shows the name and a digest, never the value — and in the owner's password manager. `scripts\set-admin-key.bat`
+  makes a new one on the PC (24 random bytes from Windows' generator, 32 characters), shows it once to be saved, and
+  stores it with `fly secrets import` (from stdin: never on a command line). A session keeps a fingerprint of the key it
+  was opened with (`key_print`), so a new key ends every session of the old one.
 
 ## 13. Storage
 
@@ -2645,6 +2651,9 @@ refuses a list of under 1,000 shelters (a page of the answer) and names any type
 "Ukraine — Subnational Administrative Boundaries" (HDX, `ukr_admin_boundaries.gdb`), then
 `python scripts/build_hromadas.py PATH/ukr_admin_boundaries.gdb` (needs `pyogrio` and `shapely`). It prints the
 official hromadas it matched by a close name and those it could not; commit `static/hromadas/`.
+
+**Change the dashboard key** (1.58.22): double-click `scripts\set-admin-key.bat`, save the key it shows in a password
+manager, wait for the restart, sign in at `/admin`. Every session of the old key ends.
 
 **Telegram sign-in for the API reader**: create an app on <https://my.telegram.org> (API development tools),
 then run `scripts\telegram-login.bat`: it asks for the api_id, the api_hash and the phone number of the reading

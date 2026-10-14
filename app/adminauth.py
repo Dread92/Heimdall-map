@@ -12,7 +12,8 @@ of the site's pages and sent with every request to the public map. Now:
 - the comparison takes the same time whatever the key (hmac.compare_digest);
 - logins, failures, log-outs and every dashboard action are kept in a short log the dashboard shows, with the browser
   and a network tag (a keyed hash of the address: the same network shows the same tag, the address is never stored);
-- a session can be ended from the dashboard, one or all.
+- a session can be ended from the dashboard, one or all; 1.58.22: and a new key ends every session opened with the old
+  one (each session keeps a fingerprint of the key it was opened with — never the key).
 
 Scripts and tests may send the key in an `X-Admin-Key` header instead (never in the address).
 """
@@ -45,6 +46,11 @@ def net_tag(key, ip):
     if not ip:
         return "local"
     return hmac.new((key or "-").encode(), ip.encode(), hashlib.sha256).hexdigest()[:8]
+
+
+def key_print(key):
+    """A short fingerprint of the key a session was opened with: a new key ends the old sessions."""
+    return hashlib.sha256(("heimdall-admin:" + (key or "")).encode()).hexdigest()[:16]
 
 
 def same_key(given, key):
@@ -85,18 +91,18 @@ class AdminSessions:
         except Exception:
             pass
 
-    def create(self, ua, net):
+    def create(self, ua, net, kp=""):
         token = secrets.token_urlsafe(32)
         with self.lock:
             self._expire()
             while len(self.s) >= MAX_SESSIONS:             # the oldest goes
                 del self.s[min(self.s, key=lambda k: self.s[k]["at"])]
             now = self.clock()
-            self.s[self._h(token)] = {"at": now, "seen": now, "ua": ua, "net": net}
+            self.s[self._h(token)] = {"at": now, "seen": now, "ua": ua, "net": net, "kp": kp}
             self._save()
         return token
 
-    def check(self, token):
+    def check(self, token, kp=None):
         if not token:
             return False
         h = self._h(token)
@@ -105,7 +111,7 @@ class AdminSessions:
             if not v:
                 return False
             now = self.clock()
-            if now - v["at"] > TTL_S:
+            if now - v["at"] > TTL_S or (kp is not None and v.get("kp", "") != kp):   # too old, or opened with another key
                 del self.s[h]
                 self._save()
                 return False

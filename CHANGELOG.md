@@ -2,6 +2,14 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.22 — 2026-10-14
+
+### Security
+- **A new dashboard key in one double-click, and the old key's sessions end** — the owner: "and where will be the
+  key?". It lives only in Fly's secrets, which nobody can read back, and in a password manager. `scripts\set-admin-key.bat`
+  makes a strong key on the PC, shows it once to be saved, and stores it straight into Fly; every dashboard session
+  opened with the old key ends with it.
+
 ## 1.58.21 — 2026-10-14
 
 ### Security

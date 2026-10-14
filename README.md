@@ -205,6 +205,10 @@ cannot read; wrong keys are limited (5 tries, then one every two minutes); the d
 sessions and the sign-ins, and can end one or all. Scripts send the key in an `X-Admin-Key` header. With no key set
 at all, the dashboard is not served — it cannot be exposed by accident.
 
+The key lives only in Fly's secrets (write-only: nobody can read it back) and in your password manager. To change it,
+double-click `scripts\set-admin-key.bat`: it makes a strong key on your PC, shows it once, and stores it in Fly; every
+session opened with the old key ends.
+
 ## The regression corpus
 
 `data/corpus.jsonl` holds real posts and the parse each one must produce. It runs with the ordinary

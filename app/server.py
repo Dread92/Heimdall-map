@@ -8001,7 +8001,7 @@ class Handler(BaseHTTPRequestHandler):
         if adminauth.same_key(self.headers.get("X-Admin-Key"), key):
             return True
         ss = getattr(self.state, "admin", None)
-        return bool(ss and ss.check(adminauth.cookie_value(self.headers)))
+        return bool(ss and ss.check(adminauth.cookie_value(self.headers), kp=adminauth.key_print(key)))
 
     # -- 1.58.21: the dashboard's login -------------------------------------------------------------------------------
     def _sec(self, event, detail=""):
@@ -8075,7 +8075,7 @@ class Handler(BaseHTTPRequestHandler):
             return self._login_page(401, ("Wrong key.", "Неправильний ключ."))
         ip = limits.client_ip(self.headers, self.client_address[0] if self.client_address else "")
         ua = adminauth.ua_short(self.headers.get("User-Agent"))
-        token = self.state.admin.create(ua, adminauth.net_tag(key, ip))
+        token = self.state.admin.create(ua, adminauth.net_tag(key, ip), kp=adminauth.key_print(key))
         self._sec("login_ok")
         flags = "Path=/; HttpOnly; SameSite=Strict; Max-Age=%d%s" % (adminauth.TTL_S, "; Secure" if self._https() else "")
         self.send_response(303)

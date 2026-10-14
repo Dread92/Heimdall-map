@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Heimdall (Kyiv Air Watch) — the full technical documentation, with a map of the system.">
-<meta name="heimdall-version" content="1.58.21">
-<meta name="heimdall-docs" content="4d0ffb331c2ea3fd">
+<meta name="heimdall-version" content="1.58.22">
+<meta name="heimdall-docs" content="72bb8d81a2fda2cf">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Heimdall Technical Manual</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -237,7 +237,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
 <header class="top">
   <div class="wrap">
     <a class="brand" href="#top"><b>Heimdall</b><span>Technical manual</span></a>
-    <span class="ver">1.58.21</span>
+    <span class="ver">1.58.22</span>
     <nav class="nav" aria-label="Sections">
       <a href="#map">Map</a><a href="#journeys">Journeys</a><a href="#rules">Rules</a><a href="#reference">Reference</a><a href="#safety">Safety</a>
     </nav>
@@ -256,7 +256,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
       <h1 class="title">How Heimdall works</h1>
       <p class="lead">An unofficial air-threat map for Kyiv and the oblasts around it. One Python process reads the official
       alert data and the channels that track drones and missiles, stores every post before it reads it, rebuilds the map
-      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.21, 14 October 2026:
+      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.22, 14 October 2026:
       the map first, then everything in full.</p>
     </div>
     <dl class="facts">
@@ -646,7 +646,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
     <div class="doc" id="doc">
 <section class="part" id="tech" data-label="Reference"><p class="partlabel">Part I · The reference</p>
 <h1 id="heimdall--technical-documentation">Heimdall — technical documentation</h1>
-<p><strong>Documented version: 1.58</strong> · last updated 2026-10-14 (1.58.21)</p>
+<p><strong>Documented version: 1.58</strong> · last updated 2026-10-14 (1.58.22)</p>
 <p>The repository is <strong>Dread92/Heimdall-map</strong> (it was <code>clear-sky</code> until October 2026; GitHub sends the old address on).
 Heimdall was called <strong>Clear Sky</strong> until 1.29; the repository, the Fly app (<code>kyiv-air-watch-gb</code>) and some
 internal names still carry the old name.</p>
@@ -830,6 +830,7 @@ real post, and a fix to the rules applies to posts already in the database.</p>
 │   ├── build_imagery.py    builds the satellite layer (imagery/sat-ua.mbtiles) from ESA WorldCover / Sentinel-2 (1.47)
 │   ├── upload-imagery.bat  puts imagery/sat-ua.mbtiles on the Fly volume (1.47)
 │   ├── set-esri-key.bat    one-time: the owner's Esri key for the closest zooms, into Fly's secrets (1.48)
+│   ├── set-admin-key.bat   1.58.22: a new dashboard key, made on the PC, shown once, into Fly's secrets (§12.2)
 │   ├── set-openrouter-key.bat  one-time: the owner's OpenRouter key for the AI reader, into Fly's secrets (1.50)
 │   ├── set-telegram-channel.bat one-time: the owner's bot token and private channel, into Fly's secrets (1.58, §9c)
 │   ├── build_manual.py     rebuilds docs/manual.html — the whole documentation as one page, with the system map (1.54.9)
@@ -3680,6 +3681,11 @@ with the browser family and the network tag (§11). The Live tab's &quot;Dashboa
 in the header.</li>
 <li><strong>Scripts and tests</strong> send the key in an <code>X-Admin-Key</code> header. <code>ACCESS_KEY</code> (the whole-app gate of a private
 deployment) is unchanged.</li>
+<li><strong>Where the key is</strong> (1.58.22): only in Fly's secrets (<code>ADMIN_KEY</code>), which are write-only — <code>fly secrets list</code>
+shows the name and a digest, never the value — and in the owner's password manager. <code>scripts\set-admin-key.bat</code>
+makes a new one on the PC (24 random bytes from Windows' generator, 32 characters), shows it once to be saved, and
+stores it with <code>fly secrets import</code> (from stdin: never on a command line). A session keeps a fingerprint of the key it
+was opened with (<code>key_print</code>), so a new key ends every session of the old one.</li>
 </ul>
 <h2 id="13-storage">13. Storage<a class="anc" href="#13-storage" aria-label="Link to this section">#</a></h2>
 <p>SQLite in WAL mode (<code>DB_PATH</code>; on Fly, the volume). Tables:</p>
@@ -3934,6 +3940,8 @@ refuses a list of under 1,000 shelters (a page of the answer) and names any type
 &quot;Ukraine — Subnational Administrative Boundaries&quot; (HDX, <code>ukr_admin_boundaries.gdb</code>), then
 <code>python scripts/build_hromadas.py PATH/ukr_admin_boundaries.gdb</code> (needs <code>pyogrio</code> and <code>shapely</code>). It prints the
 official hromadas it matched by a close name and those it could not; commit <code>static/hromadas/</code>.</p>
+<p><strong>Change the dashboard key</strong> (1.58.22): double-click <code>scripts\set-admin-key.bat</code>, save the key it shows in a password
+manager, wait for the restart, sign in at <code>/admin</code>. Every session of the old key ends.</p>
 <p><strong>Telegram sign-in for the API reader</strong>: create an app on <a href="https://my.telegram.org" target="_blank" rel="noopener">https://my.telegram.org</a> (API development tools),
 then run <code>scripts\telegram-login.bat</code>: it asks for the api_id, the api_hash and the phone number of the reading
 account (a dedicated account is best), signs in with the code Telegram sends, joins the channel, and stores the
@@ -5159,7 +5167,7 @@ d'alerte ne sont pas des préférences de style.</p>
 </section>
     </div>
   </div>
-  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.21, 14 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
+  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.22, 14 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
 </main>
 
 <script>
