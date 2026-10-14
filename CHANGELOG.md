@@ -2,6 +2,17 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.17 — 2026-10-14
+
+### Added
+- **Limits on abuse of the public API** — the first of the audit's recommendations; the owner picked "limit the abuse"
+  over signed tokens or Cloudflare Turnstile, because a mobile operator puts thousands of phones behind one address.
+  What costs the server is limited per client — an answer nobody else asked for (a replay window, statistics, a
+  history), a flag, a flood of push requests, more than 200 live lines — and a usual question never is: a client past
+  its allowance is given the last copy there is, and only an answer never built is refused (429, try again in a
+  moment). The official alerts, the marks, the feed and the pages are never limited. Kept answers, oblast lists, the
+  events log and request bodies are bounded. The dashboard counts the refusals; nothing about who is kept.
+
 ## 1.58.16 — 2026-10-14
 
 ### Changed

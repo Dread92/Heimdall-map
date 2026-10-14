@@ -274,6 +274,14 @@ oblast-wide alert always paints the oblast; raion-level alerts can only **add** 
 inside a yellow oblast), never reduce or replace it. Getting this wrong — showing "clear" where the
 state says "alert" — is the single most dangerous bug this app can have.
 
+## A limit never stands between a reader and the alert (1.58.17)
+
+The abuse limits exist so that a few people copying or hammering the API cannot slow the app for everyone during a
+mass attack. They must never become the thing that slows it: thousands of phones can share one address in Ukraine. So
+nothing a reader needs is limited — the official alert status, the marks, the feed, the pages, the live line up to 200
+per address — and a reader past an allowance is given the last copy of what was asked, never an error, unless it is a
+question nobody else has asked. A limit that refuses a usual question is a bug of this rule.
+
 ## A hromada's alert is the hromada's (1.58.16)
 
 The official data alerts some hromadas on their own (Nikopol's, Marhanets', Kharkiv's). The government app paints that

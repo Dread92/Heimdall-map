@@ -63,6 +63,7 @@ try:
     import areas
 except Exception:  # pragma: no cover
     areas = None
+import limits  # noqa: E402  (1.58.17: the public API's abuse limits)
 
 
 def to_en(text):
@@ -445,7 +446,8 @@ BUILD_FILES = ("static/kyiv.html", "static/light.html", "static/light-map.json",
                "static/light-map-x.json", "data/regional_places.json", "static/map-ua.json",
                # 1.58.7: the service's other modules — a change there is a new version too (the server panel's restarts)
                "app/chanpost.py", "app/mapshot.py", "app/areas.py", "app/ai_reader.py", "app/translate.py",
-               "static/hromadas.js", "static/replay.js")   # 1.58.16
+               "static/hromadas.js", "static/replay.js",   # 1.58.16
+               "app/limits.py")                            # 1.58.17
 
 
 def build_id():
@@ -2921,6 +2923,7 @@ class State:
         self.notifier = Notifier(cfg)
         # caches are per State: two States (the tests) must never see each other's answers
         self._resp, self._resp_locks, self._stats_res, self._entries = {}, {}, {}, {}
+        self.limits = limits.Limits()         # 1.58.17: the public API's abuse limits, in memory only
         try:
             self.notice = json.loads(store.kv_get("notice") or "null")
         except Exception:
@@ -3717,11 +3720,19 @@ class State:
     _resp_locks = {}
     _resp_guard = threading.Lock()
 
-    def cached(self, name, ttl, build, ver=None):
+    RESP_MAX = 400          # 1.58.17: answers kept for parameters ("stats:14", "hist:24:14,31"); the oldest go first
+
+    def cached(self, name, ttl, build, ver=None, gate=None):
         """(built_at, body, gzipped body or None, object) for `build()`; rebuilt when `ver` changes or `ttl`
-        seconds have passed, never by two threads at once."""
+        seconds have passed, never by two threads at once.
+
+        1.58.17: `gate()` is asked before a rebuild — the client's allowance (app/limits.py). Refused, the last copy
+        there is is given, stale; with none, None (the caller answers 429). What a reader needs is never refused:
+        everybody asking the usual question shares one copy."""
         hit = self._resp.get(name)
         if hit and hit[4] == ver and time.time() - hit[0] < ttl:
+            return hit
+        if gate is not None and not gate():
             return hit
         with self._resp_guard:
             lk = self._resp_locks.setdefault(name, threading.Lock())
@@ -3733,6 +3744,11 @@ class State:
             body = json.dumps(obj, ensure_ascii=False).encode("utf-8")
             hit = (time.time(), body, gzip.compress(body, 5) if len(body) > 1400 else None, obj, ver)
             self._resp[name] = hit
+            if len(self._resp) > self.RESP_MAX:
+                keyed = sorted((v[0], k) for k, v in list(self._resp.items()) if ":" in k and k != name)
+                for _t, k in keyed[:len(self._resp) - self.RESP_MAX]:
+                    self._resp.pop(k, None)
+                    self._resp_locks.pop(k, None)
             return hit
 
     _bridges_res = None
@@ -5084,16 +5100,17 @@ class State:
     _replay_parse = {}
     _replay_keys = []
 
-    def replay_cached(self, t0, t1):
+    def replay_cached(self, t0, t1, gate=None):
         """The cached answer for one window: a window wholly in the past is built once an hour, one that reaches now
-        once a minute. At most twelve windows are kept."""
+        once a minute. At most twelve windows are kept. `gate`: as for `cached` (1.58.17)."""
         name = f"replay:{t0}:{t1}"
-        if name not in self._replay_keys:
+        past = t1 < time.time() - 600
+        hit = self.cached(name, 3600 if past else 60, lambda: self.replay(t0, t1), gate=gate)
+        if hit is not None and name not in self._replay_keys:   # a refused window does not push out a kept one
             self._replay_keys.append(name)
             while len(self._replay_keys) > 12:
                 self._resp.pop(self._replay_keys.pop(0), None)
-        past = t1 < time.time() - 600
-        return self.cached(name, 3600 if past else 60, lambda: self.replay(t0, t1))
+        return hit
 
     def replay(self, t0, t1):
         start = datetime.fromtimestamp(t0, timezone.utc)
@@ -7540,6 +7557,7 @@ class StreamHub(threading.Thread):
         self.sel = selectors.DefaultSelector()
         self.clients = {}
         self.pending = []
+        self.by_who = {}              # 1.58.17: open lines by client hash, for limits.STREAMS
         self.plock = threading.Lock()
         self._wr, self._ww = socket.socketpair()
         self._wr.setblocking(False)
@@ -7561,10 +7579,17 @@ class StreamHub(threading.Thread):
         except OSError:
             pass                      # the pipe is full: the hub is already awake
 
-    def add(self, sock, lang, parts, events, kind):
+    def add(self, sock, lang, parts, events, kind, who=None):
         with self.plock:
-            self.pending.append((sock, lang, parts, events, kind))
+            self.pending.append((sock, lang, parts, events, kind, who))
+            if who is not None:
+                self.by_who[who] = self.by_who.get(who, 0) + 1
         self.wake()
+
+    def count_of(self, who):
+        """1.58.17: the live lines open from one client (a salted hash, app/limits.py) — for its cap."""
+        with self.plock:
+            return self.by_who.get(who, 0)
 
     def online(self):
         cs = list(self.clients.values())
@@ -7637,9 +7662,10 @@ class StreamHub(threading.Thread):
         with self.plock:
             got, self.pending = self.pending, []
         new = []
-        for sock, lang, parts, events, kind in got:
+        for sock, lang, parts, events, kind, *rest in got:
+            who = rest[0] if rest else None
             c = {"sock": sock, "lang": lang, "parts": parts, "events": events, "kind": kind, "out": bytearray(),
-                 "mask": selectors.EVENT_READ}
+                 "mask": selectors.EVENT_READ, "who": who}
             try:
                 sock.setblocking(False)
                 self.sel.register(sock, selectors.EVENT_READ, c)
@@ -7648,6 +7674,7 @@ class StreamHub(threading.Thread):
                     sock.close()
                 except OSError:
                     pass
+                self._unwho(who)
                 continue
             self.clients[id(c)] = c
             new.append(c)
@@ -7659,8 +7686,19 @@ class StreamHub(threading.Thread):
                 self.peak.update(n=len(self.clients), at=now_iso())
         return new
 
+    def _unwho(self, who):
+        if who is None:
+            return
+        with self.plock:
+            n = self.by_who.get(who, 0) - 1
+            if n > 0:
+                self.by_who[who] = n
+            else:
+                self.by_who.pop(who, None)
+
     def _drop(self, c):
-        self.clients.pop(id(c), None)
+        if self.clients.pop(id(c), None) is not None:
+            self._unwho(c.get("who"))
         try:
             self.sel.unregister(c["sock"])
         except (KeyError, ValueError, OSError):
@@ -7797,14 +7835,46 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
-    def _json(self, obj, code=200):
+    def _json(self, obj, code=200, extra=()):
         body = json.dumps(obj, ensure_ascii=False).encode("utf-8")
         self.send_response(code)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Cache-Control", "no-store")
+        for k, v in extra:
+            self.send_header(k, v)
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
+
+    # 1.58.17: the abuse limits (app/limits.py) — what costs the server, never what a reader needs
+    def _who(self):
+        lim = getattr(self.state, "limits", None)
+        if lim is None:
+            return None
+        ip = limits.client_ip(self.headers, self.client_address[0] if self.client_address else "")
+        if ip is None or self._admin_ok(parse_qs(urlparse(self.path).query)):
+            return None
+        return lim.who(ip)
+
+    def _allow(self, kind):
+        """True when this client may (and it is counted); else False, the wait kept for `_limited()`."""
+        who = self._who()
+        if who is None:
+            return True
+        self._wait = self.state.limits.take(who, kind)
+        return self._wait == 0
+
+    def _gate(self):
+        return self._allow("build")
+
+    def _limited(self):
+        w = getattr(self, "_wait", 0) or 30
+        return self._json({"error": "too many requests — try again in a moment", "retry_after": w}, 429,
+                          extra=(("Retry-After", str(w)),))
+
+    def _send_gated(self, hit):
+        """A cached answer, or 429 when it would have had to be built and this client's allowance is spent."""
+        return self._limited() if hit is None else self._send_cached(hit)
 
     def _peer_ip(self):
         # only ever used to make a daily, salted, one-way hash — never stored, never logged
@@ -7999,18 +8069,19 @@ class Handler(BaseHTTPRequestHandler):
             if u.path == "/api/places":
                 oq = q.get("oblast", ["14,31"])[0]
                 # 1.43: "scope" — the oblasts the map covers now, as the dashboard set them
-                obl = None if oq == "all" else set(SCOPE_UIDS) if oq == "scope" else set(oq.split(","))
+                obl = None if oq == "all" else set(SCOPE_UIDS) if oq == "scope" else set(oq.split(",")) & set(NAME_BY_UID)
                 if q.get("villages", [None])[0] == "scope":
                     # 1.45: the regional villages of the oblasts the map covers, for the "villages and small towns"
                     # layer — fetched only when that layer is on; the core towns above are already drawn
                     sc = set(SCOPE_UIDS)
-                    return self._send_cached(st.cached("villages:" + ",".join(sorted(sc)), 3600, lambda: {"places": [
-                        {"name": n, "lon": lo, "lat": la, "oblast_uid": uid} for n, lo, la, uid in (geo.villages(sc) if geo else [])]}))
+                    return self._send_gated(st.cached("villages:" + ",".join(sorted(sc)), 3600, lambda: {"places": [
+                        {"name": n, "lon": lo, "lat": la, "oblast_uid": uid} for n, lo, la, uid in (geo.villages(sc) if geo else [])]},
+                        gate=self._gate))
                 # 1.46: built once an hour per set of oblasts and sent gzipped — it was rebuilt for every request
                 key = "places:" + ("all" if obl is None else ",".join(sorted(obl)))
-                return self._send_cached(st.cached(key, 3600, lambda: {"places": [
+                return self._send_gated(st.cached(key, 3600, lambda: {"places": [
                     {"name": n.split(" (")[0], "lon": v[0], "lat": v[1], "oblast_uid": v[2]}
-                    for n, v in (geo.PLACES.items() if geo else []) if obl is None or v[2] in obl]}))
+                    for n, v in (geo.PLACES.items() if geo else []) if obl is None or v[2] in obl]}, gate=self._gate))
             if u.path == "/api/markers":
                 st.markers_now()
                 return self._send_cached(st._resp["markers"])
@@ -8023,6 +8094,8 @@ class Handler(BaseHTTPRequestHandler):
                 night, n = q.get("night", [""])[0], q.get("n", [""])[0]
                 if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", night) or not n.isdigit() or not 0 < int(n) < 100000:
                     return self._json({"error": "night=YYYY-MM-DD&n=<number>"}, 400)
+                if not self._allow("build"):
+                    return self._limited()
                 return self._json({"night": night, "n": int(n), "points": st.tags.trail(night, int(n))})
             # The dashboard is yours alone: it needs ACCESS_KEY, and it refuses to serve anything when no key
             # is configured, so an open deployment can never expose it by accident.
@@ -8046,7 +8119,7 @@ class Handler(BaseHTTPRequestHandler):
                 except ValueError:
                     d = 7
                 d = d if d in (1, 7, 30) else 7
-                return self._send_cached(st.cached(f"drone_heat:{d}", 600, lambda: st.drone_heat(d)))
+                return self._send_gated(st.cached(f"drone_heat:{d}", 600, lambda: st.drone_heat(d), gate=self._gate))
             if u.path == "/api/analytics":
                 if not self._admin_ok(q):
                     return self._json({"error": "unauthorized"}, 401)
@@ -8062,7 +8135,8 @@ class Handler(BaseHTTPRequestHandler):
                 vt = getattr(st, "vitals", None)
                 return self._json({"online": hub.online() if hub else None, "notice": st.notice_now(), "nuke": st.nuke,
                                    "push_last": getattr(pu, "last_fanout", None), "now": now_iso(),
-                                   "process": vt.report() if vt else None, "channel": st.channel_status()})
+                                   "process": vt.report() if vt else None, "channel": st.channel_status(),
+                                   "limits": st.limits.report()})
             if u.path == "/.well-known/assetlinks.json":
                 return self._json(android_asset_links())
             if u.path == "/api/version":
@@ -8077,7 +8151,7 @@ class Handler(BaseHTTPRequestHandler):
                                    "missile": bool(lvl), "msl": lvl, "build": BUILD, "app": APP_VERSION})
             if u.path == "/api/stats":
                 days = max(1, min(int(q.get("days", ["14"])[0]), 30))
-                return self._send_cached(st.cached(f"stats:{days}", 120, lambda: st.stats(days)))
+                return self._send_gated(st.cached(f"stats:{days}", 120, lambda: st.stats(days), gate=self._gate))
             if u.path == "/api/replay":
                 # 1.42: a past window for the time bar — at most 26 h, within the last 7 days (whole minutes, so the
                 # pages asking for the same window share one answer)
@@ -8090,14 +8164,16 @@ class Handler(BaseHTTPRequestHandler):
                 t0, t1 = t0 - t0 % 60, t1 - t1 % 60
                 if t1 <= t0 or t1 - t0 > st.REPLAY_MAX_H * 3600:
                     return self._json({"error": "a window of at most 26 hours within the last 7 days"}, 400)
-                return self._send_cached(st.replay_cached(t0, t1))
+                return self._send_gated(st.replay_cached(t0, t1, gate=self._gate))
             if u.path == "/api/impacts":
                 hours = max(1, min(int(q.get("hours", ["24"])[0]), 168))
-                return self._send_cached(st.cached(f"impacts:{hours}", 30, lambda: {"now": now_iso(), "hours": hours, "impacts": st.impacts(hours)}))
+                return self._send_gated(st.cached(f"impacts:{hours}", 30, lambda: {"now": now_iso(), "hours": hours, "impacts": st.impacts(hours)},
+                                                  gate=self._gate))
             if u.path == "/api/state":
                 return self._send_cached(st.state_now())
             if u.path == "/api/feed":
                 limit = max(1, min(int(q.get("limit", ["80"])[0]), 200))
+                limit = next(x for x in (25, 80, 120, 150, 200) if x >= limit)   # 1.58.17: the sizes the pages ask
                 lang = q.get("lang", [""])[0]
                 hit = st.feed_now(limit)
                 tr = getattr(st, "tr", None)
@@ -8108,11 +8184,13 @@ class Handler(BaseHTTPRequestHandler):
             if u.path == "/api/history":
                 # every open page asks for it after an alert starts or ends: one query for all of them (1.29)
                 hours = max(1, min(int(q.get("hours", ["24"])[0]), 168))
-                obl = ",".join(sorted({x for x in (q.get("oblast", [""])[0] or "").split(",") if x.isdigit()}))
-                return self._send_cached(st.cached(f"hist:{hours}:{obl}", 20, lambda: {"alerts": st.store.history(hours, obl.split(",") if obl else None)},
-                                                   ver=st.seq))
+                obl = ",".join(sorted({x for x in (q.get("oblast", [""])[0] or "").split(",") if x in NAME_BY_UID}))
+                return self._send_gated(st.cached(f"hist:{hours}:{obl}", 20, lambda: {"alerts": st.store.history(hours, obl.split(",") if obl else None)},
+                                                  ver=st.seq, gate=self._gate))
             if u.path == "/api/events_log":
-                return self._json({"events": st.store.events(int(q.get("limit", ["200"])[0]))})
+                if not self._allow("build"):
+                    return self._limited()
+                return self._json({"events": st.store.events(max(1, min(int(q.get("limit", ["200"])[0]), 500)))})
             # Flagged readings are yours alone, on the same terms as the dashboard: they quote posts and
             # somebody's opinion of them, and neither belongs on an open endpoint.
             # The corpus, for reviewing from a browser instead of a terminal. The reading shown is computed
@@ -8215,8 +8293,12 @@ class Handler(BaseHTTPRequestHandler):
             return self._json({"error": "unauthorized"}, 401)
         try:
             n = int(self.headers.get("Content-Length") or 0)
+            if n > 65536:                                  # 1.58.17: no request of the pages is near this
+                return self._json({"error": "too large"}, 413)
             data = json.loads(self.rfile.read(n).decode("utf-8") or "{}") if n else {}
             if u.path == "/api/flag":
+                if not self._allow("write"):
+                    return self._limited()
                 return self._flag(data)
             if u.path == "/api/admin/ai_report":
                 # 1.53: "write this night's report now" — only asks the NightReports thread
@@ -8375,6 +8457,8 @@ class Handler(BaseHTTPRequestHandler):
             pu = getattr(st, "pusher", None)
             if not (pu and pu.enabled):
                 return self._json({"error": "push not available on this server (pip install cryptography)"}, 503)
+            if u.path.startswith("/api/push/") and not self._allow("push"):
+                return self._limited()
             if u.path == "/api/push/subscribe":
                 sub = data.get("subscription") or {}
                 if not sub.get("endpoint"):
@@ -8470,6 +8554,13 @@ class Handler(BaseHTTPRequestHandler):
             self.wfile.write(data)
 
     def _stream(self):
+        # 1.58.17: at most limits.STREAMS open live lines from one client — refused, the page asks on its own instead
+        who = self._who()
+        hub = getattr(self.state, "hub", None)
+        if who is not None and hub is not None and hasattr(hub, "count_of") and hub.count_of(who) >= limits.STREAMS:
+            self.state.limits.refused["stream"] += 1
+            self._wait = 60
+            return self._limited()
         self.send_response(200)
         self.send_header("Content-Type", "text/event-stream")
         self.send_header("Cache-Control", "no-store")
@@ -8479,7 +8570,6 @@ class Handler(BaseHTTPRequestHandler):
         qs = parse_qs(urlparse(self.path).query)
         # a page reading English or French keeps its language "wanted" for as long as it is open
         lang = (qs.get("lang") or [""])[0]
-        hub = getattr(self.state, "hub", None)
         detached = getattr(self.server, "detached", None)
         if hub is not None and hub.is_alive() and detached is not None:
             parts = set((qs.get("sync") or [""])[0].split(",")) & {"mk", "st", "fd"}
@@ -8488,7 +8578,7 @@ class Handler(BaseHTTPRequestHandler):
             self.close_connection = True
             with self.server.detached_lock:
                 detached.add(self.request)
-            hub.add(self.request, lang, parts, events, kind)
+            hub.add(self.request, lang, parts, events, kind, who=who)
             return
         # no hub (a test server): the old way, one thread for this page
         q = self.state.subscribe()

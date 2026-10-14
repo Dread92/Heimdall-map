@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-14 (1.58.16)
+**Documented version: 1.58** · last updated 2026-10-14 (1.58.17)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -132,6 +132,7 @@ clear-sky/
 │   ├── chanpost.py         1.58: the owner's private Telegram channel — a post per report, its outcome, the all-clear (§9c)
 │   ├── mapshot.py          1.58: its picture — the map around one target, drawn with Pillow in the app's style (§9c)
 │   ├── areas.py            1.58.7: which official alert area a point is in, and is it under alert (`held`, §7.4; §9c)
+│   ├── limits.py           1.58.17: the public API's abuse limits — per client, on what costs the server (§12.1)
 │   └── push.py             Web Push: VAPID ES256 JWT + RFC 8291 aes128gcm, on `cryptography` only
 ├── static/
 │   ├── kyiv.html           Tactical page (one self-contained file)
@@ -2364,6 +2365,8 @@ Android app at once**; a new APK is needed only for its name, icon, address or A
   git-ignored; the history was scanned for tokens before the repository was published.
 - Static files are served gzipped with an ETag (`Cache-Control: no-cache`): a phone revalidates instead of
   downloading again, and still picks up a new version immediately.
+- 1.58.17: the abuse limits (§12.1) hold a client as a salted hash of its address, in memory only, the salt changed
+  every day — never stored, never logged; the dashboard sees counts of refusals by kind, nothing about who.
 
 ## 12. HTTP API
 
@@ -2415,6 +2418,33 @@ All JSON unless stated. Public unless marked 🔒 (`ADMIN_KEY`).
 | 🔒 `GET /api/digests` | the stored nights and weeks: figures, written summary (EN / UK), model |
 | 🔒 `POST /api/digest/run` | `{kind: night|week}` — asks the `Digests` thread to write the last one up now (never calls the model itself) |
 | 🔒 `GET /api/flags`, `/api/corpus`; `POST /api/corpus/review`, `/api/corpus/translate` | flags and corpus review — no longer in the dashboard (1.19); used by `scripts/corpus.py` |
+
+### 12.1 Abuse limits (1.58.17)
+
+The audit of map.war-monitor.org found Heimdall's API open to anyone who wants to copy it or hammer it during a mass
+alert. The owner picked **limit the abuse** — not signed tokens, not Cloudflare Turnstile: a Ukrainian mobile operator
+puts thousands of phones behind one address (carrier-grade NAT), so a strict limit per address would turn real readers
+away in the middle of an attack. `app/limits.py` limits what **costs the server**, per client, with token buckets:
+
+| Kind | What counts | Allowance |
+|---|---|---|
+| `build` | an answer computed because no copy of it is fresh: `/api/replay`, `/api/stats`, `/api/history`, `/api/impacts`, `/api/drone_heat`, `/api/places`; and `/api/trail`, `/api/events_log` (a query each time) | 60 at once, 1 more a second |
+| `write` | `POST /api/flag` | 20 at once, 2 a minute |
+| `push` | `POST /api/push/*` — a whole carrier's NAT subscribing in a raid stays under it | 300 at once, 5 a second |
+| `stream` | open `/api/stream` lines | 200 at a time (`limits.STREAMS`); refused, the page asks on its own |
+
+- **A usual question is never refused.** `State.cached(…, gate=)` asks the allowance only before a rebuild, and a
+  refused client is given the last copy there is, stale by seconds or minutes; only an answer that was never built —
+  parameters nobody else asks for — is refused: **429**, `Retry-After`, `{error, retry_after}`. Everybody asking the
+  usual window, the usual days, shares one copy.
+- **Never limited**: `/api/state` (the official alerts), `/api/markers`, `/api/feed` (rounded up to the sizes the
+  pages ask: 25, 80, 120, 150, 200), `/api/version`, `/healthz`, the pages and the static files.
+- **The client** is `Fly-Client-IP` (Fly's proxy sets it; `X-Forwarded-For` is what a client writes itself) as a
+  salted daily hash. Not limited: this machine (no proxy header, a loopback peer), a request with the dashboard's key,
+  and — should Fly's header ever be missing — everybody, rather than everybody as one client.
+- **Bounds**: at most `State.RESP_MAX` (400) answers for parameters are kept, the oldest go first; `/api/places` and
+  `/api/history` take only known oblast uids; `/api/events_log` at most 500; a POST body at most 64 KB (413).
+- The dashboard's Server panel counts the refusals by kind since the start (`/api/online` → `limits`).
 
 ## 13. Storage
 
