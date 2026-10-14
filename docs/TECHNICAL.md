@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-14 (1.58.18)
+**Documented version: 1.58** · last updated 2026-10-14 (1.58.19)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -1988,6 +1988,12 @@ Main parts:
   other labels, other marks' glyphs and the map's edge; placed by priority (to a watched place, inbound,
   descending, others, outcomes); an ordinary label that fits nowhere loses its second line (`nolbl2`), then is
   left out (`nolbl`). The boxes (`LBLBOX`) hide the town names under them (`layoutTownLabels`);
+- **less on the screen** (1.58.19, the owner, Kyiv oblast on a phone: "too much information on the screen"): a raion's
+  name is the least of the names — 9.5 px, letter-spaced, quieter (`.rnlbl`) — and `layoutTownLabels` places it last,
+  leaving it out where a town, a target, a badge, the home's name (`#homeg .hl`) or the map's buttons (`.mapctl`) are;
+  no town name is written under those two either, and a town whose name has no room loses its dot (the big cities
+  keep theirs). With a place chosen (`svg.hashome`), its 10 / 30 / 60 km zones are the only rings: the oblast centre's
+  15 / 30 / 50 km rings (`#ringc`) and the pin's own 5 / 10 km circles are not drawn;
 - **a mark's size follows the zoom** (1.58.18, the owner: "ideally the icons scale with the zoom"): it used to keep one
   size on the screen at every zoom, so the whole country on a phone was covered by 26 px silhouettes. `markZoom(KPX)`
   gives `MZ` — 1 at 0.6 km a pixel (`MZ_REF`, Kyiv oblast on a phone), `(MZ_REF/KPX)^0.4` above it down to **0.55**

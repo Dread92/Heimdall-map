@@ -493,7 +493,7 @@ svg.lbld #towns,svg.mapd #towns,svg.lbld #minorg,svg.lbld #villg,svg.mapd #minor
 .lbopts{display:flex;gap:6px}.layermenu .lbopts label{flex:1 1 0;min-height:44px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;justify-content:center;gap:6px;text-align:center}
 .layermenu .lbopts input{width:18px;height:18px}.lbopts label:has(input:checked){border-color:var(--orange);background:rgba(255,138,61,.12)}
 /* 1.48: over a picture the oblast and raion names are light on a dark halo, as the towns are — dark slate on dark imagery could not be read */
-svg.tiled .oblbl,svg.tiled .rnlbl{fill:#dfe6ef;paint-order:stroke;stroke:rgba(5,8,12,.85);stroke-width:calc(var(--k,1)*3.2px);stroke-linejoin:round}svg.tiled .rnlbl{fill:#c9d2de;opacity:.92}
+svg.tiled .oblbl,svg.tiled .rnlbl{fill:#dfe6ef;paint-order:stroke;stroke:rgba(5,8,12,.85);stroke-width:calc(var(--k,1)*3.2px);stroke-linejoin:round}svg.tiled .rnlbl{fill:#d3dae4;opacity:.66;stroke-width:calc(var(--k,1)*2.4px)}
 svg.tiled .road,svg.tiled .roadlbl,svg.tiled .river,svg.tiled .rvlbl,svg.tiled .bridge{display:none}svg.tiled .nb:not(.R):not(.Y):not(.oR):not(.oY),svg.tiled .ob.far:not(.R):not(.Y){fill:none}svg.tiled .nb.R{fill:rgba(229,72,77,.3)}svg.tiled .nb.Y{fill:rgba(245,185,64,.22)}svg.tiled .nb.oR{fill:rgba(229,72,77,.18)}svg.tiled .nb.oY{fill:rgba(245,185,64,.13)}
 svg.tiled .rn{fill:rgba(20,25,32,.25)}svg.tiled .rn.city{fill:rgba(24,31,42,.15)}svg.tiled .rn.R{fill:rgba(229,72,77,.32)}svg.tiled .rn.Y{fill:rgba(245,185,64,.26)}svg.tiled .rn.city.R{fill:rgba(229,72,77,.36)}svg.tiled .rn.city.Y{fill:rgba(245,185,64,.3)}
 /* the tile credit OpenStreetMap asks for: small, in the bottom corner — at the top right it sat on the place chips */
@@ -529,7 +529,12 @@ svg.city #tiles,svg.city #oblastsg,svg.city #neighbors,svg.city #obllbl,svg.city
 svg.city .rn{fill:#0e1116;stroke:#2b3340}svg.city .rn.city{fill:none;stroke:#8fb4ff;stroke-width:1.6px}svg.city .kdist{display:block;font-size:calc(var(--k,1)*12.5px);fill:#dbe4f5}
 svg.city .town.district{fill:#aeb8c8;font-weight:500}
 .kdist{fill:#9fb4d8;fill-opacity:.8;font:800 calc(var(--k,1)*10px) system-ui;letter-spacing:.2px;pointer-events:none;paint-order:stroke;stroke:#080b10;stroke-width:calc(var(--k,1)*3px)}svg:not(.close) .kdist{display:none}
-.rnlbl{fill:#8a96aa;font:700 calc(var(--k,1)*11px) system-ui;text-transform:uppercase;letter-spacing:.3px;pointer-events:none;opacity:.8}
+.rnlbl{fill:#8a96aa;font:600 calc(var(--k,1)*9.5px) system-ui;text-transform:uppercase;letter-spacing:.9px;pointer-events:none;opacity:.7}
+/* 1.58.19, the owner: "too much on the screen". A raion's name is the least of the names: smaller and quieter than a
+   town's, and left out where a town, a target, a badge, the home's name or the map's buttons are (layoutTownLabels).
+   With a place chosen, its own 10 / 30 / 60 km zones are the distances: the oblast centre's rings and the pin's own two
+   are not drawn over them. */
+.rnlbl[data-hid]{display:none}svg.hashome #ringc,svg.hashome .homemk .ring{display:none}
 .mk{cursor:pointer}
 .mk .glyph{stroke:#080b10;stroke-width:1px;vector-effect:non-scaling-stroke}
 /* An outcome that names no town belongs to a whole oblast. Drawn as a pin it claimed a place the post never
@@ -2030,7 +2035,7 @@ function etaBand(m,dist){
   if(hi>90) return null;                        // beyond an hour and a half it is not an estimate any more
   return {lo:Math.max(0,lo),hi:hi,off:off};
 }
-function drawHome(){ if(typeof drawShelters==='function') setTimeout(drawShelters,0); if(!MAP) return; if(!HOME){$('homeg').innerHTML='';return;} const [x,y]=proj(HOME.lon,HOME.lat);
+function drawHome(){ if(typeof drawShelters==='function') setTimeout(drawShelters,0); if(!MAP) return; svg.classList.toggle('hashome',!!HOME); if(!HOME){$('homeg').innerHTML='';return;} const [x,y]=proj(HOME.lon,HOME.lat);
   $('homeg').innerHTML=`<g class="homemk"><circle class="ring" cx="${x}" cy="${y}" r="5" fill="none" style="stroke-width:1px;vector-effect:non-scaling-stroke"/><circle class="ring" cx="${x}" cy="${y}" r="10" fill="none" style="stroke-width:1px;vector-effect:non-scaling-stroke"/><g class="ico" transform="translate(${x} ${y})"><g class="pg">${POI_G.pin}<text class="pnn" x="0" y="-.6">${SLOT_ORDER.indexOf(ACTIVE)+1}</text></g></g><text class="hl" x="${x}" y="${kx(y-11*KPX)}" text-anchor="middle">${esc(slotNames()[ACTIVE]&&!HOME.dropped?slotName(ACTIVE)+' · '+homeName():homeName())}</text></g>`; }
 function paintSlots(){ const el=$('slotrow'); if(!el) return;
   const html=SLOT_IDS.map(id=>{const p=SLOTS[id]; const on=id===ACTIVE&&p;
@@ -3062,9 +3067,18 @@ function layoutTownLabels(){
   layoutOblChips();
   document.querySelectorAll('#obllbl .oblbl.hot').forEach(e=>{ const b=e.getBoundingClientRect(); if(b.width) placed.push({x:b.left-r.left,y:b.top-r.top,w:b.width,h:b.height}); });
   document.querySelectorAll('#oblevt .obbg').forEach(e=>{ const b=e.getBoundingClientRect(); if(b.width) placed.push({x:b.left-r.left,y:b.top-r.top,w:b.width,h:b.height}); });
-  // 1.45.1: a village whose name has no room loses its dot too — a field of nameless dots says nothing
-  for(const it of items){ if(placed.some(q=>it.x<q.x+q.w&&q.x<it.x+it.w&&it.y<q.y+q.h&&q.y<it.y+it.h)){it.e.setAttribute('data-hid','1');
-      if(it.pr>=3||it.e.classList.contains('tw')){const d=it.e.previousElementSibling; if(d&&d.classList.contains('towndot')) d.setAttribute('data-hid','1');} continue;} placed.push(it); }
+  // 1.58.19: nor under the place's own name, nor under the map's buttons (a name half under the zoom button is no name)
+  const box=(e,m)=>{ if(!e) return; const b=e.getBoundingClientRect(); if(b.width&&b.height) placed.push({x:b.left-r.left-m,y:b.top-r.top-m,w:b.width+2*m,h:b.height+2*m}); };
+  box(document.querySelector('#homeg .hl'),2); box(document.querySelector('.mapctl'),4);
+  const hit=q=>placed.some(p=>q.x<p.x+p.w&&p.x<q.x+q.w&&q.y<p.y+p.h&&p.y<q.y+q.h);
+  // 1.45.1: a village whose name has no room loses its dot too — a field of nameless dots says nothing; 1.58.19: a town's
+  // too (only the big cities keep a dot without a name)
+  for(const it of items){ if(hit(it)){it.e.setAttribute('data-hid','1');
+      if(it.pr>=1||it.e.classList.contains('tw')){const d=it.e.previousElementSibling; if(d&&d.classList.contains('towndot')) d.setAttribute('data-hid','1');} continue;} placed.push(it); }
+  // 1.58.19: then the raions' names, the least of all — each gives way to whatever is already there
+  svg.querySelectorAll('#raionsg .rnlbl').forEach(e=>{ e.removeAttribute('data-hid'); if(getComputedStyle(e).display==='none') return;
+    const b=e.getBoundingClientRect(); if(!b.width) return; const q={x:b.left-r.left,y:b.top-r.top,w:b.width,h:b.height};
+    if(hit(q)) e.setAttribute('data-hid','1'); else placed.push(q); });
 }
 // 1.54, the owner: the explosions layer of the last 24 hours (and its report) is gone — it did not help much.
 

@@ -2,6 +2,15 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.19 — 2026-10-14
+
+### Changed
+- **Less on the screen** — the owner, of Kyiv oblast on a phone: "even there the visibility could be better, there is
+  too much information on the screen". The raions' names are smaller and quieter, and give way to every other name: no
+  more "BUCHA RAION" written across Bucha. No name is written under the place's own name or under the map's buttons,
+  and a town whose name has no room no longer leaves a bare dot. With a place chosen, its 10 / 30 / 60 km zones are the
+  only circles: the oblast centre's rings and the pin's own two are gone.
+
 ## 1.58.18 — 2026-10-14
 
 ### Changed

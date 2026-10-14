@@ -182,7 +182,7 @@ def test_the_towns_of_every_oblast():
     assert "towns:window.innerWidth>=1000," in PAGE and '<input type="checkbox" data-l="towns">' in PAGE
     assert "if(cb.dataset.l==='towns'&&cb.checked)loadTownsUA();" in PAGE and "svg.no-towns #twng{display:none}" in PAGE
     assert "@media (max-width:999px){svg.veryfar #twng,svg.far .tw1{display:none}}" in PAGE
-    assert "if(it.pr>=3||it.e.classList.contains('tw')){" in PAGE                 # no nameless dots
+    assert "if(it.pr>=1||it.e.classList.contains('tw')){" in PAGE                 # no nameless dots (1.58.19: a town's too)
     for s_ in ("l_towns:'Main towns of every oblast'", "l_towns:'Основні міста кожної області'", "l_towns:'Villes principales de chaque oblast'"):
         assert s_ in I18N
     assert "e.classList.contains('rg')||e.classList.contains('tw2')?2:" in PAGE      # the collision pass ranks them
@@ -290,3 +290,15 @@ def test_the_key_in_a_header_when_the_address_will_not_do():
     assert len(seen) == 4 and e.way["lbl"] == 2 and e.enabled("st")
     url, auth = seen[-1]
     assert auth == "Bearer test-esri-key-0000" and "token" not in url and url.endswith("/12/1381/2395")
+
+
+def test_less_on_the_screen_1_58_19():
+    """1.58.19, the owner (Kyiv oblast on a phone): "even there the visibility could be better, there is too much on the
+    screen". A raion's name gives way to every other name and to the map's buttons; with a place chosen, its zones are
+    the only rings."""
+    assert ".rnlbl[data-hid]{display:none}svg.hashome #ringc,svg.hashome .homemk .ring{display:none}" in PAGE
+    assert "svg.classList.toggle('hashome',!!HOME);" in PAGE
+    assert "box(document.querySelector('#homeg .hl'),2); box(document.querySelector('.mapctl'),4);" in PAGE
+    i = PAGE.index("function layoutTownLabels(){")
+    body = PAGE[i:PAGE.index("\n}\n", i)]
+    assert body.index("for(const it of items){ if(hit(it))") < body.index("svg.querySelectorAll('#raionsg .rnlbl')")   # towns first

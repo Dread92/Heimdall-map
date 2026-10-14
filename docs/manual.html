@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Heimdall (Kyiv Air Watch) — the full technical documentation, with a map of the system.">
-<meta name="heimdall-version" content="1.58.18">
-<meta name="heimdall-docs" content="dd72edc64f6aa866">
+<meta name="heimdall-version" content="1.58.19">
+<meta name="heimdall-docs" content="931beed227800982">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Heimdall Technical Manual</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -237,7 +237,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
 <header class="top">
   <div class="wrap">
     <a class="brand" href="#top"><b>Heimdall</b><span>Technical manual</span></a>
-    <span class="ver">1.58.18</span>
+    <span class="ver">1.58.19</span>
     <nav class="nav" aria-label="Sections">
       <a href="#map">Map</a><a href="#journeys">Journeys</a><a href="#rules">Rules</a><a href="#reference">Reference</a><a href="#safety">Safety</a>
     </nav>
@@ -256,7 +256,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
       <h1 class="title">How Heimdall works</h1>
       <p class="lead">An unofficial air-threat map for Kyiv and the oblasts around it. One Python process reads the official
       alert data and the channels that track drones and missiles, stores every post before it reads it, rebuilds the map
-      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.18, 14 October 2026:
+      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.19, 14 October 2026:
       the map first, then everything in full.</p>
     </div>
     <dl class="facts">
@@ -645,7 +645,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
     <div class="doc" id="doc">
 <section class="part" id="tech" data-label="Reference"><p class="partlabel">Part I · The reference</p>
 <h1 id="heimdall--technical-documentation">Heimdall — technical documentation</h1>
-<p><strong>Documented version: 1.58</strong> · last updated 2026-10-14 (1.58.18)</p>
+<p><strong>Documented version: 1.58</strong> · last updated 2026-10-14 (1.58.19)</p>
 <p>Heimdall was called <strong>Clear Sky</strong> until 1.29; the repository, the Fly app (<code>kyiv-air-watch-gb</code>) and some
 internal names still carry the old name.</p>
 <p>This is the complete technical reference: what runs, where the data comes from, how a Telegram post becomes a
@@ -3011,6 +3011,12 @@ drawn is read back from the CSS (<code>getComputedStyle</code>), candidates righ
 other labels, other marks' glyphs and the map's edge; placed by priority (to a watched place, inbound,
 descending, others, outcomes); an ordinary label that fits nowhere loses its second line (<code>nolbl2</code>), then is
 left out (<code>nolbl</code>). The boxes (<code>LBLBOX</code>) hide the town names under them (<code>layoutTownLabels</code>);</li>
+<li><strong>less on the screen</strong> (1.58.19, the owner, Kyiv oblast on a phone: &quot;too much information on the screen&quot;): a raion's
+name is the least of the names — 9.5 px, letter-spaced, quieter (<code>.rnlbl</code>) — and <code>layoutTownLabels</code> places it last,
+leaving it out where a town, a target, a badge, the home's name (<code>#homeg .hl</code>) or the map's buttons (<code>.mapctl</code>) are;
+no town name is written under those two either, and a town whose name has no room loses its dot (the big cities
+keep theirs). With a place chosen (<code>svg.hashome</code>), its 10 / 30 / 60 km zones are the only rings: the oblast centre's
+15 / 30 / 50 km rings (<code>#ringc</code>) and the pin's own 5 / 10 km circles are not drawn;</li>
 <li><strong>a mark's size follows the zoom</strong> (1.58.18, the owner: &quot;ideally the icons scale with the zoom&quot;): it used to keep one
 size on the screen at every zoom, so the whole country on a phone was covered by 26 px silhouettes. <code>markZoom(KPX)</code>
 gives <code>MZ</code> — 1 at 0.6 km a pixel (<code>MZ_REF</code>, Kyiv oblast on a phone), <code>(MZ_REF/KPX)^0.4</code> above it down to <strong>0.55</strong>
@@ -5085,7 +5091,7 @@ d'alerte ne sont pas des préférences de style.</p>
 </section>
     </div>
   </div>
-  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.18, 14 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
+  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.19, 14 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
 </main>
 
 <script>
