@@ -1,7 +1,8 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-14 (1.58.20)
+**Documented version: 1.58** · last updated 2026-10-14 (1.58.21)
 
+The repository is **Dread92/Heimdall-map** (it was `clear-sky` until October 2026; GitHub sends the old address on).
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
 
@@ -123,7 +124,7 @@ real post, and a fix to the rules applies to posts already in the database.
 ## 4. Repository layout
 
 ```
-clear-sky/
+Heimdall-map/
 ├── app/
 │   ├── server.py           HTTP server, API, SSE, source pollers, SQLite store, marker pipeline, push
 │   ├── geo.py              Ukrainian parsing: gazetteer, declensions, types, headings, counts, phases, altitude
@@ -133,6 +134,7 @@ clear-sky/
 │   ├── mapshot.py          1.58: its picture — the map around one target, drawn with Pillow in the app's style (§9c)
 │   ├── areas.py            1.58.7: which official alert area a point is in, and is it under alert (`held`, §7.4; §9c)
 │   ├── limits.py           1.58.17: the public API's abuse limits — per client, on what costs the server (§12.1)
+│   ├── adminauth.py        1.58.21: the dashboard's login — sessions, the sign-in limits, its security log (§12.2)
 │   └── push.py             Web Push: VAPID ES256 JWT + RFC 8291 aes128gcm, on `cryptography` only
 ├── static/
 │   ├── kyiv.html           Tactical page (one self-contained file)
@@ -154,6 +156,7 @@ clear-sky/
 │   ├── lightmap.js         1.57.2: the Light radar's satellite / map background — loaded when asked for (§10.2)
 │   ├── ukraine-map.json    oblast outlines in an affine lon/lat projection (Light page fallback lookup)
 │   ├── admin.html          private dashboard: usage, source health, channels, lead time (/admin, ADMIN_KEY)
+│   ├── admin-login.html    1.58.21: its sign-in page (EN / UK) — the key typed here, never in the address
 │   ├── index.html, mobile.html   older desktop / mobile views (/desktop, /ua)
 │   ├── guide.html          what to do, weapon by weapon (/guide, 1.35): self-contained, content in its JSON block
 │   ├── sw.js               service worker: push display, notification clicks, the pages and the guide kept for when the server is unreachable
@@ -331,7 +334,8 @@ Environment variables win over `config.json`. On Fly they are set as **secrets**
 | `CONFIG_PATH` | Alternative `config.json` location. |
 | `ANDROID_CERT_SHA256` | 1.57.6: the SHA-256 fingerprint(s) of the Android app's signing key (§10.8), as keytool or apksigner prints them, several separated by commas — set with `scripts/set-android-key.bat`. Public, not a secret. Unset: `/.well-known/assetlinks.json` is an empty list. |
 | `ANDROID_PACKAGE` | 1.57.6: the Android app's identifier, default `com.blackflamestudio.heimdall`. |
-| `ADMIN_KEY` | Protects `/admin` and its APIs only. The map stays public. |
+| `ADMIN_KEY` | Protects `/admin` and its APIs only. The map stays public. 1.58.21: typed at the sign-in page (§12.2), or sent by a script in an `X-Admin-Key` header — never in an address. |
+| `FLY_APP_NAME` | Set by Fly itself. 1.58.17: without Fly's `Fly-Client-IP` header nobody is limited (the peer would be Fly's proxy); 1.58.21: the dashboard's session cookie is `Secure`. |
 | `ACCESS_KEY` | Puts the whole app behind a key. **Never on the public app.** |
 | `ALERTS_IN_UA_TOKEN` | alerts.in.ua token. |
 | `UKRAINEALARM_KEY` | Official ukrainealarm API key. |
@@ -2382,6 +2386,9 @@ Android app at once**; a new APK is needed only for its name, icon, address or A
 - Usage counters (`usage`, `usage_seen`): a daily salted hash, no IP address, no location, no per-person
   history. A page the browser loads ahead of a tap (prerender, `Sec-Purpose: prefetch`) is not counted (1.40).
 - Flags and the corpus review are behind `ADMIN_KEY`.
+- 1.58.21: the dashboard's sign-in log (§12.2) keeps, for each sign-in, failure, sign-out and dashboard action, the
+  time, the browser family ("Chrome · Windows") and a network tag — a keyed hash of the address (HMAC with the
+  dashboard key), the same network giving the same 8 characters; the address itself is never kept. 200 events at most.
 - The AI reader (1.50, §7.7) sends OpenRouter only public posts (the channel's text, its name, our place names), a
   card-like run of digits masked; never anything about a reader. Its key (`OPENROUTER_API_KEY`) is set by the owner
   with `scripts/set-openrouter-key.bat`, straight into Fly's secrets. Its readings are behind `ADMIN_KEY`.
@@ -2426,7 +2433,11 @@ All JSON unless stated. Public unless marked 🔒 (`ADMIN_KEY`).
 | `GET /api/drone_heat?days=1|7|30` | the heat layer: `points` `[lon, lat, posts, place, oblast]` — where drones and unidentified targets were reported (cached 10 min) |
 | `POST /api/push/subscribe`, `/api/push/unsubscribe`, `/api/push/test`; `GET /api/push/key` | Web Push; subscribe takes `{subscription, home, topics: ["bridges"], lang}` |
 | `POST /api/flag` | "this reading is wrong" report |
-| 🔒 `GET /admin`, `/api/usage` | dashboard, usage counters |
+| `GET /admin` | 1.58.21: the sign-in page (`static/admin-login.html`) until a session is open, then the dashboard (§12.2); `?key=` in the address is never accepted — the page says so |
+| `POST /admin/login` | 1.58.21: `key=` (form) or `{key}` (JSON) → 303 to `/admin` with the session cookie; 401 for a wrong key (a second's wait), 429 past 5 tries |
+| 🔒 `POST /admin/logout` | 1.58.21: ends this session (`all=1`: every session) → 303 to `/admin` |
+| 🔒 `GET /api/admin/security` | 1.58.21: `{sessions: [{id, at, seen, ua, net, mine}], events: [{t, e, ua, net, d}], fails_24h, ttl_h}`; `POST {end: id}` ends one session, `{everyone: true}` all of them |
+| 🔒 `GET /api/usage` | usage counters |
 | 🔒 `GET /api/health` | official sources (ok, last check, detail), every channel read (posts / marks 24 h, share read 7 d, last post, reader state, `mode`, `read_via`, `builtin`, `home`), the compartments (`regions`: `id`, `name`, `en`, `on`, `locked`, `channels`), translation backends, lead time over the official alert in Kyiv + oblast (30 days), the imagery (`imagery`, 1.48) and the AI reader's state (`ai_reader`, 1.50) |
 | 🔒 `GET /api/online` | pages open now with a live line (`total`, `tactical`, `light`, today's peak), the current message, the nuclear event (`nuke`), the last push fan-out (phones, seconds, delivered) |
 | 🔒 `GET /api/analytics?days=` | the dashboard's Analytics (§8c), 7–365 days: `af` per date (launched, down, used, impacts, debris, periods), `af_areas`, `af_directions`, `af_models`, `kyiv` per date (city / oblast minutes, city alerts), `starts` (7 × 24), `reports` per date by type, `hours`, `headings`; since 1.33 `weather` per date (`kyiv`, `launch`), `approach` (8 sectors per date), `air` (`per_date`, `stats`, `sorties`), `obl` (`by`, `cols`, `rows`), `weather_status`; since 1.34 `places` (the heat layer's top 25) and `bridges` (`per_date`, `totals`, `recent`) |
@@ -2470,6 +2481,31 @@ away in the middle of an attack. `app/limits.py` limits what **costs the server*
 - **Bounds**: at most `State.RESP_MAX` (400) answers for parameters are kept, the oldest go first; `/api/places` and
   `/api/history` take only known oblast uids; `/api/events_log` at most 500; a POST body at most 64 KB (413).
 - The dashboard's Server panel counts the refusals by kind since the start (`/api/online` → `limits`).
+
+### 12.2 The dashboard's sign-in (1.58.21)
+
+The owner: "we strongly need to secure our dashboard — right now it's very minimal protection" (picked: the key only,
+done properly; no second code). Until 1.58.20 the key was typed into the address (`/admin?key=…`, so it stayed in the
+browser's history) and then kept for a year in an ordinary cookie, `uadm=<the key itself>`, readable by any script of
+the site's pages and sent with every request to the public map. `app/adminauth.py`:
+
+- **The sign-in page** (`static/admin-login.html`, English or Ukrainian) posts the key once (`POST /admin/login`). A
+  key in the address is never accepted; the page asks for it to be typed and cleared from the history.
+- **A session**: a correct key (compared in constant time, `hmac.compare_digest`) opens a random 32-byte token in the
+  cookie `hsess` — `HttpOnly` (no page script reads it), `SameSite=Strict` (never sent from another site), `Secure` on
+  Fly, 12 hours at the most (`TTL_S`); only its SHA-256 is stored (`kv.admin_sessions`, so a deploy does not sign the
+  owner out); 20 sessions at most, the oldest ended first. The old `uadm` cookie is erased.
+- **Wrong keys**: 5 tries per client, then one every two minutes (`limits` kind `login`); each wrong key waits a second.
+- **Same site only**: a POST to `/admin/*`, `/api/admin/*`, `/api/digest/*` or `/api/corpus/*` whose `Origin` is
+  another site is refused (403). The dashboard's pages go out with `X-Frame-Options: DENY`, `frame-ancestors 'none'`,
+  `Referrer-Policy: same-origin` (with `no-referrer` a browser sends "Origin: null" with the page's own POSTs),
+  `Cache-Control: no-store` and `noindex`.
+- **The log**: sign-ins, wrong keys, refusals, sign-outs and every dashboard action (`kv.admin_events`, 200 at most),
+  with the browser family and the network tag (§11). The Live tab's "Dashboard sign-ins" lists the open sessions
+  (this one marked) — end one, or everyone — the wrong keys of the last 24 hours and the latest events; "Sign out" is
+  in the header.
+- **Scripts and tests** send the key in an `X-Admin-Key` header. `ACCESS_KEY` (the whole-app gate of a private
+  deployment) is unchanged.
 
 ## 13. Storage
 
@@ -2553,8 +2589,9 @@ failing there). `static/i18n.js` must evaluate with no browser globals at all.
 
 ## 15. Deployment and the GitHub repository
 
-- **The working folder** is `Desktop\clear-sky-main` on the owner's PC: a Git clone of the private repository
-  **Dread92/clear-sky**. Patches are committed there.
+- **The working folder** is `Desktop\clear-sky-main` on the owner's PC (to be renamed `Desktop\Heimdall-map`): a Git
+  clone of the repository **Dread92/Heimdall-map** (it was `Dread92/clear-sky` until October 2026; the remote points to
+  the new name). Patches are committed there.
 - **Shipping a patch**: double-click **`scripts\release.bat`**. It refuses to run if anything is not committed,
   deploys to Fly.io, pushes to GitHub, and prints the live `/api/version` — the version shown must be the
   new one. The image is built by Fly's own builder (`--depot=false`); if that deploy fails — its builder machine
@@ -2563,7 +2600,7 @@ failing there). `static/i18n.js` must evaluate with no browser globals at all.
 - **First deployment, or changing a key**: `deploy-fly.bat` (Windows) — sign-in, app, volume, the dashboard
   key, the optional DeepL key, deploy. Details in [DEPLOY.md](DEPLOY.md). `fly deploy -a kyiv-air-watch-gb`
   alone also works.
-- **GitHub**: `scripts\github-push.bat` creates the **private** repository `<you>/clear-sky` with the GitHub CLI
+- **GitHub**: `scripts\github-push.bat` creates the **private** repository `<you>/Heimdall-map` with the GitHub CLI
   (sign-in in the browser; no token is ever typed or stored by the script) and pushes; run again to push new
   commits. Optional auto-deploy: add the repository secret `FLY_API_TOKEN` and `fly-deploy.yml` deploys every
   push to `main`.

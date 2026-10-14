@@ -13,14 +13,17 @@ from unittest import mock
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "app"))
 
+import adminauth  # noqa: E402
 import server  # noqa: E402
 
 
 class _H:
     """Just enough of the request handler to exercise the two gates."""
-    def __init__(self, cfg=None, cookie="", key=None):
-        self.state = type("S", (), {"cfg": cfg or {}})()
+    def __init__(self, cfg=None, cookie="", key=None, header=None):
+        self.state = type("S", (), {"cfg": cfg or {}, "admin": adminauth.AdminSessions()})()
         self.headers = {"Cookie": cookie}
+        if header:
+            self.headers["X-Admin-Key"] = header
         self.q = {"key": [key]} if key else {}
 
     _admin_key = server.Handler._admin_key
@@ -40,8 +43,22 @@ def test_admin_key_leaves_the_map_public():
     with mock.patch.dict(os.environ, {"ADMIN_KEY": "adm"}, clear=True):
         h = _H()
         assert h._authorized(None, {}) is True
-        assert _H(key="adm")._admin_ok({"key": ["adm"]}) is True
-        assert _H(key="nope")._admin_ok({"key": ["nope"]}) is False
+        assert _H(header="adm")._admin_ok({}) is True
+        assert _H(header="nope")._admin_ok({}) is False
+
+
+def test_the_key_in_the_address_or_in_a_cookie_no_longer_opens_anything():
+    """1.58.21: /admin?key=… put the key in the browser's history, and `uadm=<key>` kept it a year in a cookie every
+    page's script could read. Neither opens the dashboard any more: a session from the login page does."""
+    with mock.patch.dict(os.environ, {"ADMIN_KEY": "adm"}, clear=True):
+        assert _H()._admin_ok({"key": ["adm"]}) is False
+        assert _H(cookie="uadm=adm")._admin_ok({}) is False
+        h = _H()
+        token = h.state.admin.create("Chrome · Windows", "abcd1234")
+        h.headers["Cookie"] = "other=1; hsess=" + token
+        assert h._admin_ok({}) is True
+        h.state.admin.drop(token=token)
+        assert h._admin_ok({}) is False
 
 
 def test_access_key_still_locks_the_whole_app_for_a_private_deployment():
@@ -53,16 +70,17 @@ def test_access_key_still_locks_the_whole_app_for_a_private_deployment():
 
 def test_access_key_alone_still_opens_the_dashboard_so_old_deployments_keep_working():
     with mock.patch.dict(os.environ, {"ACCESS_KEY": "priv"}, clear=True):
-        assert _H()._admin_ok({"key": ["priv"]}) is True
+        assert _H(header="priv")._admin_ok({}) is True
 
 
 def test_admin_key_wins_when_both_are_set():
     with mock.patch.dict(os.environ, {"ACCESS_KEY": "priv", "ADMIN_KEY": "adm"}, clear=True):
-        assert _H()._admin_ok({"key": ["adm"]}) is True
-        assert _H()._admin_ok({"key": ["priv"]}) is False
+        assert _H(header="adm")._admin_ok({}) is True
+        assert _H(header="priv")._admin_ok({}) is False
 
 
 def test_the_admin_cookie_never_unlocks_the_app():
-    """Opening the dashboard sets `uadm`. That cookie must not become a way past the app-wide gate."""
+    """A dashboard session must not become a way past the app-wide gate."""
     with mock.patch.dict(os.environ, {"ACCESS_KEY": "priv"}, clear=True):
         assert _H(cookie="uadm=priv")._authorized(None, {}) is False
+        assert _H(cookie="hsess=whatever")._authorized(None, {}) is False

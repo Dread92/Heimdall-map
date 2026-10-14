@@ -22,6 +22,8 @@ import ai_reader as A
 import geo
 import server
 
+ADM = {"X-Admin-Key": "adm-test"}   # 1.58.21: the dashboard key in a header — never in the address
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
@@ -382,7 +384,7 @@ def test_the_route_is_the_dashboards_alone():
                 raise AssertionError("open without the key")
             except urllib.error.HTTPError as e:
                 assert e.code == 403
-            d = json.loads(urllib.request.urlopen(base + "?key=adm-test&limit=x", timeout=10).read())
+            d = json.loads(urllib.request.urlopen(urllib.request.Request(base + "?limit=x", headers=ADM), timeout=10).read())
     finally:
         srv.shutdown()
         server.Handler.state = old

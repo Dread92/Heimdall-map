@@ -120,7 +120,7 @@ def test_unusual_questions_are_limited_and_the_usual_ones_never():
         req = urllib.request.Request(base + f"/api/replay?from={now - 9600}&to={now - 3600}")
         assert urllib.request.urlopen(req, timeout=10).status == 200
         with mock.patch.dict(os.environ, {"ADMIN_KEY": "adm-test"}):
-            assert _get(base, f"/api/replay?from={now - 9660}&to={now - 3660}", Cookie="uadm=adm-test")[0] == 200
+            assert _get(base, f"/api/replay?from={now - 9660}&to={now - 3660}", **{"X-Admin-Key": "adm-test"})[0] == 200
         # the events log is a query each time; its size is bounded
         assert _get(base, "/api/events_log?limit=100000", ip="198.51.100.2")[0] == 200
         assert st.limits.report()["build"] >= 2

@@ -4,15 +4,20 @@
 
 # Heimdall
 
-**Unofficial air-raid and drone tracker for Kyiv, Kyiv oblast and the oblasts around it — and, since 1.43, Odesa,
-Kharkiv and Dnipro oblasts (1.44: Mykolaiv too).**
-*Formerly Clear Sky — same app, same address, new name (1.29).*
+**Unofficial air-raid and drone tracker — Kyiv first, and 18 oblasts around and beyond it: Kyiv oblast, Chernihiv,
+Sumy, Kharkiv, Poltava, Cherkasy, Dnipro, Kirovohrad, Mykolaiv, Kherson, Odesa, Vinnytsia, Zhytomyr, Khmelnytskyi,
+Ternopil, Rivne, Volyn and Lviv.**
+*Formerly Clear Sky — same app, same address, new name (1.29). Repository: [Dread92/Heimdall-map](https://github.com/Dread92/Heimdall-map)
+(it was `clear-sky` until October 2026).*
 
-A single Python service (standard library only) reads the official «Повітряна тривога» alert data raion
-by raion, and twenty-three public Telegram channels — the Air Force, the live trackers of the Kyiv sky, and one tracker
-each for Chernihiv, Odesa, Cherkasy, Kharkiv, Dnipro, Sumy, Mykolaiv, Poltava, Vinnytsia, Zhytomyr, Kherson,
-Kirovohrad, Khmelnytskyi, Ternopil, Rivne, Lviv and Volyn — parses the Ukrainian (and Russian) text, and shows what was reported in two ways: **Tactical** (`/m`), the full map with the evidence
-behind every mark, and **Light** (`/light`), one place, its raion's official status and what is within 30 km.
+**Live:** <https://kyiv-air-watch-gb.fly.dev/m> (Tactical) · <https://kyiv-air-watch-gb.fly.dev/light> (Light) ·
+<https://kyiv-air-watch-gb.fly.dev/guide> (what to do).
+
+A single Python service (standard library only) reads the official «Повітряна тривога» alert data raion by raion and
+hromada by hromada, and two dozen public Telegram channels — the Air Force, the live trackers of the Kyiv sky, one
+tracker or more per oblast, and the dashboard can add others — parses the Ukrainian (and Russian) text with written
+rules, and shows what was reported in two ways: **Tactical** (`/m`), the full map with the evidence behind every
+mark, and **Light** (`/light`), one place, its official status and what is within 30 km.
 
 > ### ⚠ This is not an official warning system
 >
@@ -27,8 +32,8 @@ behind every mark, and **Light** (`/light`), one place, its raion's official sta
 ## Quick start
 
 ```bash
-git clone https://github.com/Dread92/clear-sky.git
-cd clear-sky
+git clone https://github.com/Dread92/Heimdall-map.git
+cd Heimdall-map
 python app/server.py --demo          # fake alerts, no token needed
 ```
 
@@ -51,7 +56,7 @@ and opens the browser. Linux/macOS: `scripts/start.sh`.
 
 | | |
 |---|---|
-| **Alerts by raion** | Each raion coloured by its own official alert, at the government app's level — red (massed drones, missiles) or yellow (drones) — never the whole oblast for one raion. |
+| **Alerts by raion and hromada** | Each raion coloured by its own official alert, at the government app's level — red (massed drones, missiles) or yellow (drones) — never the whole oblast for one raion; since 1.58.16 a hromada's alert on the hromada itself (OCHA's outlines), and a place in it reads it as its own. |
 | **Your place first** | The Tactical page opens on a card for the place you watch — Home, Work, Kids or a pin: its raion's official status, the MiG-31K / ballistic warning with what to do, the one target that matters most for it with its distance, and how fresh the data is. Below: the map, then Near · Feed · Alerts · Stats. Alerts settings behind a bell, the rest behind More, map layers on the map. |
 | **Light version** | `/light`: Home, Work, Kids or a pin; the official status of that place's raion; a 30 km radar over a small local map; tap a row for what the post said. The places never leave the phone. |
 | **Targets where they were reported** | Shaheds are drawn loitering around the reported point (their real path is erratic) with a chevron for the reported heading. No extrapolated trajectory unless you switch on EST, no invented ETA — [why](docs/SAFETY.md#no-liberties-with-trajectories). |
@@ -77,7 +82,10 @@ and opens the browser. Linux/macOS: `scripts/start.sh`.
 | **Nuclear event** | For a confirmed nuclear or radiological emergency only: the radiation symbol over the map on every page with the admin's instructions. Behind three locks on the dashboard (arm → one-time code + phrase → hold 3 s); ended in one click. |
 | **Sound you can turn down** | A volume slider, not just on/off: an iPhone played the tones at full media volume. Test it with ▶. |
 | **Share in one tap** | The status of any target as text, for a chat: what, where, when, descent, heading, distance, source, and the caveat that it is not radar. |
-| **Install as an app** | A PWA: add it to the home screen and it runs full-screen with no browser bar. No store, no download. |
+| **Install as an app** | A PWA: add it to the home screen and it runs full-screen with no browser bar. An Android app wraps the same pages (1.57.6). |
+| **The city's shelters** | Under an alert, the nearest shelters Kyiv city lists, found on the phone — no pin and no position is ever sent (1.57). |
+| **A private Telegram channel** | For the team: a picture of the map for each report around Kyiv, what became of the target, the official all-clear (1.58). |
+| **Hard to abuse** | What costs the server is limited per client, never what a reader needs (1.58.17); the dashboard has a real login, 12-hour sessions and a log of sign-ins (1.58.21). |
 | **Blackout mode** | For 2G during an attack: black and white, no tiles, no images, minimal data. |
 | **Knows when it is stale** | A page left open for days notices that the server has a newer build and offers a one-tap reload. |
 | **Your place** | Pick an oblast for the status band and, optionally, a precise place: targets heading there or within 10 km alert first. |
@@ -85,24 +93,30 @@ and opens the browser. Linux/macOS: `scripts/start.sh`.
 ## Layout
 
 ```
-clear-sky/
-├── app/                    the service — four modules, no framework
+Heimdall-map/
+├── app/                    the service — no framework
 │   ├── server.py           HTTP + API + SSE, pollers, SQLite store, marker logic
 │   ├── geo.py              Ukrainian parsing: places, declensions, headings, counts, channel formats
 │   ├── translate.py        offline UA→EN glossary; DeepL / Google machine translation, on demand
-│   └── push.py             Web Push: VAPID ES256 JWT + aes128gcm
+│   ├── push.py             Web Push: VAPID ES256 JWT + aes128gcm
+│   ├── chanpost.py, mapshot.py, areas.py   the private Telegram channel and its pictures; alert areas
+│   ├── ai_reader.py        the AI's bulletins (OpenRouter), behind a dashboard switch
+│   ├── limits.py           the public API's abuse limits (1.58.17)
+│   └── adminauth.py        the dashboard's login and sessions (1.58.21)
 ├── static/                 the whole front end
 │   ├── kyiv.html           Tactical: SVG map, markers, sheets, stats (one self-contained page)
 │   ├── light.html          Light: one place, its raion, a 30 km radar (one self-contained page)
-│   ├── light-map.json      raion outlines, rivers, roads, towns for the Light map (built)
+│   ├── admin.html, admin-login.html   the dashboard and its sign-in page
 │   ├── i18n.js             EN / UK / FR strings, place and channel names
 │   ├── live.js             applies the live line's changes (shared by both pages)
-│   ├── kyiv-map.json       27 oblasts + 136 raions, projected to km around Kyiv
-│   ├── kyiv-districts.json the 10 Kyiv city districts (OSM boundaries)
-│   ├── sw.js               service worker (push + notification clicks)
+│   ├── kyiv-map.json       27 oblasts + all raions, projected to km around Kyiv
+│   ├── hromadas/           each official hromada's outline, one file per oblast (OCHA COD-AB, built)
+│   ├── light-map.json      raion outlines, rivers, roads, towns for the Light map (built)
+│   ├── streets/, shelters.json   streets and villages of every oblast; Kyiv's shelters (built)
+│   ├── sw.js               service worker (push, notification clicks, the pages kept offline)
 │   └── manifest.json       PWA manifest ("add to home screen")
 ├── data/                   ua_regions.json (official region ids, built) · corpus.jsonl (regression corpus)
-├── tests/                  ~400 tests — parsing, alerts by raion, privacy, languages, live line, push, documentation
+├── tests/                  ~960 tests — parsing, alerts by raion, privacy, languages, live line, push, limits, documentation
 ├── docs/                   TECHNICAL.md (complete reference), SAFETY, DEPLOY, I18N, CORPUS
 ├── scripts/                release.bat, set-domain.bat, set-ai-key.bat, telegram-login.bat, build_geo.py, corpus.py, …
 ├── start.bat               Windows: double-click to run
@@ -136,13 +150,15 @@ technical reference, updated with every patch.
 | `bind` | `0.0.0.0` | Set to `127.0.0.1` to keep it on this machine only. |
 
 Environment variables and every other key: [docs/TECHNICAL.md §5](docs/TECHNICAL.md#5-runtime-configuration-and-secrets).
-The twenty-three default channels are in code (`AUTHORITATIVE_CHANNELS`), not in the config; the dashboard adds others
+The twenty-four default channels are in code (`AUTHORITATIVE_CHANNELS`), not in the config; the dashboard adds others
 (on trial until you put them on the map), switches any of them off, or reads one through the Telegram API.
 
 ## HTTP API
 
-Everything the page uses is public JSON; you can build your own client on it. The complete list, including
-the admin routes: [docs/TECHNICAL.md §12](docs/TECHNICAL.md#12-http-api).
+Everything the page uses is public JSON. The complete list, including the admin routes:
+[docs/TECHNICAL.md §12](docs/TECHNICAL.md#12-http-api). What costs the server — an answer nobody else asked for, a
+flag, a flood of push requests, hundreds of live lines from one address — is limited per client (429 with
+`Retry-After`); the alerts, the marks and the feed never are ([§12.1](docs/TECHNICAL.md#121-abuse-limits-15817)).
 
 | Route | Returns |
 |---|---|
@@ -172,8 +188,8 @@ On a public instance, setting `ACCESS_KEY` is an outage: every reader gets a pas
 air-raid map. Use `ADMIN_KEY`.
 
 **You do not need a terminal for this.** Double-click `deploy-fly.bat` — step 4 shows the secrets already set
-on the app and asks for a dashboard key, and the last screen prints your `/admin?key=…` link. Press Enter at
-the prompt to keep whatever is already there.
+on the app and asks for a dashboard key, and the last screen prints the dashboard's address. Press Enter at the
+prompt to keep whatever is already there.
 
 If you do want the commands:
 
@@ -183,8 +199,11 @@ fly secrets unset ACCESS_KEY       # if it was ever set on a public instance
 fly secrets list                   # names only, never the values
 ```
 
-Then open `https://<your-app>/admin?key=…` once; it remembers you in a cookie that grants the dashboard and
-nothing else. With no key set at all, the dashboard is not served — it cannot be exposed by accident.
+Then open `https://<your-app>/admin` and sign in with the key (1.58.21). The key is typed in the login form only —
+never in the address, never stored in a cookie: a correct key opens a 12-hour session in a cookie the pages' scripts
+cannot read; wrong keys are limited (5 tries, then one every two minutes); the dashboard's Live tab lists the open
+sessions and the sign-ins, and can end one or all. Scripts send the key in an `X-Admin-Key` header. With no key set
+at all, the dashboard is not served — it cannot be exposed by accident.
 
 ## The regression corpus
 
@@ -237,11 +256,11 @@ still opened on the old address that Heimdall has moved (with a button that take
 ## Sources
 
 The official «Повітряна тривога» data by raion (api.ukrainealarm.com, or its keyless proxy siren.pp.ua), with
-the ubilling mirror as a stand-in; and twenty-three public Telegram channels: @kyiv_airdef, @chyste_nebo,
+the ubilling mirror as a stand-in; and twenty-four public Telegram channels by default: @kyiv_airdef, @chyste_nebo,
 @kievinfo_kyiv, @war_monitor, @eRadarrua, the Air Force @kpszsu, and the regional trackers @chernihiv_nebo,
 @monitoringodesa, @chyste_nebocherkasy, @radar_kharkov, @RadarDnepr, @kabusumy, @air_alert_mk, @PoltavaRadar,
-@vinnytsiappo, @zt_radar, @kherson_monitoring, @controlkrop, @radarhmel, @radarofternopil, @rivne_radar, @ppoualviv
-and @lutsk_radar.
+@vinnytsiappo, @zt_radar, @kherson_monitoring, @controlkrop, @radarhmel, @radarofternopil, @rivne_radar, @ppoualviv,
+@lutsk_radar and @vseok450 — and those the dashboard adds (on trial until they are trusted).
 Villages and city districts of the regional trackers' oblasts: [GeoNames](https://www.geonames.org/) (CC BY 4.0).
 Rivers and roads outside Kyiv oblast: [Natural Earth](https://www.naturalearthdata.com/) (public domain).
 Satellite imagery: [ESA WorldCover](https://esa-worldcover.org) 2021 Sentinel-2 composite (CC BY 4.0), contains

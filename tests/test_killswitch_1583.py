@@ -20,6 +20,8 @@ import chanpost  # noqa: E402
 import server  # noqa: E402
 from test_chanpost_158 import API, KV, T0, Clock, mark, poster  # noqa: E402
 
+ADM = {"X-Admin-Key": "adm-test"}   # 1.58.21: the dashboard key in a header — never in the address
+
 ADMIN = open(os.path.join(ROOT, "static", "admin.html"), encoding="utf-8").read()
 
 
@@ -64,8 +66,8 @@ def test_the_dashboard_route_needs_the_key_and_sets_the_switch():
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     base = f"http://127.0.0.1:{srv.server_address[1]}"
 
-    def post(path, body):
-        req = urllib.request.Request(base + path, data=json.dumps(body).encode(), headers={"Content-Type": "application/json"})
+    def post(path, body, k=False):
+        req = urllib.request.Request(base + path, data=json.dumps(body).encode(), headers=dict({"Content-Type": "application/json"}, **(ADM if k else {})))
         return json.loads(urllib.request.urlopen(req, timeout=10).read())
     try:
         with mock.patch.dict(os.environ, {"ADMIN_KEY": "adm-test"}):
@@ -75,11 +77,11 @@ def test_the_dashboard_route_needs_the_key_and_sets_the_switch():
             except urllib.error.HTTPError as e:
                 assert e.code in (401, 403)
             assert st.store.kv_get("chan_on") is None
-            d = post("/api/admin/channel_switch?key=adm-test", {"on": False})
+            d = post("/api/admin/channel_switch", {"on": False}, k=True)
             assert st.store.kv_get("chan_on") == "0" and d["channel"]["on"] is False
-            d = post("/api/admin/channel_switch?key=adm-test", {"on": True})
+            d = post("/api/admin/channel_switch", {"on": True}, k=True)
             assert st.store.kv_get("chan_on") == "1" and d["channel"]["on"] is True
-            on = json.loads(urllib.request.urlopen(base + "/api/online?key=adm-test", timeout=10).read())
+            on = json.loads(urllib.request.urlopen(urllib.request.Request(base + "/api/online", headers=ADM), timeout=10).read())
             assert set(on["channel"]) == {"configured", "running", "on", "health"}
     finally:
         srv.shutdown()

@@ -2,6 +2,24 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.21 — 2026-10-14
+
+### Security
+- **The dashboard has a real sign-in** — the owner: "we strongly need to secure our dashboard, right now it's very
+  minimal protection" (picked: the key only, done properly). The key went in the address (`/admin?key=…`, kept in the
+  browser's history) and then sat for a year in an ordinary cookie, as itself, readable by any script of the site and
+  sent with every request to the map. Now `/admin` is a sign-in page; a correct key opens a 12-hour session in a cookie
+  no page script can read and no other site can send; wrong keys are limited (5 tries, then one every two minutes, a
+  second each); the dashboard's pages cannot be framed; a request from another site cannot change anything; the Live
+  tab lists who is signed in (browser and network tag, never an address) and the sign-ins, wrong keys and actions, and
+  can end one session or all of them; "Sign out" is in the header. A key in the address is no longer accepted, and the
+  old cookie is erased. Scripts send the key in an `X-Admin-Key` header.
+
+### Changed
+- **The repository is Heimdall-map** — renamed by the owner from `clear-sky`; the README is up to date (coverage, the
+  live address, the layout, the sign-in), `scripts/github-push.bat` creates and links `<you>/Heimdall-map`, and
+  `deploy-fly.bat` no longer prints the dashboard key in a link.
+
 ## 1.58.20 — 2026-10-14
 
 ### Changed

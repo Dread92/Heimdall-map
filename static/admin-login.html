@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="same-origin">
+<title>Heimdall — dashboard</title>
+<link rel="icon" href="/static/heimdall-64.png">
+<style>
+:root{--bg:#0b0e13;--panel:#131821;--line:#273041;--ink:#e6e9ef;--ink2:#9aa5b8;--acc:#ff8a3d;--bad:#ff5a5f}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:360px;margin:12vh auto 0;padding:0 16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:26px 22px}
+h1{font-size:19px;margin:12px 0 4px}p{margin:0 0 16px;color:var(--ink2);font-size:13.5px}
+label{display:block;font-size:13px;color:var(--ink2);margin-bottom:6px}
+input{width:100%;padding:11px 12px;font-size:16px;border-radius:9px;border:1px solid var(--line);background:#0e1218;color:var(--ink)}
+input:focus{outline:2px solid var(--acc);outline-offset:1px}
+button{width:100%;margin-top:14px;padding:11px;font:600 15px system-ui;border:0;border-radius:9px;background:var(--acc);color:#14100b;cursor:pointer}
+.msg{margin:0 0 14px;padding:9px 11px;border-radius:8px;background:rgba(255,90,95,.12);border:1px solid rgba(255,90,95,.4);color:#ffc9cb;font-size:13.5px}
+.msg:empty{display:none}
+.foot{margin-top:14px;font-size:12px;color:var(--ink2);text-align:center}
+img{width:56px;height:56px;border-radius:12px}
+</style>
+</head>
+<body>
+<main>
+  <form class="card" method="post" action="/admin/login" autocomplete="on">
+    <img src="/static/heimdall-192.png" alt="">
+    <h1 data-t="h">Heimdall — dashboard</h1>
+    <p data-t="p">For the team only. Type the dashboard key.</p>
+    <div class="msg" role="alert"><!--MSG--></div>
+    <input type="text" name="username" value="heimdall-admin" autocomplete="username" hidden>
+    <label for="key" data-t="l">Dashboard key</label>
+    <input id="key" name="key" type="password" autocomplete="current-password" required autofocus>
+    <button type="submit" data-t="b">Sign in</button>
+    <div class="foot" data-t="f">The session ends after 12 hours. The key never goes in the address.</div>
+  </form>
+</main>
+<script>
+// 1.58.21: the dashboard's login page (app/adminauth.py) — English or Ukrainian, as the dashboard
+(function(){
+  var T={uk:{h:'Heimdall — панель',p:'Лише для команди. Введіть ключ панелі.',l:'Ключ панелі',b:'Увійти',
+    f:'Сесія закінчується через 12 годин. Ключ ніколи не йде в адресу.'}};
+  var L='en'; try{ L=localStorage.getItem('adminlang')||((navigator.language||'').slice(0,2)==='uk'?'uk':'en'); }catch(e){}
+  if(T[L]){ document.documentElement.lang=L; document.querySelectorAll('[data-t]').forEach(function(e){ var v=T[L][e.dataset.t]; if(v) e.textContent=v; }); }
+  var m=document.querySelector('.msg'); if(m&&m.dataset[L]) m.textContent=m.dataset[L];
+})();
+</script>
+</body>
+</html>

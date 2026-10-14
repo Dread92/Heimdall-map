@@ -16,6 +16,8 @@ from unittest import mock
 
 import server
 
+ADM = {"X-Admin-Key": "adm-test"}   # 1.58.21: the dashboard key in a header — never in the address
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 NOW = datetime.now(timezone.utc)
 
@@ -142,7 +144,7 @@ def test_the_route_is_the_dashboards():
     srv = server.Server(("127.0.0.1", 0), server.Handler)
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     base = f"http://127.0.0.1:{srv.server_address[1]}"
-    get = lambda path: json.loads(urllib.request.urlopen(base + path, timeout=10).read())      # noqa: E731
+    getk = lambda path: json.loads(urllib.request.urlopen(urllib.request.Request(base + path, headers=ADM), timeout=10).read())  # noqa: E731
     try:
         with mock.patch.dict(os.environ, {"ADMIN_KEY": "adm-test"}):
             for path in ("/api/admin/patterns", "/api/admin/patterns?raw=1"):
@@ -151,11 +153,11 @@ def test_the_route_is_the_dashboards():
                     raise AssertionError("open without the key")
                 except urllib.error.HTTPError as e:
                     assert e.code == 403
-            d = get("/api/admin/patterns?days=30&res=1&min=1&key=adm-test")
+            d = getk("/api/admin/patterns?days=30&res=1&min=1")
             assert d["coverage"]["moves"] == 2 and d["cells"]
-            assert len(get("/api/admin/patterns?days=30&min=1&raw=1&key=adm-test")["moves"]) == 2
+            assert len(getk("/api/admin/patterns?days=30&min=1&raw=1")["moves"]) == 2
             try:
-                urllib.request.urlopen(base + "/api/admin/patterns?res=3&key=adm-test", timeout=10)
+                urllib.request.urlopen(urllib.request.Request(base + "/api/admin/patterns?res=3", headers=ADM), timeout=10)
                 raise AssertionError("res=3 taken")
             except urllib.error.HTTPError as e:
                 assert e.code == 400

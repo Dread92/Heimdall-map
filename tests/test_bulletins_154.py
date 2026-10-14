@@ -19,6 +19,8 @@ import ai_reader as A
 import server
 from alert_events import events_from_table  # 1.58.4: the alerts' start / end events
 
+ADM = {"X-Admin-Key": "adm-test"}   # 1.58.21: the dashboard key in a header — never in the address
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
@@ -260,7 +262,7 @@ def test_the_apps_route_and_the_dashboards():
                 raise AssertionError("open without the key")
             except urllib.error.HTTPError as e:
                 assert e.code == 403
-            a = get("/api/ai_reads?key=adm-test")
+            a = json.loads(urllib.request.urlopen(urllib.request.Request(base + "/api/ai_reads", headers=ADM), timeout=10).read())
         assert a["bulletin"]["public"] is True and a["bulletins"][0]["kind"] == "1h" and a["stats"]["mode"] == "bulletins"
     finally:
         srv.shutdown()

@@ -63,6 +63,7 @@ try:
     import areas
 except Exception:  # pragma: no cover
     areas = None
+import adminauth  # noqa: E402  (1.58.21: the dashboard's login)
 import limits  # noqa: E402  (1.58.17: the public API's abuse limits)
 
 
@@ -447,7 +448,8 @@ BUILD_FILES = ("static/kyiv.html", "static/light.html", "static/light-map.json",
                # 1.58.7: the service's other modules — a change there is a new version too (the server panel's restarts)
                "app/chanpost.py", "app/mapshot.py", "app/areas.py", "app/ai_reader.py", "app/translate.py",
                "static/hromadas.js", "static/replay.js",   # 1.58.16
-               "app/limits.py")                            # 1.58.17
+               "app/limits.py",                            # 1.58.17
+               "app/adminauth.py", "static/admin.html", "static/admin-login.html")   # 1.58.21
 
 
 def build_id():
@@ -2924,6 +2926,7 @@ class State:
         # caches are per State: two States (the tests) must never see each other's answers
         self._resp, self._resp_locks, self._stats_res, self._entries = {}, {}, {}, {}
         self.limits = limits.Limits()         # 1.58.17: the public API's abuse limits, in memory only
+        self.admin = adminauth.AdminSessions(store)   # 1.58.21: the dashboard's sessions and its security log
         try:
             self.notice = json.loads(store.kv_get("notice") or "null")
         except Exception:
@@ -7989,14 +7992,114 @@ class Handler(BaseHTTPRequestHandler):
         return (self.state.cfg.get("admin_key") or os.environ.get("ADMIN_KEY")
                 or self.state.cfg.get("access_key") or os.environ.get("ACCESS_KEY") or "")
 
-    def _admin_ok(self, q):
+    def _admin_ok(self, q=None):
+        """1.58.21: a session opened at the login page (app/adminauth.py), or the key in an `X-Admin-Key` header (scripts,
+        tests). Never the key in the address (`?key=`), never the key itself in a cookie (`uadm=` until 1.58.20)."""
         key = self._admin_key()
         if not key:
             return False               # no key configured: the dashboard does not exist, it is never open
-        if q.get("key", [None])[0] == key:
+        if adminauth.same_key(self.headers.get("X-Admin-Key"), key):
             return True
-        cookie = self.headers.get("Cookie") or ""
-        return any(c.strip() in (f"uadm={key}", f"uak={key}") for c in cookie.split(";"))
+        ss = getattr(self.state, "admin", None)
+        return bool(ss and ss.check(adminauth.cookie_value(self.headers)))
+
+    # -- 1.58.21: the dashboard's login -------------------------------------------------------------------------------
+    def _sec(self, event, detail=""):
+        ss = getattr(self.state, "admin", None)
+        if ss:
+            ip = limits.client_ip(self.headers, self.client_address[0] if self.client_address else "")
+            ss.log(event, adminauth.ua_short(self.headers.get("User-Agent")), adminauth.net_tag(self._admin_key(), ip), detail)
+
+    def _https(self):
+        return (self.headers.get("X-Forwarded-Proto") or "").lower() == "https" or bool(os.environ.get("FLY_APP_NAME"))
+
+    def _html(self, body, code=200, cookies=()):
+        """A dashboard page: never kept, never framed, no referrer, and the key-in-a-cookie of before 1.58.21 erased."""
+        self.send_response(code)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("X-Frame-Options", "DENY")
+        self.send_header("Content-Security-Policy", "frame-ancestors 'none'")
+        # same-origin, not no-referrer: with no-referrer a browser sends "Origin: null" with the page's own POSTs, and the
+        # check below could not tell them from another site's; nothing is sent to any other site either way
+        self.send_header("Referrer-Policy", "same-origin")
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("X-Robots-Tag", "noindex, nofollow")
+        for c in cookies:
+            self.send_header("Set-Cookie", c)
+        if "uadm=" in (self.headers.get("Cookie") or ""):
+            self.send_header("Set-Cookie", "uadm=; Path=/; Max-Age=0; SameSite=Lax")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _login_page(self, code=200, msg=None):
+        with open(os.path.join(STATIC, "admin-login.html"), encoding="utf-8") as f:
+            page = f.read()
+        if msg:
+            en, uk = msg
+            page = page.replace('<div class="msg" role="alert"><!--MSG--></div>',
+                                f'<div class="msg" role="alert" data-uk="{uk}">{en}</div>')
+        return self._html(page.encode("utf-8"), code)
+
+    def _admin_page(self, q):
+        if not self._admin_key():
+            return self._json({"error": "set ADMIN_KEY to have a dashboard — ADMIN_KEY protects only the dashboard; "
+                                        "ACCESS_KEY would lock the whole map"}, 403)
+        if q.get("key"):       # the old way: the key in the address — never accepted, never kept
+            return self._login_page(200, ("The key no longer goes in the address. Type it here — and clear it from "
+                                          "your browser's history.",
+                                          "Ключ більше не йде в адресу. Введіть його тут — і видаліть його з історії браузера."))
+        if not self._admin_ok(q):
+            return self._login_page()
+        with open(os.path.join(STATIC, "admin.html"), "rb") as f:
+            return self._html(f.read())
+
+    def _admin_login(self, raw):
+        key = self._admin_key()
+        ctype = (self.headers.get("Content-Type") or "").lower()
+        try:
+            given = (json.loads(raw.decode("utf-8") or "{}").get("key") if "json" in ctype
+                     else (parse_qs(raw.decode("utf-8")).get("key") or [""])[0])
+        except (ValueError, AttributeError):
+            given = ""
+        if not key:
+            return self._login_page(403, ("This server has no dashboard (ADMIN_KEY is not set).",
+                                          "На цьому сервері немає панелі (ADMIN_KEY не задано)."))
+        if not self._allow("login"):
+            self._sec("login_refused")
+            return self._login_page(429, ("Too many tries. Wait a few minutes.", "Забагато спроб. Зачекайте кілька хвилин."))
+        if not adminauth.same_key(str(given or ""), key):
+            time.sleep(1.0)                                 # each wrong key costs a second
+            self._sec("login_fail")
+            return self._login_page(401, ("Wrong key.", "Неправильний ключ."))
+        ip = limits.client_ip(self.headers, self.client_address[0] if self.client_address else "")
+        ua = adminauth.ua_short(self.headers.get("User-Agent"))
+        token = self.state.admin.create(ua, adminauth.net_tag(key, ip))
+        self._sec("login_ok")
+        flags = "Path=/; HttpOnly; SameSite=Strict; Max-Age=%d%s" % (adminauth.TTL_S, "; Secure" if self._https() else "")
+        self.send_response(303)
+        self.send_header("Location", "/admin")
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Set-Cookie", f"{adminauth.COOKIE}={token}; {flags}")
+        if "uadm=" in (self.headers.get("Cookie") or ""):
+            self.send_header("Set-Cookie", "uadm=; Path=/; Max-Age=0; SameSite=Lax")
+        self.send_header("Content-Length", "0")
+        self.end_headers()
+
+    def _admin_logout(self, everyone=False):
+        ss = self.state.admin
+        if everyone:
+            ss.drop(everyone=True)
+        else:
+            ss.drop(token=adminauth.cookie_value(self.headers))
+        self._sec("logout_all" if everyone else "logout")
+        self.send_response(303)
+        self.send_header("Location", "/admin")
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Set-Cookie", f"{adminauth.COOKIE}=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0")
+        self.send_header("Content-Length", "0")
+        self.end_headers()
 
     def _authorized(self, u, q):
         key = self.state.cfg.get("access_key") or os.environ.get("ACCESS_KEY") or ""
@@ -8099,16 +8202,16 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json({"night": night, "n": int(n), "points": st.tags.trail(night, int(n))})
             # The dashboard is yours alone: it needs ACCESS_KEY, and it refuses to serve anything when no key
             # is configured, so an open deployment can never expose it by accident.
-            if u.path in ("/api/usage", "/admin"):
+            if u.path == "/admin":
+                return self._admin_page(q)                     # 1.58.21: the login page until a session is open
+            if u.path == "/api/admin/security":
                 if not self._admin_ok(q):
-                    return self._json({"error": "set ADMIN_KEY and open /admin?key=… — ADMIN_KEY protects only "
-                                                "the dashboard; ACCESS_KEY would lock the whole map"}, 403)
-                if u.path == "/admin":
-                    if q.get("key", [None])[0]:       # remember it so the page's own fetches are authorised
-                        self.send_response(302); self.send_header("Location", "/admin")
-                        self.send_header("Set-Cookie", f"uadm={q['key'][0]}; Path=/; Max-Age=31536000; SameSite=Lax")
-                        self.end_headers(); return
-                    return self._file("admin.html", "text/html; charset=utf-8")
+                    return self._json({"error": "unauthorized"}, 401)
+                return self._json(st.admin.report(mine=adminauth.cookie_value(self.headers)))
+            if u.path == "/api/usage":
+                if not self._admin_ok(q):
+                    return self._json({"error": "sign in at /admin — ADMIN_KEY protects only the dashboard; "
+                                                "ACCESS_KEY would lock the whole map"}, 403)
                 usage = getattr(st, "usage", None)
                 return self._json(usage.report(int(q.get("days", ["30"])[0])) if usage else {"days": []})
             if u.path == "/api/drone_heat":
@@ -8295,7 +8398,30 @@ class Handler(BaseHTTPRequestHandler):
             n = int(self.headers.get("Content-Length") or 0)
             if n > 65536:                                  # 1.58.17: no request of the pages is near this
                 return self._json({"error": "too large"}, 413)
-            data = json.loads(self.rfile.read(n).decode("utf-8") or "{}") if n else {}
+            raw = self.rfile.read(n) if n else b""
+            # 1.58.21: what changes something on the dashboard's side comes from this site's own pages only
+            adm = u.path.startswith(("/admin/", "/api/admin/", "/api/digest/", "/api/corpus/"))
+            org = self.headers.get("Origin")
+            if adm and org and urlparse(org).netloc.lower() != (self.headers.get("Host") or "").lower():
+                return self._json({"error": "cross-site request refused"}, 403)
+            if u.path == "/admin/login":
+                return self._admin_login(raw)
+            if u.path == "/admin/logout":
+                if not self._admin_ok(q):
+                    return self._json({"error": "unauthorized"}, 401)
+                return self._admin_logout(everyone=(parse_qs(raw.decode("utf-8", "replace")).get("all") or [""])[0] == "1")
+            data = json.loads(raw.decode("utf-8") or "{}") if raw else {}
+            if adm and self._admin_ok(q):
+                self._sec("action", u.path)
+            if u.path == "/api/admin/security":
+                if not self._admin_ok(q):
+                    return self._json({"error": "unauthorized"}, 401)
+                sid = str(data.get("end") or "")[:10]
+                if data.get("everyone"):
+                    st.admin.drop(everyone=True)
+                elif re.fullmatch(r"[0-9a-f]{6,10}", sid):
+                    st.admin.drop(sid=sid)
+                return self._json(st.admin.report(mine=adminauth.cookie_value(self.headers)))
             if u.path == "/api/flag":
                 if not self._allow("write"):
                     return self._limited()

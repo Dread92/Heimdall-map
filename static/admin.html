@@ -39,6 +39,11 @@ a{color:#8fb4ff}
 .langsw{position:absolute;top:16px;right:16px;display:flex;gap:0;border:1px solid var(--line)}
 .langsw button{background:transparent;border:0;color:var(--ink3);font:600 11.5px var(--mono);letter-spacing:.08em;padding:6px 11px;cursor:pointer}
 .langsw button.on{background:var(--panel);color:var(--ua-yellow)}
+.lo{position:absolute;top:16px;right:112px;margin:0}.lo button{background:transparent;border:1px solid var(--line);color:var(--ink2);font:600 11.5px var(--mono);letter-spacing:.06em;padding:6px 11px;cursor:pointer}
+.lo button:hover{color:var(--ink)}
+.srv.sec{border-left-color:#ffb74d}.sec .sx{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline}.sec .me{color:var(--green);font-weight:600}
+.sec button{background:transparent;border:1px solid var(--line);color:var(--ink2);font:600 10.5px var(--mono);padding:2px 7px;cursor:pointer}
+.sec .ev{font:11px/1.5 var(--mono);color:var(--ink3)}.sec .ev .bad{color:#ff8a80}
 .hdr{position:relative}
 tr.bad td{color:#ffd6d6;background:rgba(224,52,44,.08)}tr.warn td{color:#ffe0b8}
 .st{font:600 11px var(--mono);letter-spacing:.06em}.st.ok{color:var(--green)}.st.bad{color:var(--red)}
@@ -250,6 +255,7 @@ table.ptt tr[data-cell]{cursor:pointer}table.ptt tr[data-cell]:hover td{backgrou
   <h1>Heimdall — dashboard</h1>
   <div class="sub" id="gen">loading…</div>
   <div class="langsw" id="langsw"><button data-l="en">EN</button><button data-l="uk">UA</button></div>
+  <form class="lo" method="post" action="/admin/logout"><button type="submit" data-tr="lo_btn">Sign out</button></form>
 </div>
 <nav class="tabs" id="tabs" role="tablist">
   <button data-tab="live" role="tab" data-tr="tab_live">Live</button>
@@ -264,7 +270,8 @@ table.ptt tr[data-cell]{cursor:pointer}table.ptt tr[data-cell]:hover td{backgrou
 <section class="tabsec" id="tab-live">
 <div class="ops" id="ops">
   <div class="opsl"><div class="onl"><div class="v" id="onl_n">—</div><div class="l"><span class="dot"></span><span data-tr="on_now">online now</span></div><div class="d" id="onl_d"></div></div>
-  <div class="srv" id="srv"><b data-tr="sv_h">Server</b><div id="srv_d">—</div></div></div>
+  <div class="srv" id="srv"><b data-tr="sv_h">Server</b><div id="srv_d">—</div></div>
+  <div class="srv sec" id="sec"><b data-tr="sc_h">Dashboard sign-ins</b><div id="sec_d">—</div></div></div>
   <div class="msg">
     <h3 data-tr="nt_h">Message to every reader</h3>
     <label class="t" for="nt_uk">Українська</label><textarea id="nt_uk" maxlength="500"></textarea>
@@ -467,7 +474,7 @@ const T={
   h_tr:'Translation',tr_av:'in use: {0}',tr_none:'no translation service reachable — offline glossary only',tr_paused:'paused after an error: {0}',
   ago_m:'{0} min ago',ago_h:'{0} h ago',ago_d:'{0} d ago',never:'never',
   gen:'generated {0}',
-  sv_h:'Server',sv_up:'Up since {0} · version {1}',sv_cpu:'CPU (this program): {0}% now · {1}% avg · {2}% max (last hour)',sv_steal:'Taken by the host (steal): {0}% now · {1}% max — above ~10% the shared CPU is being throttled and pages time out',sv_mem:'Memory: {0} MB used · {1} MB free at the lowest · {2} MB in all',sv_late:'Late wake-ups: {0} s max (busy or throttled when above 2 s)',sv_slow:'Slow requests (over 2 s) in the last hour: {0}',sv_lim:'Refused by the abuse limits since the start: {0} answers to build · {1} flags · {2} push requests · {3} live lines',sv_starts:'Starts in 7 days: {0} · without a new version (crash, out of memory, watchdog): {1}',sv_starts2:'Starts in 7 days: {0} — a new version {1} · a clean restart (secret set, docs-only deploy, Fly) {2} · watchdog {3} · unexpected (crash, out of memory) {4}',sv_unknown:' · {0} from before 1.58.3, cause not recorded',sv_na:'no figures yet (they start 10 s after a start)',on_now:'online now',on_d:'{0} Tactical · {1} Light — pages open with a live line, counted as they are, nothing kept about who.',on_peak:'Peak today: {0} at {1}',
+  sv_h:'Server',sv_up:'Up since {0} · version {1}',sv_cpu:'CPU (this program): {0}% now · {1}% avg · {2}% max (last hour)',sv_steal:'Taken by the host (steal): {0}% now · {1}% max — above ~10% the shared CPU is being throttled and pages time out',sv_mem:'Memory: {0} MB used · {1} MB free at the lowest · {2} MB in all',sv_late:'Late wake-ups: {0} s max (busy or throttled when above 2 s)',sv_slow:'Slow requests (over 2 s) in the last hour: {0}',sv_lim:'Refused by the abuse limits since the start: {0} answers to build · {1} flags · {2} push requests · {3} live lines',lo_btn:'Sign out',sc_h:'Dashboard sign-ins',sc_n:'{0} open session(s) — each lasts {1} h at the most',sc_this:'this browser',sc_net:'network',sc_since:'since {0} · last seen {1}',sc_end:'end',sc_fails:'Wrong keys in the last 24 h: {0}',sc_all:'Sign everyone out',sc_all_q:'End every session, this one included? You will have to sign in again.',sc_e_login_ok:'signed in',sc_e_login_fail:'wrong key',sc_e_login_refused:'refused — too many tries',sc_e_logout:'signed out',sc_e_logout_all:'signed everyone out',sc_e_action:'action',sv_starts:'Starts in 7 days: {0} · without a new version (crash, out of memory, watchdog): {1}',sv_starts2:'Starts in 7 days: {0} — a new version {1} · a clean restart (secret set, docs-only deploy, Fly) {2} · watchdog {3} · unexpected (crash, out of memory) {4}',sv_unknown:' · {0} from before 1.58.3, cause not recorded',sv_na:'no figures yet (they start 10 s after a start)',on_now:'online now',on_d:'{0} Tactical · {1} Light — pages open with a live line, counted as they are, nothing kept about who.',on_peak:'Peak today: {0} at {1}',
   on_push:'Last push: {0} phones in {1} s ({2} delivered)',on_na:'the live counter starts with the stream hub (1.29)',
   nt_h:'Message to every reader',nt_info:'Information',nt_warn:'Warning',nt_alert:'Urgent',nt_until:'until cleared',
   nt_push:'also as a push notification to every phone (uses the Ukrainian text)',nt_send:'Publish',nt_clear:'Remove the current message',
@@ -609,7 +616,7 @@ const T={
   h_tr:'Переклад',tr_av:'працює: {0}',tr_none:'жоден сервіс перекладу недоступний — лише офлайн-глосарій',tr_paused:'призупинено після помилки: {0}',
   ago_m:'{0} хв тому',ago_h:'{0} год тому',ago_d:'{0} д тому',never:'ніколи',
   gen:'згенеровано {0}',
-  sv_h:'Сервер',sv_up:'Працює з {0} · версія {1}',sv_cpu:'CPU (ця програма): {0}% зараз · {1}% середнє · {2}% макс. (за годину)',sv_steal:'Забрав хост (steal): {0}% зараз · {1}% макс. — понад ~10% спільний CPU обмежують, і сторінки не відповідають',sv_mem:'Пам’ять: {0} МБ зайнято · {1} МБ вільно в мінімумі · {2} МБ усього',sv_late:'Запізнення пробудження: {0} с макс. (понад 2 с — навантаження чи обмеження)',sv_slow:'Повільні запити (понад 2 с) за годину: {0}',sv_lim:'Відмовлено лімітами від зловживань із запуску: {0} відповідей для побудови · {1} позначок · {2} запитів push · {3} живих з’єднань',sv_starts:'Запусків за 7 днів: {0} · без нової версії (збій, нестача пам’яті, watchdog): {1}',sv_starts2:'Запусків за 7 днів: {0} — нова версія {1} · штатний перезапуск (секрет, документація, Fly) {2} · watchdog {3} · несподівано (збій, нестача пам’яті) {4}',sv_unknown:' · {0} до 1.58.3, причина не записана',sv_na:'даних ще немає (з’являються через 10 с після запуску)',on_now:'онлайн зараз',on_d:'{0} Tactical · {1} Light — відкриті сторінки з живим з’єднанням; лише кількість, нічого про те, хто.',on_peak:'Пік сьогодні: {0} о {1}',
+  sv_h:'Сервер',sv_up:'Працює з {0} · версія {1}',sv_cpu:'CPU (ця програма): {0}% зараз · {1}% середнє · {2}% макс. (за годину)',sv_steal:'Забрав хост (steal): {0}% зараз · {1}% макс. — понад ~10% спільний CPU обмежують, і сторінки не відповідають',sv_mem:'Пам’ять: {0} МБ зайнято · {1} МБ вільно в мінімумі · {2} МБ усього',sv_late:'Запізнення пробудження: {0} с макс. (понад 2 с — навантаження чи обмеження)',sv_slow:'Повільні запити (понад 2 с) за годину: {0}',sv_lim:'Відмовлено лімітами від зловживань із запуску: {0} відповідей для побудови · {1} позначок · {2} запитів push · {3} живих з’єднань',lo_btn:'Вийти',sc_h:'Входи в панель',sc_n:'Відкритих сесій: {0} — кожна щонайбільше {1} год',sc_this:'цей браузер',sc_net:'мережа',sc_since:'з {0} · востаннє {1}',sc_end:'завершити',sc_fails:'Неправильних ключів за 24 год: {0}',sc_all:'Вийти скрізь',sc_all_q:'Завершити всі сесії, зокрема цю? Доведеться увійти знову.',sc_e_login_ok:'вхід',sc_e_login_fail:'неправильний ключ',sc_e_login_refused:'відмовлено — забагато спроб',sc_e_logout:'вихід',sc_e_logout_all:'вихід скрізь',sc_e_action:'дія',sv_starts:'Запусків за 7 днів: {0} · без нової версії (збій, нестача пам’яті, watchdog): {1}',sv_starts2:'Запусків за 7 днів: {0} — нова версія {1} · штатний перезапуск (секрет, документація, Fly) {2} · watchdog {3} · несподівано (збій, нестача пам’яті) {4}',sv_unknown:' · {0} до 1.58.3, причина не записана',sv_na:'даних ще немає (з’являються через 10 с після запуску)',on_now:'онлайн зараз',on_d:'{0} Tactical · {1} Light — відкриті сторінки з живим з’єднанням; лише кількість, нічого про те, хто.',on_peak:'Пік сьогодні: {0} о {1}',
   on_push:'Останні сповіщення: {0} телефонів за {1} с (доставлено {2})',on_na:'лічильник працює з 1.29',
   nt_h:'Повідомлення всім читачам',nt_info:'Інформація',nt_warn:'Попередження',nt_alert:'Терміново',nt_until:'доки не прибрати',
   nt_push:'також push-сповіщенням на кожен телефон (український текст)',nt_send:'Опублікувати',nt_clear:'Прибрати поточне повідомлення',
@@ -635,7 +642,7 @@ const fmt=n=>(n||0).toLocaleString(L==='uk'?'uk-UA':'en-GB');
 const esc=t=>String(t==null?'':t).replace(/[<>&]/g,'');
 
 let D=null, H=null, H_ERR='';
-const KEYQ=location.search.includes('key=')?'&'+location.search.slice(1):'';
+const KEYQ='';   // 1.58.21: the key never travels in an address — the page's requests carry the session's cookie
 
 function drawAll(){
   document.documentElement.lang=L;
@@ -864,6 +871,21 @@ function drawChanSw(){ const box=$('chsw'), c=ON&&ON.channel; if(!box) return;
          const d=await r.json(); if(d&&d.channel&&ON) ON.channel=d.channel; }catch(err){}
     drawChanSw(); };
 }
+// 1.58.21: who is signed in to the dashboard, and its log (app/adminauth.py) — a browser and a network tag, never an address
+let SEC=null;
+async function loadSec(){ try{ const r=await fetch('/api/admin/security',{cache:'no-store'}); if(r.status===401){ location.reload(); return; } SEC=await r.json(); }catch(e){} drawSec(); }
+async function secPost(body){ try{ const r=await fetch('/api/admin/security',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  if(r.status===401){ location.reload(); return; } SEC=await r.json(); }catch(e){} drawSec(); }
+function drawSec(){ const el=$('sec_d'); if(!el) return; if(!SEC){ el.textContent='—'; return; }
+  const tm=s=>new Date(s*1000).toLocaleString(L==='uk'?'uk-UA':'en-GB',{timeZone:'Europe/Kyiv',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+  const ss=SEC.sessions||[], evs=(SEC.events||[]).slice(0,10);
+  el.innerHTML=`<div>${esc(tr('sc_n',ss.length,SEC.ttl_h))}</div>`
+    +ss.map(x=>`<div class="sx">${x.mine?`<span class="me">${esc(tr('sc_this'))}</span>`:''}<span>${esc(x.ua||'?')} · ${esc(tr('sc_net'))} <code>${esc(x.net)}</code></span><span>${esc(tr('sc_since',tm(x.at),tm(x.seen)))}</span>${x.mine?'':`<button data-end="${esc(x.id)}">${esc(tr('sc_end'))}</button>`}</div>`).join('')
+    +`<div class="${SEC.fails_24h?'bad':''}">${esc(tr('sc_fails',SEC.fails_24h||0))}</div>`
+    +`<div class="ev">${evs.map(e=>`<div class="${/fail|refused/.test(e.e)?'bad':''}">${esc(tm(e.t))} · ${esc(tr('sc_e_'+e.e))}${e.d?' '+esc(e.d):''} · ${esc(e.ua||'')} · <code>${esc(e.net||'')}</code></div>`).join('')}</div>`
+    +`<div style="margin-top:6px"><button data-all="1">${esc(tr('sc_all'))}</button></div>`;
+  el.querySelectorAll('[data-end]').forEach(b=>b.onclick=()=>secPost({end:b.dataset.end}));
+  const all=el.querySelector('[data-all]'); if(all) all.onclick=()=>{ if(confirm(tr('sc_all_q'))) secPost({everyone:true}); }; }
 async function loadOnline(){ try{ const r=await fetch('/api/online'+(KEYQ?'?'+KEYQ.slice(1):'')); const d=await r.json(); if(!d.error){ ON=d; } }catch(e){} drawOps(); }
 async function postNotice(body){ const r=await fetch('/api/admin/notice'+(KEYQ?'?'+KEYQ.slice(1):''),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}); return r.json(); }
 $('nt_send').onclick=async()=>{ const text={uk:$('nt_uk').value.trim(),en:$('nt_en').value.trim(),fr:$('nt_fr').value.trim()};
@@ -1461,12 +1483,12 @@ $('tab-patterns').addEventListener('click',async e=>{
 $('langsw').addEventListener('click',e=>{
   const b=e.target.closest('button'); if(!b) return;
   L=b.dataset.l; try{localStorage.setItem('adminlang',L);}catch(err){}
-  drawAll(); drawOps(); drawHealth(); drawDigests(); if(AN) drawAnalytics(); drawAI(); if(PT||PT_ERR) drawPatterns();
+  drawAll(); drawOps(); drawSec(); drawHealth(); drawDigests(); if(AN) drawAnalytics(); drawAI(); if(PT||PT_ERR) drawPatterns();
 });
 
 (async()=>{
   drawAll(); drawOps(); showTab(TAB);           // header, tabs and footer in the chosen language before anything loads
-  loadOnline(); setInterval(loadOnline,10000);
+  loadOnline(); setInterval(loadOnline,10000); loadSec(); setInterval(loadSec,30000);
   loadHealth(); setInterval(loadHealth,60000);  // the health view is worth leaving open on a live night
   loadDigests();
   setInterval(()=>{ if(TAB==='analytics'&&!document.hidden) loadAnalytics(true); },300000);

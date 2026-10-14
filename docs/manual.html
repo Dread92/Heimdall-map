@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Heimdall (Kyiv Air Watch) — the full technical documentation, with a map of the system.">
-<meta name="heimdall-version" content="1.58.20">
-<meta name="heimdall-docs" content="31372941df90326f">
+<meta name="heimdall-version" content="1.58.21">
+<meta name="heimdall-docs" content="4d0ffb331c2ea3fd">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Heimdall Technical Manual</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -237,7 +237,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
 <header class="top">
   <div class="wrap">
     <a class="brand" href="#top"><b>Heimdall</b><span>Technical manual</span></a>
-    <span class="ver">1.58.20</span>
+    <span class="ver">1.58.21</span>
     <nav class="nav" aria-label="Sections">
       <a href="#map">Map</a><a href="#journeys">Journeys</a><a href="#rules">Rules</a><a href="#reference">Reference</a><a href="#safety">Safety</a>
     </nav>
@@ -256,7 +256,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
       <h1 class="title">How Heimdall works</h1>
       <p class="lead">An unofficial air-threat map for Kyiv and the oblasts around it. One Python process reads the official
       alert data and the channels that track drones and missiles, stores every post before it reads it, rebuilds the map
-      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.20, 14 October 2026:
+      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.21, 14 October 2026:
       the map first, then everything in full.</p>
     </div>
     <dl class="facts">
@@ -548,6 +548,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
   <a class="m-link" href="#105-the-guide-guide-135"><text class="m-title" x="1146" y="192">Guide</text><text class="m-mono" x="1146" y="208">/guide</text></a>
   <a class="m-link" href="#108-the-android-app-1576"><text class="m-title" x="1146" y="300">Android</text><text class="m-sub" x="1146" y="316">app (TWA)</text><text class="m-mono" x="1146" y="332">assetlinks</text></a>
   <a class="m-link" href="#8c-the-dashboard-132-tabs-and-analytics"><text class="m-title" x="1146" y="238">Dashboard</text><text class="m-mono" x="1146" y="254">/admin 🔒</text></a>
+  <a class="m-link" href="#122-the-dashboards-sign-in-15821"><text class="m-sub" x="1146" y="272">sign-in, 12 h</text></a>
   <a class="m-link" href="#712-the-direction-patterns-155-the-dashboard-only"><text class="m-title" x="1146" y="562">Patterns</text><text class="m-sub" x="1146" y="580">dashboard</text><text class="m-sub" x="1146" y="596">tab 🔒</text></a>
   <a class="m-link" href="#9c-the-owners-private-telegram-channel-158"><text class="m-title" x="1146" y="462">Telegram</text><text class="m-sub" x="1146" y="480">the owner's</text><text class="m-sub" x="1146" y="496">channel</text></a>
   <a class="m-link" href="#9-notifications"><text class="m-title" x="1146" y="370">Phones</text><text class="m-sub" x="1146" y="388">push, by a</text><text class="m-sub" x="1146" y="404">~10 km cell</text></a>
@@ -634,7 +635,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
     <nav class="toc" aria-label="Contents">
       <details id="tocd" open>
         <summary>Contents</summary>
-<p class="grp">Part I · The reference</p><ul><li><a href="#1-what-it-is">1. What it is</a></li><li><a href="#2-principles-the-code-enforces">2. Principles the code enforces</a></li><li><a href="#3-system-overview">3. System overview</a></li><li><a href="#4-repository-layout">4. Repository layout</a></li><li><a href="#5-runtime-configuration-and-secrets">5. Runtime, configuration and secrets</a><ul><li><a href="#51-the-process">5.1 The process</a></li><li><a href="#54-the-live-line-129">5.4 The live line (1.29)</a></li><li><a href="#52-configuration-keys">5.2 Configuration keys</a></li><li><a href="#53-environment-variables">5.3 Environment variables</a></li><li><a href="#55-what-the-process-spends-its-cpu-on-146">5.5 What the process spends its CPU on (1.46)</a></li><li><a href="#56-zooming-the-map-149">5.6 Zooming the map (1.49)</a></li></ul></li><li><a href="#6-official-alert-data">6. Official alert data</a><ul><li><a href="#61-sources-and-precedence">6.1 Sources and precedence</a></li><li><a href="#62-the-official-levels">6.2 The official levels</a></li><li><a href="#63-the-normalised-alert">6.3 The normalised alert</a></li><li><a href="#64-from-an-official-id-to-a-place-on-the-map">6.4 From an official id to a place on the map</a></li><li><a href="#65-reconciliation">6.5 Reconciliation</a></li><li><a href="#66-what-decides-a-colour-page-by-page">6.6 What decides a colour, page by page</a></li></ul></li><li><a href="#7-the-telegram-feed-and-the-map-marks">7. The Telegram feed and the map marks</a><ul><li><a href="#71-the-channels">7.1 The channels</a></li><li><a href="#72-from-page-to-stored-post">7.2 From page to stored post</a></li><li><a href="#73-from-post-to-mark-geopy">7.3 From post to mark (geo.py)</a></li><li><a href="#73b-the-regional-trackers-their-villages-their-russian-143">7.3b The regional trackers: their villages, their Russian (1.43)</a></li><li><a href="#74-scope-chaining-staleness">7.4 Scope, chaining, staleness</a></li><li><a href="#76-the-carriers-take-offs-launches-stand-downs-133">7.6 The carriers: take-offs, launches, stand-downs (1.33)</a></li><li><a href="#75-the-air-forces-summaries-132">7.5 The Air Force&#x27;s summaries (1.32)</a></li><li><a href="#77-the-ai-reader-150-its-facts-in-the-target-tags-since-151-retired-from-the-map-in-154">7.7 The AI reader (1.50; its facts in the target tags since 1.51; retired from the map in 1.54)</a></li><li><a href="#78-target-tags-151">7.8 Target tags (1.51)</a></li><li><a href="#79-the-ai-readers-targets-on-the-map-152-gone-in-154">7.9 The AI reader&#x27;s targets on the map (1.52; gone in 1.54)</a></li><li><a href="#710-the-10-minute-check-153-stopped-in-154-and-the-nights-report">7.10 The 10-minute check (1.53; stopped in 1.54) and the night&#x27;s report</a></li><li><a href="#711-the-bulletins-154">7.11 The bulletins (1.54)</a></li><li><a href="#712-the-direction-patterns-155-the-dashboard-only">7.12 The direction patterns (1.55; the dashboard only)</a></li></ul></li><li><a href="#8-translation">8. Translation</a></li><li><a href="#8b-nights-and-weeks-the-dashboards-record">8b. Nights and weeks (the dashboard&#x27;s record)</a></li><li><a href="#8c-the-dashboard-132-tabs-and-analytics">8c. The dashboard (1.32: tabs and Analytics)</a></li><li><a href="#9-notifications">9. Notifications</a></li><li><a href="#9b-the-kyiv-bridges-134">9b. The Kyiv bridges (1.34)</a></li><li><a href="#9c-the-owners-private-telegram-channel-158">9c. The owner&#x27;s private Telegram channel (1.58)</a></li><li><a href="#10-the-two-pages-tactical-and-light">10. The two pages: Tactical and Light</a><ul><li><a href="#101-tactical-m">10.1 Tactical (/m)</a></li><li><a href="#102-light-light">10.2 Light (/light)</a></li><li><a href="#103-the-switch">10.3 The switch</a></li><li><a href="#103e-the-map-first-on-a-phone-1421">10.3e The map first on a phone (1.42.1)</a></li><li><a href="#103d-daylight-and-night-142">10.3d Daylight and night (1.42)</a></li><li><a href="#103b-motion-140">10.3b Motion (1.40)</a></li><li><a href="#103c-the-replay-142">10.3c The replay (1.42)</a></li><li><a href="#104-languages">10.4 Languages</a></li><li><a href="#105-the-guide-guide-135">10.5 The guide (/guide, 1.35)</a></li><li><a href="#105b-a-way-back-from-everything-1574">10.5b A way back from everything (1.57.4)</a></li><li><a href="#106-the-streets-and-villages-of-ukraine-156">10.6 The streets and villages of Ukraine (1.56)</a></li><li><a href="#107-the-shelters-kyiv-city-lists-157">10.7 The shelters Kyiv city lists (1.57)</a></li><li><a href="#108-the-android-app-1576">10.8 The Android app (1.57.6)</a></li><li><a href="#109-as-of-when-and-a-raion-named-as-one-1578">10.9 As of when, and a raion named as one (1.57.8)</a></li></ul></li><li><a href="#11-privacy-and-security">11. Privacy and security</a></li><li><a href="#12-http-api">12. HTTP API</a><ul><li><a href="#121-abuse-limits-15817">12.1 Abuse limits (1.58.17)</a></li></ul></li><li><a href="#13-storage">13. Storage</a></li><li><a href="#14-testing-and-quality">14. Testing and quality</a></li><li><a href="#15-deployment-and-the-github-repository">15. Deployment and the GitHub repository</a><ul><li><a href="#when-the-app-goes-off">When the app &quot;goes off&quot;</a></li></ul></li><li><a href="#16-maintenance-recipes">16. Maintenance recipes</a></li><li><a href="#17-known-limitations-and-open-items">17. Known limitations and open items</a></li><li><a href="#18-the-patch-checklist">18. The patch checklist</a></li></ul>
+<p class="grp">Part I · The reference</p><ul><li><a href="#1-what-it-is">1. What it is</a></li><li><a href="#2-principles-the-code-enforces">2. Principles the code enforces</a></li><li><a href="#3-system-overview">3. System overview</a></li><li><a href="#4-repository-layout">4. Repository layout</a></li><li><a href="#5-runtime-configuration-and-secrets">5. Runtime, configuration and secrets</a><ul><li><a href="#51-the-process">5.1 The process</a></li><li><a href="#54-the-live-line-129">5.4 The live line (1.29)</a></li><li><a href="#52-configuration-keys">5.2 Configuration keys</a></li><li><a href="#53-environment-variables">5.3 Environment variables</a></li><li><a href="#55-what-the-process-spends-its-cpu-on-146">5.5 What the process spends its CPU on (1.46)</a></li><li><a href="#56-zooming-the-map-149">5.6 Zooming the map (1.49)</a></li></ul></li><li><a href="#6-official-alert-data">6. Official alert data</a><ul><li><a href="#61-sources-and-precedence">6.1 Sources and precedence</a></li><li><a href="#62-the-official-levels">6.2 The official levels</a></li><li><a href="#63-the-normalised-alert">6.3 The normalised alert</a></li><li><a href="#64-from-an-official-id-to-a-place-on-the-map">6.4 From an official id to a place on the map</a></li><li><a href="#65-reconciliation">6.5 Reconciliation</a></li><li><a href="#66-what-decides-a-colour-page-by-page">6.6 What decides a colour, page by page</a></li></ul></li><li><a href="#7-the-telegram-feed-and-the-map-marks">7. The Telegram feed and the map marks</a><ul><li><a href="#71-the-channels">7.1 The channels</a></li><li><a href="#72-from-page-to-stored-post">7.2 From page to stored post</a></li><li><a href="#73-from-post-to-mark-geopy">7.3 From post to mark (geo.py)</a></li><li><a href="#73b-the-regional-trackers-their-villages-their-russian-143">7.3b The regional trackers: their villages, their Russian (1.43)</a></li><li><a href="#74-scope-chaining-staleness">7.4 Scope, chaining, staleness</a></li><li><a href="#76-the-carriers-take-offs-launches-stand-downs-133">7.6 The carriers: take-offs, launches, stand-downs (1.33)</a></li><li><a href="#75-the-air-forces-summaries-132">7.5 The Air Force&#x27;s summaries (1.32)</a></li><li><a href="#77-the-ai-reader-150-its-facts-in-the-target-tags-since-151-retired-from-the-map-in-154">7.7 The AI reader (1.50; its facts in the target tags since 1.51; retired from the map in 1.54)</a></li><li><a href="#78-target-tags-151">7.8 Target tags (1.51)</a></li><li><a href="#79-the-ai-readers-targets-on-the-map-152-gone-in-154">7.9 The AI reader&#x27;s targets on the map (1.52; gone in 1.54)</a></li><li><a href="#710-the-10-minute-check-153-stopped-in-154-and-the-nights-report">7.10 The 10-minute check (1.53; stopped in 1.54) and the night&#x27;s report</a></li><li><a href="#711-the-bulletins-154">7.11 The bulletins (1.54)</a></li><li><a href="#712-the-direction-patterns-155-the-dashboard-only">7.12 The direction patterns (1.55; the dashboard only)</a></li></ul></li><li><a href="#8-translation">8. Translation</a></li><li><a href="#8b-nights-and-weeks-the-dashboards-record">8b. Nights and weeks (the dashboard&#x27;s record)</a></li><li><a href="#8c-the-dashboard-132-tabs-and-analytics">8c. The dashboard (1.32: tabs and Analytics)</a></li><li><a href="#9-notifications">9. Notifications</a></li><li><a href="#9b-the-kyiv-bridges-134">9b. The Kyiv bridges (1.34)</a></li><li><a href="#9c-the-owners-private-telegram-channel-158">9c. The owner&#x27;s private Telegram channel (1.58)</a></li><li><a href="#10-the-two-pages-tactical-and-light">10. The two pages: Tactical and Light</a><ul><li><a href="#101-tactical-m">10.1 Tactical (/m)</a></li><li><a href="#102-light-light">10.2 Light (/light)</a></li><li><a href="#103-the-switch">10.3 The switch</a></li><li><a href="#103e-the-map-first-on-a-phone-1421">10.3e The map first on a phone (1.42.1)</a></li><li><a href="#103d-daylight-and-night-142">10.3d Daylight and night (1.42)</a></li><li><a href="#103b-motion-140">10.3b Motion (1.40)</a></li><li><a href="#103c-the-replay-142">10.3c The replay (1.42)</a></li><li><a href="#104-languages">10.4 Languages</a></li><li><a href="#105-the-guide-guide-135">10.5 The guide (/guide, 1.35)</a></li><li><a href="#105b-a-way-back-from-everything-1574">10.5b A way back from everything (1.57.4)</a></li><li><a href="#106-the-streets-and-villages-of-ukraine-156">10.6 The streets and villages of Ukraine (1.56)</a></li><li><a href="#107-the-shelters-kyiv-city-lists-157">10.7 The shelters Kyiv city lists (1.57)</a></li><li><a href="#108-the-android-app-1576">10.8 The Android app (1.57.6)</a></li><li><a href="#109-as-of-when-and-a-raion-named-as-one-1578">10.9 As of when, and a raion named as one (1.57.8)</a></li></ul></li><li><a href="#11-privacy-and-security">11. Privacy and security</a></li><li><a href="#12-http-api">12. HTTP API</a><ul><li><a href="#121-abuse-limits-15817">12.1 Abuse limits (1.58.17)</a></li><li><a href="#122-the-dashboards-sign-in-15821">12.2 The dashboard&#x27;s sign-in (1.58.21)</a></li></ul></li><li><a href="#13-storage">13. Storage</a></li><li><a href="#14-testing-and-quality">14. Testing and quality</a></li><li><a href="#15-deployment-and-the-github-repository">15. Deployment and the GitHub repository</a><ul><li><a href="#when-the-app-goes-off">When the app &quot;goes off&quot;</a></li></ul></li><li><a href="#16-maintenance-recipes">16. Maintenance recipes</a></li><li><a href="#17-known-limitations-and-open-items">17. Known limitations and open items</a></li><li><a href="#18-the-patch-checklist">18. The patch checklist</a></li></ul>
 <p class="grp">Part II · The safety rules</p><ul><li><a href="#s-the-app-is-never-the-primary-warning">The app is never the primary warning</a></li><li><a href="#s-no-liberties-with-trajectories">No liberties with trajectories</a></li><li><a href="#s-stale-is-never-shown-as-active">Stale is never shown as active</a></li><li><a href="#s-a-missile-is-not-aged-like-a-drone">A missile is not aged like a drone</a></li><li><a href="#s-a-new-source-is-on-trial-until-a-person-trusts-it">A new source is on trial until a person trusts it</a></li><li><a href="#s-a-village-is-read-only-where-it-is-143">A village is read only where it is (1.43)</a></li><li><a href="#s-a-shared-text-says-what-the-post-said-and-nothing-about-who-shares-it-1549">A shared text says what the post said, and nothing about who shares it (1.54.9)</a></li><li><a href="#s-the-private-channel-says-what-the-map-says--and-since-1587-what-the-map-shows-became-of-a-target-158">The private channel says what the map says — and, since 1.58.7, what the map shows became of a target (1.58)</a></li><li><a href="#s-only-where-it-is-heading-and-no-alert-there-not-on-the-map-1587">Only where it is heading, and no alert there: not on the map (1.58.7)</a></li><li><a href="#s-a-weapon-nobody-named-is-probably-a-drone--never-unknown-never-a-drone-1548">A weapon nobody named is &quot;probably a drone&quot; — never &quot;unknown&quot;, never &quot;a drone&quot; (1.54.8)</a></li><li><a href="#s-two-channels-reports-are-one-target-only-when-they-could-be-1431">Two channels&#x27; reports are one target only when they could be (1.43.1)</a></li><li><a href="#s-a-post-in-russian-says-the-same-thing-143">A post in Russian says the same thing (1.43)</a></li><li><a href="#s-a-regional-warning-is-for-that-oblast-143">A regional warning is for that oblast (1.43)</a></li><li><a href="#s-a-missile-post-is-for-the-oblasts-it-names-1566">A missile post is for the oblasts it names (1.56.6)</a></li><li><a href="#s-a-shelter-is-the-citys-a-distance-is-a-straight-line-157">A shelter is the city&#x27;s, a distance is a straight line (1.57)</a></li><li><a href="#s-the-nuclear-event-cannot-be-switched-on-by-accident">The nuclear event cannot be switched on by accident</a></li><li><a href="#s-a-warning-is-only-raised-when-something-was-actually-reported">A warning is only raised when something was actually reported</a></li><li><a href="#s-alert-colours-must-match-the-official-app">Alert colours must match the official app</a></li><li><a href="#s-a-number-of-drones-is-an-estimate-and-says-so-15820">A number of drones is an estimate, and says so (1.58.20)</a></li><li><a href="#s-a-limit-never-stands-between-a-reader-and-the-alert-15817">A limit never stands between a reader and the alert (1.58.17)</a></li><li><a href="#s-a-hromadas-alert-is-the-hromadas-15816">A hromada&#x27;s alert is the hromada&#x27;s (1.58.16)</a></li><li><a href="#s-altitude-is-read-never-guessed">Altitude is read, never guessed</a></li><li><a href="#s-a-threat-type-is-never-invented">A threat type is never invented</a></li><li><a href="#s-a-fire-is-not-an-explosion-and-it-does-not-last-all-night">A fire is not an explosion, and it does not last all night</a></li><li><a href="#s-a-carrier-is-never-a-mark">A carrier is never a mark</a></li><li><a href="#s-a-reply-is-its-own-message">A reply is its own message</a></li><li><a href="#s-what-was-carried-is-as-old-as-where-it-came-from">What was carried is as old as where it came from</a></li><li><a href="#s-a-bridge-with-nothing-reported-is-not-a-safe-bridge">A bridge with nothing reported is not a safe bridge</a></li><li><a href="#s-the-card-says-what-is-known-about-your-place-and-nothing-more">The card says what is known about your place, and nothing more</a></li><li><a href="#s-the-heat-map-is-statistics-and-says-so">The heat map is statistics, and says so</a></li><li><a href="#s-a-ballistic-report-is-not-an-official-alert-and-a-retraction-ends-it">A ballistic report is not an official alert, and a retraction ends it</a></li><li><a href="#s-the-replay-is-the-past-and-looks-like-it">The replay is the past, and looks like it</a></li><li><a href="#s-the-guide-says-what-the-official-guidance-says">The guide says what the official guidance says</a></li><li><a href="#s-the-history-layer-never-buries-the-live-picture">The history layer never buries the live picture</a></li><li><a href="#s-what-was-destroyed-decides-what-it-means">What was destroyed decides what it means</a></li><li><a href="#s-a-press-release-is-not-an-observation-of-the-sky">A press release is not an observation of the sky</a></li><li><a href="#s-a-name-that-merely-starts-the-same-is-not-a-match">A name that merely starts the same is not a match</a></li><li><a href="#s-a-stated-part-of-an-oblast-is-not-the-oblast-centre">A stated part of an oblast is not the oblast centre</a></li><li><a href="#s-a-side-of-a-town-is-not-the-town-1451">A side of a town is not the town (1.45.1)</a></li><li><a href="#s-where-it-is-and-where-it-is-going-are-different-facts">Where it is, and where it is going, are different facts</a></li><li><a href="#s-a-glyph-points-where-the-post-said-or-it-does-not-point-at-all">A glyph points where the post said, or it does not point at all</a></li><li><a href="#s-a-heading-over-a-list-is-not-a-sighting">A heading over a list is not a sighting</a></li><li><a href="#s-the-weapon-belongs-to-the-line-that-names-it">The weapon belongs to the line that names it</a></li><li><a href="#s-a-tally-of-the-night-is-not-a-sky">A tally of the night is not a sky</a></li><li><a href="#s-one-weapon-one-symbol--and-it-never-turns">One weapon, one symbol — and it never turns</a></li><li><a href="#s-an-outcome-with-no-place-named-belongs-to-the-region-not-to-its-centre">An outcome with no place named belongs to the region, not to its centre</a></li><li><a href="#s-an-explosion-is-a-moment-not-a-state">An explosion is a moment, not a state</a></li><li><a href="#s-in-chernihiv-oblast-a-drone-faces-into-ukraine-1563">In Chernihiv oblast a drone faces into Ukraine (1.56.3)</a></li><li><a href="#s-heading-to-your-village-is-a-thing-the-post-has-to-say">&quot;Heading to your village&quot; is a thing the post has to say</a></li><li><a href="#s-a-push-that-cannot-be-acted-on-costs-the-ones-that-can">A push that cannot be acted on costs the ones that can</a></li><li><a href="#s-the-one-row-that-could-say-where-somebody-sleeps">The one row that could say where somebody sleeps</a></li><li><a href="#s-what-the-app-said-is-kept-not-just-what-it-was-told">What the app said is kept, not just what it was told</a></li><li><a href="#s-high-confidence-says-how-sharply-it-was-read-not-that-it-is-true">&quot;High confidence&quot; says how sharply it was read, not that it is true</a></li><li><a href="#s-nothing-is-drawn-where-the-source-said-it-is-clear">Nothing is drawn where the source said it is clear</a></li><li><a href="#s-overlapping-explosions-are-grouped-never-stacked">Overlapping explosions are grouped, never stacked</a></li><li><a href="#s-every-number-is-traceable">Every number is traceable</a></li><li><a href="#s-the-ai-writes-bulletins-and-puts-nothing-on-the-map-154">The AI writes bulletins, and puts nothing on the map (1.54)</a></li><li><a href="#s-a-language-model-is-a-second-opinion-never-a-source-150">A language model is a second opinion, never a source (1.50)</a></li><li><a href="#s-a-target-only-the-ai-reader-found-152">A target only the AI reader found (1.52)</a></li><li><a href="#s-the-ai-reads-every-10-minutes-and-writes-up-the-night-153">The AI reads every 10 minutes and writes up the night (1.53)</a></li><li><a href="#s-a-targets-tag-is-a-number-not-a-designation-151">A target&#x27;s tag is a number, not a designation (1.51)</a></li><li><a href="#s-a-pin-on-a-street-found-on-the-phone-156">A pin on a street, found on the phone (1.56)</a></li><li><a href="#s-where-drones-usually-go-is-the-dashboards-not-a-readers-155">Where drones usually go is the dashboard&#x27;s, not a reader&#x27;s (1.55)</a></li><li><a href="#s-operational-security">Operational security</a></li><li><a href="#s-when-in-doubt">When in doubt</a></li></ul>
 <p class="grp">Appendix A</p><ul><li><a href="#deploy">Deployment</a></li></ul>
 <p class="grp">Appendix B</p><ul><li><a href="#i18n">Languages</a></li></ul>
@@ -645,8 +646,9 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
     <div class="doc" id="doc">
 <section class="part" id="tech" data-label="Reference"><p class="partlabel">Part I · The reference</p>
 <h1 id="heimdall--technical-documentation">Heimdall — technical documentation</h1>
-<p><strong>Documented version: 1.58</strong> · last updated 2026-10-14 (1.58.20)</p>
-<p>Heimdall was called <strong>Clear Sky</strong> until 1.29; the repository, the Fly app (<code>kyiv-air-watch-gb</code>) and some
+<p><strong>Documented version: 1.58</strong> · last updated 2026-10-14 (1.58.21)</p>
+<p>The repository is <strong>Dread92/Heimdall-map</strong> (it was <code>clear-sky</code> until October 2026; GitHub sends the old address on).
+Heimdall was called <strong>Clear Sky</strong> until 1.29; the repository, the Fly app (<code>kyiv-air-watch-gb</code>) and some
 internal names still carry the old name.</p>
 <p>This is the complete technical reference: what runs, where the data comes from, how a Telegram post becomes a
 mark on a map, how an official alert becomes a colour, what is stored, what is sent, and how to change any of
@@ -772,7 +774,7 @@ stores a ~10 km cell, never a village; the Light page works out the oblast and r
 <p>Everything that arrives is <strong>stored before it is interpreted</strong>: a parsing bug is always replayable against the
 real post, and a fix to the rules applies to posts already in the database.</p>
 <h2 id="4-repository-layout">4. Repository layout<a class="anc" href="#4-repository-layout" aria-label="Link to this section">#</a></h2>
-<pre><code>clear-sky/
+<pre><code>Heimdall-map/
 ├── app/
 │   ├── server.py           HTTP server, API, SSE, source pollers, SQLite store, marker pipeline, push
 │   ├── geo.py              Ukrainian parsing: gazetteer, declensions, types, headings, counts, phases, altitude
@@ -782,6 +784,7 @@ real post, and a fix to the rules applies to posts already in the database.</p>
 │   ├── mapshot.py          1.58: its picture — the map around one target, drawn with Pillow in the app's style (§9c)
 │   ├── areas.py            1.58.7: which official alert area a point is in, and is it under alert (`held`, §7.4; §9c)
 │   ├── limits.py           1.58.17: the public API's abuse limits — per client, on what costs the server (§12.1)
+│   ├── adminauth.py        1.58.21: the dashboard's login — sessions, the sign-in limits, its security log (§12.2)
 │   └── push.py             Web Push: VAPID ES256 JWT + RFC 8291 aes128gcm, on `cryptography` only
 ├── static/
 │   ├── kyiv.html           Tactical page (one self-contained file)
@@ -803,6 +806,7 @@ real post, and a fix to the rules applies to posts already in the database.</p>
 │   ├── lightmap.js         1.57.2: the Light radar's satellite / map background — loaded when asked for (§10.2)
 │   ├── ukraine-map.json    oblast outlines in an affine lon/lat projection (Light page fallback lookup)
 │   ├── admin.html          private dashboard: usage, source health, channels, lead time (/admin, ADMIN_KEY)
+│   ├── admin-login.html    1.58.21: its sign-in page (EN / UK) — the key typed here, never in the address
 │   ├── index.html, mobile.html   older desktop / mobile views (/desktop, /ua)
 │   ├── guide.html          what to do, weapon by weapon (/guide, 1.35): self-contained, content in its JSON block
 │   ├── sw.js               service worker: push display, notification clicks, the pages and the guide kept for when the server is unreachable
@@ -1221,7 +1225,11 @@ the committed template.</p>
 </tr>
 <tr>
 <td><code>ADMIN_KEY</code></td>
-<td>Protects <code>/admin</code> and its APIs only. The map stays public.</td>
+<td>Protects <code>/admin</code> and its APIs only. The map stays public. 1.58.21: typed at the sign-in page (§12.2), or sent by a script in an <code>X-Admin-Key</code> header — never in an address.</td>
+</tr>
+<tr>
+<td><code>FLY_APP_NAME</code></td>
+<td>Set by Fly itself. 1.58.17: without Fly's <code>Fly-Client-IP</code> header nobody is limited (the peer would be Fly's proxy); 1.58.21: the dashboard's session cookie is <code>Secure</code>.</td>
 </tr>
 <tr>
 <td><code>ACCESS_KEY</code></td>
@@ -3381,6 +3389,9 @@ Settings → Devices → &quot;Clear Sky server&quot; → Terminate.</li>
 <li>Usage counters (<code>usage</code>, <code>usage_seen</code>): a daily salted hash, no IP address, no location, no per-person
 history. A page the browser loads ahead of a tap (prerender, <code>Sec-Purpose: prefetch</code>) is not counted (1.40).</li>
 <li>Flags and the corpus review are behind <code>ADMIN_KEY</code>.</li>
+<li>1.58.21: the dashboard's sign-in log (§12.2) keeps, for each sign-in, failure, sign-out and dashboard action, the
+time, the browser family (&quot;Chrome · Windows&quot;) and a network tag — a keyed hash of the address (HMAC with the
+dashboard key), the same network giving the same 8 characters; the address itself is never kept. 200 events at most.</li>
 <li>The AI reader (1.50, §7.7) sends OpenRouter only public posts (the channel's text, its name, our place names), a
 card-like run of digits masked; never anything about a reader. Its key (<code>OPENROUTER_API_KEY</code>) is set by the owner
 with <code>scripts/set-openrouter-key.bat</code>, straight into Fly's secrets. Its readings are behind <code>ADMIN_KEY</code>.</li>
@@ -3511,8 +3522,24 @@ every day — never stored, never logged; the dashboard sees counts of refusals 
 <td>&quot;this reading is wrong&quot; report</td>
 </tr>
 <tr>
-<td>🔒 <code>GET /admin</code>, <code>/api/usage</code></td>
-<td>dashboard, usage counters</td>
+<td><code>GET /admin</code></td>
+<td>1.58.21: the sign-in page (<code>static/admin-login.html</code>) until a session is open, then the dashboard (§12.2); <code>?key=</code> in the address is never accepted — the page says so</td>
+</tr>
+<tr>
+<td><code>POST /admin/login</code></td>
+<td>1.58.21: <code>key=</code> (form) or <code>{key}</code> (JSON) → 303 to <code>/admin</code> with the session cookie; 401 for a wrong key (a second's wait), 429 past 5 tries</td>
+</tr>
+<tr>
+<td>🔒 <code>POST /admin/logout</code></td>
+<td>1.58.21: ends this session (<code>all=1</code>: every session) → 303 to <code>/admin</code></td>
+</tr>
+<tr>
+<td>🔒 <code>GET /api/admin/security</code></td>
+<td>1.58.21: <code>{sessions: [{id, at, seen, ua, net, mine}], events: [{t, e, ua, net, d}], fails_24h, ttl_h}</code>; <code>POST {end: id}</code> ends one session, <code>{everyone: true}</code> all of them</td>
+</tr>
+<tr>
+<td>🔒 <code>GET /api/usage</code></td>
+<td>usage counters</td>
 </tr>
 <tr>
 <td>🔒 <code>GET /api/health</code></td>
@@ -3629,6 +3656,30 @@ and — should Fly's header ever be missing — everybody, rather than everybody
 <li><strong>Bounds</strong>: at most <code>State.RESP_MAX</code> (400) answers for parameters are kept, the oldest go first; <code>/api/places</code> and
 <code>/api/history</code> take only known oblast uids; <code>/api/events_log</code> at most 500; a POST body at most 64 KB (413).</li>
 <li>The dashboard's Server panel counts the refusals by kind since the start (<code>/api/online</code> → <code>limits</code>).</li>
+</ul>
+<h3 id="122-the-dashboards-sign-in-15821">12.2 The dashboard's sign-in (1.58.21)<a class="anc" href="#122-the-dashboards-sign-in-15821" aria-label="Link to this section">#</a></h3>
+<p>The owner: &quot;we strongly need to secure our dashboard — right now it's very minimal protection&quot; (picked: the key only,
+done properly; no second code). Until 1.58.20 the key was typed into the address (<code>/admin?key=…</code>, so it stayed in the
+browser's history) and then kept for a year in an ordinary cookie, <code>uadm=&lt;the key itself&gt;</code>, readable by any script of
+the site's pages and sent with every request to the public map. <code>app/adminauth.py</code>:</p>
+<ul>
+<li><strong>The sign-in page</strong> (<code>static/admin-login.html</code>, English or Ukrainian) posts the key once (<code>POST /admin/login</code>). A
+key in the address is never accepted; the page asks for it to be typed and cleared from the history.</li>
+<li><strong>A session</strong>: a correct key (compared in constant time, <code>hmac.compare_digest</code>) opens a random 32-byte token in the
+cookie <code>hsess</code> — <code>HttpOnly</code> (no page script reads it), <code>SameSite=Strict</code> (never sent from another site), <code>Secure</code> on
+Fly, 12 hours at the most (<code>TTL_S</code>); only its SHA-256 is stored (<code>kv.admin_sessions</code>, so a deploy does not sign the
+owner out); 20 sessions at most, the oldest ended first. The old <code>uadm</code> cookie is erased.</li>
+<li><strong>Wrong keys</strong>: 5 tries per client, then one every two minutes (<code>limits</code> kind <code>login</code>); each wrong key waits a second.</li>
+<li><strong>Same site only</strong>: a POST to <code>/admin/*</code>, <code>/api/admin/*</code>, <code>/api/digest/*</code> or <code>/api/corpus/*</code> whose <code>Origin</code> is
+another site is refused (403). The dashboard's pages go out with <code>X-Frame-Options: DENY</code>, <code>frame-ancestors 'none'</code>,
+<code>Referrer-Policy: same-origin</code> (with <code>no-referrer</code> a browser sends &quot;Origin: null&quot; with the page's own POSTs),
+<code>Cache-Control: no-store</code> and <code>noindex</code>.</li>
+<li><strong>The log</strong>: sign-ins, wrong keys, refusals, sign-outs and every dashboard action (<code>kv.admin_events</code>, 200 at most),
+with the browser family and the network tag (§11). The Live tab's &quot;Dashboard sign-ins&quot; lists the open sessions
+(this one marked) — end one, or everyone — the wrong keys of the last 24 hours and the latest events; &quot;Sign out&quot; is
+in the header.</li>
+<li><strong>Scripts and tests</strong> send the key in an <code>X-Admin-Key</code> header. <code>ACCESS_KEY</code> (the whole-app gate of a private
+deployment) is unchanged.</li>
 </ul>
 <h2 id="13-storage">13. Storage<a class="anc" href="#13-storage" aria-label="Link to this section">#</a></h2>
 <p>SQLite in WAL mode (<code>DB_PATH</code>; on Fly, the volume). Tables:</p>
@@ -3833,8 +3884,9 @@ as on the job's Node 20 (Node 21+ has one: <code>static/i18n.js</code> read <cod
 failing there). <code>static/i18n.js</code> must evaluate with no browser globals at all.</p>
 <h2 id="15-deployment-and-the-github-repository">15. Deployment and the GitHub repository<a class="anc" href="#15-deployment-and-the-github-repository" aria-label="Link to this section">#</a></h2>
 <ul>
-<li><strong>The working folder</strong> is <code>Desktop\clear-sky-main</code> on the owner's PC: a Git clone of the private repository
-<strong>Dread92/clear-sky</strong>. Patches are committed there.</li>
+<li><strong>The working folder</strong> is <code>Desktop\clear-sky-main</code> on the owner's PC (to be renamed <code>Desktop\Heimdall-map</code>): a Git
+clone of the repository <strong>Dread92/Heimdall-map</strong> (it was <code>Dread92/clear-sky</code> until October 2026; the remote points to
+the new name). Patches are committed there.</li>
 <li><strong>Shipping a patch</strong>: double-click <strong><code>scripts\release.bat</code></strong>. It refuses to run if anything is not committed,
 deploys to Fly.io, pushes to GitHub, and prints the live <code>/api/version</code> — the version shown must be the
 new one. The image is built by Fly's own builder (<code>--depot=false</code>); if that deploy fails — its builder machine
@@ -3843,7 +3895,7 @@ with Fly's other builder, Depot (1.41.4). GitHub is pushed only after a deploy s
 <li><strong>First deployment, or changing a key</strong>: <code>deploy-fly.bat</code> (Windows) — sign-in, app, volume, the dashboard
 key, the optional DeepL key, deploy. Details in <a href="#deploy">DEPLOY.md</a>. <code>fly deploy -a kyiv-air-watch-gb</code>
 alone also works.</li>
-<li><strong>GitHub</strong>: <code>scripts\github-push.bat</code> creates the <strong>private</strong> repository <code>&lt;you&gt;/clear-sky</code> with the GitHub CLI
+<li><strong>GitHub</strong>: <code>scripts\github-push.bat</code> creates the <strong>private</strong> repository <code>&lt;you&gt;/Heimdall-map</code> with the GitHub CLI
 (sign-in in the browser; no token is ever typed or stored by the script) and pushes; run again to push new
 commits. Optional auto-deploy: add the repository secret <code>FLY_API_TOKEN</code> and <code>fly-deploy.yml</code> deploys every
 push to <code>main</code>.</li>
@@ -5107,7 +5159,7 @@ d'alerte ne sont pas des préférences de style.</p>
 </section>
     </div>
   </div>
-  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.20, 14 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
+  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.21, 14 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
 </main>
 
 <script>

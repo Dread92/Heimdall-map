@@ -55,9 +55,8 @@ echo ======================================================
 echo  The map, public - this is the link to share:
 echo    https://%APP%.fly.dev
 echo.
-if not "%SHOWKEY%"=="" echo  Your private dashboard - open it once on each device:
-if not "%SHOWKEY%"=="" echo    https://%APP%.fly.dev/admin?key=%SHOWKEY%
-if "%SHOWKEY%"=="" echo  Private dashboard: https://%APP%.fly.dev/admin?key=YOUR_DASHBOARD_KEY
+echo  Private dashboard - sign in there with your dashboard key (never put it in the address):
+echo    https://%APP%.fly.dev/admin
 echo.
 echo  Update later: run this file again (or: fly deploy -a %APP%)
 echo ======================================================

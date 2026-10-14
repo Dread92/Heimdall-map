@@ -20,6 +20,8 @@ import ai_reader as A
 import geo
 import server
 
+ADM = {"X-Admin-Key": "adm-test"}   # 1.58.21: the dashboard key in a header — never in the address
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
@@ -174,8 +176,8 @@ def test_the_switches_are_the_dashboards_alone():
     srv = server.Server(("127.0.0.1", 0), server.Handler)
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     base = f"http://127.0.0.1:{srv.server_address[1]}/api/admin/ai"
-    post = lambda url, body: urllib.request.urlopen(urllib.request.Request(   # noqa: E731
-        url, data=json.dumps(body).encode(), headers={"Content-Type": "application/json"}), timeout=10)
+    post = lambda url, body, k=False: urllib.request.urlopen(urllib.request.Request(   # noqa: E731
+        url, data=json.dumps(body).encode(), headers=dict({"Content-Type": "application/json"}, **(ADM if k else {}))), timeout=10)
     try:
         with mock.patch.dict(os.environ, {"ADMIN_KEY": "adm-test"}):
             try:
@@ -184,9 +186,9 @@ def test_the_switches_are_the_dashboards_alone():
             except urllib.error.HTTPError as e:
                 assert e.code == 401
             assert st.store.kv_get("ai_bulletin_public") is None
-            d = json.loads(post(base + "?key=adm-test", {"bulletin_public": True}).read())
+            d = json.loads(post(base, {"bulletin_public": True}, k=True).read())
             assert d["ok"] and d["bulletin_public"] is True and st.store.kv_get("ai_bulletin_public") == "1"
-            d = json.loads(post(base + "?key=adm-test", {"reader": False, "bulletin_now": "1h"}).read())
+            d = json.loads(post(base, {"reader": False, "bulletin_now": "1h"}, k=True).read())
             assert d["stats"]["reader_on"] is False and not st.ai.enabled() and st.bulletins.asked == ["1h"]
     finally:
         srv.shutdown()

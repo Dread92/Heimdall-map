@@ -1,7 +1,9 @@
 @echo off
 setlocal enabledelayedexpansion
 cd /d "%~dp0.."
-REM Publishes this folder to GitHub as <you>/clear-sky (private), or pushes the changes if it is already there.
+REM Publishes this folder to GitHub as <you>/Heimdall-map (private), or pushes the changes if it is already there.
+REM (The repository was called clear-sky until October 2026; GitHub sends the old address to the new one.)
+set "REPO=Heimdall-map"
 REM Needs GitHub CLI: winget install GitHub.cli   (then run this script; it logs you in via the browser)
 where gh >nul 2>nul || (echo GitHub CLI not found. Run:  winget install GitHub.cli  and re-run this script. & pause & exit /b 1)
 gh auth status >nul 2>nul || gh auth login --web
@@ -10,7 +12,7 @@ if errorlevel 1 (echo Sign-in did not complete. & pause & exit /b 1)
 if not exist .git (
   git init -b main
   git add -A
-  git commit -m "Clear Sky - air-raid tracker for Kyiv and Ukraine"
+  git commit -m "Heimdall - air-raid tracker for Kyiv and Ukraine"
 )
 
 REM Anything not yet committed goes in now. An empty commit is not an error.
@@ -22,13 +24,13 @@ git remote get-url origin >nul 2>nul
 if errorlevel 1 (
   for /f "delims=" %%u in ('gh api user --jq .login') do set "GHUSER=%%u"
   if "!GHUSER!"=="" (echo Could not read your GitHub username. Run:  gh auth login --web  & pause & exit /b 1)
-  gh repo view "!GHUSER!/clear-sky" >nul 2>nul
+  gh repo view "!GHUSER!/!REPO!" >nul 2>nul
   if errorlevel 1 (
-    echo Creating private repo !GHUSER!/clear-sky ...
-    gh repo create clear-sky --private --source . --remote origin --description "Clear Sky: unofficial air-raid / drone tracker for Kyiv and all of Ukraine (Python stdlib + one HTML page)" || (echo Could not create the repo. & pause & exit /b 1)
+    echo Creating private repo !GHUSER!/!REPO! ...
+    gh repo create !REPO! --private --source . --remote origin --description "Heimdall: unofficial air-raid / drone tracker for Kyiv and Ukraine (Python stdlib + one HTML page)" || (echo Could not create the repo. & pause & exit /b 1)
   ) else (
-    echo Linking this folder to the existing !GHUSER!/clear-sky ...
-    git remote add origin "https://github.com/!GHUSER!/clear-sky.git"
+    echo Linking this folder to the existing !GHUSER!/!REPO! ...
+    git remote add origin "https://github.com/!GHUSER!/!REPO!.git"
   )
 )
 

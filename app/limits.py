@@ -25,7 +25,8 @@ import threading
 import time
 
 # kind: (burst, refill per second)
-RULES = {"build": (60, 1.0), "write": (20, 1 / 30), "push": (300, 5.0)}
+RULES = {"build": (60, 1.0), "write": (20, 1 / 30), "push": (300, 5.0),
+         "login": (5, 1 / 120)}     # 1.58.21: the dashboard's key — 5 tries, then one every two minutes
 STREAMS = 200          # open live lines from one client
 MAX_CLIENTS = 50_000   # buckets kept; full ones are forgotten first
 
