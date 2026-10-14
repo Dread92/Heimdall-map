@@ -25,7 +25,7 @@ if errorlevel 2 (
   set /p NEWKEY=Your own key: 
 )
 if "%NEWKEY%"=="" (echo Nothing entered - nothing changed. & pause & exit /b 1)
-(echo ADMIN_KEY=%NEWKEY%)| fly secrets import -a %APP%
+echo ADMIN_KEY=%NEWKEY%| fly secrets import -a %APP%
 if errorlevel 1 (set "NEWKEY=" & echo *** fly could not store the key - nothing changed. & pause & exit /b 1)
 set "NEWKEY="
 echo.

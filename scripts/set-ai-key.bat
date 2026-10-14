@@ -13,7 +13,7 @@ echo.
 set "KEY="
 set /p KEY=Anthropic API key (starts with sk-ant-): 
 if "%KEY%"=="" (echo Nothing entered - nothing changed. & pause & exit /b 1)
-(echo ANTHROPIC_API_KEY=%KEY%)| fly secrets import -a %APP%
+echo ANTHROPIC_API_KEY=%KEY%| fly secrets import -a %APP%
 set "KEY="
 if errorlevel 1 (echo *** fly could not store the key. & pause & exit /b 1)
 echo.

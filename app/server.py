@@ -7989,8 +7989,9 @@ class Handler(BaseHTTPRequestHandler):
     #
     # ADMIN_KEY falls back to ACCESS_KEY so an existing private deployment keeps working unchanged.
     def _admin_key(self):
+        # 1.58.23: without the spaces around it (a key stored by a batch script carried a trailing one)
         return (self.state.cfg.get("admin_key") or os.environ.get("ADMIN_KEY")
-                or self.state.cfg.get("access_key") or os.environ.get("ACCESS_KEY") or "")
+                or self.state.cfg.get("access_key") or os.environ.get("ACCESS_KEY") or "").strip()
 
     def _admin_ok(self, q=None):
         """1.58.21: a session opened at the login page (app/adminauth.py), or the key in an `X-Admin-Key` header (scripts,
@@ -8748,16 +8749,17 @@ def load_config(args):
     if os.environ.get("PORT"):
         cfg["port"] = int(os.environ["PORT"])
         cfg["bind"] = "0.0.0.0"
-    if os.environ.get("ALERTS_IN_UA_TOKEN"):
-        cfg["alerts_in_ua_token"] = os.environ["ALERTS_IN_UA_TOKEN"]
-    if os.environ.get("UKRAINEALARM_KEY"):
-        cfg["ukrainealarm_key"] = os.environ["UKRAINEALARM_KEY"]
+    # 1.58.23: a secret without the spaces around it — the set-*.bat scripts stored a trailing one until then
+    if os.environ.get("ALERTS_IN_UA_TOKEN", "").strip():
+        cfg["alerts_in_ua_token"] = os.environ["ALERTS_IN_UA_TOKEN"].strip()
+    if os.environ.get("UKRAINEALARM_KEY", "").strip():
+        cfg["ukrainealarm_key"] = os.environ["UKRAINEALARM_KEY"].strip()
     for env, key in (("DEEPL_KEY", "deepl_key"), ("GOOGLE_TRANSLATE_KEY", "google_translate_key"),
                      ("ANTHROPIC_API_KEY", "ai_key"), ("AI_MODEL", "ai_model"), ("ESRI_KEY", "esri_key"),
                      ("OPENROUTER_API_KEY", "openrouter_key"), ("AI_READER_MODEL", "ai_reader_model"),
                      ("TG_API_ID", "tg_api_id"), ("TG_API_HASH", "tg_api_hash"), ("TG_SESSION", "tg_session")):
-        if os.environ.get(env):
-            cfg[key] = os.environ[env]
+        if os.environ.get(env, "").strip():
+            cfg[key] = os.environ[env].strip()
     return cfg
 
 

@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Heimdall (Kyiv Air Watch) — the full technical documentation, with a map of the system.">
-<meta name="heimdall-version" content="1.58.22">
-<meta name="heimdall-docs" content="72bb8d81a2fda2cf">
+<meta name="heimdall-version" content="1.58.23">
+<meta name="heimdall-docs" content="e81e7941d2b7d64a">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Heimdall Technical Manual</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -237,7 +237,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
 <header class="top">
   <div class="wrap">
     <a class="brand" href="#top"><b>Heimdall</b><span>Technical manual</span></a>
-    <span class="ver">1.58.22</span>
+    <span class="ver">1.58.23</span>
     <nav class="nav" aria-label="Sections">
       <a href="#map">Map</a><a href="#journeys">Journeys</a><a href="#rules">Rules</a><a href="#reference">Reference</a><a href="#safety">Safety</a>
     </nav>
@@ -256,7 +256,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
       <h1 class="title">How Heimdall works</h1>
       <p class="lead">An unofficial air-threat map for Kyiv and the oblasts around it. One Python process reads the official
       alert data and the channels that track drones and missiles, stores every post before it reads it, rebuilds the map
-      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.22, 14 October 2026:
+      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.23, 14 October 2026:
       the map first, then everything in full.</p>
     </div>
     <dl class="facts">
@@ -646,7 +646,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
     <div class="doc" id="doc">
 <section class="part" id="tech" data-label="Reference"><p class="partlabel">Part I · The reference</p>
 <h1 id="heimdall--technical-documentation">Heimdall — technical documentation</h1>
-<p><strong>Documented version: 1.58</strong> · last updated 2026-10-14 (1.58.22)</p>
+<p><strong>Documented version: 1.58</strong> · last updated 2026-10-14 (1.58.23)</p>
 <p>The repository is <strong>Dread92/Heimdall-map</strong> (it was <code>clear-sky</code> until October 2026; GitHub sends the old address on).
 Heimdall was called <strong>Clear Sky</strong> until 1.29; the repository, the Fly app (<code>kyiv-air-watch-gb</code>) and some
 internal names still carry the old name.</p>
@@ -3686,6 +3686,11 @@ shows the name and a digest, never the value — and in the owner's password man
 makes a new one on the PC (24 random bytes from Windows' generator, 32 characters), shows it once to be saved, and
 stores it with <code>fly secrets import</code> (from stdin: never on a command line). A session keeps a fingerprint of the key it
 was opened with (<code>key_print</code>), so a new key ends every session of the old one.</li>
+<li><strong>Spaces around a key are not part of it</strong> (1.58.23, the owner: &quot;it said wrong key while it was the correct one&quot;):
+the <code>set-*.bat</code> scripts piped <code>(echo NAME=%VALUE%)| fly secrets import</code>, and cmd, when it pipes a bracketed block,
+adds a space before the bracket — <code>echo</code> wrote it, and the secret was stored with a trailing space. The scripts now
+pipe <code>echo NAME=%VALUE%| fly secrets import</code>; the key (<code>_admin_key</code>) and what is typed (<code>same_key</code>) are compared
+without the spaces and line ends around them, and every secret read from the environment (<code>load_config</code>) is too.</li>
 </ul>
 <h2 id="13-storage">13. Storage<a class="anc" href="#13-storage" aria-label="Link to this section">#</a></h2>
 <p>SQLite in WAL mode (<code>DB_PATH</code>; on Fly, the volume). Tables:</p>
@@ -5167,7 +5172,7 @@ d'alerte ne sont pas des préférences de style.</p>
 </section>
     </div>
   </div>
-  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.22, 14 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
+  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.23, 14 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
 </main>
 
 <script>

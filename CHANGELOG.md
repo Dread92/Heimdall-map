@@ -2,6 +2,14 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.23 — 2026-10-14
+
+### Fixed
+- **The correct dashboard key was refused** — the owner: "it said wrong key while it was the correct one". The scripts
+  that store a secret in Fly piped `(echo ADMIN_KEY=…)| fly secrets import`, and Windows' cmd adds a space before the
+  bracket when it pipes a bracketed block: the key was stored with a trailing space. The scripts no longer do it, and
+  the server compares keys — and reads every secret — without the spaces around them, so the key already stored works.
+
 ## 1.58.22 — 2026-10-14
 
 ### Security

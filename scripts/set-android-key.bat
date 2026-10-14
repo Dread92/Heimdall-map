@@ -14,7 +14,7 @@ echo.
 set "FP="
 set /p FP=SHA-256 fingerprint: 
 if "%FP%"=="" (echo Nothing entered - nothing changed. & pause & exit /b 1)
-(echo ANDROID_CERT_SHA256=%FP%)| fly secrets import -a %APP%
+echo ANDROID_CERT_SHA256=%FP%| fly secrets import -a %APP%
 if errorlevel 1 (echo *** fly could not store it. & pause & exit /b 1)
 echo.
 echo Done. Fly restarts the app; check https://%APP%.fly.dev/.well-known/assetlinks.json - it names the app and this key.

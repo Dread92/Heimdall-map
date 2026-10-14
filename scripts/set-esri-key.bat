@@ -18,7 +18,7 @@ echo.
 set "KEY="
 set /p KEY=Esri API key (starts with AAPT or AAPK): 
 if "%KEY%"=="" (echo Nothing entered - nothing changed. & pause & exit /b 1)
-(echo ESRI_KEY=%KEY%)| fly secrets import -a %APP%
+echo ESRI_KEY=%KEY%| fly secrets import -a %APP%
 set "KEY="
 if errorlevel 1 (echo *** fly could not store the key. & pause & exit /b 1)
 echo.

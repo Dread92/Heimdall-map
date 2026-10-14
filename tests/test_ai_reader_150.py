@@ -405,7 +405,7 @@ def test_the_server_wiring():
 
 def test_the_key_is_set_by_the_owner_through_fly_secrets():
     bat = open(os.path.join(ROOT, "scripts", "set-openrouter-key.bat"), "rb").read()
-    assert b"\r\n" in bat and b"OPENROUTER_API_KEY=%KEY%)| fly secrets import" in bat and b'set "KEY="' in bat
+    assert b"\r\n" in bat and b"echo OPENROUTER_API_KEY=%KEY%| fly secrets import" in bat and b'set "KEY="' in bat
 
 
 def test_the_dashboard_tab():

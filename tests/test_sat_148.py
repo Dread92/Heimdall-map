@@ -202,7 +202,7 @@ def test_the_layer_choice_is_saved_again():
 
 def test_the_key_is_set_by_the_owner_and_the_count_is_on_the_dashboard():
     bat = open(os.path.join(ROOT, "scripts", "set-esri-key.bat"), "rb").read()
-    assert b"\r\n" in bat and b"(echo ESRI_KEY=%KEY%)| fly secrets import -a %APP%" in bat and b'set "KEY="' in bat
+    assert b"\r\n" in bat and b"echo ESRI_KEY=%KEY%| fly secrets import -a %APP%" in bat and b'set "KEY="' in bat
     assert server.DEFAULT_CONFIG["esri_key"] == "" and server.DEFAULT_CONFIG["esri_monthly_tiles"] < 2000000
     assert '("ESRI_KEY", "esri_key")' in _read("app/server.py")
     assert "${imagery(H.imagery||{})}" in ADMIN and "img_esri:'Esri close zoom: {0} tiles this month (cap {1})" in ADMIN

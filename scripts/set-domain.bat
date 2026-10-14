@@ -37,7 +37,7 @@ echo Step 3/3 - the old address (%APP%.fly.dev) keeps working. Pages opened ther
 echo "Heimdall has moved to %DOM%" with a button that takes the reader there, places and settings included.
 choice /c YN /m "Show that banner now"
 if errorlevel 2 (echo OK - run this script again when you want it. & pause & exit /b 0)
-(echo CANONICAL_HOST=%DOM%)| fly secrets import -a %APP%
+echo CANONICAL_HOST=%DOM%| fly secrets import -a %APP%
 if errorlevel 1 (echo *** fly could not store the setting. & pause & exit /b 1)
 echo.
 echo Done: https://%DOM%/m is Heimdall. Fly restarts the app; the banner appears on the old address within a minute.

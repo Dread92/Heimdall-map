@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-14 (1.58.22)
+**Documented version: 1.58** · last updated 2026-10-14 (1.58.23)
 
 The repository is **Dread92/Heimdall-map** (it was `clear-sky` until October 2026; GitHub sends the old address on).
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
@@ -2512,6 +2512,11 @@ the site's pages and sent with every request to the public map. `app/adminauth.p
   makes a new one on the PC (24 random bytes from Windows' generator, 32 characters), shows it once to be saved, and
   stores it with `fly secrets import` (from stdin: never on a command line). A session keeps a fingerprint of the key it
   was opened with (`key_print`), so a new key ends every session of the old one.
+- **Spaces around a key are not part of it** (1.58.23, the owner: "it said wrong key while it was the correct one"):
+  the `set-*.bat` scripts piped `(echo NAME=%VALUE%)| fly secrets import`, and cmd, when it pipes a bracketed block,
+  adds a space before the bracket — `echo` wrote it, and the secret was stored with a trailing space. The scripts now
+  pipe `echo NAME=%VALUE%| fly secrets import`; the key (`_admin_key`) and what is typed (`same_key`) are compared
+  without the spaces and line ends around them, and every secret read from the environment (`load_config`) is too.
 
 ## 13. Storage
 

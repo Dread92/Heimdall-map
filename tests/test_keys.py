@@ -99,3 +99,17 @@ def test_the_admin_cookie_never_unlocks_the_app():
     with mock.patch.dict(os.environ, {"ACCESS_KEY": "priv"}, clear=True):
         assert _H(cookie="uadm=priv")._authorized(None, {}) is False
         assert _H(cookie="hsess=whatever")._authorized(None, {}) is False
+
+
+def test_the_spaces_around_a_key_are_not_part_of_it():
+    """1.58.23, the owner: "it said wrong key while it was the correct one". cmd adds a space before the bracket when it
+    pipes a bracketed block, so `(echo ADMIN_KEY=%NEWKEY%)| fly secrets import` stored the key with a trailing space."""
+    with mock.patch.dict(os.environ, {"ADMIN_KEY": "Abc123-xyz "}, clear=True):
+        assert _H(header="Abc123-xyz")._admin_ok({}) is True
+        assert _H(header=" Abc123-xyz\r\n")._admin_ok({}) is True
+        assert _H(header="Abc123-xy")._admin_ok({}) is False
+    assert adminauth.same_key("k ", " k") and not adminauth.same_key("", "  ")
+    import glob
+    for p in glob.glob(os.path.join(ROOT, "scripts", "set-*.bat")):
+        bat = open(p, encoding="utf-8").read()
+        assert ")| fly secrets import" not in bat, p        # never a bracketed block piped into fly

@@ -54,8 +54,11 @@ def key_print(key):
 
 
 def same_key(given, key):
-    """Constant-time comparison: a wrong key takes as long as any other."""
-    return bool(key) and hmac.compare_digest((given or "").encode("utf-8"), key.encode("utf-8"))
+    """Constant-time comparison: a wrong key takes as long as any other. 1.58.23: the spaces and line ends around either
+    are not part of it — the owner's correct key was refused: the scripts' `(echo ADMIN_KEY=…)| fly secrets import`
+    stores a trailing space (cmd adds one before the bracket when it pipes a bracketed block)."""
+    given, key = (given or "").strip(), (key or "").strip()
+    return bool(key) and hmac.compare_digest(given.encode("utf-8"), key.encode("utf-8"))
 
 
 class AdminSessions:
