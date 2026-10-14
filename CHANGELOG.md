@@ -2,6 +2,15 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.18 — 2026-10-14
+
+### Changed
+- **The icons follow the zoom** — the owner, of the whole country on a phone: "a visibility problem — ideally the icons
+  scale with the zoom out / zoom in". A target kept the same size on the screen at every zoom, so zoomed out its
+  silhouettes covered whole oblasts. Now it shrinks as you zoom out (to a little over half its size over the whole
+  country) and grows a little close in, with its course arrow, halo, count and labels; the oblast badges and the
+  Crimea figure shrink too. Words shrink less, so they stay legible, and a target stays as easy to tap.
+
 ## 1.58.17 — 2026-10-14
 
 ### Added

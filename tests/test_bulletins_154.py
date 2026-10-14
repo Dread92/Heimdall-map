@@ -409,7 +409,8 @@ def test_a_stated_height_is_outlined_text_in_every_mode_and_nothing_without_one(
     # 1.54.6 made it a pill; 1.54.9, the owner: "not a filled bullet — just make the characters more visible, with an
     # outline". Larger, heavier, sky blue (red while it descends) on a dark outline — only when a height was stated
     assert "dnb" not in PAGE
-    assert ("svg#map .mk.hasalt .dn,svg#map .mk.desc .dn{font:800 calc(var(--k,1)*12px) var(--mono);fill:#5cc8ff;stroke:#04070c;"
+    # 1.58.18: its size follows the zoom a little (--mzt, never under 0.8)
+    assert ("svg#map .mk.hasalt .dn,svg#map .mk.desc .dn{font:800 calc(var(--k,1)*var(--mzt,1)*12px) var(--mono);fill:#5cc8ff;stroke:#04070c;"
             "stroke-width:calc(var(--k,1)*3.6px);stroke-linejoin:round;paint-order:stroke;letter-spacing:.02em}") in PAGE
     assert "svg#map .mk.desc .dn{fill:#ff4d6a}" in PAGE and "b.g.classList.toggle('hasalt',!!(altM||spdK||dscAny));" in PAGE
     # the night keeps it dim enough for dark-adapted eyes, still readable; the day and the light version have their own

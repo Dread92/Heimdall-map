@@ -226,7 +226,8 @@ def test_the_map_label_carries_the_tag_and_the_bottom_line_the_telemetry():
 
 def test_an_approach_mark_stands_off_the_town_on_the_side_the_post_named():
     assert "const apOff=!!m.approach&&!m.status&&!m.endedBy&&m.heading!=null;" in PAGE
-    assert "if(apOff){ const a=m.heading*Math.PI/180, D=Math.min(30*KPX,12); gx=x-D*Math.sin(a); gy=y+D*Math.cos(a); }" in PAGE
+    # 1.58.18: 30 px at a glyph's full size, less as it shrinks zoomed out (MSK)
+    assert "if(apOff){ const a=m.heading*Math.PI/180, D=Math.min(30*MSK,12); gx=x-D*Math.sin(a); gy=y+D*Math.cos(a); }" in PAGE
     assert "b.g.setAttribute('transform',`translate(${gx.toFixed(3)} ${gy.toFixed(3)})`);" in PAGE
     assert "lblPos.push({b,m,sx:gx/KPX,sy:gy/KPX});" in PAGE
 

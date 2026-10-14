@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-14 (1.58.17)
+**Documented version: 1.58** · last updated 2026-10-14 (1.58.18)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -1988,6 +1988,14 @@ Main parts:
   other labels, other marks' glyphs and the map's edge; placed by priority (to a watched place, inbound,
   descending, others, outcomes); an ordinary label that fits nowhere loses its second line (`nolbl2`), then is
   left out (`nolbl`). The boxes (`LBLBOX`) hide the town names under them (`layoutTownLabels`);
+- **a mark's size follows the zoom** (1.58.18, the owner: "ideally the icons scale with the zoom"): it used to keep one
+  size on the screen at every zoom, so the whole country on a phone was covered by 26 px silhouettes. `markZoom(KPX)`
+  gives `MZ` — 1 at 0.6 km a pixel (`MZ_REF`, Kyiv oblast on a phone), `(MZ_REF/KPX)^0.4` above it down to **0.55**
+  (the whole country), `^0.15` below it up to **1.15** (close in) — and `MSK = KPX·MZ` sizes the glyph, its course
+  arrow, halo, count badge, tag, height and the labels' offset (the label layout's boxes too, the replay's glyphs,
+  the Crimea Cossack). Texts shrink less (`--mzt`, never under 0.8: the height, the compact tag, the count's digits),
+  the oblast badges as a whole by `--mzc` (never under 0.75; their shift apart stays in screen pixels), and the tap
+  area never under 14 px. On a computer the whole country is about 0.62;
 - the map's own pictograms are vector shapes, not the phone's emoji (1.39): the airfields, power plants and nuclear
   plants of the infrastructure layer (`POIS`, `POI_G`: a plane, a lightning bolt, a trefoil; shown zoomed in, hidden
   at night and in blackout) and the watched place's house — the same on every phone. 1.57.7: Kyiv oblast's `POIS` are

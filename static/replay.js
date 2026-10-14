@@ -125,12 +125,12 @@ function frame(){
     e.g.style.opacity=op.toFixed(2);
     const [x,y]=proj(head[1],head[2]);
     const hg=e.g.querySelector('.rph2'); hg.setAttribute('transform',`translate(${x.toFixed(2)} ${y.toFixed(2)})`);
-    if(e.j!==j||e.k!==KPX){ e.j=j; e.k=KPX;
+    if(e.j!==j||e.k!==KPX){ e.j=j; e.k=KPX; const MS=typeof MSK==='number'?MSK:KPX;   // 1.58.18: the size follows the zoom
       const last=j===tr.p.length-1, h=last&&tr.h!=null&&tr.ty!=='unknown'?tr.h:0;      // a course only where a post stated one
       const gk=glyphKey({type:tr.ty,jet:!!tr.jet,heading:h}); const rot=e.g.querySelector('.rot');
       if(e.gk!==gk){ e.gk=gk; rot.innerHTML=G[gk]; }
-      rot.setAttribute('transform',`rotate(${h}) scale(${kx((tr.ty==='drones'?1.05:/missile/.test(tr.ty)?0.95:1.0)*KPX)})`);
-      const lb=e.g.querySelector('.rpl'); lb.setAttribute('x',kx(9*KPX)); lb.setAttribute('y',kx(-7*KPX));
+      rot.setAttribute('transform',`rotate(${h}) scale(${kx((tr.ty==='drones'?1.05:/missile/.test(tr.ty)?0.95:1.0)*MS)})`);
+      const lb=e.g.querySelector('.rpl'); lb.setAttribute('x',kx(9*MS)); lb.setAttribute('y',kx(-7*MS));
       // 1.51: its tag (S-07), when the live map gave it one — the replay never makes one up
       lb.textContent=(tr.tg&&typeof TAGS_SHOWN!=='undefined'&&TAGS_SHOWN?tr.tg+' ':'')+    // 1.56.5: off for now
         (head[3]&&head[3]!=='область'?(tr.ap?'→ ':'')+pn(head[3]):'')+((tr.n||1)>1?` ×${tr.n}`:'');

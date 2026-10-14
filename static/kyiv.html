@@ -687,13 +687,13 @@ body.lite .leader{stroke:#fff;stroke-opacity:.6}body.lite .anchor{fill:#fff}
    nothing is shown when no post gave one. Blue is the height's colour everywhere: the card's chip, an oblast's badge. */
 /* 1.54.9, the owner: "not a filled bullet — just make the characters more visible, with an outline": larger, heavier,
    a vivid colour (sky blue; red while it descends) on a dark outline — only when a height or a descent was stated */
-svg#map .mk.hasalt .dn,svg#map .mk.desc .dn{font:800 calc(var(--k,1)*12px) var(--mono);fill:#5cc8ff;stroke:#04070c;stroke-width:calc(var(--k,1)*3.6px);stroke-linejoin:round;paint-order:stroke;letter-spacing:.02em}
+svg#map .mk.hasalt .dn,svg#map .mk.desc .dn{font:800 calc(var(--k,1)*var(--mzt,1)*12px) var(--mono);fill:#5cc8ff;stroke:#04070c;stroke-width:calc(var(--k,1)*3.6px);stroke-linejoin:round;paint-order:stroke;letter-spacing:.02em}
 svg#map .mk.desc .dn{fill:#ff4d6a}
 /* 1.51: the target's tag (S-07) at the head of its label; the telemetry under the glyph in italics when the AI read it */
 .mk .lbl .tid{fill:#ffd500}svg.wide .mk .lbl .tid{display:none}
 /* the tag alone, above the glyph, where the zoom hides the full label (never zoomed out to the whole country) */
 #oblevt .obtxt.obalt{fill:#cfe0ff}#oblevt .oblevtchip.live .obtxt.obalt{fill:#7cc4ff;font:800 calc(var(--k,1)*11.5px) var(--mono)}#oblevt .obtxt.obtid{fill:#ffd500;font:800 calc(var(--k,1)*11.5px) var(--mono)}
-.mk .tgc{display:none;font:700 calc(var(--k,1)*9px) var(--mono);fill:#ffd500;paint-order:stroke;stroke:#080b10;stroke-width:calc(var(--k,1)*2.5px);text-anchor:middle}
+.mk .tgc{display:none;font:700 calc(var(--k,1)*var(--mzt,1)*9px) var(--mono);fill:#ffd500;paint-order:stroke;stroke:#080b10;stroke-width:calc(var(--k,1)*2.5px);text-anchor:middle}
 svg:not(.close):not(.wide) .mk:not(.inbound):not(.tohome):not(.st):not(.desc):not(.appr):not(.ended) .tgc,svg:not(.wide) .mk.nolbl:not(.ended) .tgc{display:block}
 .tagid{font:800 12.5px var(--mono);color:#ffd500;letter-spacing:.03em}
 .kv1.tagl{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:baseline}   /* 1.53: was .tgl — the buttons' class: a 44 px box round the line */
@@ -1649,6 +1649,14 @@ let VBC=null, VBT=null, SVGR=null;
 const SR=()=>(VBC&&SVGR)?SVGR:(SVGR=svg.getBoundingClientRect());
 const ASPECT=()=>{const r=SR();return r.width?r.height/r.width:1.33;};
 let KPX=1;
+// 1.58.18, the owner (a phone, the whole country on the screen): "a visibility problem — ideally the icons scale with the
+// zoom out / zoom in". A mark kept the same size on the screen at every zoom, so zoomed out its 26 px silhouettes covered
+// whole oblasts. Its size now follows the zoom, within bounds: 1 at 0.6 km a pixel (Kyiv oblast on a phone), 0.55 at the
+// least (the whole country), 1.15 at the most (close in). MSK replaces KPX for the glyph and what sits around it; texts
+// shrink less (--mzt, never under 0.8) and the oblast badges too (--mzc, never under 0.75), so every word stays legible.
+const MZ_REF=0.6; let MZ=1, MSK=1;
+const markZoom=k=>k>MZ_REF?Math.max(0.55,Math.pow(MZ_REF/k,0.4)):Math.min(1.15,Math.pow(MZ_REF/k,0.15));
+const MZT=()=>Math.min(1,Math.max(0.8,MZ)), MZC=()=>Math.min(1,Math.max(0.75,MZ));
 // 1.49: lengths sized by the zoom (KPX km a pixel) are written with the digits the zoom needs. With two decimals, at
 // 1 km across, a drone's scale(0.0007) was written scale(0.00) and the mark vanished.
 let KDIG=2; const kx=v=>v.toFixed(KDIG);
@@ -1664,7 +1672,7 @@ function fastVB(){ const r=SR(); if(!r.width||!svg.viewBox||!svg.viewBox.baseVal
   clearTimeout(VBT); VBT=setTimeout(()=>applyVB(),150); }
 function applyVB(fast){ if(fast){ fastVB(); return; }
   if(VBC){ VBC=null; clearTimeout(VBT); VBT=null; svg.style.transform=''; svg.classList.remove('zoomg'); }
-  svg.setAttribute('viewBox',`${VB.x} ${VB.y} ${VB.w} ${VB.h}`);if(typeof drawHome==='function'&&HOME){setTimeout(drawHome,0);if(typeof drawZones==='function')setTimeout(drawZones,0);}const r=SR();KPX=r.width?VB.w/r.width:1;KDIG=Math.max(2,Math.ceil(-Math.log10(KPX||1))+3);if(typeof placeBrgLabels==='function')placeBrgLabels();svg.style.setProperty('--k',KPX);if(window.RP&&RP.on&&RP.frame)RP.frame();svg.classList.toggle('far',VB.w>90);svg.classList.toggle('close',VB.w<40);svg.classList.toggle('vclose',VB.w<22);svg.classList.toggle('veryfar',VB.w>230);svg.classList.toggle('vilfar',VB.w>300);svg.classList.toggle('ua',VB.w>900);svg.classList.toggle('wide',VB.w>520);svg.classList.toggle('deep',KPX<0.011);if(typeof applySelOblast==='function'&&(VB.w<=300)!==applyVB._zin){applyVB._zin=VB.w<=300;applySelOblast();}{const kz=document.querySelector('.kozak'); if(kz){kz.querySelector('.kz').setAttribute('transform',`scale(${kx(2.2*KPX)})`); const ts=kz.querySelectorAll('text'); ts[0].setAttribute('y',kx(14*KPX)); ts[1].setAttribute('y',kx(25*KPX));}}clearTimeout(applyVB._t);applyVB._t=setTimeout(()=>{applyVB._t=null;if(typeof LAYERS!=='undefined'&&LAYERS.heat&&typeof drawHeat==='function')drawHeat();if(typeof updateTiles==='function'){updateTiles();layoutTownLabels();}if(typeof drawShelters==='function')drawShelters();},120);}
+  svg.setAttribute('viewBox',`${VB.x} ${VB.y} ${VB.w} ${VB.h}`);if(typeof drawHome==='function'&&HOME){setTimeout(drawHome,0);if(typeof drawZones==='function')setTimeout(drawZones,0);}const r=SR();KPX=r.width?VB.w/r.width:1;KDIG=Math.max(2,Math.ceil(-Math.log10(KPX||1))+3);if(typeof placeBrgLabels==='function')placeBrgLabels();svg.style.setProperty('--k',KPX);MZ=markZoom(KPX);MSK=KPX*MZ;svg.style.setProperty('--mz',MZ.toFixed(3));svg.style.setProperty('--mzt',MZT().toFixed(3));svg.style.setProperty('--mzc',MZC().toFixed(3));if(window.RP&&RP.on&&RP.frame)RP.frame();svg.classList.toggle('far',VB.w>90);svg.classList.toggle('close',VB.w<40);svg.classList.toggle('vclose',VB.w<22);svg.classList.toggle('veryfar',VB.w>230);svg.classList.toggle('vilfar',VB.w>300);svg.classList.toggle('ua',VB.w>900);svg.classList.toggle('wide',VB.w>520);svg.classList.toggle('deep',KPX<0.011);if(typeof applySelOblast==='function'&&(VB.w<=300)!==applyVB._zin){applyVB._zin=VB.w<=300;applySelOblast();}{const kz=document.querySelector('.kozak'); if(kz){kz.querySelector('.kz').setAttribute('transform',`scale(${kx(2.2*MSK)})`); const ts=kz.querySelectorAll('text'); ts[0].setAttribute('y',kx(5*KPX+9*MSK)); ts[1].setAttribute('y',kx(16*KPX+9*MSK));}}clearTimeout(applyVB._t);applyVB._t=setTimeout(()=>{applyVB._t=null;if(typeof LAYERS!=='undefined'&&LAYERS.heat&&typeof drawHeat==='function')drawHeat();if(typeof updateTiles==='function'){updateTiles();layoutTownLabels();}if(typeof drawShelters==='function')drawShelters();},120);}
 function setView(cx,cy,w){VB.w=Math.max(1,Math.min(1500,w));VB.h=VB.w*ASPECT();VB.x=cx-VB.w/2;VB.y=cy-VB.h/2;applyVB();}
 function zoomAt(f,cx,cy,fast){const nw=Math.max(1,Math.min(1500,VB.w/f)),nh=nw*ASPECT();VB.x=cx-(cx-VB.x)*(nw/VB.w);VB.y=cy-(cy-VB.y)*(nh/VB.h);VB.w=nw;VB.h=nh;applyVB(fast);}
 function toSvg(px,py){const r=SR();return [VB.x+(px-r.left)/r.width*VB.w, VB.y+(py-r.top)/r.height*VB.h];}
@@ -2255,7 +2263,7 @@ function paintOblEvents(){
     const ring=anyLive?`<clipPath id="obclip${uid}"><path d="${o.path}"/></clipPath><g class="obglow" clip-path="url(#obclip${uid})">`
         +`<path class="g1" d="${o.path}"/><path class="g2" d="${o.path}"/><path class="g3" d="${o.path}"/></g><path class="obring live" d="${o.path}"/>`
       :`<path class="obring" d="${o.path}"/>`;
-    return [ring,`<g class="oblevtchip${anyLive?' live':''}" data-o="${uid}" transform="translate(${o.cx.toFixed(1)} ${y.toFixed(1)})"><title>${esc(full)}</title><g style="--c:${col};transform:translateY(calc(var(--k,1)*(${dy}px + var(--sh,0px))))">`
+    return [ring,`<g class="oblevtchip${anyLive?' live':''}" data-o="${uid}" transform="translate(${o.cx.toFixed(1)} ${y.toFixed(1)})"><title>${esc(full)}</title><g style="--c:${col};transform:translateY(calc(var(--k,1)*(${dy}px + var(--sh,0px)))) scale(var(--mzc,1))">`
       +(anyLive?`<rect class="obbg" x="-.5" y="-.5" width="1" height="1" rx="${(H/2/(W+PAD)).toFixed(4)}" ry=".5" data-h="${H}" style="transform:scale(calc(var(--k,1)*${(W+PAD).toFixed(0)}),calc(var(--k,1)*${H}))"/>`:'')
       +parts.join('')+(anyLive?`<text class="obtxt obwhere" text-anchor="middle" dominant-baseline="central" style="transform:translateY(${px(H/2+11*S)})">${esc(where)}</text>`:'')
       +`<rect class="hit" x="-.5" y="-.5" width="1" height="1" data-h="${H+4}" style="transform:scale(calc(var(--k,1)*${(W+PAD).toFixed(0)}),calc(var(--k,1)*${H+4}))"/></g></g>`];
@@ -2338,7 +2346,7 @@ function buildMarker(m){
   const gk=glyphKey(m), glyph=G[gk];
   const isNew=!seenMk.has(m.id); seenMk.add(m.id);
   const isMsl=/missile/.test(m.type)&&!m.status; if(isMsl) g.classList.add('msl');
-  g.innerHTML=`<line class="ahead" x1="0" y1="0" x2="0" y2="0"/><polygon class="cone" points="0,0 0,0 0,0"/><circle class="halo" cx="0" cy="0" r="6"/>${isMsl?'<circle class="halo2" cx="0" cy="0" r="6"/><circle class="reach" cx="0" cy="0" r="0" style="display:none"/>':''}${isNew?`<circle class="spawn" cx="0" cy="0" r="${kx(10*KPX)}"/>`:''}
+  g.innerHTML=`<line class="ahead" x1="0" y1="0" x2="0" y2="0"/><polygon class="cone" points="0,0 0,0 0,0"/><circle class="halo" cx="0" cy="0" r="6"/>${isMsl?'<circle class="halo2" cx="0" cy="0" r="6"/><circle class="reach" cx="0" cy="0" r="0" style="display:none"/>':''}${isNew?`<circle class="spawn" cx="0" cy="0" r="${kx(10*MSK)}"/>`:''}
     <g class="body"><g class="rot">${glyph}</g></g>
     <polygon class="hdg" points="0,-5.2 5.4,3.6 0,1.3 -5.4,3.6" style="display:none"/><text class="qm" x="0" y="0">?</text><text class="dn" x="0" y="0">↓</text><g class="cnt" style="display:none"><circle r="6.5"/><text y="3.2">2</text></g><text class="tgc" x="0" y="0"></text><text class="lbl" x="5" y="-4"></text><text class="lbl2" x="5" y="0"></text><circle class="hit" cx="0" cy="0" r="8"/>`;
   g.addEventListener('pointerenter',e=>{if(e.pointerType==='touch')return;showTip(m,e);}); g.addEventListener('pointermove',e=>{if(e.pointerType==='touch')return;moveTip(e);}); g.addEventListener('pointerleave',()=>{$('tip').hidden=true;});
@@ -2478,12 +2486,13 @@ function tick(){
     }
     // Missiles used to be drawn half as big again as a drone and sat on top of whole districts. A mark says where,
     // not how dangerous — that is what the colour, the label and the alert are for.
-    const gs=(m.status?1.05:m.type==='drones'?1.05:/missile/.test(m.type)?0.95:1.0)*KPX; const nTot=m.csum||m.count||1; const cb=b.g.querySelector('.cnt'); if(nTot>1&&!m.status){cb.style.display='';cb.setAttribute('transform',`translate(${kx(8*KPX)} ${kx(-8*KPX)}) scale(${kx(KPX)})`);cb.querySelector('text').textContent=nTot;}else cb.style.display='none';
+    // 1.58.18: MSK — the glyph's size follows the zoom (markZoom); the count's badge keeps its digits legible (MZT)
+    const gs=(m.status?1.05:m.type==='drones'?1.05:/missile/.test(m.type)?0.95:1.0)*MSK; const nTot=m.csum||m.count||1; const cb=b.g.querySelector('.cnt'); if(nTot>1&&!m.status){cb.style.display='';cb.setAttribute('transform',`translate(${kx(8*MSK)} ${kx(-8*MSK)}) scale(${kx(KPX*MZT())})`);cb.querySelector('text').textContent=nTot;}else cb.style.display='none';
     // 1.51: a target drawn at the town it is heading for, from a side the post named, stands off the town on that side —
     // a fixed distance on the SCREEN, not on the ground (nobody said how far it is) — pointing in along its dashed
     // course; the town stays clear. "2 реактиви у бік Києва з півдня" had put two jets on top of Kyiv.
     let gx=x, gy=y; const apOff=!!m.approach&&!m.status&&!m.endedBy&&m.heading!=null;
-    if(apOff){ const a=m.heading*Math.PI/180, D=Math.min(30*KPX,12); gx=x-D*Math.sin(a); gy=y+D*Math.cos(a); }   // never more than 12 km off
+    if(apOff){ const a=m.heading*Math.PI/180, D=Math.min(30*MSK,12); gx=x-D*Math.sin(a); gy=y+D*Math.cos(a); }   // never more than 12 km off
     b.g.dataset.tx=gx.toFixed(3); b.g.dataset.ty=gy.toFixed(3);
     b.g.setAttribute('transform',`translate(${gx.toFixed(3)} ${gy.toFixed(3)})`);
     // a later post can add the course that the first one lacked: swap the blind mark for a pointed one
@@ -2496,7 +2505,7 @@ function tick(){
     b.g.querySelector('.rot').setAttribute('transform',
       `rotate(${orientOf(m)}) scale(${kx(gs*(m.stale&&!m.status&&!m.endedBy?0.8:1))})`);
     const appr=!!m.approach&&!m.status&&!m.endedBy; b.g.classList.toggle('appr',appr);
-    const hdg=b.g.querySelector('.hdg'); if(!m.status&&!m.endedBy&&m.heading!=null&&!appr){hdg.style.display='';hdg.setAttribute('transform',`rotate(${m.heading}) translate(0 ${kx(-19*KPX)}) scale(${kx(1.55*KPX)})`);}else hdg.style.display='none';
+    const hdg=b.g.querySelector('.hdg'); if(!m.status&&!m.endedBy&&m.heading!=null&&!appr){hdg.style.display='';hdg.setAttribute('transform',`rotate(${m.heading}) translate(0 ${kx(-19*MSK)}) scale(${kx(1.55*MSK)})`);}else hdg.style.display='none';
     paintReach(b,m);          // how far a fast target could have travelled since it was last reported
     // 1.51: descending as the rules read it, or as the AI quoted it when the rules read no vertical state
     // 1.56.2: a height or a descent only while the report that stated it is at most 4 minutes old (ALT_MAX_MIN)
@@ -2509,13 +2518,13 @@ function tick(){
     // 1.52: a height an earlier report of the track gave, when the latest did not repeat it — with its age
     const altOld=altM&&!(A0&&A0.m)&&tgv&&tgv.alt&&tgv.alt.cur===false&&tgv.alt.at?Math.round(agoMin(tgv.alt.at)):null;
     b.g.classList.toggle('desc',dsc); b.g.classList.toggle('hasalt',!!(altM||spdK||dscAny));
-    {const dn=b.g.querySelector('.dn'); if(dn){ dn.setAttribute('y',kx(18*KPX));
+    {const dn=b.g.querySelector('.dn'); if(dn){ dn.setAttribute('y',kx(10*MSK+8*KPX*MZT()));
       // the height and a reported descent are always shown when a post gave them — the arrow stays after the mark goes
       // stale (it was reported; the red highlight does not)
       const dtx=[altM?((dscAny?'↓':'')+altM+' '+t('m_unit')+(altOld!=null?` (${altOld}′)`:'')):(dscAny?'↓':''), spdK?t('tg_spd',spdK):''].filter(Boolean).join(' · ');
       if(dn.textContent!==dtx) dn.textContent=dtx; }}
     b.g.classList.toggle('lostc',contactLost(m));
-    b.g.classList.toggle('inbound',info.inbound&&!m.stale); b.g.classList.toggle('old',age>ttl*0.65); b.g.classList.toggle('ended',!!m.endedBy); b.g.classList.toggle('stale',!!m.stale&&!m.endedBy&&!m.status); b.g.classList.toggle('s2',!!m.stale&&m.stale>=(m.slow?15:8)); b.g.classList.toggle('s3',!!m.stale&&m.stale>=(m.slow?20:11)); b.g.querySelector('.qm').setAttribute('y',kx(-12*KPX));
+    b.g.classList.toggle('inbound',info.inbound&&!m.stale); b.g.classList.toggle('old',age>ttl*0.65); b.g.classList.toggle('ended',!!m.endedBy); b.g.classList.toggle('stale',!!m.stale&&!m.endedBy&&!m.status); b.g.classList.toggle('s2',!!m.stale&&m.stale>=(m.slow?15:8)); b.g.classList.toggle('s3',!!m.stale&&m.stale>=(m.slow?20:11)); b.g.querySelector('.qm').setAttribute('y',kx(-12*MSK));
     const v=SPEED(m); const ah=b.g.querySelector('.ahead'); const cone=b.g.querySelector('.cone');
     if(!m.status&&!m.endedBy&&v&&m.heading!=null&&!appr){ // reported heading: 12-min ray + ±20° uncertainty cone
       const L=Math.min(v*6,20);const a=m.heading*Math.PI/180;ah.setAttribute('x2',(L*Math.sin(a)).toFixed(1));ah.setAttribute('y2',(-L*Math.cos(a)).toFixed(1));ah.style.display='';
@@ -2527,9 +2536,10 @@ function tick(){
       const bx=apOff?gx:x, by=apOff?gy:y;      // 1.51: from the glyph, standing off on the stated side, into the town
       b.trail.setAttribute('x1',bx.toFixed(2));b.trail.setAttribute('y1',by.toFixed(2));b.trail.setAttribute('x2',x.toFixed(2));b.trail.setAttribute('y2',y.toFixed(2));b.trail.setAttribute('class','trail appr'+(info.inbound?' inbound':''));}
     else{b.trail.setAttribute('x1',x0.toFixed(2));b.trail.setAttribute('y1',y0.toFixed(2));b.trail.setAttribute('x2',x.toFixed(2));b.trail.setAttribute('y2',y.toFixed(2));b.trail.setAttribute('class','trail'+(info.inbound?' inbound':''));}
-    b.g.querySelector('.halo').setAttribute('r',kx((/missile/.test(m.type)?17:13)*KPX));
-    {const h2=b.g.querySelector('.halo2'); if(h2) h2.setAttribute('r',kx(17*KPX));} b.g.querySelector('.hit').setAttribute('r',kx(18*KPX));
-    b.g.querySelector('.lbl').setAttribute('x',kx(14*KPX)); b.g.querySelector('.lbl').setAttribute('y',kx(-6*KPX)); b.g.querySelector('.lbl2').setAttribute('x',kx(14*KPX)); b.g.querySelector('.lbl2').setAttribute('y',kx(6*KPX));
+    b.g.querySelector('.halo').setAttribute('r',kx((/missile/.test(m.type)?17:13)*MSK));
+    // the tap area stays a finger's size (14 px at the least) however small the glyph is
+    {const h2=b.g.querySelector('.halo2'); if(h2) h2.setAttribute('r',kx(17*MSK));} b.g.querySelector('.hit').setAttribute('r',kx(Math.max(18*MSK,14*KPX)));
+    b.g.querySelector('.lbl').setAttribute('x',kx(14*MSK)); b.g.querySelector('.lbl').setAttribute('y',kx(-6*KPX)); b.g.querySelector('.lbl2').setAttribute('x',kx(14*MSK)); b.g.querySelector('.lbl2').setAttribute('y',kx(6*KPX));
     const kind=(m.type==='drones'?(m.jet?t('k_jet'):t('k_shahed')):m.type==='unknown'?(mslCtx(m)?'⚠ '+t('unk_mix'):t('unk_likely')):THREAT[m.type]?.[1]||m.type);
     const name=m.status?(({down:t('mk_down'),impact:t('mk_impact'),lost:t('mk_lost'),clear:t('mk_clear'),damage:t('mk_damage'),fire:t('mk_fire')})[m.status]||statusName(m.status)+((m.cluster||1)>1?` ×${m.cluster}`:m.count>1?` ×${m.count}`:'')):kind+((m.csum||m.count||1)>1?` ×${m.csum||m.count}`:'');
     // 1.51: the target's tag at the head of its label — S-07: Heimdall's number for tonight, the letter where a post
@@ -2538,7 +2548,7 @@ function tick(){
      if(l1.dataset.k!==lk){ l1.dataset.k=lk; if(tg){ l1.innerHTML=`<tspan class="tid">${esc(tg.id)}</tspan> ${esc(name)}`; } else l1.textContent=name; }
      // the compact tag (zoomed out) too
      const ct=tg?tg.id:'';
-     const tc=b.g.querySelector('.tgc'); if(tc){ tc.setAttribute('y',kx(-15*KPX)); if(tc.textContent!==ct) tc.textContent=ct; }}
+     const tc=b.g.querySelector('.tgc'); if(tc){ tc.setAttribute('y',kx(-15*MSK)); if(tc.textContent!==ct) tc.textContent=ct; }}
     const placeEn=m.place==='область'?'':pn(m.place);
     const descTxt=(altNow(m)&&m.alt.state==='descending'&&!m.status&&!m.endedBy&&!m.stale)?('↓ '+t('alt_desc')+' · '):'';
     b.g.querySelector('.lbl2').textContent=descTxt+(appr?t('lbl_appr',apprTo(m),m.heading!=null?t('lbl_from',dirName((m.heading+180)%360)):'',fmtT(m.ts)):m._gone?`${t('msl_gone')} · ${placeEn?t('msl_seen',placeEn,fmtT(m.ts)):t('msl_seen_np',fmtT(m.ts))}`:m._reach>0?`${t('msl_reach',Math.round(m._reach))} · ${placeEn?t('msl_seen',placeEn,fmtT(m.ts)):t('msl_seen_np',fmtT(m.ts))}`:m.stale&&!m.status&&!m.endedBy?t('lbl_stale',m.stale,placeEn,fmtT(m.ts)):m.status?`${placeEn} · ${fmtT(m.ts)}`:(hi.inbound?t('lbl_to',homeName(),Math.round(hi.dist)):hi.near&&!m.endedBy?t('lbl_from',Math.round(hi.dist),homeName(),fmtT(m.ts)):null)||(m.endedBy?t('lbl_ended',STATUS_W[m.endedBy.status]||statusName(m.endedBy.status),pn(m.endedBy.place),fmtT(m.endedBy.ts)):info.inbound?t('lbl_to',t('b_kyiv'),Math.round(info.dist)):(m.heading!=null?`${dirName(m.heading)} · ${m.history&&m.history.length?t('lbl_updated'):t('lbl_reported')} ${fmtT(m.ts)}${m.history&&m.history.length?' '+t('lbl_reports',m.history.length+1):''}`:`${m.history&&m.history.length?t('lbl_updated'):t('lbl_reported')} ${fmtT(m.ts)}`)));
@@ -2561,12 +2571,12 @@ function tick(){
    const glyphs=[];
    for(const p of lblPos){const g=p.b.g; p.on=getComputedStyle(g).display!=='none';
      p.v1=p.on&&drawn(g.querySelector('.lbl')); p.v2=p.on&&drawn(g.querySelector('.lbl2')); p.pri=pri(g);
-     if(p.on){ glyphs.push({x:p.sx-12,y:p.sy-12,w:24,h:28,p});
+     if(p.on){ const z=MZ; glyphs.push({x:p.sx-12*z,y:p.sy-12*z,w:24*z,h:28*z,p});
        // 1.53 (the owner: "nothing on top of anything"): the height under the glyph and the tag above it are the mark's
        // too — no other label is written over them
        const dn=g.querySelector('.dn'), tc=g.querySelector('.tgc');
-       if(drawn(dn)){ const w=dn.textContent.length*7.4+6; glyphs.push({x:p.sx-w/2,y:p.sy+7,w,h:15,p}); }   // 1.54.9: the outlined height
-       if(drawn(tc)){ const w=tc.textContent.length*6+6; glyphs.push({x:p.sx-w/2,y:p.sy-27,w,h:12,p}); } }}
+       if(drawn(dn)){ const w=dn.textContent.length*7.4*MZT()+6; glyphs.push({x:p.sx-w/2,y:p.sy+10*z-3,w,h:15*MZT(),p}); }   // 1.54.9: the outlined height
+       if(drawn(tc)){ const w=tc.textContent.length*6+6; glyphs.push({x:p.sx-w/2,y:p.sy-15*z-12,w,h:12,p}); } }}
    const size=p=>{ const t1=p.v1?p.b.g.querySelector('.lbl').textContent:'',t2=p.v2?p.b.g.querySelector('.lbl2').textContent:'';
      p.w=Math.max(t1.length*6.6,t2.length*6.2); p.h=(p.v1&&p.v2)?25:(p.v1||p.v2)?14:0; };
    lblPos.forEach(size);
@@ -2578,7 +2588,7 @@ function tick(){
    const out=r=>(r.x<vx0+2||r.x+r.w>vx1-2||r.y<vy0+2||r.y+r.h>vy1-2)?1:0;
    const hits=(r,p)=>placed.filter(q=>touch(r,q)).length+glyphs.filter(q=>q.p!==p&&touch(r,q)).length+out(r);
    const CAND=[[1,0],[-1,0],[1,14],[1,-14],[-1,14],[-1,-14],[1,28],[-1,28],[1,-28],[-1,-28]];
-   const boxAt=(p,side,dy)=>({x:side>0?p.sx+14:p.sx-14-p.w,y:p.sy+((p.v1&&p.v2)?-15:-7)+dy,w:p.w,h:p.h});
+   const boxAt=(p,side,dy)=>({x:side>0?p.sx+14*MZ:p.sx-14*MZ-p.w,y:p.sy+((p.v1&&p.v2)?-15:-7)+dy,w:p.w,h:p.h});
    const fit=p=>{ for(const [side,dy] of CAND){ const r=boxAt(p,side,dy); if(!hits(r,p)) return {side,dy,r}; } return null; };
    for(const p of lblPos){ const g=p.b.g,l1=g.querySelector('.lbl'),l2=g.querySelector('.lbl2'); if(!p.h) continue;
      let f=fit(p);
@@ -2586,7 +2596,7 @@ function tick(){
      if(!f&&p.pri>=3){ g.classList.add('nolbl'); continue; }
      if(!f){ let best=null; for(const [side,dy] of CAND){ const r=boxAt(p,side,dy), n=hits(r,p); if(!best||n<best.n) best={side,dy,r,n}; } f=best; }
      placed.push(f.r);
-     const {side,dy}=f, x=kx(side*14*KPX), an=side>0?'start':'end';
+     const {side,dy}=f, x=kx(side*14*MSK), an=side>0?'start':'end';
      l1.setAttribute('x',x); l2.setAttribute('x',x); l1.setAttribute('text-anchor',an); l2.setAttribute('text-anchor',an);
      l1.setAttribute('y',kx(((p.v2?-6:4)+dy)*KPX)); l2.setAttribute('y',kx(((p.v1?6:4)+dy)*KPX)); }
    // the boxes, relative to the map's top-left corner, for the town names — the labels, and the targets' glyphs and
@@ -2893,8 +2903,8 @@ function cossack(){
   const wave=(y0,h)=>[0,1,2].map(ph=>{const a=[0,-.6,0,.6].map(v=>v*Math.cos(ph*2)); return `M9 ${y0} Q11.5 ${y0-.7+a[1]} 14 ${y0+a[2]} T19 ${y0+a[3]} L19 ${y0+h+a[3]} Q16.5 ${y0+h+.7+a[2]} 14 ${y0+h+a[2]} T9 ${y0+h} Z`;});
   const wv=(y0,h)=>{const f=wave(y0,h);return `<path fill="${y0<-20?'#0057b7':'#ffd700'}" d="${f[0]}"><animate attributeName="d" values="${f[0]};${f[1]};${f[2]};${f[0]}" dur="1.6s" repeatCount="indefinite"/></path>`;};
   const flag=`<rect x="8.4" y="-22" width=".8" height="22" fill="#cfd6e0"/>`+wv(-21.5,3)+wv(-18.5,3);
-  return `<g class="kozak" transform="translate(${o.cx} ${o.cy})"><g class="kz" transform="scale(${kx(2.2*KPX)})"><g><animateTransform attributeName="transform" type="translate" values="0 0;0 -1.2;0 0" dur="1.1s" repeatCount="indefinite"/>${px}</g>${flag}</g>
-    <text class="sub" y="${kx(14*KPX)}">${t('cz_1')}</text><text y="${kx(25*KPX)}">${t('cz_2')}</text></g>`;
+  return `<g class="kozak" transform="translate(${o.cx} ${o.cy})"><g class="kz" transform="scale(${kx(2.2*MSK)})"><g><animateTransform attributeName="transform" type="translate" values="0 0;0 -1.2;0 0" dur="1.1s" repeatCount="indefinite"/>${px}</g>${flag}</g>
+    <text class="sub" y="${kx(5*KPX+9*MSK)}">${t('cz_1')}</text><text y="${kx(16*KPX+9*MSK)}">${t('cz_2')}</text></g>`;
 }
 // ---- the background under the map: satellite, map, or none (1.49) ----
 // Each Mercator tile is placed by its own lon/lat corners in the km projection, so it lines up exactly with the raions
