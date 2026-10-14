@@ -593,7 +593,7 @@ function paint(){
     else if(A&&A.state) bits.push(`<b class="alt">${esc(ALTL[A.state]||A.state)}</b>`);
     bits.push(m.stale?`${esc(t('lt_lost'))} · ${esc(t('tp_ago',m.stale))}`:esc(t('tp_ago',agoMin(m.ts))));
     const said=LANG==='uk'?m.text:((LANG==='fr'&&m.text_fr)||m.text_en||m.text);
-    const track=(m.history||[]).filter(h=>h.place).slice(-4).map(h=>`${esc(pn(h.place))} ${fmtT(h.ts)}`);
+    const track=trackSteps((m.history||[]).filter(h=>h.place).map(h=>({pl:h.place,ts:h.ts}))).slice(-4).map(s=>esc(stepTxt(s,pn,fmtT)));
     const alt=m.alt?[m.alt.state?(ALTL[m.alt.state]||m.alt.state):'',m.alt.m!=null?fmtAlt(m.alt.m):''].filter(Boolean).join(' · '):'';
     const open=force||OPEN.has(m.id);
     return `<div class="row${toHere?' here':''}${m.stale?' gone':''}${open?' open':''}" data-id="${esc(m.id)}"><div class="ic">${icoSvg(m,toHere?getComputedStyle(document.documentElement).getPropertyValue('--cri').trim():colOf(m))}</div><div class="bd">`

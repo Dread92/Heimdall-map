@@ -68,7 +68,7 @@ def test_light_shows_the_height_on_the_row_and_beside_the_mark():
 
 
 def test_the_tactical_track_lists_the_heights():
-    assert "h.alt_m!=null" in FULL and "altTrend(m)" in FULL
+    assert "alt:h.alt_m" in FULL and "trackSteps(" in FULL and "altTrend(m)" in FULL   # 1.58.26: through one step a place
 
 
 def test_lt_alt_at_exists_in_three_languages():

@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Heimdall (Kyiv Air Watch) — the full technical documentation, with a map of the system.">
-<meta name="heimdall-version" content="1.58.25">
-<meta name="heimdall-docs" content="90c27275dec33818">
+<meta name="heimdall-version" content="1.58.26">
+<meta name="heimdall-docs" content="7b9efd2d35c42ed4">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Heimdall Technical Manual</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -237,7 +237,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
 <header class="top">
   <div class="wrap">
     <a class="brand" href="#top"><b>Heimdall</b><span>Technical manual</span></a>
-    <span class="ver">1.58.25</span>
+    <span class="ver">1.58.26</span>
     <nav class="nav" aria-label="Sections">
       <a href="#map">Map</a><a href="#journeys">Journeys</a><a href="#rules">Rules</a><a href="#reference">Reference</a><a href="#safety">Safety</a>
     </nav>
@@ -256,7 +256,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
       <h1 class="title">How Heimdall works</h1>
       <p class="lead">An unofficial air-threat map for Kyiv and the oblasts around it. One Python process reads the official
       alert data and the channels that track drones and missiles, stores every post before it reads it, rebuilds the map
-      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.25, 14 October 2026:
+      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.26, 15 October 2026:
       the map first, then everything in full.</p>
     </div>
     <dl class="facts">
@@ -646,7 +646,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
     <div class="doc" id="doc">
 <section class="part" id="tech" data-label="Reference"><p class="partlabel">Part I · The reference</p>
 <h1 id="heimdall--technical-documentation">Heimdall — technical documentation</h1>
-<p><strong>Documented version: 1.58</strong> · last updated 2026-10-14 (1.58.25)</p>
+<p><strong>Documented version: 1.58</strong> · last updated 2026-10-15 (1.58.26)</p>
 <p>The repository is <strong>Dread92/Heimdall-map</strong>. The Fly app keeps its first name, <code>kyiv-air-watch-gb</code>: Fly cannot rename
 an app (§15 has the move to a domain of its own).</p>
 <p>This is the complete technical reference: what runs, where the data comes from, how a Telegram post becomes a
@@ -1865,7 +1865,12 @@ after</strong> (≤ 15 min, <code>State._reports_ahead</code>: the posts already
 the candidates the target could have reached (<code>reach_km</code>, §7.4) — recomputed every pass, so the mark moves to the
 village once &quot;Кулажинці&quot; is in. <strong>A height alone</strong> (&quot;500&quot;, &quot;400 м&quot;, &quot;Увага 500&quot;, <code>geo._height_only</code>) is the height of
 the target the channel reported last, within 15 minutes, at that report's place and time and of its kind
-(<code>height_only</code>: carried by <code>_marks_from_posts</code> like an outcome line) — never a place of its own.</p>
+(<code>height_only</code>: carried by <code>_marks_from_posts</code> like an outcome line) — never a place of its own. 1.58.26, the owner:
+&quot;there are often duplicates of the height like this&quot; — so it is no step of its own either where a track is written (the
+card, the tooltip, the night's trail, the Light row): reports at one place in a row, 10 minutes at most, are one step
+(<code>trackSteps</code> in <code>static/i18n.js</code>) — &quot;Фастів 01:56–01:58 (4,4 км)&quot;, &quot;Таборів 01:50–01:51 (1,7 км → 5,4 км)&quot;, where it
+read &quot;Фастів 01:58 → Фастів 01:58 (4,4 км)&quot; — its heights in the order said, one said twice in a row once; the count is
+still of posts. The height trend (<code>altTrend</code>) drops a height said again at once: &quot;700&quot;, &quot;700&quot; is no trend.</p>
 <p><strong>A weapon not stated, in the app (1.54.8).</strong> The owner: &quot;'unknown' is badly worded — it is most likely a drone (a jet
 Shahed); the only exception is when we know ballistic or cruise missiles are also coming&quot;. A mark of type <code>unknown</code> is
 named by what else is in the air (<code>mslCtx(m)</code>: a missile on the map — <code>MSL_TYPES</code> — or a MiG-31K / ballistic /
@@ -5231,7 +5236,7 @@ d'alerte ne sont pas des préférences de style.</p>
 </section>
     </div>
   </div>
-  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.25, 14 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
+  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.26, 15 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
 </main>
 
 <script>

@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-14 (1.58.25)
+**Documented version: 1.58** · last updated 2026-10-15 (1.58.26)
 
 The repository is **Dread92/Heimdall-map**. The Fly app keeps its first name, `kyiv-air-watch-gb`: Fly cannot rename
 an app (§15 has the move to a domain of its own).
@@ -797,7 +797,12 @@ after** (≤ 15 min, `State._reports_ahead`: the posts already read on this pass
 the candidates the target could have reached (`reach_km`, §7.4) — recomputed every pass, so the mark moves to the
 village once "Кулажинці" is in. **A height alone** ("500", "400 м", "Увага 500", `geo._height_only`) is the height of
 the target the channel reported last, within 15 minutes, at that report's place and time and of its kind
-(`height_only`: carried by `_marks_from_posts` like an outcome line) — never a place of its own.
+(`height_only`: carried by `_marks_from_posts` like an outcome line) — never a place of its own. 1.58.26, the owner:
+"there are often duplicates of the height like this" — so it is no step of its own either where a track is written (the
+card, the tooltip, the night's trail, the Light row): reports at one place in a row, 10 minutes at most, are one step
+(`trackSteps` in `static/i18n.js`) — "Фастів 01:56–01:58 (4,4 км)", "Таборів 01:50–01:51 (1,7 км → 5,4 км)", where it
+read "Фастів 01:58 → Фастів 01:58 (4,4 км)" — its heights in the order said, one said twice in a row once; the count is
+still of posts. The height trend (`altTrend`) drops a height said again at once: "700", "700" is no trend.
 
 **A weapon not stated, in the app (1.54.8).** The owner: "'unknown' is badly worded — it is most likely a drone (a jet
 Shahed); the only exception is when we know ballistic or cruise missiles are also coming". A mark of type `unknown` is

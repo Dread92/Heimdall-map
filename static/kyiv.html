@@ -2745,7 +2745,8 @@ function showTip(m,e){
     ${cur.status?'':`<div class="m">${t('tp_heading')} ${cur.heading==null?t('tp_nr'):dirName(cur.heading)+' ('+cur.heading+'°)'}${cur.target?' → '+esc(tgtName(cur)):''}${info.inbound?` · <span style="color:#ffb3b5">${t('tp_tokyiv')}</span>`:''}</div>`}
     ${phaseTxt(cur)?`<div class="m">${t('ph_label')}: <b style="display:inline">${esc(phaseTxt(cur))}</b></div>`:''}
     ${cur.endedBy?`<div class="m" style="color:#a8f0cf">${statusName(cur.endedBy.status)} ${t('tp_near')} ${esc(pn(cur.endedBy.place))} ${t('tp_at')} ${fmtT(cur.endedBy.ts)}</div>`:''}
-    ${cur.history&&cur.history.length?`<div class="m">${t('tp_reports',cur.history.length+1)}: ${cur.history.map(h=>pn(h.place||'?')+' '+fmtT(h.ts)).join(' → ')} → ${esc(where)}</div>`:''}
+    ${cur.history&&cur.history.length?`<div class="m">${t('tp_reports',cur.history.length+1)}: ${(()=>{ const st=trackSteps([...cur.history.map(h=>({pl:h.place,ts:h.ts})),{pl:cur.place,ts:cur.ts}]); st.pop();
+      return st.map(s=>esc(stepTxt(s,p=>pn(p||'?'),fmtT))+' → ').join(''); })()}${esc(where)}</div>`:''}
     ${ev.position?`<div class="m">${t('tp_pos')}: ${esc(ev.position.method)} · ${cf(ev.position.confidence)} ${t('tp_conf')}${accTxt('pos',ev.position,cur)?' · '+esc(accTxt('pos',ev.position,cur)):''}</div>`:''}
     <div class="q">${esc(ptxt(cur).slice(0,260))}</div><div class="m" style="margin-top:4px">${t('tp_click')}</div>`;
   $('tip').hidden=false; moveTip(e);
@@ -2787,7 +2788,8 @@ function openSheet(id){
   const state=closer?`<div class="kv1 green">✕ ${statusName(closer.status)} ${t('tp_near')} ${esc(pn(closer.place))} ${t('tp_at')} ${fmtT(closer.ts)} (${esc(CH[closer.channel]||closer.channel)})</div>`
     :m.stale&&!m.status?`<div class="kv1 yellow">${t('sh_stale',m.stale,esc(placeEn),fmtT(m.ts))}</div>`
     :closed?`<div class="kv1 green">${t('sh_closes',closed.type==='drones'?(closed.jet?t('k_jet_l'):t('k_shahed')):THREAT[closed.type]?.[1],esc(pn(closed.place)),fmtT(closed.ts))}</div>`:'';
-  const merged=m.cids&&m.cids.length?`<div class="kv1 muted">${t('sh_merged',m.cids.length+1,m.csum)}</div>`:''; const track=m.history&&m.history.length?`<div class="kv1">${t('sh_track',m.history.length+1)}: ${m.history.length>3?'… → ':''}${m.history.slice(-3).map(h=>`${esc(pn(h.place||'?'))} ${fmtT(h.ts)}${h.alt_m!=null?' ('+esc(fmtAlt(h.alt_m))+')':''}`).join(' → ')} → <b>${esc(placeEn)} ${fmtT(m.ts)}${m.alt&&m.alt.m!=null?' ('+esc(fmtAlt(m.alt.m))+')':''}</b></div>${(()=>{const tr=altTrend(m);return tr&&tr.dir==='down'?`<div class="kv1" style="color:#ff4d6d;font-weight:700">${esc(tr.text)} · ${esc(t('alt_src'))}</div>`:'';})()}`:'';
+  const merged=m.cids&&m.cids.length?`<div class="kv1 muted">${t('sh_merged',m.cids.length+1,m.csum)}</div>`:''; const track=m.history&&m.history.length?`<div class="kv1">${t('sh_track',m.history.length+1)}: ${(()=>{ const st=trackSteps([...m.history.map(h=>({pl:h.place,ts:h.ts,alt:h.alt_m})),{pl:m.place,ts:m.ts,alt:m.alt&&m.alt.m!=null?m.alt.m:null}]), cs=st.pop();
+    return (st.length>3?'… → ':'')+st.slice(-3).map(s=>esc(stepTxt(s,p=>pn(p||'?'),fmtT))+' → ').join('')+`<b>${esc(stepTxt(cs,()=>placeEn,fmtT))}</b>`; })()}</div>${(()=>{const tr=altTrend(m);return tr&&tr.dir==='down'?`<div class="kv1" style="color:#ff4d6d;font-weight:700">${esc(tr.text)} · ${esc(t('alt_src'))}</div>`:'';})()}`:'';
   const conf=`${t('sh_conf',cfa('pos',ev.position,m))}${m.status?'':` · ${t('sh_hconf',cfa('hdg',ev.heading,m))}`}${ev.count?' · '+t('sh_cnttext'):''}${cor.length?` · ${tn('sh_others',cor.length)}`:''}`;
   const mk=(!m.status&&!m.endedBy)?mslKind(m):null;
   const alt=m.alt&&!m.status?m.alt:null, altF=alt&&altNow(m);     // 1.56.2: the chip only while the report is 4 minutes old at most
@@ -2864,9 +2866,9 @@ function trailOld(m){ const first=m.history&&m.history.length?m.history[0].ts:m.
   return TRAIL&&TRAIL.id===m.id?TRAIL.pts.filter(p=>p.ts<first):[]; }
 function trailLine(m){ const box=$('shtrail'); if(!box||!TAGS_SHOWN) return; const old=trailOld(m); if(!old.length){ box.innerHTML=''; return; }
   const all=[...old.map(p=>({pl:p.place,ts:p.ts,alt:p.alt})),...(m.history||[]).map(h=>({pl:h.place,ts:h.ts,alt:h.alt_m})),{pl:m.place,ts:m.ts,alt:m.alt&&m.alt.m,cur:1}];
-  const one=o=>`${esc(o.pl==='область'?oblWhere(m):pn(o.pl||'?'))} ${fmtT(o.ts)}${o.alt!=null?' ('+esc(fmtAlt(o.alt))+')':''}`;
-  const seq=all.length>5?[...all.slice(0,2).map(one),'…',...all.slice(-2,-1).map(one)]:all.slice(0,-1).map(one);
-  box.innerHTML=`<div class="kv1">${esc(t('sh_trail',m.tag.id,all.length,fmtT(all[0].ts)))}: ${seq.join(' → ')} → <b>${one(all[all.length-1])}</b></div>`; }
+  const st=trackSteps(all), one=s=>esc(stepTxt(s,p=>p==='область'?oblWhere(m):pn(p||'?'),fmtT));    // 1.58.26: a place once in a row
+  const seq=st.length>5?[...st.slice(0,2).map(one),'…',...st.slice(-2,-1).map(one)]:st.slice(0,-1).map(one);
+  box.innerHTML=`<div class="kv1">${esc(t('sh_trail',m.tag.id,all.length,fmtT(all[0].ts)))}: ${seq.join(' → ')} → <b>${one(st[st.length-1])}</b></div>`; }
 function drawSelPath(){ const g=$('selpath'); if(!g) return; const m=SELP?MK.find(x=>x.id===SELP):null;
   const old=m?trailOld(m):[];
   if(!m||m.status||m.endedBy||((!m.history||!m.history.length)&&!old.length)){ if(g.innerHTML) g.innerHTML=''; return; }

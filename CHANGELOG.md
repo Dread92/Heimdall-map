@@ -2,6 +2,17 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.26 — 2026-10-15
+
+### Fixed
+- **A track no longer repeats its places** — the owner, two Shaheds near Makariv and Fastiv at 02:03: "there are often
+  duplicates of the height like this". @chyste_nebo posts a height on its own ("700", "4400"), and each was a step of
+  its own at the target's last place: "Макарів 02:00 (700 м) → Макарів 02:00 (600 м) → Небелиця 02:03 → Небелиця 02:03
+  (700 м)". Reports at one place in a row are one step now, with the heights said there in order — "Макарів 01:59–02:00
+  (4,4 км → 700 м → 600 м) → Небелиця 02:03 (700 м)" — on the card, in the tooltip, on the night's trail and on the Light
+  page; a height said twice in a row is said once. The number of posts is unchanged, and so is every height: only what
+  the posts said.
+
 ## 1.58.25 — 2026-10-14
 
 ### Added

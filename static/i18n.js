@@ -402,6 +402,15 @@ const bridgeName=n=>LANG==='uk'?(BRIDGE_UK[n]||n):LANG==='fr'?n.replace(' br.','
 const pn=s=>{s=String(s??'').replace('→ ',''); if(LANG==='uk') return s; s=s.replace(/ р-н(?=\)|$)/,LANG==='fr'?' raïon':' raion'); return typeof translit==='function'?translit(s):s;};
 // A height as the post gave it: metres below a kilometre, kilometres with one decimal above ("4,4 км").
 const fmtAlt=v=>v==null?'':v>=1000?`${(v/1000).toFixed(v%1000?1:0).replace('.',LANG==='en'?'.':',')} ${t('lt_km')}`:`${v} ${t('m_unit')}`;
+// 1.58.26, the owner: "there are often duplicates of the height like this". A height posted on its own ("700") is a report
+// of its own at the target's last place: a track read "Небелиця 02:03 → Небелиця 02:03 (700 m)", "Фастів 01:58 → Фастів
+// 01:58 (4.4 km)". Reports at one place in a row (10 minutes at most) are one step: its first time, its last when later,
+// the heights said there in order — one said twice in a row, once. The count of posts stays the count of posts.
+function trackSteps(list){ const out=[]; for(const o of list){ const l=out[out.length-1];
+  if(l&&o.pl&&l.pl===o.pl&&Date.parse(o.ts)-Date.parse(l.t2)<=600000){ l.t2=o.ts; if(o.alt!=null&&l.alts[l.alts.length-1]!==o.alt) l.alts.push(o.alt); }
+  else out.push({pl:o.pl,t1:o.ts,t2:o.ts,alts:o.alt!=null?[o.alt]:[]}); }
+  return out; }
+function stepTxt(s,name,fmt){ return `${name(s.pl)} ${fmt(s.t1)}${fmt(s.t2)!==fmt(s.t1)?'–'+fmt(s.t2):''}${s.alts.length?' ('+s.alts.map(fmtAlt).join(' → ')+')':''}`; }
 // The heights stated by this target's successive reports, oldest first — only numbers the posts wrote.
 // Two or more, and the last lower than the first: the posts reported it lower (↓); higher: ↑.
 // 1.56.2, the owner: "the altitude report should never be more than 4 minutes old — a drone at 900 m whose height was last
@@ -424,7 +433,8 @@ const apprTo=m=>(m.targets&&m.targets.length>1?m.targets:[m.target||m.place||'']
 const altFresh=ts=>!!ts&&(Date.now()-Date.parse(ts))/60000<=ALT_MAX_MIN;
 function altNow(m){ return m&&m.alt&&altFresh(m.ts)?m.alt:null; }
 function altTrend(m){ const all=[...(m.history||[]).filter(h=>h.alt_m!=null).map(h=>[h.alt_m,h.ts]), ...(m.alt&&m.alt.m!=null?[[m.alt.m,m.ts]]:[])];
-  if(all.length<2||!altFresh(all[all.length-1][1])) return null; const hs=all.map(x=>x[0]), d=hs[hs.length-1]-hs[0];
+  if(all.length<2||!altFresh(all[all.length-1][1])) return null; const hs=all.map(x=>x[0]).filter((h,i,a)=>!i||h!==a[i-1]), d=hs[hs.length-1]-hs[0];
+  if(hs.length<2) return null;                       // 1.58.26: "700", then "700" again, is one height, not a trend
   return {hs, dir:d<0?'down':d>0?'up':'level', text:(d<0?'↓ ':d>0?'↑ ':'')+hs.slice(-4).map(fmtAlt).join(' → ')}; }
 const LOCALE=()=>LANG==='uk'?'uk-UA':LANG==='fr'?'fr-FR':'en-GB';
 // The language, as a drop-down, on both pages. `again`: the one in the opening notice — after the reload the
