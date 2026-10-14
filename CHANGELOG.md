@@ -2,6 +2,18 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.20 — 2026-10-14
+
+### Changed
+- **An oblast's badge counts the drones reported in it, as an estimate** — the owner: "for the number of drones in an
+  oblast we go by how many are currently reported within the oblast, with a '~' to show it is an estimate". Mykolaiv
+  oblast's badge said ×3 (the one post about the oblast as a whole) with thirty drones placed inside it. It now shows the
+  larger of the drones placed in the oblast and those reported for it as a whole — never both added, they are often the
+  same — written "~29", with "reported in the oblast now" under it and, in its card, "an estimate, not a count".
+- **The oblast names step back zoomed out** — the owner: "honestly we don't need it zoomed out, or make it more
+  discreet: it takes all the room". Zoomed out they are smaller, letter-spaced and half-toned over the satellite; on a
+  phone over the whole country only the names of the oblasts with a target stay.
+
 ## 1.58.19 — 2026-10-14
 
 ### Changed

@@ -559,6 +559,16 @@ svg.city .town.district{fill:#aeb8c8;font-weight:500}
 #oblevt .obtxt.obwhere{fill:#e8e6df;font:600 calc(var(--k,1)*10.5px) system-ui;letter-spacing:.2px;stroke-width:calc(var(--k,1)*3px)}svg.veryfar #oblevt .obwhere{display:none}
 @media (max-width:999px){svg #oblevt .oblevtchip.live .obtxt{font-size:calc(var(--k,1)*10.5px)}svg #oblevt .oblevtchip.live .obtxt.obnm,svg #oblevt .oblevtchip.live .obtxt.obalt{font-size:calc(var(--k,1)*9.5px)}svg #oblevt .obtxt.obwhere{font-size:calc(var(--k,1)*9px)}}
 body:not(.rp) #obllbl .oblbl.hot{fill:#f4f1e8;paint-order:stroke;stroke:#0b0e14;stroke-width:calc(var(--k,1)*3px)}
+/* 1.58.20, the owner (the whole country on a computer, the satellite under it): "the oblast's name — honestly we don't
+   need it zoomed out, or make it more discreet: it takes all the room". Zoomed out it is smaller, letter-spaced and
+   half-toned; over the pictures it is no longer white on black. A lit name (a target in the oblast) stays readable. */
+svg.far .oblbl{font-size:calc(var(--k,1)*11px);letter-spacing:1px}
+svg.veryfar .oblbl{font-size:calc(var(--k,1)*9.5px);font-weight:700;letter-spacing:1.4px}
+svg.tiled.far .oblbl{fill-opacity:.62;stroke-opacity:.75;stroke-width:calc(var(--k,1)*2.4px)}
+svg.tiled.veryfar .oblbl{fill-opacity:.48;stroke-opacity:.6;stroke-width:calc(var(--k,1)*2px)}
+body:not(.rp) svg.far #obllbl .oblbl.hot{fill-opacity:.88;stroke-opacity:.85;stroke-width:calc(var(--k,1)*2.4px)}
+/* and on a phone over the whole country (over 2.2 km a pixel) the names run into each other: only the lit ones stay */
+svg.dense #obllbl .oblbl:not(.hot){display:none}
 svg:not(.close) #obllbl .oblbl.faro.hot{display:inline}
 @keyframes obpulse{0%,100%{stroke-opacity:.8;fill-opacity:.05}50%{stroke-opacity:.28;fill-opacity:.015}}
 body.lite #oblevt .obring{fill:none;stroke:#fff;animation:none}body.lite #oblevt .obtxt{fill:#fff;stroke:#000}body.lite #oblevt .obglow{display:none}body.lite #oblevt .obbg{fill:#000;stroke:#fff}
@@ -1677,7 +1687,7 @@ function fastVB(){ const r=SR(); if(!r.width||!svg.viewBox||!svg.viewBox.baseVal
   clearTimeout(VBT); VBT=setTimeout(()=>applyVB(),150); }
 function applyVB(fast){ if(fast){ fastVB(); return; }
   if(VBC){ VBC=null; clearTimeout(VBT); VBT=null; svg.style.transform=''; svg.classList.remove('zoomg'); }
-  svg.setAttribute('viewBox',`${VB.x} ${VB.y} ${VB.w} ${VB.h}`);if(typeof drawHome==='function'&&HOME){setTimeout(drawHome,0);if(typeof drawZones==='function')setTimeout(drawZones,0);}const r=SR();KPX=r.width?VB.w/r.width:1;KDIG=Math.max(2,Math.ceil(-Math.log10(KPX||1))+3);if(typeof placeBrgLabels==='function')placeBrgLabels();svg.style.setProperty('--k',KPX);MZ=markZoom(KPX);MSK=KPX*MZ;svg.style.setProperty('--mz',MZ.toFixed(3));svg.style.setProperty('--mzt',MZT().toFixed(3));svg.style.setProperty('--mzc',MZC().toFixed(3));if(window.RP&&RP.on&&RP.frame)RP.frame();svg.classList.toggle('far',VB.w>90);svg.classList.toggle('close',VB.w<40);svg.classList.toggle('vclose',VB.w<22);svg.classList.toggle('veryfar',VB.w>230);svg.classList.toggle('vilfar',VB.w>300);svg.classList.toggle('ua',VB.w>900);svg.classList.toggle('wide',VB.w>520);svg.classList.toggle('deep',KPX<0.011);if(typeof applySelOblast==='function'&&(VB.w<=300)!==applyVB._zin){applyVB._zin=VB.w<=300;applySelOblast();}{const kz=document.querySelector('.kozak'); if(kz){kz.querySelector('.kz').setAttribute('transform',`scale(${kx(2.2*MSK)})`); const ts=kz.querySelectorAll('text'); ts[0].setAttribute('y',kx(5*KPX+9*MSK)); ts[1].setAttribute('y',kx(16*KPX+9*MSK));}}clearTimeout(applyVB._t);applyVB._t=setTimeout(()=>{applyVB._t=null;if(typeof LAYERS!=='undefined'&&LAYERS.heat&&typeof drawHeat==='function')drawHeat();if(typeof updateTiles==='function'){updateTiles();layoutTownLabels();}if(typeof drawShelters==='function')drawShelters();},120);}
+  svg.setAttribute('viewBox',`${VB.x} ${VB.y} ${VB.w} ${VB.h}`);if(typeof drawHome==='function'&&HOME){setTimeout(drawHome,0);if(typeof drawZones==='function')setTimeout(drawZones,0);}const r=SR();KPX=r.width?VB.w/r.width:1;KDIG=Math.max(2,Math.ceil(-Math.log10(KPX||1))+3);if(typeof placeBrgLabels==='function')placeBrgLabels();svg.style.setProperty('--k',KPX);MZ=markZoom(KPX);MSK=KPX*MZ;svg.style.setProperty('--mz',MZ.toFixed(3));svg.style.setProperty('--mzt',MZT().toFixed(3));svg.style.setProperty('--mzc',MZC().toFixed(3));if(window.RP&&RP.on&&RP.frame)RP.frame();svg.classList.toggle('far',VB.w>90);svg.classList.toggle('close',VB.w<40);svg.classList.toggle('vclose',VB.w<22);svg.classList.toggle('veryfar',VB.w>230);svg.classList.toggle('vilfar',VB.w>300);svg.classList.toggle('ua',VB.w>900);svg.classList.toggle('wide',VB.w>520);svg.classList.toggle('deep',KPX<0.011);svg.classList.toggle('dense',KPX>2.2);if(typeof applySelOblast==='function'&&(VB.w<=300)!==applyVB._zin){applyVB._zin=VB.w<=300;applySelOblast();}{const kz=document.querySelector('.kozak'); if(kz){kz.querySelector('.kz').setAttribute('transform',`scale(${kx(2.2*MSK)})`); const ts=kz.querySelectorAll('text'); ts[0].setAttribute('y',kx(5*KPX+9*MSK)); ts[1].setAttribute('y',kx(16*KPX+9*MSK));}}clearTimeout(applyVB._t);applyVB._t=setTimeout(()=>{applyVB._t=null;if(typeof LAYERS!=='undefined'&&LAYERS.heat&&typeof drawHeat==='function')drawHeat();if(typeof updateTiles==='function'){updateTiles();layoutTownLabels();}if(typeof drawShelters==='function')drawShelters();},120);}
 function setView(cx,cy,w){VB.w=Math.max(1,Math.min(1500,w));VB.h=VB.w*ASPECT();VB.x=cx-VB.w/2;VB.y=cy-VB.h/2;applyVB();}
 function zoomAt(f,cx,cy,fast){const nw=Math.max(1,Math.min(1500,VB.w/f)),nh=nw*ASPECT();VB.x=cx-(cx-VB.x)*(nw/VB.w);VB.y=cy-(cy-VB.y)*(nh/VB.h);VB.w=nw;VB.h=nh;applyVB(fast);}
 function toSvg(px,py){const r=SR();return [VB.x+(px-r.left)/r.width*VB.w, VB.y+(py-r.top)/r.height*VB.h];}
@@ -2199,6 +2209,13 @@ const oblWhere=m=>{const ps=(m.evidence||{}).position||{}, q=ps.quad, o=m.oblast
 let built=new Map(); const homeAlerted=new Set(); const homeClosed=new Set();
 // Outcomes reported for a whole oblast, grouped by oblast id — filled by tick(), drawn by paintOblEvents().
 let OBLEVT={};
+// 1.58.20, the owner: "for the number of drones in an oblast we go by how many are reported within the oblast now, with a
+// '~' to show it is an estimate". OBLPLACED: per oblast, the drones (and jet drones) the map has placed in it, counted as
+// the map's own totals count them (each mark's count). The badge shows the larger of that and what was reported for the
+// oblast as a whole — never their sum: a channel's "12 БпЛА на Миколаївщині" is very often the same drones as the ones
+// placed — written "~12".
+let OBLPLACED={};
+const OBL_EST=k=>k==='t:drones'||k==='t:jet';
 const OBL_EVENT=new Set(['impact','down']);   // fire and damage are no longer drawn at all
 // 1.51: "↓2200" — the height and a descent a region-wide report stated (the rules', or the AI's in the tag)
 // 1.56.2: only while the report that stated it is at most ALT_MAX_MIN (4) minutes old (altNow, altFresh in i18n.js)
@@ -2218,7 +2235,7 @@ function paintOblEvents(){
   // tick() runs several times a second. Rebuilding this layer every frame replaced the nodes between a
   // press and its release, so a tap on the count never became a click and the panel never opened — and it
   // was redrawing oblast outlines for nothing. Only redraw when what it says has actually changed.
-  const sig=uids.map(u=>u+':'+OBLEVT[u].map(m=>oblKey(m)+(m.count||1)+oblAlt(m)+(m.tag?m.tag.id:'')).sort().join('')).sort().join('|')+'|'+LANG+'|'+OBS();
+  const sig=uids.map(u=>u+':'+OBLEVT[u].map(m=>oblKey(m)+(m.count||1)+oblAlt(m)+(m.tag?m.tag.id:'')).sort().join('')+JSON.stringify(OBLPLACED[u]||{})).sort().join('|')+'|'+LANG+'|'+OBS();
   if(g._sig===sig) return;
   g._sig=sig;
   // 1.54: every outline first, then every badge — another oblast's glowing border never runs across a badge
@@ -2232,6 +2249,9 @@ function paintOblEvents(){
     // 1.45: a target reported for the oblast and no town ("БпЛА на Харківщині") is here too, as the weapon's
     // sign and a count, never a silhouette at the oblast centre — see the filter in tick().
     const by={}, ex={}, en={}; for(const m of evs){ const k=oblKey(m); by[k]=(by[k]||0)+(m.count||1); ex[k]=ex[k]||m; en[k]=(en[k]||0)+1; }   // the latest
+    // 1.58.20: a drone kind's number is the estimate for the oblast — the larger of what was reported for it as a whole and
+    // what the map placed in it (OBLPLACED), shown "~12"
+    const est=k=>OBL_EST(k)?Math.max(by[k],(OBLPLACED[uid]||{})[k]||0):by[k];
     const kinds=Object.keys(by);
     const anyLive=evs.some(m=>!m.status);
     // laid out in screen pixels (CSS transforms in var(--k)), so it keeps its size at every zoom: an outcome is its
@@ -2247,17 +2267,19 @@ function paintOblEvents(){
       if(m.status){ const c=n>1?String(n):''; seg(`<text class="obtxt" dominant-baseline="central">${esc(statusIco(m.status)+c)}</text>`,9+c.length*8); return; }
       // 1.51: a height or a descent the post gave is shown here too — "Реактивний на Київщині, висота 2200"
       // and its tag when the kind is one target — the same tag as in the list and the card
-      const c=n>1?'×'+n:'';
+      const N=est(k), c=OBL_EST(k)?(N>1?'~'+N:''):(n>1?'×'+n:'');
       const al=oblAlt(m), al2=al?al+(/\d$/.test(al)?' '+t('m_unit'):''):'', tid=TAGS_SHOWN&&en[k]===1&&m.tag?m.tag.id:'';
       const gk=((m.type==='drones'||asDrone(m))&&m.jet)?'jetdrone':asDrone(m)?'drone':(GLYPH_BY_TYPE[m.type]||'missile');
       if(tid) seg(`<text class="obtxt obtid" dominant-baseline="central">${esc(tid)}</text>`,tid.length*7.6);
       seg(`<g class="sil${m.type==='drones'&&m.jet?' jet':''}" style="--c:${KIND_COL(m)};transform:translate(${px(8*S)},0px) scale(calc(var(--k,1)*${(.72*S).toFixed(3)}))">${G[gk]||''}</g>`,Math.round(16*S),1);
       if(c) seg(`<text class="obtxt" dominant-baseline="central">${c}</text>`,c.length*9.5);
       if(al2) seg(`<text class="obtxt obalt" dominant-baseline="central">${esc(al2)}</text>`,al2.length*7.4); });
-    const where=t(uid==='31'?'city_somewhere':'obl_somewhere');
+    // 1.58.20: "somewhere in the oblast" only while the number is the oblast-wide report's own; with the placed ones in it,
+    // "reported in the oblast now"
+    const where=t(kinds.some(k=>OBL_EST(k)&&est(k)>by[k])?(uid==='31'?'city_now':'obl_now'):(uid==='31'?'city_somewhere':'obl_somewhere'));
     const GAP=6*S, H=Math.round(24*S), PAD=Math.round(20*S), W=Math.max(16,segs.reduce((a,q)=>a+q.w,0)+GAP*(segs.length-1));
     let x=-W/2; const parts=segs.map(q=>{ const h=`<g class="obseg"${q.f?` data-w="${q.w}"`:''} style="transform:translate(${px(x)},0px)">${q.h}</g>`; x+=q.w+GAP; return h; });
-    const full=kinds.map(k=>`${oblWord(ex[k])}${by[k]>1?' ×'+by[k]:''}`).join(', ')+(anyLive?' · '+where:'');
+    const full=kinds.map(k=>`${oblWord(ex[k])}${OBL_EST(k)?(est(k)>1?' ~'+est(k):''):(by[k]>1?' ×'+by[k]:'')}`).join(', ')+(anyLive?' · '+where:'');
     // the badge's colour: the weapon's, when every target in the air there is the same kind
     const cols=[...new Set(evs.filter(m=>!m.status).map(KIND_COL))], col=cols.length===1?cols[0]:'#f4f1e8';
     // 1.53.1: right under the oblast's own name ("KHARKIV", then the badge) — read as one thing, and never written over
@@ -2315,6 +2337,10 @@ function oblEventSheet(uid){
   const evs=(OBLEVT[uid]||[]).slice().sort((a,b)=>a.ts<b.ts?1:-1); if(!evs.length) return;
   $('sheetbody').innerHTML=`<div class="type">${evs[0].status?oblIco(evs[0]):silSvg(evs[0]).replace('<svg ','<svg style="width:22px;height:22px;vertical-align:-6px" ')} ${esc(evs[0].status?statusName(evs[0].status):kindOf(evs[0]))} — ${esc(oblFull(uid))}</div>`
     +`<div class="kv1 muted" style="margin-bottom:8px">${esc(t(uid==='31'?'city_noplace':'obl_noplace'))}</div>`
+    // 1.58.20: what the badge's "~12" is
+    +(()=>{ const by={}; for(const m of evs){ if(m.status) continue; const k=oblKey(m); if(OBL_EST(k)) by[k]=(by[k]||0)+(m.count||1); }
+       return Object.keys(by).map(k=>{ const N=Math.max(by[k],(OBLPLACED[uid]||{})[k]||0);
+         return N>1?`<div class="kv1" style="margin-bottom:8px">${esc(t('obl_est',N,t(k==='t:jet'?'k_jet':'k_shahed')))}</div>`:''; }).join(''); })()
     +evs.map(m=>`<div class="card plain"><div class="title">${esc(m.status?statusName(m.status):kindOf(m))}${m.count>1?' ×'+m.count:''} · ${fmtT(m.ts)}${!m.status&&(m.evidence||{}).position&&(m.evidence.position.quad||m.evidence.position.rel!=null||m.evidence.position.bank)?' · '+esc(oblWhere(m)):''}</div>`
       +`<div class="q" style="margin-top:4px">${esc(ptxt(m).slice(0,220))}</div>`
       +`<div class="kv1 muted">${esc(CH[m.channel]||m.channel)}</div></div>`).join('');
@@ -2430,7 +2456,11 @@ function tick(){
     if(!m.status){ if(m.oblast_uid&&!m.endedBy)(g[m.oblast_uid]=g[m.oblast_uid]||[]).push(m); return false; }
     if(OBL_EVENT.has(m.status)&&m.oblast_uid){(g[m.oblast_uid]=g[m.oblast_uid]||[]).push(m);}
     return false;                                    // never a pin on the oblast centre, whatever it is
-  }); OBLEVT=g;}
+  }); OBLEVT=g;
+  // 1.58.20: the drones placed in each oblast, for its badge's estimate (as the map's totals count them)
+  const pc={}; for(const m of live){ if(m.status||m.endedBy||m.type!=='drones'||!m.oblast_uid) continue;
+    const o=pc[m.oblast_uid]=pc[m.oblast_uid]||{}, k=m.jet?'t:jet':'t:drones'; o[k]=(o[k]||0)+(m.count||1); }
+  OBLPLACED=pc;}
   // outcome markers at the same place within 20 min collapse into one (✸ Impact ×3) — one glyph, not a pile
   {const groups={}; for(const m of live){ if(!m.status) continue; const k=m.status+'|'+String(m.place); (groups[k]=groups[k]||[]).push(m);} const drop=new Set();
     for(const arr of Object.values(groups)){ arr.sort((a,b)=>a.ts<b.ts?1:-1); const head=arr[0]; head.cluster=1; for(const o of arr.slice(1)){ if(agoMin(o.ts)-agoMin(head.ts)<=20){drop.add(o.id);head.cluster++;} } }

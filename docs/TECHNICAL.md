@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-14 (1.58.19)
+**Documented version: 1.58** · last updated 2026-10-14 (1.58.20)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -1988,6 +1988,17 @@ Main parts:
   other labels, other marks' glyphs and the map's edge; placed by priority (to a watched place, inbound,
   descending, others, outcomes); an ordinary label that fits nowhere loses its second line (`nolbl2`), then is
   left out (`nolbl`). The boxes (`LBLBOX`) hide the town names under them (`layoutTownLabels`);
+- **an oblast's badge counts the drones reported in it** (1.58.20, the owner: "how many are reported within the oblast now,
+  with a '~' to show it is an estimate"): `OBLPLACED`, filled in `tick()`, is per oblast the drones and jet drones the map
+  has placed there (each mark's `count`, as the map's totals count them; a mark's `oblast_uid`); for a drone kind the badge
+  shows the larger of that and the oblast-wide reports' own number (`est`) — never their sum — written "~12", the line
+  under it "reported in the oblast now" (`obl_now`) instead of "somewhere in the oblast" once placed ones are in it, the
+  card the sentence `obl_est`. Outcomes keep "×3". The badges are still drawn only for an oblast with an oblast-wide
+  report;
+- **the oblast names step back zoomed out** (1.58.20, the owner: "we don't need it zoomed out, or make it more
+  discreet"): `svg.far` 11 px, `svg.veryfar` 9.5 px letter-spaced; over the satellite or the map half-toned
+  (`fill-opacity` .62 / .48, a thinner outline); a lit name (a target in the oblast) stays readable; on a phone over the
+  whole country (`svg.dense`, over 2.2 km a pixel) only the lit names are drawn;
 - **less on the screen** (1.58.19, the owner, Kyiv oblast on a phone: "too much information on the screen"): a raion's
   name is the least of the names — 9.5 px, letter-spaced, quieter (`.rnlbl`) — and `layoutTownLabels` places it last,
   leaving it out where a town, a target, a badge, the home's name (`#homeg .hl`) or the map's buttons (`.mapctl`) are;

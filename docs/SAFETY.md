@@ -274,6 +274,13 @@ oblast-wide alert always paints the oblast; raion-level alerts can only **add** 
 inside a yellow oblast), never reduce or replace it. Getting this wrong — showing "clear" where the
 state says "alert" — is the single most dangerous bug this app can have.
 
+## A number of drones is an estimate, and says so (1.58.20)
+
+An oblast's badge gives how many drones are reported in it now: the larger of the ones the map placed in the oblast and
+the ones a channel reported for the oblast as a whole — never the two added, because "12 БпЛА на Миколаївщині" is very
+often the same drones as the ones placed. Channels repeat, merge and miss targets, so this is not a count of what is in
+the sky: it is written "~12", the card says "an estimate, not a count", and nothing is ever said to be the total.
+
 ## A limit never stands between a reader and the alert (1.58.17)
 
 The abuse limits exist so that a few people copying or hammering the API cannot slow the app for everyone during a
