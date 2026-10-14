@@ -94,6 +94,7 @@ header .up{margin-left:auto;min-width:0;overflow:hidden;text-overflow:ellipsis;w
 #radar .rb.R,#radar .ob2.R{fill:rgba(224,52,44,.2);stroke:rgba(224,52,44,.55)}
 #radar .rb.Y,#radar .ob2.Y{fill:rgba(242,194,0,.14);stroke:rgba(242,194,0,.45)}
 #radar .rb.H{fill:rgba(242,194,0,.06);stroke:rgba(242,194,0,.35);stroke-dasharray:3 2}
+#radar .rb.hr{fill-rule:evenodd}
 #radar .ob2{fill:none;stroke:none}
 #radar .riv{fill:none;stroke:#2b5f8f;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
 #radar .riv.wide{stroke-width:4px}#radar .riv.mid{stroke-width:2.6px}#radar .riv.thin{stroke-width:1.2px;stroke:#244f78}
@@ -368,25 +369,31 @@ let STATE=null, MKS=[], LAST_OK=0, OBL=null, OBL_GUESS=false; const SEEN=new Set
 const covers=(a,r)=>a.oblast_uid===r.obl&&(a.location_type==='oblast'||(r.city&&a.location_type==='city')
   ||(a.location_type==='raion'&&((r.id&&a.location_uid==='ua-'+r.id)||(a.raion_key&&a.raion_key===r.k))));
 const inPart=(a,r)=>a.location_type==='hromada'&&a.oblast_uid===r.obl&&((r.id&&a.raion_uid===r.id)||(a.raion_key&&a.raion_key===r.k));
+// 1.58.16: an alert's hromada outline (static/hromadas.js); a place in km
+const hromOf=a=>window.HROMADA?HROMADA.of(a):null, ptOf=p=>p&&LM?kproj(p.lon,p.lat):null;
 
 // What the government app says about THIS place: its raion (or the city), not its oblast.
 //   R / Y  — an air-raid alert over the place's own unit, at the official red or yellow level
-//   H      — an alert over a hromada inside the place's raion (which hromada is the place's, the app can't know)
+//   H      — an alert over another hromada of the place's raion (or one with no outline here)
 //   G      — no alert over the place's unit; alerts next door are listed, not painted on it
 //   U      — no data
-function placeStatus(uid, PR){
+// 1.58.16: `pt` (km): a hromada's alert is the place's own in it or within 1.5 km (`h`: its name)
+function placeStatus(uid, PR, pt){
   if(!STATE) return {k:'U'};
   const air=(STATE.active||[]).filter(a=>!a.alert_type||a.alert_type==='air_raid');
+  const hIn=a=>{ const h=pt&&hromOf(a); return !!h&&HROMADA.covers(h,pt[0],pt[1]); };
   let mine=[], part=[];
-  if(PR&&PR.length){ for(const a of air){ if(PR.some(r=>covers(a,r))) mine.push(a); else if(PR.some(r=>inPart(a,r))) part.push(a); } }
+  if(PR&&PR.length){ for(const a of air){ if(PR.some(r=>covers(a,r))||hIn(a)) mine.push(a); else if(PR.some(r=>inPart(a,r))) part.push(a); } }
   else { mine=air.filter(a=>a.oblast_uid===uid&&(a.location_type==='oblast'||a.location_type==='city'));
          part=air.filter(a=>a.oblast_uid===uid&&!mine.includes(a)); }
   const pair=uid==='31'||uid==='14'?['31','14']:[uid];
   const others=air.filter(a=>pair.includes(a.oblast_uid)&&!mine.includes(a)&&!part.includes(a));
   const since=xs=>xs.filter(a=>a.since_known!==false).map(a=>a.started_at).sort()[0];
   const mirror=mine.some(a=>a.source==='ubilling_mirror');
+  const own=PR&&PR.length&&mine.some(a=>PR.some(r=>covers(a,r)));
+  const h=own?null:mine.filter(a=>a.location_type==='hromada').map(a=>LANG==='uk'?a.location_title:(a.location_title_en||pn(a.location_title)))[0];
   if(mine.length){ const red=mine.some(a=>a.alert_level!=='yellow');   // no level reported (mirror) = full red
-    return {k:red?'R':'Y',lvl:red?(mine.some(a=>a.alert_level==='red')?'red':null):'yellow',since:since(mine),
+    return {k:red?'R':'Y',h,lvl:red?(mine.some(a=>a.alert_level==='red')?'red':null):'yellow',since:since(mine),
             reason:(mine.find(a=>a.alert_level===(red?'red':'yellow')&&a.notes&&/рівень/.test(a.notes))||{}).notes,mirror,others}; }
   if(part.length) return {k:PR&&PR.length?'H':'P',since:since(part),part,others};   // P: raion unknown, part of the oblast
   return {k:'G',others};
@@ -399,7 +406,7 @@ function alertedShapes(){
   const out={}; if(!STATE||!LMR) return out;
   const air=(STATE.active||[]).filter(a=>!a.alert_type||a.alert_type==='air_raid');
   for(const r of LMR){ let L='';
-    for(const a of air){ if(covers(a,r)) L=(L==='R'||a.alert_level!=='yellow')?'R':'Y'; else if(!L&&inPart(a,r)) L='H'; }
+    for(const a of air){ if(covers(a,r)) L=(L==='R'||a.alert_level!=='yellow')?'R':'Y'; else if(!L&&inPart(a,r)&&!hromOf(a)) L='H'; }
     if(L) out[r.obl+':'+r.k]=L; }
   return out;
 }
@@ -418,6 +425,12 @@ function mapLayer(p,kx,loc,iz){
     const w=air.find(a=>a.oblast_uid===o.uid&&a.location_type==='oblast'); if(w) s+=`<path class="ob2 ${w.alert_level==='yellow'?'Y':'R'}" d="${d(o.rings)}"/>`; }
   for(const r of LMR){ if(!near(r)) continue; const L=al[r.obl+':'+r.k]||'';
     s+=`<path class="rb${r.city?' city':''}${L?' '+L:''}" d="${d(r.rings)}"/>`; }
+  // 1.58.16: alerted hromadas, unless their raion is painted as strongly
+  const hl=new Map();
+  for(const a of air){ const h=hromOf(a); if(!h) continue; const L=a.alert_level==='yellow'?'Y':'R', q=hl.get(h.id); hl.set(h.id,{h,L:q&&q.L==='R'?'R':L}); }
+  for(const {h,L} of hl.values()){ const P=al[h.o+':'+h.r]; if(P==='R'||P===L) continue;
+    if(!h.rings.some(g=>g.some(q=>Math.abs(q[0]-px)<50&&Math.abs(q[1]-py)<45))) continue;
+    s+=`<path class="rb hr ${L}" d="${d(h.rings)}"/>`; }
   // Kyiv's ten districts, when the city is on the disc
   const kdOn=KD&&Math.hypot(px,py)<45;
   if(kdOn) for(const k of KD) s+=`<path class="kd" d="${k.path}"/>`;
@@ -462,12 +475,19 @@ function mapLayer(p,kx,loc,iz){
 
 function paintSlots(){
   // 1.36: each place carries its own official status, as on the Tactical page (its raion, worked out here)
-  const st=p=>{ if(!p||!LMR||!STATE) return ''; const PR=raionsOf(p); const uid=(PR&&PR[0]&&PR[0].obl)||p.obl; return uid?placeStatus(uid,PR).k:''; };
+  const st=p=>{ if(!p||!LMR||!STATE) return ''; const PR=raionsOf(p); const uid=(PR&&PR[0]&&PR[0].obl)||p.obl; return uid?placeStatus(uid,PR,ptOf(p)).k:''; };
   $('slots').innerHTML=SLOT_IDS.map(id=>{const p=SLOTS[id];
     return `<button data-s="${id}" class="${id===ACTIVE&&p?'on':''}${p?'':' empty'}"><i class="${st(p)}"></i><span>${esc(slotName(id))}</span></button>`;}).join('');
 }
 
+let ldH=0;
 function paint(){
+  // 1.58.16: static/hromadas.js once an alert names a hromada; an oblast's outlines for one around a place
+  if(!window.HROMADA&&!ldH&&STATE&&(STATE.active||[]).some(a=>a.location_type==='hromada')){ ldH=1;
+    const sc=document.createElement('script'); sc.src='/static/hromadas.js'; sc.onload=()=>paint(); sc.onerror=()=>{ldH=0;}; document.head.appendChild(sc); }
+  if(window.HROMADA&&STATE&&LMR){ const pts=Object.values(SLOTS).filter(Boolean).map(ptOf).filter(Boolean);
+    HROMADA.need(STATE.active,()=>paint(),a=>LMR.some(r=>r.obl===a.oblast_uid&&(!a.raion_key||r.k===a.raion_key)
+      &&pts.some(([x,y])=>r.rings.some(g=>g.some(q=>Math.abs(q[0]-x)<50&&Math.abs(q[1]-y)<45))))); }
   paintSlots();
   const p=place();
   $('disc').textContent=t('lt_disc'); $('full').textContent=t('lt_full')+' →'; $('gdl').textContent=t('m_guide'); if($('hfoot').dataset.l!==LANG){ $('hfoot').innerHTML=footerHTML({logos:false}); $('hfoot').dataset.l=LANG; }
@@ -480,8 +500,8 @@ function paint(){
   // the status: official data only, for the place's own raion
   if(!OBL&&PR===null){ $('status').className='status U'; $('status').innerHTML=`<div class="big">…</div><div class="pl">${esc(placeName(p))}</div>`; }
   else {
-    const uid=OBL||'31', s=placeStatus(uid,PR);
-    const unit=PR&&PR.length?PR.map(unitName).join(' / '):'';
+    const uid=OBL||'31', s=placeStatus(uid,PR,ptOf(p));
+    const unit=s.h||(PR&&PR.length?PR.map(unitName).join(' / '):'');
     const where=[placeName(p),unit,uid!=='31'&&OBL_N[uid]?(typeof oblFull==='function'?oblFull(uid):OBL_N[uid][0]):''].filter(Boolean).join(' · ');
     const lvl=s.lvl==='yellow'?(LANG==='uk'&&s.reason?s.reason:t('lt_lv_yel')):s.lvl==='red'?(LANG==='uk'&&s.reason?s.reason:t('lt_lv_red')):'';
     const aname=a=>a.location_type==='hromada'?t('lt_hrom',LANG==='uk'?a.location_title:(a.location_title_en||pn(a.location_title)))

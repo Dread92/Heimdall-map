@@ -251,7 +251,7 @@ USGS, © OpenStreetMap contributors, and the GIS User Community). Towns of every
 What each one gives and how it is parsed: [docs/TECHNICAL.md §6–7](docs/TECHNICAL.md#6-official-alert-data).
 
 Map data: raion and oblast boundaries from [geoBoundaries](https://www.geoboundaries.org/) (CC BY
-4.0); Kyiv district boundaries from OpenStreetMap via Nominatim (ODbL); street tiles from
+4.0); hromada boundaries from OCHA's COD-AB for Ukraine (HDX, CC BY 3.0 IGO); Kyiv district boundaries from OpenStreetMap via Nominatim (ODbL); street tiles from
 OpenStreetMap (© OpenStreetMap contributors).
 
 ## Credits

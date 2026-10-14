@@ -457,6 +457,10 @@ body.m-day #heatleg{background:rgba(255,255,255,.96)}.ob.far{stroke:#1a2029;fill
 .rn.R{fill:rgba(229,72,77,.34)}.rn.Y{fill:rgba(245,185,64,.24)}.rn.P{fill:rgba(245,185,64,.22)}
 .rn.city{stroke:#8fb4ff;stroke-width:1.6px;fill:#181f2a}
 .rn.city.R{fill:rgba(229,72,77,.46)}.rn.city.Y{fill:rgba(245,185,64,.34)}.rn.city.P{fill:rgba(245,185,64,.32)}
+/* 1.58.16: a hromada under an official alert, on its own outline (static/hromadas.js); it takes the neighbouring raions'
+   colours (.nb.R / .nb.Y, in every theme) and shows only while it is under alert */
+#hromg .hr{fill-rule:evenodd;stroke-width:1px;vector-effect:non-scaling-stroke;pointer-events:none}#hromg .hr:not(.R):not(.Y){display:none}
+#hromg .hr.R{stroke:rgba(229,72,77,.7)}#hromg .hr.Y{stroke:rgba(245,185,64,.65)}
 .rnb{fill:none;stroke:#3a4a63;stroke-width:1.1;pointer-events:none}
 .ring{fill:none;stroke:#5b9cff;stroke-opacity:.22;stroke-width:1px;vector-effect:non-scaling-stroke;stroke-dasharray:4 4}
 .ringlbl{fill:#5b9cff;fill-opacity:.55;font:600 calc(var(--k,1)*10px) var(--mono)}
@@ -1288,6 +1292,7 @@ body.lite #mycard,body.lite .panel{background:#000;border-color:#666}body.lite .
 <script src="/static/i18n.js"></script>
 <script src="/static/glyphs.js"></script>
 <script src="/static/live.js"></script>
+<script src="/static/hromadas.js"></script>
 <script>
 const THREAT={drones:['🛸',t('th_drones')],ballistic_missiles:['🚀',t('th_bal')],cruise_missiles:['🎯',t('th_cruise')],supersonic_missiles:['⚡',t('th_super')],banderol_missiles:['🛩',t('th_band')],unspecified_missiles:['🎯',t('th_msl')],
   mig31k_departure:['✈️',t('th_mig')],strategic_aircraft_activity:['🛩️',t('th_strat')],tactic_aircraft_activity:['🛩️',t('th_tac')],
@@ -1534,6 +1539,7 @@ async function loadMap(){
   $('neighbors').innerHTML=MAP.features.filter(f=>!f.raion).map(f=>`<path class="nb${f.obl==='29'||f.obl==='30'?' occ':''}" data-o="${f.obl}" data-key="${f.key||''}" data-stem="${f.stem||''}" d="${f.path}"/>`).join('')
 ;
   $('raionsg').innerHTML=MAP.features.filter(f=>f.raion).map(f=>`<path class="rn ${f.raion==='kyiv-city'?'city':''}" data-r="${f.raion}" d="${f.path}"/>`).join('')
+    +'<g id="hromg"></g>'   // 1.58.16: the hromadas under alert — over the raions, under their names
     +Object.entries(RAION_LBL).map(([r,[x,y]])=>`<text class="rnlbl" x="${x}" y="${y}" text-anchor="middle">${esc(raionLbl(r))}</text>`).join('');
   // rivers (coarse): Dnipro incl. Kyiv & Kaniv reservoirs, Desna, Irpin, Teteriv, Ros, Trubizh. 1.45: the first three are
   // replaced by static/map-ua.json's once it has loaded (drawUA), with the rest of the country's rivers; the light
@@ -3354,16 +3360,20 @@ function unitAt(lon,lat){
 }
 // What the government app says about one place: its raion (or the city), never its oblast as a whole — the same
 // rule as the Light page's placeStatus(). R / Y: an air-raid alert over the place's own unit (an oblast-wide one
-// included); H: an alert over a hromada inside its raion (which hromada is the place's cannot be known); G: none
-// over it; U: not known yet.
+// included); H: an alert over a hromada inside its raion that is not the place's — or whose outline is not here yet,
+// so that which hromada is the place's cannot be known; G: none over it; U: not known yet.
+// 1.58.16: a hromada alert whose outline is here (static/hromadas.js) is the place's own when the place is in that
+// hromada or within 1.5 km of it (`h`: its name) — tested on the phone.
 function placeLevel(p){
   if(!p||!S) return {k:'U'}; const u=unitAt(p.lon,p.lat); if(!u) return {k:'U'};
   const air=(S.active||[]).filter(a=>!a.alert_type||a.alert_type==='air_raid');
+  const [px,py]=proj(p.lon,p.lat), hIn=a=>{ const h=hromOf(a); return !!h&&HROMADA.covers(h,px,py); };
   const covers=a=>a.oblast_uid===u.obl&&(a.location_type==='oblast'||(u.obl==='31'&&a.location_type==='city')||(a.location_type==='raion'&&!!a.raion_key&&a.raion_key===u.key));
   const part=a=>a.location_type==='hromada'&&a.oblast_uid===u.obl&&!!a.raion_key&&a.raion_key===u.key;
-  const mine=air.filter(covers), pt=air.filter(a=>!covers(a)&&part(a));
+  const mine=air.filter(a=>covers(a)||hIn(a)), pt=air.filter(a=>!mine.includes(a)&&part(a));
   const since=xs=>xs.filter(a=>a.since_known!==false).map(a=>a.started_at).sort()[0];
-  if(mine.length){ const red=mine.some(a=>a.alert_level!=='yellow'); return {k:red?'R':'Y',since:since(mine),u}; }   // no level (mirror) = red
+  const hn=mine.filter(a=>a.location_type==='hromada'&&!mine.some(covers)).map(a=>LANG==='uk'?a.location_title:(a.location_title_en||pn(a.location_title)));
+  if(mine.length){ const red=mine.some(a=>a.alert_level!=='yellow'); return {k:red?'R':'Y',since:since(mine),u,h:hn[0]}; }   // no level (mirror) = red
   if(pt.length) return {k:'H',since:since(pt),u};
   return {k:'G',u};
 }
@@ -3405,6 +3415,15 @@ function idleLine(){
     +`${alive.length?` · <button type="button" class="tsmore" id="tsua">${esc(t('ts_calm_ua'))}</button>`:''}</small>`];
   return bits.filter(Boolean).join(' ');
 }
+// 1.58.16: the outline of the hromada an official alert names, once its oblast's outlines are here (static/hromadas.js) —
+// such an alert is painted on the hromada, not on its whole raion; without an outline, on the raion as before
+const hromOf=a=>window.HROMADA?HROMADA.of(a):null;
+function hromEl(h){
+  let el=document.getElementById('hr-'+h.id); if(el) return el;
+  const g=$('hromg'); if(!g) return null;
+  el=document.createElementNS('http://www.w3.org/2000/svg','path'); el.id='hr-'+h.id; el.setAttribute('class','nb hr');
+  el.dataset.o=h.o; el.setAttribute('d',HROMADA.path(h)); g.appendChild(el); return el;
+}
 // 1.42: what the official alerts paint on the map — the raions of Kyiv oblast, the city, and the oblasts around with
 // their raions — computed from a list of alerts (the live one, or a past moment's in the replay) without touching the
 // page; applyAlertMap() then paints it. `k` is the city's oblast summary (S.oblasts['31']) when there is one.
@@ -3413,14 +3432,14 @@ function alertMap(active,k){
   const maxL=(a,b)=>(a==='R'||b==='R')?'R':(a||b||'');
   k=k||{}; const cls=new Map(), per={};
   const kW=active.find(a=>a.oblast_uid==='14'&&a.location_type==='oblast'); const kFill=kW?lvl(kW.alert_level):null; const kc=active.find(a=>a.oblast_uid==='31'&&(a.location_type==='oblast'||a.location_type==='city')); const kCity=kc?lvl(kc.alert_level):(k.status==='A'?lvl(k.level):null);
-  const krst={}; for(const a of active.filter(a=>a.oblast_uid==='14'&&a.location_type!=='oblast')){const rk=a.raion_key||raionKey(a.location_title); if(rk) krst[rk]=(krst[rk]==='R'||lvl(a.alert_level)==='R')?'R':'Y';}
+  const krst={}; for(const a of active.filter(a=>a.oblast_uid==='14'&&a.location_type!=='oblast'&&!hromOf(a))){const rk=a.raion_key||raionKey(a.location_title); if(rk) krst[rk]=(krst[rk]==='R'||lvl(a.alert_level)==='R')?'R':'Y';}
   // raion fills (red = red level / full alert, yellow = yellow level)
   document.querySelectorAll('#raionsg .rn').forEach(p=>{const r=p.dataset.r; if(r==='kyiv-city'){cls.set(p,`rn city ${kCity||''}`);return;} const l=maxL(kFill,krst[r]); cls.set(p,`rn ${l}`);});
   // surrounding oblasts: per-raion colours when raion alerts are reported (єТривога / oblast channels / keyed API),
   // otherwise the oblast-wide on/off from the mirror is painted on the oblast outline only
   const REG=scopeRegs(); const rkey=t=>translit(String(t||'').trim().split(/\s+/)[0]).toLowerCase().replace(/[^a-z]/g,'');
   for(const o0 of (MAP?MAP.oblasts:[])){ const uid=o0.uid; if(uid==='14'||uid==='31') continue; const isReg=REG.includes(uid); const occ=o0.occupied;
-    const ra=active.filter(a=>a.oblast_uid===uid&&(a.location_type==='raion'||a.location_type==='hromada'||a.location_type==='city')).map(a=>({a,k:rkey(a.location_title),L:lvl(a.alert_level)}));
+    const ra=active.filter(a=>a.oblast_uid===uid&&(a.location_type==='raion'||a.location_type==='hromada'||a.location_type==='city')&&!hromOf(a)).map(a=>({a,k:rkey(a.location_title),L:lvl(a.alert_level)}));
     const rl={}, paths=document.querySelectorAll(`#neighbors .nb[data-o="${uid}"]`), lv=new Map();
     paths.forEach(pth=>{const st=pth.dataset.stem,key=pth.dataset.key; let l='';
       for(const r of ra){ if((key&&r.a.raion_key===key)||(key&&r.k&&(r.k===key||key.startsWith(r.k.replace(/skyi$|ska$/,''))))||(st&&new RegExp(st,'i').test((r.a.location_title||'').toLowerCase()))){ l=(l==='R'||r.L==='R')?'R':'Y'; } }
@@ -3428,6 +3447,13 @@ function alertMap(active,k){
     const ow=active.find(a=>a.oblast_uid===uid&&a.location_type==='oblast'); const oL=ow?lvl(ow.alert_level):''; const op=document.querySelector(`#oblastsg .ob[data-o="${uid}"]`); if(op) cls.set(op,`ob ${isReg?'region':'far'} ${occ?'occ':''} ${oL}`);
     paths.forEach(pth=>{const l=lv.get(pth); cls.set(pth,'nb '+(occ?'occ ':'')+(l||(oL?'o'+oL:'')));});
     per[uid]={rl,oL}; }
+  // 1.58.16: the hromadas under alert, on their own outlines — left out where their raion is already painted as strongly
+  const hl=new Map();
+  for(const a of active){ const h=hromOf(a); if(!h) continue; const L=lvl(a.alert_level), q=hl.get(h.id); hl.set(h.id,{h,L:maxL(q&&q.L,L)}); }
+  document.querySelectorAll('#hromg .hr').forEach(el=>{ if(!hl.has(el.id.slice(3))) cls.set(el,'nb hr'); });
+  for(const {h,L} of hl.values()){ const el=hromEl(h); if(!el) continue;
+    const pr=per[h.o]||{}, P=h.o==='14'?maxL(kFill,krst[h.r]):((pr.rl||{})[h.r]||pr.oL||'');
+    cls.set(el,P==='R'||P===L?'nb hr':'nb hr '+L); }
   return {cls,per};
 }
 // 1.43: the oblasts the map covers come from the server (the dashboard switches them); Kyiv and its oblast aside
@@ -3449,29 +3475,36 @@ function render(){
   const cityL=isK?(cityWide?lvl(cityWide.alert_level):(k.status==='A'?lvl(k.level):null)):null, oblL=oblWide?lvl(oblWide.alert_level):null;
   const maxL=(a,b)=>(a==='R'||b==='R')?'R':(a||b||'');
   const rname=r=>RAION_ADJ[r]?raionFull(r):(RAION[r]||r);
-  const rst={}; for(const a of raionAlerts){const rk=isK?(a.raion_key||raionKey(a.location_title)):pn(String(a.location_title||'').replace(/\s*район\s*$/i,'')); if(rk) rst[rk]=(rst[rk]==='R'||lvl(a.alert_level)==='R')?'R':'Y';}
-  const anyR=cityL==='R'||oblL==='R'||Object.values(rst).includes('R'), anyY=cityL==='Y'||oblL==='Y'||Object.values(rst).includes('Y');
-  const hasRaions=Object.keys(rst).length>0; const oblFill=oblL;
+  // 1.58.16: a hromada's alert is counted and named as the hromada's, no longer as its raion's ("1 raion red")
+  const rst={}, hst={}; for(const a of raionAlerts){ const L=lvl(a.alert_level);
+    if(a.location_type==='hromada'){ const hk=LANG==='uk'?a.location_title:(a.location_title_en||pn(a.location_title)); if(hk) hst[hk]=(hst[hk]==='R'||L==='R')?'R':'Y'; continue; }
+    const rk=isK?(a.raion_key||raionKey(a.location_title)):pn(String(a.location_title||'').replace(/\s*район\s*$/i,'')); if(rk) rst[rk]=(rst[rk]==='R'||L==='R')?'R':'Y';}
+  const rh=Object.values(rst).concat(Object.values(hst));
+  const anyR=cityL==='R'||oblL==='R'||rh.includes('R'), anyY=cityL==='Y'||oblL==='Y'||rh.includes('Y');
+  const hasRaions=rh.length>0; const oblFill=oblL;
   const st=cityL?cityL:(oblL?maxL(oblL,anyR?'R':''):(hasRaions?(anyR?'R':'Y'):((isK&&k.status==='P')||ko.status==='P'?'P':'N')));
   const since=(isK?k.since:null)||ko.since||(raionAlerts[0]&&raionAlerts[0].started_at);
   const thr=[...new Set([...(isK?k.threats:[]),...(ko.threats||[])].map(t=>`${thrIco(t.threat_type,'currentColor')}${THREAT[t.threat_type]?.[1]||t.threat_type}`))];
   const el=$('kyiv'); el.className='band '+st;
   const nR=Object.values(rst).filter(l=>l==='R').length,nY=Object.values(rst).filter(l=>l==='Y').length;
+  const hR=Object.values(hst).filter(l=>l==='R').length,hY=Object.values(hst).filter(l=>l==='Y').length;
+  const partsRY=[nR?tn('raion_red',nR):'',nY?tn('raion_yel',nY):'',hR?tn('hrom_red',hR):'',hY?tn('hrom_yel',hY):''].filter(Boolean).join(', ');
   const ON=oblFull(MYU); const KY=t('b_kyiv');
-  const big=cityL==='R'?`${KY} · ${t('b_air')}`:cityL==='Y'?`${KY} · ${t('b_yellow')}`:oblL?`${ON} · ${oblL==='R'?t('b_air'):t('b_yellow')}${nR?' · '+tn('raion_red',nR):''}`:hasRaions?`${ON} · ${nR?tn('raion_red',nR):''}${nR&&nY?', ':''}${nY?tn('raion_yel',nY):''}`:st==='P'?`${ON} · ${t('b_partial')}`:`${isK?KY:ON} · ${t('b_clear')}`;
-  const raionList=Object.entries(rst).map(([r,l])=>`${rname(r)} ${l==='R'?t('b_red'):t('b_yel')}`).join(', ');
+  const big=cityL==='R'?`${KY} · ${t('b_air')}`:cityL==='Y'?`${KY} · ${t('b_yellow')}`:oblL?`${ON} · ${oblL==='R'?t('b_air'):t('b_yellow')}${nR||hR?' · '+[nR?tn('raion_red',nR):'',hR?tn('hrom_red',hR):''].filter(Boolean).join(', '):''}`:hasRaions?`${ON} · ${partsRY}`:st==='P'?`${ON} · ${t('b_partial')}`:`${isK?KY:ON} · ${t('b_clear')}`;
+  const raionList=Object.entries(rst).map(([r,l])=>`${rname(r)} ${l==='R'?t('b_red'):t('b_yel')}`).concat(Object.entries(hst).map(([h,l])=>`${h} ${l==='R'?t('b_red'):t('b_yel')}`)).join(', ');
   el.innerHTML=`<div class="dot ${st==='N'?'N':st==='P'?'P':st==='Y'?'Y':'A'}"></div><div><div class="big">${big}</div>
     <div class="small">${cityL?`${t('b_city')} ${cityL==='R'?t('b_red'):t('b_yel')}${oblL?' · '+t('b_oblwide')+' '+(oblL==='R'?t('b_red'):t('b_yel')):hasRaions?' · '+raionList:' · '+t('b_oblclear')}`:oblL?`${isK?t('b_cityclear')+' · ':''}${t('b_oblwide')} ${oblL==='R'?t('b_red'):t('b_yel')}${hasRaions?' · '+raionList:''}`:hasRaions?raionList:(st==='P'?raionAlerts.map(a=>LANG==='uk'?a.location_title:(a.location_title_en||a.location_title)).join(', '):t('b_noalert',isK?t('b_kyivorobl'):ON))}${since&&st!=='N'?' · '+t('b_since')+' '+fmtT(since):''}${thr.length?' · '+thr.join(', '):''}</div></div>
     ${st!=='N'&&since?`<div class="dur">${dur(since)}</div>`:''}`;
   let tst=st;
   if(HOME){ const pl=placeLevel(HOME), k=pl.k, on=k==='R'||k==='Y'||k==='H';
     el.className='band '+(k==='R'?'R':k==='Y'?'Y':k==='H'?'H':'N'); tst=k==='R'?'R':k==='Y'||k==='H'?'Y':'N';
-    el.innerHTML=`<div class="dot"></div><div><div class="big">${esc(t('lt_'+k))}</div><div class="small">${esc([homeName(),unitName(pl.u)].filter(Boolean).join(' · '))}${on&&pl.since?' · '+esc(t('lt_since',fmtT(pl.since))):''} · ${esc(t('mc_off'))}</div></div>${on&&pl.since?`<div class="dur">${dur(pl.since)}</div>`:''}`; }
+    el.innerHTML=`<div class="dot"></div><div><div class="big">${esc(t('lt_'+k))}</div><div class="small">${esc([homeName(),pl.h||unitName(pl.u)].filter(Boolean).join(' · '))}${on&&pl.since?' · '+esc(t('lt_since',fmtT(pl.since))):''} · ${esc(t('mc_off'))}</div></div>${on&&pl.since?`<div class="dur">${dur(pl.since)}</div>`:''}`; }
   document.title=(tst==='R'||tst==='A'?'🔴 ':tst==='Y'||tst==='P'?'🟡 ':'')+'Heimdall';
   // the watched place: its chips, what is near it, the escalation level (1.36)
   paintSlots(); paintCard(true);
   // the map's colours: the raions, the city, the oblasts around (1.42: one function, shared with the replay, which
   // paints the alerts of a past moment with it — the live colours are not painted while a replay is on)
+  if(window.HROMADA) HROMADA.need(S.active,()=>{ if(S) render(); });   // 1.58.16: the outlines of the hromadas under alert
   const AM=alertMap(S.active,k); if(!(window.RP&&RP.on)) applyAlertMap(AM);
   const REG=scopeRegs(); const regTags=[];
   for(const o0 of (MAP?MAP.oblasts:[])){ const uid=o0.uid; if(uid==='14'||uid==='31') continue; const o=ob[uid]; const isReg=REG.includes(uid);

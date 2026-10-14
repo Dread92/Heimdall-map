@@ -27,7 +27,7 @@ except ImportError:            # optional: without it the channel sends text onl
     Image = ImageDraw = ImageEnhance = ImageFont = None
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from areas import RAION_STEM, alert_fill  # noqa: E402,F401  (1.58.7: shared with the server)
+from areas import RAION_STEM, alert_fill, hromada_raion, hromada_rings  # noqa: E402,F401  (1.58.7: shared with the server)
 
 STATIC = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "static")
 FONTS = ("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", "/usr/share/fonts/TTF/DejaVuSans.ttf",
@@ -334,6 +334,21 @@ class MapShot:
             col = RED_T if lvl == "R" else YEL_T
             for r in rings:
                 td.polygon([px(p) for p in r], fill=col)
+            tinted = True
+        # 1.58.16: a hromada of Kyiv oblast under alert, on its own outline (the page's rule: not where its raion is
+        # already painted as strongly); its holes — another hromada inside it — keep what the raion has
+        for fk, lvl in fills.items():                 # (not `k`: the frame's scale)
+            if not fk.startswith("hr:14:"):
+                continue
+            rings = hromada_rings("14", fk[6:])
+            if not rings:
+                continue
+            under = fills.get(hromada_raion("14", fk[6:]) or "")
+            if under == "R" or under == lvl:
+                continue
+            td.polygon([px(p) for p in rings[0]], fill=RED_T if lvl == "R" else YEL_T)
+            for r in rings[1:]:
+                td.polygon([px(p) for p in r], fill=(YEL_T if under == "Y" else (0, 0, 0, 0)))
             tinted = True
         if tinted:
             img.paste(tint, (0, 0), tint)

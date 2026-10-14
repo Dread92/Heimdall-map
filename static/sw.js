@@ -19,7 +19,9 @@ const FAST = ['/static/kyiv-map.json', '/static/map-ua.json', '/static/ukraine-m
   '/static/shelters.js', '/static/shelters.json'];
 const GUIDE = ['/guide', '/static/glyphs.js', '/static/heimdall-64.png'];
 // downloaded at install: small, and shared by both pages
-const SHELL = ['/static/i18n.js', '/static/live.js', '/static/heimdall-192.png', '/static/logo-64.png'];
+// 1.58.16: and the hromadas' outlines helper (static/hromadas.js); the outlines themselves (static/hromadas/<oblast>.json,
+// fetched only for an oblast with a hromada alert) are kept like the rest of the map's drawing — borders, never a status
+const SHELL = ['/static/i18n.js', '/static/live.js', '/static/hromadas.js', '/static/heimdall-192.png', '/static/logo-64.png'];
 // kept when they are first fetched through the worker (never downloaded ahead: a Light reader on 2G does not need
 // the full map) — the page itself from its next opening on
 const KEEP = GUIDE.concat(SHELL, ['/m', '/light', '/static/kyiv-map.json', '/static/map-ua.json', '/static/ukraine-map.json', '/static/light-map.json', '/static/kyiv-districts.json', '/static/towns-ua.json', '/manifest.json', '/light.webmanifest']);
@@ -53,7 +55,7 @@ self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET' || u.origin !== self.location.origin) return;
   if (u.pathname.startsWith('/tiles/sat/')) { e.respondWith(tile(e.request).catch(() => Response.error())); return; }
   const key = ALIAS[u.pathname] || u.pathname;
-  if (FAST.includes(key)) { e.respondWith(fast(key, e.request).catch(() => Response.error())); return; }   // fast() answers from the kept copy
+  if (FAST.includes(key) || /^\/static\/hromadas\/\d+\.json$/.test(key)) { e.respondWith(fast(key, e.request).catch(() => Response.error())); return; }   // fast() answers from the kept copy
   if (!KEEP.includes(key)) return;
   e.respondWith(fetch(e.request).then(r => {
     if (r.ok) { const copy = r.clone(); caches.open(CACHE).then(c => c.put(key, copy)).catch(() => {}); return r; }

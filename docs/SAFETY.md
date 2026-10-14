@@ -274,6 +274,16 @@ oblast-wide alert always paints the oblast; raion-level alerts can only **add** 
 inside a yellow oblast), never reduce or replace it. Getting this wrong — showing "clear" where the
 state says "alert" — is the single most dangerous bug this app can have.
 
+## A hromada's alert is the hromada's (1.58.16)
+
+The official data alerts some hromadas on their own (Nikopol's, Marhanets', Kharkiv's). The government app paints that
+hromada, so this one does too — no longer its whole raion. What cannot change: a place is never told "no alert" while
+its raion has one — a place in the raion but outside the alerted hromada reads **"alert in part of your raion"**, with
+the hromada named; a place within **1.5 km** of the hromada's outline belongs to it (the outlines are right to a few
+hundred metres); and until the outlines are on the phone, or for a hromada that has none, the raion is coloured as
+before. The outlines come from OCHA's data set, the same one the raions come from, matched to the official ids by
+name and raion — an official hromada that cannot be matched without doubt is left to the raion rule.
+
 ## Altitude is read, never guessed
 
 No public source publishes target altitude. So the app shows it **only when a post states it in words**, and

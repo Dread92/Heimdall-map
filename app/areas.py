@@ -1,6 +1,8 @@
 """1.58.7: which official alert area a point is in — Kyiv city, a raion of Kyiv oblast, a raion of an oblast around —, and
 whether that area is under an official alert now. From static/kyiv-map.json, the shapes the Tactical page paints the
 alerts on, so that a point is "under alert" exactly when the page shows it so (alertMap). No Pillow, no network.
+1.58.16: and the hromadas' (static/hromadas/<oblast uid>.json, scripts/build_hromadas.py): an alert the official data
+gives for a hromada is that hromada's, no longer its whole raion's — as the pages now paint it.
 
 Used for the owner's rule (said of 1.58.6): "alarm ALWAYS is better, you see Kyiv isn't under alarm yet so why put a drone icon
 here, it's dangerous" — a target whose post gave only where it is heading is not drawn at that place while the place has
@@ -16,7 +18,8 @@ RAION_STEM = (("бровар", "brovary"), ("бориспіл", "boryspil"), ("�
 def alert_fill(active):
     """The official alerts of the moment → {key: 'R' | 'Y'}, as the Tactical page paints them (alertMap): Kyiv city
     ("kyiv-city"), the raions of Kyiv oblast by key — an oblast-wide alert fills all of them, a raion's or a hromada's
-    its raion —, and for the oblasts around, "obl:<uid>" for an oblast-wide alert and "nb:<raion key>" for a raion's."""
+    its raion —, and for the oblasts around, "obl:<uid>" for an oblast-wide alert and "nb:<raion key>" for a raion's.
+    1.58.16: a hromada with a known outline is "hr:<oblast uid>:<id>" instead of its raion."""
     out = {}
 
     def put(k, lvl):
@@ -25,7 +28,10 @@ def alert_fill(active):
     for a in active or ():
         uid, lt, title = a.get("oblast_uid"), a.get("location_type"), (a.get("location_title") or "").lower()
         lvl = "Y" if a.get("alert_level") == "yellow" else "R"        # no level reported (a mirror) = a full alert
-        if uid == "31":
+        h = hromada_of(a)
+        if h:
+            put("hr:%s:%s" % h, lvl)
+        elif uid == "31":
             put("kyiv-city", lvl)
         elif uid == "14":
             if lt == "oblast":
@@ -44,6 +50,49 @@ def alert_fill(active):
 STATIC = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "static")
 _FEATURES = None
 _BASE = None
+_HROM = {}
+BORDER_KM = 1.5     # the outlines are right to a few hundred metres: this close to a hromada's line counts as in it
+
+
+def _hromadas(obl):
+    """1.58.16: the hromada outlines of one oblast → {official id: (rings, bbox, parent raion key)}, read once; {} when
+    there are none."""
+    if obl not in _HROM:
+        out = {}
+        if str(obl).isdigit():
+            try:
+                with open(os.path.join(STATIC, "hromadas", "%d.json" % int(obl)), encoding="utf-8") as f:
+                    for i, h in json.load(f)["h"].items():
+                        rings = [list(zip(r[0::2], r[1::2])) for r in h["p"]]
+                        xs = [p[0] for r in rings for p in r]
+                        ys = [p[1] for r in rings for p in r]
+                        if xs:
+                            out[i] = (rings, (min(xs), min(ys), max(xs), max(ys)), h.get("r"))
+            except (OSError, ValueError, KeyError, TypeError):
+                pass
+        _HROM[obl] = out
+    return _HROM[obl]
+
+
+def hromada_of(a):
+    """(oblast uid, official id) of the hromada an official alert names, when its outline is known — else None."""
+    if not a or a.get("location_type") != "hromada":
+        return None
+    uid, obl = a.get("location_uid") or "", str(a.get("oblast_uid") or "")
+    rid = uid[3:] if uid.startswith("ua-") else ""
+    return (obl, rid) if rid.isdigit() and rid in _hromadas(obl) else None
+
+
+def hromada_rings(obl, rid):
+    """The rings of a hromada's outline, in the map's km (static/kyiv-map.json's grid) — [] when unknown."""
+    h = _hromadas(obl).get(rid)
+    return h[0] if h else []
+
+
+def hromada_raion(obl, rid):
+    """The key of a hromada's parent raion ("bucha", "nikopolskyi") — None when unknown."""
+    h = _hromadas(obl).get(rid)
+    return h[2] if h else None
 
 
 def _load():
@@ -98,9 +147,43 @@ def area_at(lon, lat):
     return None
 
 
+def _edge_km(x, y, ring):
+    best = 1e9
+    for i in range(len(ring)):
+        (ax, ay), (bx, by) = ring[i - 1], ring[i]
+        dx, dy = bx - ax, by - ay
+        L = dx * dx + dy * dy or 1e-9
+        u = max(0.0, min(1.0, ((x - ax) * dx + (y - ay) * dy) / L))
+        best = min(best, ((ax + u * dx - x) ** 2 + (ay + u * dy - y) ** 2) ** 0.5)
+    return best
+
+
+def in_hromada(lon, lat, fills):
+    """1.58.16: is this point in a hromada the official alerts of the moment name ("hr:" in `fills`), or within
+    BORDER_KM of one?"""
+    keys = [k for k in fills if k.startswith("hr:")]
+    if not keys or lon is None or lat is None or not _load() or _BASE is None:
+        return False
+    x, y = (lon - _BASE["center"][0]) * _BASE["kx"], -(lat - _BASE["center"][1]) * _BASE["ky"]
+    for k in keys:
+        _, obl, rid = k.split(":", 2)
+        h = _hromadas(obl).get(rid)
+        if not h:
+            continue
+        rings, (x0, y0, x1, y1), _r = h
+        m = BORDER_KM
+        if not (x0 - m <= x <= x1 + m and y0 - m <= y <= y1 + m):
+            continue
+        if sum(_inside(x, y, r) for r in rings) % 2 == 1 or min(_edge_km(x, y, r) for r in rings) <= m:
+            return True
+    return False
+
+
 def under_alert(lon, lat, fills):
     """Is the area of this point painted by the official alerts of the moment? `fills`: mapshot.alert_fill(active).
     A point in no known area is taken to be under alert: nothing is held back on a guess."""
+    if in_hromada(lon, lat, fills):
+        return True
     a = area_at(lon, lat)
     if not a:
         return True

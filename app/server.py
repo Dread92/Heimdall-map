@@ -444,7 +444,8 @@ BUILD_FILES = ("static/kyiv.html", "static/light.html", "static/light-map.json",
                "static/nuke.js", "static/sw.js", "static/shelters.js", "app/server.py", "app/geo.py", "app/push.py",
                "static/light-map-x.json", "data/regional_places.json", "static/map-ua.json",
                # 1.58.7: the service's other modules — a change there is a new version too (the server panel's restarts)
-               "app/chanpost.py", "app/mapshot.py", "app/areas.py", "app/ai_reader.py", "app/translate.py")
+               "app/chanpost.py", "app/mapshot.py", "app/areas.py", "app/ai_reader.py", "app/translate.py",
+               "static/hromadas.js", "static/replay.js")   # 1.58.16
 
 
 def build_id():

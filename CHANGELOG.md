@@ -2,6 +2,18 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.16 — 2026-10-14
+
+### Changed
+- **The hromadas on the map** — the owner gave OCHA's administrative boundaries "to help with the districts on the
+  map". The official data names some alerts by hromada ("м. Нікополь та Нікопольська територіальна громада"): until
+  now such an alert coloured its whole raion, a place anywhere in that raion read "alert in part of your raion", and
+  Kharkiv's city hromada coloured nothing. Now the alert is painted on the hromada itself (Tactical, Light, the
+  replay, the channel's picture), a place in that hromada — or within 1.5 km of it — reads it as its own alert, and a
+  place in another hromada of the raion still reads "alert in part of your raion", the hromada named. The band counts
+  hromadas as hromadas ("1 hromada red"), no longer as raions. The outlines (1,456 of the 1,457 official hromadas) are
+  fetched for an oblast only while an alert there names a hromada, about 30 KB.
+
 ## 1.58.15 — 2026-10-14
 
 ### Fixed

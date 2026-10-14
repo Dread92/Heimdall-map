@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-14 (1.58.15)
+**Documented version: 1.58** · last updated 2026-10-14 (1.58.16)
 
 Heimdall was called **Clear Sky** until 1.29; the repository, the Fly app (`kyiv-air-watch-gb`) and some
 internal names still carry the old name.
@@ -144,6 +144,8 @@ clear-sky/
 │   ├── map-ua.json         rivers, main roads, airports and power plants of the whole country (built, 1.45)
 │   ├── towns-ua.json       raion centres and towns of 10,000+ of every oblast, for finding one's way (built, 1.49)
 │   ├── kyiv-districts.json the 10 city districts of Kyiv (OSM)
+│   ├── hromadas/           1.58.16: each official hromada's outline, `<oblast uid>.json` (OCHA COD-AB, built) — fetched for an oblast with a hromada alert
+│   ├── hromadas.js         1.58.16: their test on the phone (is this place in that hromada?), shared by both pages (§6.4)
 │   ├── streets/            1.56: every settlement and named street of each oblast, `<uid>.json` (OSM, built; LICENSE.md: ODbL)
 │   ├── streets.js          1.56: their search, on the phone — loaded by both pages' pin pickers when they open (§10.6)
 │   ├── shelters.json       1.57: the shelters Kyiv city lists (KMDA, ІАС «Майно»; built by scripts/build_shelters.py)
@@ -164,6 +166,7 @@ clear-sky/
 │   └── corpus.jsonl        regression corpus of real posts and their expected readings
 ├── scripts/
 │   ├── build_geo.py        rebuilds data/ua_regions.json and static/light-map.json (`--light`: the Light maps only)
+│   ├── build_hromadas.py   rebuilds static/hromadas/ from OCHA's ukr_admin_boundaries.gdb (pyogrio, shapely; 1.58.16)
 │   ├── build_places.py     rebuilds data/regional_places.json from GeoNames (1.43)
 │   ├── build_extra_places.py rebuilds data/extra_places.json from GeoNames (1.52)
 │   ├── build_mapdata.py    rebuilds static/map-ua.json from Natural Earth (1.45)
@@ -459,6 +462,20 @@ from the official region list, maps:
   are hromadas of their oblast, not the oblast);
 - `ignore`: the API's test region.
 
+**The hromadas' outlines** (1.58.16). `static/hromadas/<oblast uid>.json` (`scripts/build_hromadas.py`) holds the
+outline of 1,456 of the 1,457 official hromadas, keyed by the official id, with its parent raion's shape key — from
+OCHA's COD-AB for Ukraine, admin level 3 (`ukr_admin_boundaries.gdb`, edition v05 valid 2025-09-01, CC BY 3.0 IGO; the
+raion outlines are an older edition of the same data set), matched by the Ukrainian names of the hromada and its raion
+in its oblast (a typo or a cut-short official name — "Гостомелська", "Новояворівськ" — matches its one close
+neighbour; two of one name in one raion are told apart by whether the hromada's centre is a city, as the official list
+says "м. Покров та Покровська …"; the Sumy raion's two Миколаївська are not, and keep the raion rule). In the map's
+kilometres, simplified as one coverage to 0.25 km (neighbours keep one shared line), 0.1 km precision; about 30 KB per
+oblast gzipped. A page fetches an oblast's file only once an official alert there names a hromada (`static/hromadas.js`,
+`HROMADA.need`); until it is here, and for a hromada with no outline, the alert colours its raion as before. The server
+reads them too (`areas.py`: `hromada_of`, `in_hromada`): `alert_fill` gives a hromada with an outline as
+`hr:<oblast>:<id>` instead of its raion, so the held rule (§7.4) and the channel's picture (§9c) follow the hromada as
+the pages do. **A place within 1.5 km of a hromada's outline belongs to it** (`BORDER_KM`, the Light page's raion rule).
+
 An id not in the table is **kept, never dropped**, placed as well as its name allows, and logged once
 ("rebuild ua_regions.json"). Oblast uids follow alerts.in.ua: 31 Kyiv city, 14 Kyiv oblast, 10 Zhytomyr,
 25 Chernihiv, 20 Sumy, 19 Poltava, 24 Cherkasy, 4 Vinnytsia.
@@ -484,7 +501,10 @@ a day from mid-September and "the longest alert" ran from 24 September to 12 Oct
 ### 6.6 What decides a colour, page by page
 
 - **Tactical**: each raion shape is coloured by alerts with its `raion_key` (fallback: name stems); an
-  oblast-wide alert colours all its raions. The banner uses the watched oblast pair (city ⇄ oblast) plus the
+  oblast-wide alert colours all its raions. 1.58.16: a hromada's alert colours the hromada (`#hromg`, over the raions,
+  under their names; `alertMap`), not its raion — left out where the raion is already painted as strongly — once its
+  oblast's outlines are here; until then, or with no outline, its raion. The band counts and names hromadas as
+  hromadas ("Kyiv oblast · 1 hromada red", `hrom_red_*`), no longer as raions. The banner uses the watched oblast pair (city ⇄ oblast) plus the
   home's own raion (found by point-in-shape on the map's outlines). The calm line never says "no alert in the
   oblast" while any raion of it is under one.
 - **Light**: see [§10.2](#102-light-light).
@@ -1825,8 +1845,9 @@ of dozen elsewhere — on an Odesa or Lviv view they did nothing. Now:
   aside. Checked at 320 / 360 / 390 / 1440 px in the three languages.
 - **The card "My place"** (`#mycard`), in the header's flow — never over the map; `syncTop()` measures it:
   the four places as 44 px chips, each with its **own official status** as a dot (`placeLevel()`: R / Y over the
-  place's raion or the city, H a hromada inside its raion, G none, U not known — `unitAt()` finds the unit on the
-  map's own outlines, on the phone); the **official block** (`#kyiv`) — with a place set it says that place's status
+  place's raion or the city, or over its hromada (1.58.16: the place in it, or within 1.5 km — the band then names the
+  hromada), H another hromada of its raion (or one whose outline is not here yet), G none, U not known — `unitAt()`
+  finds the unit on the map's own outlines, on the phone); the **official block** (`#kyiv`) — with a place set it says that place's status
   ("Obolon · Kyiv · since 19:08 · official") and the duration, without one Kyiv's; the **preventive strip**
   (`#tstrip`), whose fresh ballistic or MiG-31K warning adds one sentence ("Little time — go to a shelter now, do
   not wait for the siren", `mc_go_now`, the guide's own rule) and a **What to do** button to `/guide#w-ballistic`;
@@ -1998,8 +2019,9 @@ One place, what concerns it, nothing else. Built to load and be read on 2G (page
   place in Odesa, Kharkiv or Dnipro oblast fetches their raions then (`light-map-x.json`, `loadLMX`), so a reader
   there gets their raion's status without everyone else downloading those outlines. Outside the covered oblasts it
   falls back to the oblast (`ukraine-map.json`).
-- States: **R** / **Y** (alert over the place's unit, official level + reason), **H** (a hromada inside the
-  raion is under alert), **P** (raion unknown, part of the oblast), **G** (no alert over the unit — neighbours
+- States: **R** / **Y** (alert over the place's unit, official level + reason; 1.58.16: or over the place's hromada —
+  in it or within 1.5 km, `placeStatus(uid, PR, pt)`, the hromada named), **H** (another hromada of the raion is under
+  alert, named — or one whose outline is not here yet; the small map draws an alerted hromada on its own outline), **P** (raion unknown, part of the oblast), **G** (no alert over the unit — neighbours
   under alert are *named*, never painted on the place), **U** (no data). "Nothing reported" never says "safe".
 - **Radar: 30 km** (`R_KM`), rings at 10 / 20 / 30 km, over a local map: raions shaded by alert, oblast borders,
   Kyiv's districts, rivers, main roads, towns, villages and neighbourhoods (from `/api/places`), labels placed
@@ -2527,6 +2549,11 @@ refuses a list of under 1,000 shelters (a page of the answer) and names any type
 `python scripts/build_geo.py` — downloads the official region list, rewrites `data/ua_regions.json` and
 `static/light-map.json`, prints any raion it could not match to a map shape. Run the tests; commit both files.
 
+**Rebuild the hromadas' outlines** (1.58.16, after `ua_regions.json` changes or a new COD-AB edition): download OCHA's
+"Ukraine — Subnational Administrative Boundaries" (HDX, `ukr_admin_boundaries.gdb`), then
+`python scripts/build_hromadas.py PATH/ukr_admin_boundaries.gdb` (needs `pyogrio` and `shapely`). It prints the
+official hromadas it matched by a close name and those it could not; commit `static/hromadas/`.
+
 **Telegram sign-in for the API reader**: create an app on <https://my.telegram.org> (API development tools),
 then run `scripts\telegram-login.bat`: it asks for the api_id, the api_hash and the phone number of the reading
 account (a dedicated account is best), signs in with the code Telegram sends, joins the channel, and stores the
@@ -2569,8 +2596,10 @@ Black Flame logos (`logo*.png`, `bf-logo*.png`) stay as they are.
 - `outcomes` is written but nothing reads it yet (`marker_log` and `channel_stats` feed the dashboard's health view).
 - About 265 corpus cases are still pending review; the review left the dashboard in 1.19 and is done from the
   terminal (`scripts/corpus.py`, [CORPUS.md](CORPUS.md)) when needed.
-- Hromada alerts have no shapes of their own: on the Tactical map they colour their parent raion; on Light they
-  are named ("alert in part of your raion").
+- 1.58.16: hromada alerts are painted on their own outlines once the page has fetched that oblast's (a second or two
+  after the alert appears; offline, the raion is coloured). One official hromada has no outline (Sumy raion's
+  Миколаївська — the GDB has two of that name there): its raion is coloured. The channel's all-clear is still by
+  raion and city: a hromada's alert is not its raion's.
 - 1.43: the regional villages come from GeoNames, whose Russian names are often transliterations and whose
   Ukrainian names are sometimes a renamed village's old one; a village GeoNames does not have (Cherkasy's Mytnytsia
   district) is not placed. `chyste_nebocherkasy` needs the Telegram API (its preview is off). The new trackers'

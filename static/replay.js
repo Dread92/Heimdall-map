@@ -66,7 +66,9 @@ async function load(w){
   if(RP.win!==w||!RP.on) return;
   waiting(false);
   if(!d||!d.alerts){ $r('rpcount').textContent=t('rp_err'); return; }
-  for(const a of d.alerts) a.al={oblast_uid:a.o,location_type:a.lt,raion_key:a.rk,alert_level:a.lv,alert_type:a.at,location_title:a.ti};
+  for(const a of d.alerts) a.al={oblast_uid:a.o,location_type:a.lt,raion_key:a.rk,alert_level:a.lv,alert_type:a.at,location_title:a.ti,location_uid:a.k};
+  // 1.58.16: the outlines of the hromadas the night's alerts name (static/hromadas.js) — painted again once here
+  if(window.HROMADA) HROMADA.need(d.alerts.map(a=>a.al),()=>{ RP.asig=null; if(RP.on&&!RP.playing) frame(); });
   d.alerts.forEach((a,i)=>a.i=i);
   RP.data=d; RP.from=d.from*1000; RP.to=d.to*1000;
   const r=$r('rprange'); r.min=RP.from; r.max=RP.to;
