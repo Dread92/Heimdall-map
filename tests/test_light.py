@@ -69,8 +69,9 @@ def test_it_stays_light():
     # 1.58.16 raised it by 0.7 KB: a hromada's alert on the hromada itself — the few lines that load static/hromadas.js
     # once an alert names a hromada (the outlines and their test are not part of the page)
     # 1.58.24 raised the sum by 0.1 KB: a live line that keeps failing is asked again later and later, one at a time
-    assert page < 26_300, f"the light page is no longer light ({page} B gzipped)"
-    assert page + extra < 67_300, f"page + map data = {page + extra} B gzipped"   # 1.58.16: the same 0.6 KB
+    # 1.58.31 raised both by 0.1 KB: with the raion source silent, a raion the oblast-only mirror cannot see is unknown
+    assert page < 26_400, f"the light page is no longer light ({page} B gzipped)"
+    assert page + extra < 67_400, f"page + map data = {page + extra} B gzipped"   # 1.58.16: the same 0.6 KB
     # 1.29: the live line is allowed — the light variant only (alerts and marks, no feed, no raw events). An open
     # line costs the server nothing any more (one thread holds them all) and the phone ~100 bytes every 15 s,
     # against ~8 KB every 15 s for asking.

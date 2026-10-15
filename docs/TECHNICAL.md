@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-15 (1.58.30)
+**Documented version: 1.58** · last updated 2026-10-15 (1.58.31)
 
 The repository is **Dread92/Heimdall-map**. The Fly app keeps its first name, `kyiv-air-watch-gb`: Fly cannot rename
 an app (§15 has the move to a domain of its own).
@@ -431,6 +431,24 @@ painted the whole of Kyiv oblast red while Boryspil raion had been clear for ten
 stands in, the Light page says "official data for the whole oblast only — your raion is unknown", and an alert
 with no known start shows no "since" (`since_known: false`).
 
+**1.58.31, standing in says only what it knows** (`Ubilling.stand_in`). The owner, 15 Oct 2026, 10:17: "everything is
+still red while the official app has lifted the alert in several raions" — siren.pp.ua had not answered since 09:39,
+and the mirror painted Kyiv, Cherkasy and Chernihiv oblasts whole and red (it gives no level) while the government app
+showed four raions of Kyiv oblast, yellow. Now:
+- **an oblast the mirror says is clear has no raion under alert either**: the raion and hromada alerts the silent source
+  left there end (a second `apply_snapshot` over those levels, `scope` = the clear oblasts);
+- **an oblast the mirror says is under alert**, once the raion source has answered at least once (`last_ok`), is
+  `unsure`, with `raions_as_of` (that source's last answer) and a note saying so: the raions as it last showed them stay
+  as they were, and the oblast's summary is "in part" (`P`), not whole. The Tactical page leaves such an alert off the
+  oblast's fill: the raions under a known alert keep their colour, every other raion of the oblast is hatched
+  (`.rn.Q`, `.nb.oQ`, pattern `#hatchQ`) — unknown, never red, never clear; a watched place there reads "alert in part
+  of the oblast" (`P`), and the band adds "official raion data unavailable since 09:39: the raions as they were then,
+  the others unknown" (`b_unsure`). The Light page reads such a place as `P` with "your raion is unknown". The city of
+  Kyiv is one unit: the mirror is exact there, never `unsure`. With no raion source ever heard (a boot with it down),
+  the whole oblast, as before.
+- Production reads the raion data through the keyless siren.pp.ua; a key of the API itself (`UKRAINEALARM_KEY`) or an
+  alerts.in.ua token (`ALERTS_IN_UA_TOKEN`), set by the owner as Fly secrets, removes that single point of failure.
+
 The ukrainealarm reader polls `/alerts/status` every 10 s and reads the full `/alerts` list when the change index
 moves — and **at least every 30 s** regardless, so a level change on an alert already on (yellow → red) is never
 more than half a minute behind (it was up to 2 min before 1.19).
@@ -629,6 +647,32 @@ minutes before (`_drop_retracted()`, also in the replay), the missile mode (`_mi
 warning strip's channel-raised ballistic / MiG-31K warnings. Never an official one — only the official data ends an
 alert. "… не підтвердився" about anything else is an explainer: no mark. `banderol_missiles` removes
 `cruise_missiles` and `unspecified_missiles`.
+
+**1.58.31: a missile only while one was reported.** The owner, 15 Oct 2026, 08:58 — "Ракети ↓ знижується" over
+Troieshchyna from @kievinfo_kyiv's "останній троя, тец-6🚀 знижує висоту", under the state's yellow (drone) level:
+"even propeller drones, jet drones or super high-speed UAVs are still DRONES, not missiles … if the parser hasn't found
+any messages in the channels about missile launches, ballistics, or MiG-31K takeoffs, the system shouldn't have the
+right to put up a «Missile» marker at all … any disputed or high-speed target should default to a drone"; and "«останній»
+in the masculine is always a drone (a Shahed); «остання» in the feminine is a missile".
+- **Words.** `geo.missile_said(text, channel)`: `"named"` — the post names a missile (`MSL_NAMED_RX`: ракета, КР,
+  крилата, балістика, Калібр, Х-101 / 555 / 59 / 69 / 22 / 32 / 47, Іскандер, Кинджал, надзвукова, a MiG-31K, a Tu-95 /
+  Tu-160 / Tu-22M3), or it is the Air Force's "швидкісна ціль" (`MSL_AF_CHANNELS` = kpszsu: its jet drones are "🏍
+  Реактивний БпЛА"); `"weak"` — it only suggests one (`MSL_WEAK_RX`: 🚀 — the Kyiv trackers put it on a Shahed, the Air
+  Force on a KAB — "швидкісна ціль" from anyone else, the feminine "остання"); a Banderol's "реактивна ракета" names no
+  missile (a jet drone). `TYPE_RX`: "останній / останнього / останньому" is a drone (not "останній раз / день / вибух /
+  відбій …"); "остання" reads like 🚀 (not "остання група / хвиля / інформація …"); "КР" is a cruise missile (not
+  "Кр.Ріг"), counted ("2 КР"). `parse_for_channel` flags a missile mark of a "weak" post `msl_weak`.
+- **The rule** (`State._msl_context`, `State._msl_gate`, in `_marks_from_posts`, the live map and the replay alike): a
+  `msl_weak` mark is a missile while a missile was reported — a "named" post of any channel, any oblast, within
+  `MSL_CTX_POST_MIN` (90) minutes before it or `MSL_CTX_AFTER_MIN` (3) after; a carrier airborne or launching
+  (`air_reports` "up" / "launch": MiG-31K, strategic bombers, Tu-22M3, Kalibr carriers) within `MSL_CTX_AIR_MIN` (180);
+  or, live, an official alert's missile threat (`MSL_OFFICIAL`). A retraction ("лаг системи") drops the reports before
+  it. Otherwise it is `unknown` with `likely: "drones"` — "probably a drone" on every page — and its evidence says why
+  (confidence low). The evidence's translation is cached by post, mark and type (`_ev_cache`).
+- **The feed** tags such a post `msl_weak`, not a missile type: no missile chip, no missile mode
+  (`_missile_active`), no ballistic strip from it alone — the Air Force's own post raises those.
+- The official level's colour is never touched by a post (§6.2); with this rule a "missile" over a yellow, drone-threat
+  level appears only when a missile was reported.
 
 ### 7.3 From post to mark (`geo.py`)
 

@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Heimdall (Kyiv Air Watch) — the full technical documentation, with a map of the system.">
-<meta name="heimdall-version" content="1.58.30">
-<meta name="heimdall-docs" content="512bf7e2a152bb88">
+<meta name="heimdall-version" content="1.58.31">
+<meta name="heimdall-docs" content="33cef9e63f694288">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Heimdall Technical Manual</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -237,7 +237,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
 <header class="top">
   <div class="wrap">
     <a class="brand" href="#top"><b>Heimdall</b><span>Technical manual</span></a>
-    <span class="ver">1.58.30</span>
+    <span class="ver">1.58.31</span>
     <nav class="nav" aria-label="Sections">
       <a href="#map">Map</a><a href="#journeys">Journeys</a><a href="#rules">Rules</a><a href="#reference">Reference</a><a href="#safety">Safety</a>
     </nav>
@@ -256,7 +256,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
       <h1 class="title">How Heimdall works</h1>
       <p class="lead">An unofficial air-threat map for Kyiv and the oblasts around it. One Python process reads the official
       alert data and the channels that track drones and missiles, stores every post before it reads it, rebuilds the map
-      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.30, 15 October 2026:
+      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.31, 15 October 2026:
       the map first, then everything in full.</p>
     </div>
     <dl class="facts">
@@ -646,7 +646,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
     <div class="doc" id="doc">
 <section class="part" id="tech" data-label="Reference"><p class="partlabel">Part I · The reference</p>
 <h1 id="heimdall--technical-documentation">Heimdall — technical documentation</h1>
-<p><strong>Documented version: 1.58</strong> · last updated 2026-10-15 (1.58.30)</p>
+<p><strong>Documented version: 1.58</strong> · last updated 2026-10-15 (1.58.31)</p>
 <p>The repository is <strong>Dread92/Heimdall-map</strong>. The Fly app keeps its first name, <code>kyiv-air-watch-gb</code>: Fly cannot rename
 an app (§15 has the move to a domain of its own).</p>
 <p>This is the complete technical reference: what runs, where the data comes from, how a Telegram post becomes a
@@ -1396,6 +1396,25 @@ and still, the occupied areas in a plain tint.</p>
 painted the whole of Kyiv oblast red while Boryspil raion had been clear for ten minutes (24 Sep 2026). When it
 stands in, the Light page says &quot;official data for the whole oblast only — your raion is unknown&quot;, and an alert
 with no known start shows no &quot;since&quot; (<code>since_known: false</code>).</p>
+<p><strong>1.58.31, standing in says only what it knows</strong> (<code>Ubilling.stand_in</code>). The owner, 15 Oct 2026, 10:17: &quot;everything is
+still red while the official app has lifted the alert in several raions&quot; — siren.pp.ua had not answered since 09:39,
+and the mirror painted Kyiv, Cherkasy and Chernihiv oblasts whole and red (it gives no level) while the government app
+showed four raions of Kyiv oblast, yellow. Now:</p>
+<ul>
+<li><strong>an oblast the mirror says is clear has no raion under alert either</strong>: the raion and hromada alerts the silent source
+left there end (a second <code>apply_snapshot</code> over those levels, <code>scope</code> = the clear oblasts);</li>
+<li><strong>an oblast the mirror says is under alert</strong>, once the raion source has answered at least once (<code>last_ok</code>), is
+<code>unsure</code>, with <code>raions_as_of</code> (that source's last answer) and a note saying so: the raions as it last showed them stay
+as they were, and the oblast's summary is &quot;in part&quot; (<code>P</code>), not whole. The Tactical page leaves such an alert off the
+oblast's fill: the raions under a known alert keep their colour, every other raion of the oblast is hatched
+(<code>.rn.Q</code>, <code>.nb.oQ</code>, pattern <code>#hatchQ</code>) — unknown, never red, never clear; a watched place there reads &quot;alert in part
+of the oblast&quot; (<code>P</code>), and the band adds &quot;official raion data unavailable since 09:39: the raions as they were then,
+the others unknown&quot; (<code>b_unsure</code>). The Light page reads such a place as <code>P</code> with &quot;your raion is unknown&quot;. The city of
+Kyiv is one unit: the mirror is exact there, never <code>unsure</code>. With no raion source ever heard (a boot with it down),
+the whole oblast, as before.</li>
+<li>Production reads the raion data through the keyless siren.pp.ua; a key of the API itself (<code>UKRAINEALARM_KEY</code>) or an
+alerts.in.ua token (<code>ALERTS_IN_UA_TOKEN</code>), set by the owner as Fly secrets, removes that single point of failure.</li>
+</ul>
 <p>The ukrainealarm reader polls <code>/alerts/status</code> every 10 s and reads the full <code>/alerts</code> list when the change index
 moves — and <strong>at least every 30 s</strong> regardless, so a level change on an alert already on (yellow → red) is never
 more than half a minute behind (it was up to 2 min before 1.19).</p>
@@ -1701,6 +1720,33 @@ minutes before (<code>_drop_retracted()</code>, also in the replay), the missile
 warning strip's channel-raised ballistic / MiG-31K warnings. Never an official one — only the official data ends an
 alert. &quot;… не підтвердився&quot; about anything else is an explainer: no mark. <code>banderol_missiles</code> removes
 <code>cruise_missiles</code> and <code>unspecified_missiles</code>.</p>
+<p><strong>1.58.31: a missile only while one was reported.</strong> The owner, 15 Oct 2026, 08:58 — &quot;Ракети ↓ знижується&quot; over
+Troieshchyna from @kievinfo_kyiv's &quot;останній троя, тец-6🚀 знижує висоту&quot;, under the state's yellow (drone) level:
+&quot;even propeller drones, jet drones or super high-speed UAVs are still DRONES, not missiles … if the parser hasn't found
+any messages in the channels about missile launches, ballistics, or MiG-31K takeoffs, the system shouldn't have the
+right to put up a «Missile» marker at all … any disputed or high-speed target should default to a drone&quot;; and &quot;«останній»
+in the masculine is always a drone (a Shahed); «остання» in the feminine is a missile&quot;.</p>
+<ul>
+<li><strong>Words.</strong> <code>geo.missile_said(text, channel)</code>: <code>&quot;named&quot;</code> — the post names a missile (<code>MSL_NAMED_RX</code>: ракета, КР,
+крилата, балістика, Калібр, Х-101 / 555 / 59 / 69 / 22 / 32 / 47, Іскандер, Кинджал, надзвукова, a MiG-31K, a Tu-95 /
+Tu-160 / Tu-22M3), or it is the Air Force's &quot;швидкісна ціль&quot; (<code>MSL_AF_CHANNELS</code> = kpszsu: its jet drones are &quot;🏍
+Реактивний БпЛА&quot;); <code>&quot;weak&quot;</code> — it only suggests one (<code>MSL_WEAK_RX</code>: 🚀 — the Kyiv trackers put it on a Shahed, the Air
+Force on a KAB — &quot;швидкісна ціль&quot; from anyone else, the feminine &quot;остання&quot;); a Banderol's &quot;реактивна ракета&quot; names no
+missile (a jet drone). <code>TYPE_RX</code>: &quot;останній / останнього / останньому&quot; is a drone (not &quot;останній раз / день / вибух /
+відбій …&quot;); &quot;остання&quot; reads like 🚀 (not &quot;остання група / хвиля / інформація …&quot;); &quot;КР&quot; is a cruise missile (not
+&quot;Кр.Ріг&quot;), counted (&quot;2 КР&quot;). <code>parse_for_channel</code> flags a missile mark of a &quot;weak&quot; post <code>msl_weak</code>.</li>
+<li><strong>The rule</strong> (<code>State._msl_context</code>, <code>State._msl_gate</code>, in <code>_marks_from_posts</code>, the live map and the replay alike): a
+<code>msl_weak</code> mark is a missile while a missile was reported — a &quot;named&quot; post of any channel, any oblast, within
+<code>MSL_CTX_POST_MIN</code> (90) minutes before it or <code>MSL_CTX_AFTER_MIN</code> (3) after; a carrier airborne or launching
+(<code>air_reports</code> &quot;up&quot; / &quot;launch&quot;: MiG-31K, strategic bombers, Tu-22M3, Kalibr carriers) within <code>MSL_CTX_AIR_MIN</code> (180);
+or, live, an official alert's missile threat (<code>MSL_OFFICIAL</code>). A retraction (&quot;лаг системи&quot;) drops the reports before
+it. Otherwise it is <code>unknown</code> with <code>likely: &quot;drones&quot;</code> — &quot;probably a drone&quot; on every page — and its evidence says why
+(confidence low). The evidence's translation is cached by post, mark and type (<code>_ev_cache</code>).</li>
+<li><strong>The feed</strong> tags such a post <code>msl_weak</code>, not a missile type: no missile chip, no missile mode
+(<code>_missile_active</code>), no ballistic strip from it alone — the Air Force's own post raises those.</li>
+<li>The official level's colour is never touched by a post (§6.2); with this rule a &quot;missile&quot; over a yellow, drone-threat
+level appears only when a missile was reported.</li>
+</ul>
 <h3 id="73-from-post-to-mark-geopy">7.3 From post to mark (<code>geo.py</code>)<a class="anc" href="#73-from-post-to-mark-geopy" aria-label="Link to this section">#</a></h3>
 <p><code>parse_for_channel(channel, text)</code> picks the channel's parser; each returns candidates with an <strong>evidence</strong>
 block for every value:</p>
@@ -5303,7 +5349,7 @@ d'alerte ne sont pas des préférences de style.</p>
 </section>
     </div>
   </div>
-  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.30, 15 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
+  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.31, 15 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
 </main>
 
 <script>

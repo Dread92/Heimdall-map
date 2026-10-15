@@ -265,6 +265,8 @@ COMPASS = [
     ("північ", 0), ("півден", 180), ("півдн", 180), ("захід", 270), ("схід", 90),
 ]
 
+# 1.58.31: "остання" (feminine: ракета) — not "остання група / хвиля / інформація / година"
+_OSTANNIA = r"(?<![а-яіїєґ'])остання\b(?!\s+(?:груп|хвил|інформац|новин|годин|хвилин|ніч|дан|атак|оновлен|зміна|пара|трійка))"
 TYPE_RX = [
     ("ballistic_missiles", re.compile(r"баліст|іскандер|кінжал|к[иі]нджал|х-?47|швидкісн[а-яіїє]*\s+ціл", re.I)),
     # "Мігну31к в небе", "міг 31", "миг31к": the channels decline it and drop the hyphen. The word still has
@@ -282,7 +284,8 @@ TYPE_RX = [
     # "cruise missiles" they were drawn at a fifth of their speed and filtered by a radius they cross in
     # seven seconds. Tested before cruise, because the cruise pattern used to swallow them.
     ("supersonic_missiles", re.compile(r"х-?22|х-?32|надзвуков", re.I)),
-    ("cruise_missiles", re.compile(r"крилат|калібр|калиб|х-?101|х-?555|х-?59|х-?69|\bракет", re.I)),
+    # 1.58.31: "КР" — the channels' крилата ракета ("2 КР на Київ" drew a target of no type); not "Кр.Ріг", "Кр Ріг"
+    ("cruise_missiles", re.compile(r"крилат|калібр|калиб|х-?101|х-?555|х-?59|х-?69|\bракет|(?<![\w.])кр(?![\w.])(?!\s*р[іи]г)", re.I)),
     ("guided_aerial_bombs", re.compile(r"\bкаб", re.I)),
     # "стратегічн" alone matched "стратегічний форум", "стратегічна сесія", "стратегічне партнерство" —
     # a youth forum in Poltava oblast was drawn as three Tu-95 formations. It has to be the aviation.
@@ -294,13 +297,48 @@ TYPE_RX = [
                           r"молні[яюїі]|молни[яюи]|ланцет|\d+\s*звичайн|"
                           # 1.58.28: "Лукʼянівка зайшов звичайний" (@chyste_nebo) — the trackers' word for a Shahed, as
                           # against "реактивний"; not "звичайний режим", "звичайний день"
-                          r"(?<![а-яіїєґ'])звичайн(?:ий|і|их)\b(?!\s+(?:режим|день|розклад|громадян|люд|рух|порядок))", re.I)),
+                          r"(?<![а-яіїєґ'])звичайн(?:ий|і|их)\b(?!\s+(?:режим|день|розклад|громадян|люд|рух|порядок))|"
+                          # 1.58.31, the owner: "when they write «останній» in the masculine, it's always a drone (a Shahed);
+                          # «остання» in the feminine is a missile" — "останній троя, тец-6🚀 знижує висоту" (@kievinfo_kyiv)
+                          r"(?<![а-яіїєґ'])останн(?:ій|ього|ьому)\b(?!\s+(?:раз|час|день|дн|тиж|місяц|рік|рок|момент|відбій|допис|пост|новин|вибух|сигнал))", re.I)),
     # A bare rocket emoji means "a missile" on these channels, not "a ballistic missile". Reading it as
     # ballistic gave the loudest treatment in the app — white spike, one-second refresh — to an emoji.
-    ("unspecified_missiles", re.compile(r"\U0001f680", re.I)),                                 # 🚀
+    # 1.58.31: and the feminine "остання" — the trackers' word for the last missile (ракета) — read like the emoji: a
+    # missile only when one was reported (MSL_WEAK_RX, server State._msl_context)
+    ("unspecified_missiles", re.compile(r"\U0001f680|" + _OSTANNIA, re.I)),                       # 🚀
     ("guided_aerial_bombs", re.compile(r"\U0001f4a3", re.I)),                                  # 💣
     ("drones", re.compile(r"[\U0001f6f8\U0001f6f5\U0001f3cd\U0001f6f5\U0001f681]|\U0001f17f", re.I)),   # 🛸 🛵 🏍 🚁 🅿 — the channels' shorthand for a strike drone
 ]
+# 1.58.31, the owner (15 Oct 2026, 08:58 — a "missile" over Troieshchyna under the state's yellow, drone-threat level):
+# "even propeller drones, jet drones or super high-speed UAVs are still DRONES, not missiles … if the parser hasn't found
+# any messages in the channels about missile launches, ballistics, or MiG-31K takeoffs, the system shouldn't have the
+# right to put up a «Missile» marker at all". What only suggests a missile — the 🚀 the trackers also put on a Shahed (and
+# the Air Force on a KAB), "швидкісна ціль", the feminine "остання" — is a missile only while one was reported (the server's
+# State._msl_context); a word that names one is one: ракета, КР, крилата, балістика, Калібр, Х-101, Іскандер, Кинджал, a
+# MiG-31K, a strategic bomber. A Banderol is a jet drone (its "реактивна ракета" names no missile).
+MSL_WEAK_RX = re.compile(r"\U0001f680|швидкісн\w*\s+ціл|" + _OSTANNIA, re.I)
+MSL_NAMED_RX = re.compile(r"баліст|іскандер|кінжал|к[иі]нджал|х-?47|kn-?23|х-?22|х-?32|надзвуков|крилат|калібр|калиб|х-?101|"
+                          r"х-?555|х-?59|х-?69|(?<![а-яіїєґ'])ракет|(?<![\w.])кр(?![\w.])(?!\s*р[іи]г)|м[іи]г\w{0,3}\s?-?\s?31|ту-?95|ту-?160|ту-?22", re.I)
+# the Air Force's own word for a ballistic or aeroballistic missile ("🚀 Швидкісна ціль на Дніпропетровщині") — its jet
+# drones are "🏍 Реактивний БпЛА"; its 🚀 is no proof ("🚀КАБи на Харківщину")
+MSL_AF_RX = re.compile(r"швидкісн\w*\s+ціл", re.I)
+MSL_AF_CHANNELS = frozenset({"kpszsu"})
+MISSILE_KINDS = frozenset({"ballistic_missiles", "cruise_missiles", "supersonic_missiles", "unspecified_missiles"})
+
+
+def missile_said(text, channel=None):
+    """"named" — the post names a missile (or the Air Force says "швидкісна ціль"); "weak" — it only suggests one (🚀,
+    "швидкісна ціль", "остання"); None — neither."""
+    t = text or ""
+    for _n, rx in TYPE_RX:
+        if _n == "banderol_missiles":
+            t = rx.sub(" ", t)               # "реактивна ракета", "ракета з БпЛА": a Banderol, a jet drone
+            break
+    if MSL_NAMED_RX.search(t) or (channel in MSL_AF_CHANNELS and MSL_AF_RX.search(t)):
+        return "named"
+    return "weak" if MSL_WEAK_RX.search(t) else None
+
+
 CLEAR_RX = re.compile(r"відбій|загроза минула|небезпека минула|зникл", re.I)
 ALERT_MSG_RX = re.compile(r"повітрян[а-яіїє]* тривог|відбій|рівень (тривоги|небезпеки)|загроза застосування|(прямуйте|перейдіть|пройдіть) (в|до) укритт|небезпека минула|оголошен[оа] тривог|"
                           # 1.45: "Полтавський район - тривога / Загроза реактивних БпЛА з Дніпропетровщини" (@PoltavaRadar):
@@ -309,7 +347,7 @@ ALERT_MSG_RX = re.compile(r"повітрян[а-яіїє]* тривог|відб
                           r"\bзагроза\s+(?:реактивн\w*\s+|ударн\w*\s+)?(?:бпла|шахед\w*|дрон\w*)\s+з\b|"
                           r"\bзагроза\s+(?:ракетного|комбінованого|ударних\s+(?:бпла|дронів))", re.I)
 MOVE_RX = re.compile(r"курс|напрям|летить|летять|летіла|рухаєт|у бік|в бік|пролітає|проходить|заходить|повз |\bнад\s|поблизу|в районі|\bбіля|з боку|зі сторони|→|➡", re.I)
-COUNT_RX = re.compile(r"(\d{1,3})\s*(?:х|x|×)\b|(\d{1,3})\s+(?:ударн\w*\s+|реактивн\w*\s+|звичайн\w*\s+)*(?:бпла|шахед|дрон|ракет|каб|реакт|бандерол)", re.I)
+COUNT_RX = re.compile(r"(\d{1,3})\s*(?:х|x|×)\b|(\d{1,3})\s+(?:ударн\w*\s+|реактивн\w*\s+|звичайн\w*\s+)*(?:бпла|шахед|дрон|ракет|каб|реакт|бандерол|кр(?![\w.]))", re.I)
 # a jet-powered drone: "реактивний", and the Chernihiv tracker's "реакт" / "реакти" (1.43)
 JET_RX = re.compile(r"реактив|\bреакт(?:и|ів|ом|а|ами)?\b|jet", re.I)
 GROUP_RX = re.compile(r"\bгруп", re.I)
@@ -2739,6 +2777,10 @@ def parse_for_channel(channel, text, near=None):
         hc = _OBL_CENTRE.get(home)
         ms = [m for m in ms if m.get("lon") is None or m.get("oblast_uid") in named or not hc
               or _km((m["lon"], m["lat"]), hc) <= 300]
+    if ms and missile_said(text, channel) == "weak":
+        for m in ms:
+            if m.get("type") in MISSILE_KINDS:
+                m["msl_weak"] = True                # 1.58.31: a missile only while one was reported (server)
     if ms and REGULAR_RX.search(_norm(text)) and not JET_RX.search(_norm(text)):
         for m in ms:
             if m.get("type") in ("drones", "unknown") and not m.get("status"):

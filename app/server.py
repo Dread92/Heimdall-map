@@ -212,7 +212,7 @@ FEED_TAGS = [
     # banner — for an aeroballistic missile that reaches Kyiv in minutes
     ("ballistic_missiles", re.compile(r"баліст|іскандер|кінжал|к[иі]нджал|х-?47|kn-?23|балістич", re.I)),
     ("banderol_missiles", re.compile(r"бандерол", re.I)),
-    ("cruise_missiles", re.compile(r"крилат|калібр|калиб|х-?101|х-?555|х-?59|х-?69|х-?22|х-?32|ракет", re.I)),
+    ("cruise_missiles", re.compile(r"крилат|калібр|калиб|х-?101|х-?555|х-?59|х-?69|х-?22|х-?32|ракет|(?<![\w.])кр(?![\w.])(?!\s*р[іи]г)", re.I)),
     # the channels decline it and drop the hyphen ("Мігну31к в небе"), so міг/миг/mig then 31 within three letters
     ("mig31k_departure", re.compile(r"м[іи]г\w{0,3}\s?-?\s?31|mig\w{0,3}\s?-?\s?31", re.I)),
     ("strategic_aircraft_activity", re.compile(r"ту-?95|ту-?160|ту-?22|стратегічн", re.I)),
@@ -402,8 +402,9 @@ def tag_feed_text(text, channel=None, near=None):
         except Exception:
             ms = []
         for m in ms:
-            if m["type"] not in tags:
-                tags.append(m["type"])
+            ty = "msl_weak" if m.get("msl_weak") else m["type"]      # 1.58.31: a missile only while one was reported
+            if ty not in tags:
+                tags.append(ty)
             if m.get("oblast_uid") in ("14", "31") and "kyiv" not in tags:
                 tags.append("kyiv")
             if m.get("oblast_uid") in REGION_UIDS and "region" not in tags:     # the oblasts around Kyiv, for the feed filter
@@ -3283,7 +3284,7 @@ class State:
                             if t.get("threat_type") not in old_types:
                                 events.append({"kind": "threat", "ts": ts, "alert": a, "threat": t})
                         changed = True
-                    if old.get("alert_level") != a.get("alert_level"):
+                    if old.get("alert_level") != a.get("alert_level") or old.get("unsure") != a.get("unsure"):
                         changed = True
                     if changed:
                         self.active[key] = a
@@ -3322,6 +3323,7 @@ class State:
 
     _marker_cache = {}
     _named_cache = {}        # 1.46: post id → the oblasts its text names (geo.oblasts_named)
+    _msl_named = {}          # 1.58.31: post id → it names a missile (geo.missile_said)
     _ev_cache = {}
     _impact_cache = {}
     _impact_res = {}
@@ -3382,6 +3384,7 @@ class State:
             log(f"marker log failed: {e}")
         if len(self._marker_cache) > 2000:
             self._marker_cache.clear()
+            self._msl_named.clear()
             self._ev_cache.clear()
             self._named_cache.clear()
         return out
@@ -3473,6 +3476,79 @@ class State:
                 out.setdefault(ck, []).append((t, m["lon"], m["lat"]))
         return out
 
+    # -- 1.58.31: a missile only while one was reported ------------------------------------------------------------
+    # The owner (15 Oct 2026, 08:58, a "missile" over Troieshchyna while the state's level was yellow — a drone threat):
+    # "even propeller drones, jet drones or super high-speed UAVs are still DRONES, not missiles … if the parser hasn't found
+    # any messages in the channels about missile launches, ballistics, or MiG-31K takeoffs, the system shouldn't have the
+    # right to put up a «Missile» marker at all … any disputed or high-speed target should default to a drone". A mark the
+    # post only suggested is a missile (geo.MSL_WEAK_RX: 🚀, "швидкісна ціль", "остання") is one while a missile was
+    # reported within MSL_CTX_POST_MIN before it (or MSL_CTX_AFTER_MIN after), a carrier was airborne or launched within
+    # MSL_CTX_AIR_MIN, or the official alert says missiles; else a probable drone. A post that names a missile is one.
+    MSL_CTX_POST_MIN, MSL_CTX_AIR_MIN, MSL_CTX_AFTER_MIN = 90, 180, 3
+    MSL_OFFICIAL = frozenset({"ballistic_missiles", "cruise_missiles", "supersonic_missiles", "mig31k_departure"})
+
+    def _msl_context(self, posts):
+        """[(time, minutes it counts for before a post, what)], oldest first: each post that names a missile
+        (geo.missile_said "named": ракета, КР, балістика, Калібр, Х-101, Іскандер, Кинджал, a MiG-31K, a strategic bomber;
+        the Air Force's "швидкісна ціль"), any channel, any oblast — a channel's retraction drops the ones before it; each
+        carrier airborne or launch (`air_reports`); and, live, an official alert's missile threat."""
+        ts = [t for t in (parse_iso(p.get("ts")) for p in posts) if t]
+        if not ts or not geo:
+            return []
+        a = (min(ts) - timedelta(minutes=self.MSL_CTX_AIR_MIN)).isoformat()
+        b = (max(ts) + timedelta(minutes=self.MSL_CTX_AFTER_MIN)).isoformat()
+        st = self.store
+        with st.lock:
+            rows = st.conn.execute("SELECT post_id, channel, ts, text, tags FROM feed WHERE ts>=? AND ts<=? AND (tags LIKE '%missile%' "
+                                   "OR tags LIKE '%mig31k%' OR tags LIKE '%strategic%' OR tags LIKE '%retract%') ORDER BY ts", (a, b)).fetchall()
+            air = st.conn.execute("SELECT ts, kind, phase FROM air_reports WHERE ts>=? AND ts<=? AND phase IN ('up', 'launch')",
+                                  (a, b)).fetchall()
+        out = []
+        for pid, ch, t, text, tags in rows:
+            when = parse_iso(t)
+            if not when:
+                continue
+            if '"retract"' in (tags or ""):
+                out = []                            # "ймовірно лаг системи": what was reported before it no longer counts
+                continue
+            named = self._msl_named.get(pid)
+            if named is None:
+                named = self._msl_named[pid] = geo.missile_said(geo.prepare(text or "", ch), ch) == "named"
+            if named:
+                out.append((when, self.MSL_CTX_POST_MIN, f"a missile reported at {when.astimezone(kyiv_tz()):%H:%M}"))
+        for t, kind, phase in air:
+            when = parse_iso(t)
+            if when:
+                out.append((when, self.MSL_CTX_AIR_MIN, f"{AIR_LABEL.get(kind, kind)} {'launching' if phase == 'launch' else 'airborne'} "
+                                                        f"at {when.astimezone(kyiv_tz()):%H:%M}"))
+        now = datetime.now(timezone.utc)
+        with self.lock:
+            off = any((t.get("threat_type") if isinstance(t, dict) else t) in self.MSL_OFFICIAL
+                      for al in self.active.values() for t in (al.get("threats") or []))
+        if off:
+            out.append((now, self.MSL_CTX_POST_MIN, "the official alert's missile threat"))
+        return sorted(out, key=lambda x: x[0])
+
+    def _msl_gate(self, m, pts, ctx):
+        """A mark its post only suggested is a missile: one while a missile was reported (ctx), else a probable drone."""
+        m.pop("msl_weak", None)
+        hit = None
+        for t, win, what in ctx:
+            if pts and (timedelta(0) <= pts - t <= timedelta(minutes=win) or timedelta(0) < t - pts <= timedelta(minutes=self.MSL_CTX_AFTER_MIN)):
+                hit = what
+        ev = dict(m.get("evidence") or {})
+        ty = dict(ev.get("type") or {})
+        if hit:
+            ty.update(method=f"the post only suggested a missile (🚀, «швидкісна ціль» or «остання»); {hit}", confidence="medium")
+        else:
+            m.update(type="unknown", likely="drones")
+            ty.update(method="the post only suggested a missile (🚀, «швидкісна ціль» or «остання») and no missile was reported — "
+                             "no launch, no ballistic threat, no MiG-31K, no carrier in the air: a drone, probably (jet drones "
+                             "fly high and fast; the trackers put 🚀 on them too)", confidence="low")
+        ev["type"] = ty
+        m["evidence"] = ev
+        return m
+
     def _marks_from_posts(self, posts, kyiv_ends, cache, evidence=True):
         """Posts (oldest first) → the marks they place, each read in the context of the channel's previous post.
         The live map (markers) and the replay (1.42) read posts through this one function, so a replayed night is
@@ -3492,6 +3568,7 @@ class State:
         alt_by_channel = {}      # 1.58.28: each stream's last stated height: (its position's time, when, metres)
         near_by_channel = {}     # 1.45: the oblasts each channel named (or reported in) lately — geo's `near`
         ahead = None             # 1.54.7: each channel's placed reports, for a shared name's next report (_reports_ahead)
+        msl_ctx = None           # 1.58.31: when a missile was reported around these posts (_msl_context), read once
         for p in posts:
             ck = p["channel"] + (geo.context_stream(p["channel"], p.get("text")) if geo else "")   # 1.58.25: the channel's stream
             pts = parse_iso(p["ts"])
@@ -3527,6 +3604,10 @@ class State:
             n_here = sum(1 for m in ms if not m.get("status"))      # 1.56.3: how many targets this post reports
             for m in ms:
                 m = dict(m)
+                if m.get("msl_weak"):
+                    if msl_ctx is None:
+                        msl_ctx = self._msl_context(posts)
+                    self._msl_gate(m, pts, msl_ctx)
                 if m.get("candidates"):
                     # 1.43: a name several villages of the oblast share ("Ивановка", "Троицкое"). The one within 60 km of
                     # this channel's report of the last half hour is the one it means; with no such report, the clear
@@ -3712,7 +3793,7 @@ class State:
                     out.append(dict(m, id=f"{p['post_id']}#{i}", ts=p["ts"], channel=p["channel"]))
                     continue
                 if ev and _tr:
-                    ck = (p["post_id"], i)
+                    ck = (p["post_id"], i, m.get("type"))     # 1.58.31: the type can change with what was reported since
                     cached = self._ev_cache.get(ck)
                     if cached is None:
                         # evidence fragments use the fast offline glossary (no network per request)
@@ -5674,7 +5755,7 @@ class State:
             o = by_oblast.get(a["oblast_uid"])
             if not o:
                 continue
-            if a["location_type"] == "oblast":
+            if a["location_type"] == "oblast" and not a.get("unsure"):    # 1.58.31: a stand-in's unsure oblast: in part
                 o["status"] = "A"
                 if a.get("since_known", True):   # a mirror alert with no start time has no "since"
                     o["since"] = a["started_at"] if not o["since"] or a["started_at"] < o["since"] else o["since"]
@@ -6312,12 +6393,35 @@ class Ubilling(threading.Thread):
 
     It lights an oblast as soon as any raion in it is under alert, so it can only be a fallback: it stands in
     when no raion-level source answers (`detail` unhealthy), and otherwise just reports its own health.
+
+    1.58.31, the owner (15 Oct 2026, 10:17): "everything is still red while the official app has lifted the alert in
+    several raions". siren.pp.ua did not answer from 09:39 to 10:17; the mirror stood in and painted Kyiv, Cherkasy and
+    Chernihiv oblasts whole, red (it gives no level), while the government app showed four raions of Kyiv oblast, yellow.
+    Standing in (`stand_in`), it now says only what it knows:
+      - an oblast it says is clear has no raion under alert either: the raion alerts the silent source left there end;
+      - an oblast it says is under alert, where the raion source has answered before, is `unsure` — the raions as that
+        source last showed them (`raions_as_of`) stay as they were, and the pages show the others as unknown (hatched,
+        "your raion: unknown"), never as clear and never as all red. The city of Kyiv is one unit: the mirror is exact.
     """
     NAME = "ubilling_mirror"
 
     def __init__(self, state, cfg, primary, detail=None):
         super().__init__(daemon=True)
         self.state, self.cfg, self.primary, self.detail = state, cfg, primary, detail
+
+    def stand_in(self, alerts, off):
+        """Apply the mirror's oblasts while the raion source is silent (see the class)."""
+        seen = getattr(self.detail, "last_ok", 0) if self.detail else 0
+        if seen:
+            asof = datetime.fromtimestamp(seen, timezone.utc).isoformat(timespec="seconds")
+            for a in alerts:
+                if a["oblast_uid"] != "31":
+                    a.update(unsure=True, raions_as_of=asof,
+                             notes=f"keyless mirror — oblast level only; the raions as the official data last showed them at "
+                                   f"{datetime.fromtimestamp(seen, kyiv_tz()):%H:%M}")
+        self.state.apply_snapshot(self.NAME, alerts, {"oblast"})
+        if off:
+            self.state.apply_snapshot(self.NAME, alerts, {"raion", "hromada", "city", "unknown"}, scope=off)
 
     def run(self):
         interval = max(20, int(self.cfg.get("poll_ubilling_seconds", 30)))
@@ -6351,7 +6455,8 @@ class Ubilling(threading.Thread):
                 self.state.set_source(self.NAME, True, count=len(alerts), cached_at=data.get("cachedat"),
                                       note="standing in: oblast level only" if standing_in and self.detail else None)
                 if standing_in:
-                    self.state.apply_snapshot(self.NAME, alerts, {"oblast"})
+                    off = {norm_uk(n) for n, v in (data.get("states") or {}).items() if norm_uk(n) and not v.get("alertnow")}
+                    self.stand_in(alerts, off)
             except Exception as e:
                 self.state.set_source(self.NAME, False, error=str(e)[:200])
                 log("ubilling error:", e)

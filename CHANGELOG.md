@@ -2,6 +2,27 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.31 — 2026-10-15
+
+### Fixed
+- **A drone is a drone until a missile is reported** — the owner: "Ракети" over Obolon and Troieshchyna at 08:48–08:58,
+  from "останній троя, тец-6🚀 знижує висоту", while the state's level was yellow (a drone threat): "even jet drones or
+  super high-speed UAVs are still drones, not missiles … if no channel reported a missile launch, ballistics or a MiG-31K
+  takeoff, the system shouldn't have the right to put up a missile". Now:
+  - what only suggests a missile — 🚀 (the trackers put it on Shaheds), "швидкісна ціль", the feminine "остання" — is a
+    missile only while one was reported: a post naming one (ракета, КР, балістика, Калібр, Іскандер, Кинджал…) in the
+    90 minutes before, a MiG-31K or a strategic bomber in the air or launching in the 3 hours before, or the official
+    alert's missile threat; otherwise "probably a drone";
+  - "останній" (masculine) is a drone; "КР" is a cruise missile, counted ("2 КР");
+  - the Air Force's own "швидкісна ціль" still means a missile;
+  - a post that only suggests a missile no longer raises the missile mode or the ballistic warning on its own.
+- **When the official raion data goes silent, the map no longer paints whole oblasts red** — the owner, 10:17:
+  "everything is still red while the official app has lifted the alert in several raions". The raion-level source did
+  not answer from 09:39 to 10:17, and the backup, which knows only whole oblasts, stood in. Now an oblast the backup says
+  is clear ends its raions' alerts; an oblast it says is under alert keeps the raions as the official data last showed
+  them, and the others are hatched — unknown, never red, never clear — with "official raion data unavailable since
+  09:39" on the band.
+
 ## 1.58.30 — 2026-10-15
 
 ### Fixed

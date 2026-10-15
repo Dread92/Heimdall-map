@@ -455,6 +455,8 @@ body.m-day #heatleg{background:rgba(255,255,255,.96)}.ob.far{stroke:#1a2029;fill
 .rvlbl{fill:#6fa3e8;fill-opacity:.8;font:italic 600 calc(var(--k,1)*10px) system-ui;pointer-events:none}
 .rn{fill:#141920;stroke:#2b3340;stroke-width:1px;vector-effect:non-scaling-stroke;transition:fill .5s}
 .rn.R{fill:rgba(229,72,77,.34)}.rn.Y{fill:rgba(245,185,64,.24)}.rn.P{fill:rgba(245,185,64,.22)}
+/* 1.58.31: a raion whose state is unknown — the raion source silent, the oblast-only mirror standing in: hatched, never red, never clear */
+svg .rn.Q,svg .nb.oQ{fill:url(#hatchQ)!important;fill-opacity:1!important}
 .rn.city{stroke:#8fb4ff;stroke-width:1.6px;fill:#181f2a}
 .rn.city.R{fill:rgba(229,72,77,.46)}.rn.city.Y{fill:rgba(245,185,64,.34)}.rn.city.P{fill:rgba(245,185,64,.32)}
 /* 1.58.16: a hromada under an official alert, on its own outline (static/hromadas.js); it takes the neighbouring raions'
@@ -1545,7 +1547,7 @@ async function loadMap(){
   MAP=await (await fetch('/static/kyiv-map.json')).json(); KX=MAP.kx;KY=MAP.ky;C=MAP.center;
   // 1.45.1: the street tiles are drawn inside Ukraine only (#uaclip, the oblasts' outlines): Moldova, Romania, Belarus,
   // Russia and their labels are not this map's business, and on a wide view they buried it
-  $('oblastsg').innerHTML=`<defs><pattern id="occ" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#141a22"/><rect width="2" height="6" fill="#2a2f3a"/></pattern><clipPath id="uaclip">${(MAP.oblasts||[]).map(o=>`<path d="${o.path}"/>`).join('')}</clipPath></defs>`
+  $('oblastsg').innerHTML=`<defs><pattern id="occ" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#141a22"/><rect width="2" height="6" fill="#2a2f3a"/></pattern><pattern id="hatchQ" width="2.2" height="2.2" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="2.2" height="2.2" fill="rgba(245,185,64,.05)"/><rect width=".55" height="2.2" fill="rgba(245,185,64,.34)"/></pattern><clipPath id="uaclip">${(MAP.oblasts||[]).map(o=>`<path d="${o.path}"/>`).join('')}</clipPath></defs>`
     +(MAP.oblasts||[]).map(o=>`<path class="ob ${o.region?'region':'far'}${o.occupied?' occ':''}" data-o="${o.uid}" d="${o.path}"/>`).join('');
   // The Cossack sits above the raion outlines of Crimea, not under them: drawn under, the outlines ran
   // across him and, zoomed out, he looked broken.
@@ -3425,15 +3427,21 @@ function placeLevel(p){
   if(!p||!S) return {k:'U'}; const u=unitAt(p.lon,p.lat); if(!u) return {k:'U'};
   const air=(S.active||[]).filter(a=>!a.alert_type||a.alert_type==='air_raid');
   const [px,py]=proj(p.lon,p.lat), hIn=a=>{ const h=hromOf(a); return !!h&&HROMADA.covers(h,px,py); };
-  const covers=a=>a.oblast_uid===u.obl&&(a.location_type==='oblast'||(u.obl==='31'&&a.location_type==='city')||(a.location_type==='raion'&&!!a.raion_key&&a.raion_key===u.key));
+  // 1.58.31: a stand-in's oblast alert (`unsure`: the raion source silent) covers no raion of its own — the raions the
+  // official data last showed stay as they were, any other is unknown (P), never all red, never clear
+  const covers=a=>a.oblast_uid===u.obl&&((a.location_type==='oblast'&&!a.unsure)||(u.obl==='31'&&a.location_type==='city')||(a.location_type==='raion'&&!!a.raion_key&&a.raion_key===u.key));
   const part=a=>a.location_type==='hromada'&&a.oblast_uid===u.obl&&!!a.raion_key&&a.raion_key===u.key;
   const mine=air.filter(a=>covers(a)||hIn(a)), pt=air.filter(a=>!mine.includes(a)&&part(a));
   const since=xs=>xs.filter(a=>a.since_known!==false).map(a=>a.started_at).sort()[0];
   const hn=mine.filter(a=>a.location_type==='hromada'&&!mine.some(covers)).map(a=>LANG==='uk'?a.location_title:(a.location_title_en||pn(a.location_title)));
   if(mine.length){ const red=mine.some(a=>a.alert_level!=='yellow'); return {k:red?'R':'Y',since:since(mine),u,h:hn[0]}; }   // no level (mirror) = red
   if(pt.length) return {k:'H',since:since(pt),u};
+  const uq=air.find(a=>a.unsure&&a.oblast_uid===u.obl); if(uq) return {k:'P',u,q:uq};
   return {k:'G',u};
 }
+// 1.58.31: the raion source silent, the oblast-only mirror standing in — "the official raion data unavailable since 09:39"
+const unsureOf=uid=>(S&&S.active||[]).find(a=>a.unsure&&a.oblast_uid===uid);
+const unsureNote=uid=>{ const q=unsureOf(uid); return q?t('b_unsure',fmtT(q.raions_as_of)):''; };
 const unitName=u=>!u?'':u.obl==='31'?t('b_kyiv'):(u.obl==='14'&&RAION_ADJ[u.key])?raionFull(u.key):oblFull(u.obl);
 // What the official system says about the reader's own region: R, Y, or nothing. The banner takes its
 // colour from this and not from the threat type, so the strip can never be a different colour from the
@@ -3488,10 +3496,11 @@ function alertMap(active,k){
   const lvl=x=>x==='yellow'?'Y':'R';                 // no level reported (mirror) = full red alert
   const maxL=(a,b)=>(a==='R'||b==='R')?'R':(a||b||'');
   k=k||{}; const cls=new Map(), per={};
-  const kW=active.find(a=>a.oblast_uid==='14'&&a.location_type==='oblast'); const kFill=kW?lvl(kW.alert_level):null; const kc=active.find(a=>a.oblast_uid==='31'&&(a.location_type==='oblast'||a.location_type==='city')); const kCity=kc?lvl(kc.alert_level):(k.status==='A'?lvl(k.level):null);
+  const kW=active.find(a=>a.oblast_uid==='14'&&a.location_type==='oblast'&&!a.unsure); const kFill=kW?lvl(kW.alert_level):null; const kc=active.find(a=>a.oblast_uid==='31'&&(a.location_type==='oblast'||a.location_type==='city')); const kCity=kc?lvl(kc.alert_level):(k.status==='A'?lvl(k.level):null);
+  const kQ=active.some(a=>a.oblast_uid==='14'&&a.location_type==='oblast'&&a.unsure);    // 1.58.31: raions unknown: hatched
   const krst={}; for(const a of active.filter(a=>a.oblast_uid==='14'&&a.location_type!=='oblast'&&!hromOf(a))){const rk=a.raion_key||raionKey(a.location_title); if(rk) krst[rk]=(krst[rk]==='R'||lvl(a.alert_level)==='R')?'R':'Y';}
   // raion fills (red = red level / full alert, yellow = yellow level)
-  document.querySelectorAll('#raionsg .rn').forEach(p=>{const r=p.dataset.r; if(r==='kyiv-city'){cls.set(p,`rn city ${kCity||''}`);return;} const l=maxL(kFill,krst[r]); cls.set(p,`rn ${l}`);});
+  document.querySelectorAll('#raionsg .rn').forEach(p=>{const r=p.dataset.r; if(r==='kyiv-city'){cls.set(p,`rn city ${kCity||''}`);return;} const l=maxL(kFill,krst[r]); cls.set(p,`rn ${l||(kQ?'Q':'')}`);});
   // surrounding oblasts: per-raion colours when raion alerts are reported (єТривога / oblast channels / keyed API),
   // otherwise the oblast-wide on/off from the mirror is painted on the oblast outline only
   const REG=scopeRegs(); const rkey=t=>translit(String(t||'').trim().split(/\s+/)[0]).toLowerCase().replace(/[^a-z]/g,'');
@@ -3501,8 +3510,9 @@ function alertMap(active,k){
     paths.forEach(pth=>{const st=pth.dataset.stem,key=pth.dataset.key; let l='';
       for(const r of ra){ if((key&&r.a.raion_key===key)||(key&&r.k&&(r.k===key||key.startsWith(r.k.replace(/skyi$|ska$/,''))))||(st&&new RegExp(st,'i').test((r.a.location_title||'').toLowerCase()))){ l=(l==='R'||r.L==='R')?'R':'Y'; } }
       if(l) rl[key||st]=l; lv.set(pth,l);});
-    const ow=active.find(a=>a.oblast_uid===uid&&a.location_type==='oblast'); const oL=ow?lvl(ow.alert_level):''; const op=document.querySelector(`#oblastsg .ob[data-o="${uid}"]`); if(op) cls.set(op,`ob ${isReg?'region':'far'} ${occ?'occ':''} ${oL}`);
-    paths.forEach(pth=>{const l=lv.get(pth); cls.set(pth,'nb '+(occ?'occ ':'')+(l||(oL?'o'+oL:'')));});
+    const ow=active.find(a=>a.oblast_uid===uid&&a.location_type==='oblast'&&!a.unsure); const oL=ow?lvl(ow.alert_level):'';
+    const oQ=active.some(a=>a.oblast_uid===uid&&a.location_type==='oblast'&&a.unsure); const op=document.querySelector(`#oblastsg .ob[data-o="${uid}"]`); if(op) cls.set(op,`ob ${isReg?'region':'far'} ${occ?'occ':''} ${oL}`);
+    paths.forEach(pth=>{const l=lv.get(pth); cls.set(pth,'nb '+(occ?'occ ':'')+(l||(oL?'o'+oL:oQ?'oQ':'')));});
     per[uid]={rl,oL}; }
   // 1.58.16: the hromadas under alert, on their own outlines — left out where their raion is already painted as strongly
   const hl=new Map();
@@ -3528,7 +3538,7 @@ function render(){
   const lvl=x=>x==='yellow'?'Y':'R';                 // no level reported (mirror) = full red alert
   // oblast-wide alert = an active alert of type 'oblast' (mirror / API / official channel); a mirror gives no level → full red.
   // Raion-level alerts can only ADD to it (a red raion on a yellow oblast), never reduce it — the government app shows the oblast under alert.
-  const oblWide=S.active.find(a=>a.oblast_uid===MYU&&a.location_type==='oblast'); const cityWide=isK?S.active.find(a=>a.oblast_uid==='31'&&(a.location_type==='oblast'||a.location_type==='city')):null;
+  const oblWide=S.active.find(a=>a.oblast_uid===MYU&&a.location_type==='oblast'&&!a.unsure); const cityWide=isK?S.active.find(a=>a.oblast_uid==='31'&&(a.location_type==='oblast'||a.location_type==='city')):null;
   const cityL=isK?(cityWide?lvl(cityWide.alert_level):(k.status==='A'?lvl(k.level):null)):null, oblL=oblWide?lvl(oblWide.alert_level):null;
   const maxL=(a,b)=>(a==='R'||b==='R')?'R':(a||b||'');
   const rname=r=>RAION_ADJ[r]?raionFull(r):(RAION[r]||r);
@@ -3540,6 +3550,7 @@ function render(){
   const anyR=cityL==='R'||oblL==='R'||rh.includes('R'), anyY=cityL==='Y'||oblL==='Y'||rh.includes('Y');
   const hasRaions=rh.length>0; const oblFill=oblL;
   const st=cityL?cityL:(oblL?maxL(oblL,anyR?'R':''):(hasRaions?(anyR?'R':'Y'):((isK&&k.status==='P')||ko.status==='P'?'P':'N')));
+  const uN=unsureNote(MYU);
   const since=(isK?k.since:null)||ko.since||(raionAlerts[0]&&raionAlerts[0].started_at);
   const thr=[...new Set([...(isK?k.threats:[]),...(ko.threats||[])].map(t=>`${thrIco(t.threat_type,'currentColor')}${THREAT[t.threat_type]?.[1]||t.threat_type}`))];
   const el=$('kyiv'); el.className='band '+st;
@@ -3550,12 +3561,13 @@ function render(){
   const big=cityL==='R'?`${KY} · ${t('b_air')}`:cityL==='Y'?`${KY} · ${t('b_yellow')}`:oblL?`${ON} · ${oblL==='R'?t('b_air'):t('b_yellow')}${nR||hR?' · '+[nR?tn('raion_red',nR):'',hR?tn('hrom_red',hR):''].filter(Boolean).join(', '):''}`:hasRaions?`${ON} · ${partsRY}`:st==='P'?`${ON} · ${t('b_partial')}`:`${isK?KY:ON} · ${t('b_clear')}`;
   const raionList=Object.entries(rst).map(([r,l])=>`${rname(r)} ${l==='R'?t('b_red'):t('b_yel')}`).concat(Object.entries(hst).map(([h,l])=>`${h} ${l==='R'?t('b_red'):t('b_yel')}`)).join(', ');
   el.innerHTML=`<div class="dot ${st==='N'?'N':st==='P'?'P':st==='Y'?'Y':'A'}"></div><div><div class="big">${big}</div>
-    <div class="small">${cityL?`${t('b_city')} ${cityL==='R'?t('b_red'):t('b_yel')}${oblL?' · '+t('b_oblwide')+' '+(oblL==='R'?t('b_red'):t('b_yel')):hasRaions?' · '+raionList:' · '+t('b_oblclear')}`:oblL?`${isK?t('b_cityclear')+' · ':''}${t('b_oblwide')} ${oblL==='R'?t('b_red'):t('b_yel')}${hasRaions?' · '+raionList:''}`:hasRaions?raionList:(st==='P'?raionAlerts.map(a=>LANG==='uk'?a.location_title:(a.location_title_en||a.location_title)).join(', '):t('b_noalert',isK?t('b_kyivorobl'):ON))}${since&&st!=='N'?' · '+t('b_since')+' '+fmtT(since):''}${thr.length?' · '+thr.join(', '):''}</div></div>
+    <div class="small">${cityL?`${t('b_city')} ${cityL==='R'?t('b_red'):t('b_yel')}${oblL?' · '+t('b_oblwide')+' '+(oblL==='R'?t('b_red'):t('b_yel')):hasRaions?' · '+raionList:' · '+t('b_oblclear')}`:oblL?`${isK?t('b_cityclear')+' · ':''}${t('b_oblwide')} ${oblL==='R'?t('b_red'):t('b_yel')}${hasRaions?' · '+raionList:''}`:hasRaions?raionList:(st==='P'?raionAlerts.map(a=>LANG==='uk'?a.location_title:(a.location_title_en||a.location_title)).join(', '):t('b_noalert',isK?t('b_kyivorobl'):ON))}${since&&st!=='N'?' · '+t('b_since')+' '+fmtT(since):''}${thr.length?' · '+thr.join(', '):''}${uN?' · '+esc(uN):''}</div></div>
     ${st!=='N'&&since?`<div class="dur">${dur(since)}</div>`:''}`;
   let tst=st;
   if(HOME){ const pl=placeLevel(HOME), k=pl.k, on=k==='R'||k==='Y'||k==='H';
-    el.className='band '+(k==='R'?'R':k==='Y'?'Y':k==='H'?'H':'N'); tst=k==='R'?'R':k==='Y'||k==='H'?'Y':'N';
-    el.innerHTML=`<div class="dot"></div><div><div class="big">${esc(t('lt_'+k))}</div><div class="small">${esc([homeName(),pl.h||unitName(pl.u)].filter(Boolean).join(' · '))}${on&&pl.since?' · '+esc(t('lt_since',fmtT(pl.since))):''} · ${esc(t('mc_off'))}</div></div>${on&&pl.since?`<div class="dur">${dur(pl.since)}</div>`:''}`; }
+    el.className='band '+(k==='R'?'R':k==='Y'?'Y':k==='H'?'H':k==='P'?'P':'N'); tst=k==='R'?'R':k==='Y'||k==='H'||k==='P'?'Y':'N';
+    const uH=pl.u?unsureNote(pl.u.obl):'';
+    el.innerHTML=`<div class="dot"></div><div><div class="big">${esc(t('lt_'+k))}</div><div class="small">${esc([homeName(),pl.h||unitName(pl.u)].filter(Boolean).join(' · '))}${on&&pl.since?' · '+esc(t('lt_since',fmtT(pl.since))):''}${uH?' · '+esc(uH):''} · ${esc(t('mc_off'))}</div></div>${on&&pl.since?`<div class="dur">${dur(pl.since)}</div>`:''}`; }
   document.title=(tst==='R'||tst==='A'?'🔴 ':tst==='Y'||tst==='P'?'🟡 ':'')+'Heimdall';
   // the watched place: its chips, what is near it, the escalation level (1.36)
   paintSlots(); paintCard(true);

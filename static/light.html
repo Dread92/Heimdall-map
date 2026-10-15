@@ -366,7 +366,7 @@ function link(ms){
 let STATE=null, MKS=[], LAST_OK=0, OBL=null, OBL_GUESS=false; const SEEN=new Set();
 
 // Does this official alert cover this raion shape?
-const covers=(a,r)=>a.oblast_uid===r.obl&&(a.location_type==='oblast'||(r.city&&a.location_type==='city')
+const covers=(a,r)=>a.oblast_uid===r.obl&&((a.location_type==='oblast'&&!a.unsure)||(r.city&&a.location_type==='city')
   ||(a.location_type==='raion'&&((r.id&&a.location_uid==='ua-'+r.id)||(a.raion_key&&a.raion_key===r.k))));
 const inPart=(a,r)=>a.location_type==='hromada'&&a.oblast_uid===r.obl&&((r.id&&a.raion_uid===r.id)||(a.raion_key&&a.raion_key===r.k));
 // 1.58.16: an alert's hromada outline (static/hromadas.js); a place in km
@@ -384,7 +384,7 @@ function placeStatus(uid, PR, pt){
   const hIn=a=>{ const h=pt&&hromOf(a); return !!h&&HROMADA.covers(h,pt[0],pt[1]); };
   let mine=[], part=[];
   if(PR&&PR.length){ for(const a of air){ if(PR.some(r=>covers(a,r))||hIn(a)) mine.push(a); else if(PR.some(r=>inPart(a,r))) part.push(a); } }
-  else { mine=air.filter(a=>a.oblast_uid===uid&&(a.location_type==='oblast'||a.location_type==='city'));
+  else { mine=air.filter(a=>a.oblast_uid===uid&&((a.location_type==='oblast'&&!a.unsure)||a.location_type==='city'));
          part=air.filter(a=>a.oblast_uid===uid&&!mine.includes(a)); }
   const pair=uid==='31'||uid==='14'?['31','14']:[uid];
   const others=air.filter(a=>pair.includes(a.oblast_uid)&&!mine.includes(a)&&!part.includes(a));
@@ -396,6 +396,7 @@ function placeStatus(uid, PR, pt){
     return {k:red?'R':'Y',h,lvl:red?(mine.some(a=>a.alert_level==='red')?'red':null):'yellow',since:since(mine),
             reason:(mine.find(a=>a.alert_level===(red?'red':'yellow')&&a.notes&&/рівень/.test(a.notes))||{}).notes,mirror,others}; }
   if(part.length) return {k:PR&&PR.length?'H':'P',since:since(part),part,others};   // P: raion unknown, part of the oblast
+  if(air.some(a=>a.unsure&&a.oblast_uid===uid)) return {k:'P',part:[],mirror:true,others};
   return {k:'G',others};
 }
 
@@ -422,7 +423,7 @@ function mapLayer(p,kx,loc,iz){
   let s=`<g ${T}>`;
   // oblasts beyond the raion outlines: shaded only for an oblast-wide alert
   for(const o of LMO){ if(scoped.has(o.uid)||!near(o)) continue;
-    const w=air.find(a=>a.oblast_uid===o.uid&&a.location_type==='oblast'); if(w) s+=`<path class="ob2 ${w.alert_level==='yellow'?'Y':'R'}" d="${d(o.rings)}"/>`; }
+    const w=air.find(a=>a.oblast_uid===o.uid&&a.location_type==='oblast'&&!a.unsure); if(w) s+=`<path class="ob2 ${w.alert_level==='yellow'?'Y':'R'}" d="${d(o.rings)}"/>`; }
   for(const r of LMR){ if(!near(r)) continue; const L=al[r.obl+':'+r.k]||'';
     s+=`<path class="rb${r.city?' city':''}${L?' '+L:''}" d="${d(r.rings)}"/>`; }
   // 1.58.16: alerted hromadas, unless their raion is painted as strongly
