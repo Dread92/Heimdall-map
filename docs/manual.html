@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Heimdall (Kyiv Air Watch) — the full technical documentation, with a map of the system.">
-<meta name="heimdall-version" content="1.58.27">
-<meta name="heimdall-docs" content="16947c881e744f43">
+<meta name="heimdall-version" content="1.58.28">
+<meta name="heimdall-docs" content="d76e6ebc00d4a996">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Heimdall Technical Manual</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -237,7 +237,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
 <header class="top">
   <div class="wrap">
     <a class="brand" href="#top"><b>Heimdall</b><span>Technical manual</span></a>
-    <span class="ver">1.58.27</span>
+    <span class="ver">1.58.28</span>
     <nav class="nav" aria-label="Sections">
       <a href="#map">Map</a><a href="#journeys">Journeys</a><a href="#rules">Rules</a><a href="#reference">Reference</a><a href="#safety">Safety</a>
     </nav>
@@ -256,7 +256,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
       <h1 class="title">How Heimdall works</h1>
       <p class="lead">An unofficial air-threat map for Kyiv and the oblasts around it. One Python process reads the official
       alert data and the channels that track drones and missiles, stores every post before it reads it, rebuilds the map
-      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.27, 15 October 2026:
+      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.28, 15 October 2026:
       the map first, then everything in full.</p>
     </div>
     <dl class="facts">
@@ -646,7 +646,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
     <div class="doc" id="doc">
 <section class="part" id="tech" data-label="Reference"><p class="partlabel">Part I · The reference</p>
 <h1 id="heimdall--technical-documentation">Heimdall — technical documentation</h1>
-<p><strong>Documented version: 1.58</strong> · last updated 2026-10-15 (1.58.27)</p>
+<p><strong>Documented version: 1.58</strong> · last updated 2026-10-15 (1.58.28)</p>
 <p>The repository is <strong>Dread92/Heimdall-map</strong>. The Fly app keeps its first name, <code>kyiv-air-watch-gb</code>: Fly cannot rename
 an app (§15 has the move to a domain of its own).</p>
 <p>This is the complete technical reference: what runs, where the data comes from, how a Telegram post becomes a
@@ -1870,7 +1870,20 @@ the target the channel reported last, within 15 minutes, at that report's place 
 card, the tooltip, the night's trail, the Light row): reports at one place in a row, 10 minutes at most, are one step
 (<code>trackSteps</code> in <code>static/i18n.js</code>) — &quot;Фастів 01:56–01:58 (4,4 км)&quot;, &quot;Таборів 01:50–01:51 (1,7 км → 5,4 км)&quot;, where it
 read &quot;Фастів 01:58 → Фастів 01:58 (4,4 км)&quot; — its heights in the order said, one said twice in a row once; the count is
-still of posts. The height trend (<code>altTrend</code>) drops a height said again at once: &quot;700&quot;, &quot;700&quot; is no trend.</p>
+still of posts. The height trend (<code>altTrend</code>) drops a height said again at once: &quot;700&quot;, &quot;700&quot; is no trend.
+1.58.28, the owner: &quot;there must be an error here&quot; — &quot;300&quot;, then &quot;6700&quot; ten seconds later: <strong>a height the target could not
+have reached</strong> since the last one stated for it (<code>alt_reachable</code>: a climb of 50 m/s, a dive of 150 m/s, 300 m of slack) is
+another target's, and which one the post does not say — it is not drawn on it (<code>alt_by_channel</code>, per stream; a new place
+starts again).</p>
+<p><strong>A target that came in or went out is at the oblast's edge (1.58.28).</strong> &quot;Лукʼянівка зайшов звичайний&quot; (@chyste_nebo,
+03:19) was drawn on the Kyiv district, 3 km from the centre: a post saying the target came in or went out (&quot;зайшов&quot;,
+&quot;вийшов&quot;, &quot;залетів&quot; — <code>geo.CROSS_RX</code>, not when it names the city) crossed the edge of the tracker's oblast there, so a
+district of Kyiv is no candidate (<code>geo._cross_settle</code>); between the villages left, the channel's reports before and after
+decide as above, and then — new — <strong>the places its targets were said a moment before to be heading for</strong>
+(<code>dest_by_channel</code>, <code>DEST_CTX_MIN</code> 5 min, within 60 km): &quot;На Яготин&quot; made it the Lukyanivka of Brovary raion, 36 km from
+Yahotyn. Nothing to go on: it is not drawn. &quot;Звичайний&quot; alone is a Shahed (the trackers' word, against &quot;реактивний&quot;).
+A destination farther than 150 km (<code>DEST_LINK_KM</code>) from the channel's last report is not that report's target going
+there: &quot;Реактивний на Годунівку&quot;, read as a village of Sumy oblast, had drawn a jet drone at Musiiky, 300 km away.</p>
 <p><strong>A weapon not stated, in the app (1.54.8).</strong> The owner: &quot;'unknown' is badly worded — it is most likely a drone (a jet
 Shahed); the only exception is when we know ballistic or cruise missiles are also coming&quot;. A mark of type <code>unknown</code> is
 named by what else is in the air (<code>mslCtx(m)</code>: a missile on the map — <code>MSL_TYPES</code> — or a MiG-31K / ballistic /
@@ -5251,7 +5264,7 @@ d'alerte ne sont pas des préférences de style.</p>
 </section>
     </div>
   </div>
-  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.27, 15 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
+  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.28, 15 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
 </main>
 
 <script>

@@ -2,6 +2,20 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.28 — 2026-10-15
+
+### Fixed
+- **A Shahed drawn in the centre of Kyiv that was on the oblast's edge** — the owner: "there must be an error here".
+  @chyste_nebo wrote "На Яготин", then "Лукʼянівка зайшов звичайний" — a regular one came in at Lukyanivka — and the map
+  put it on the Lukyanivka district, 3 km from the centre. A target that came in or went out crossed the oblast's edge
+  there: a district of Kyiv is no longer a candidate, and the place its targets were heading for a moment before
+  (Yahotyn) picks the village of Brovary raion. With nothing to decide between villages of one name, nothing is drawn.
+- **"300", then "6700" ten seconds later, on one target** — no target climbs 6.4 km in ten seconds: a height alone that
+  the target could not have reached since its last one is another target's, and is not drawn on it.
+- **"Звичайний" is a Shahed** (it read "type not specified").
+- **A jet drone drawn 300 km from where it was heading** — "Реактивний на Годунівку", read as a village of Sumy oblast,
+  was put at the channel's last report near Ivankiv; a destination that far is not that report's target.
+
 ## 1.58.27 — 2026-10-15
 
 ### Added

@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-15 (1.58.27)
+**Documented version: 1.58** · last updated 2026-10-15 (1.58.28)
 
 The repository is **Dread92/Heimdall-map**. The Fly app keeps its first name, `kyiv-air-watch-gb`: Fly cannot rename
 an app (§15 has the move to a domain of its own).
@@ -803,6 +803,20 @@ card, the tooltip, the night's trail, the Light row): reports at one place in a 
 (`trackSteps` in `static/i18n.js`) — "Фастів 01:56–01:58 (4,4 км)", "Таборів 01:50–01:51 (1,7 км → 5,4 км)", where it
 read "Фастів 01:58 → Фастів 01:58 (4,4 км)" — its heights in the order said, one said twice in a row once; the count is
 still of posts. The height trend (`altTrend`) drops a height said again at once: "700", "700" is no trend.
+1.58.28, the owner: "there must be an error here" — "300", then "6700" ten seconds later: **a height the target could not
+have reached** since the last one stated for it (`alt_reachable`: a climb of 50 m/s, a dive of 150 m/s, 300 m of slack) is
+another target's, and which one the post does not say — it is not drawn on it (`alt_by_channel`, per stream; a new place
+starts again).
+
+**A target that came in or went out is at the oblast's edge (1.58.28).** "Лукʼянівка зайшов звичайний" (@chyste_nebo,
+03:19) was drawn on the Kyiv district, 3 km from the centre: a post saying the target came in or went out ("зайшов",
+"вийшов", "залетів" — `geo.CROSS_RX`, not when it names the city) crossed the edge of the tracker's oblast there, so a
+district of Kyiv is no candidate (`geo._cross_settle`); between the villages left, the channel's reports before and after
+decide as above, and then — new — **the places its targets were said a moment before to be heading for**
+(`dest_by_channel`, `DEST_CTX_MIN` 5 min, within 60 km): "На Яготин" made it the Lukyanivka of Brovary raion, 36 km from
+Yahotyn. Nothing to go on: it is not drawn. "Звичайний" alone is a Shahed (the trackers' word, against "реактивний").
+A destination farther than 150 km (`DEST_LINK_KM`) from the channel's last report is not that report's target going
+there: "Реактивний на Годунівку", read as a village of Sumy oblast, had drawn a jet drone at Musiiky, 300 km away.
 
 **A weapon not stated, in the app (1.54.8).** The owner: "'unknown' is badly worded — it is most likely a drone (a jet
 Shahed); the only exception is when we know ballistic or cruise missiles are also coming". A mark of type `unknown` is

@@ -291,7 +291,10 @@ TYPE_RX = [
     # 1.43: "2 реакти", "1 реакт" — how the Chernihiv tracker writes a jet drone; FPV, "Молния" and "Ланцет" are the
     # small strike drones the Kharkiv tracker reports near the front.
     ("drones", re.compile(r"бпла|шахед|дрон|безпілотн|мопед|герань|реактив|\bреакт(?:и|ів|ом|а|ами)?\b|\bfpv\b|\bфпв\b|"
-                          r"молні[яюїі]|молни[яюи]|ланцет|\d+\s*звичайн", re.I)),
+                          r"молні[яюїі]|молни[яюи]|ланцет|\d+\s*звичайн|"
+                          # 1.58.28: "Лукʼянівка зайшов звичайний" (@chyste_nebo) — the trackers' word for a Shahed, as
+                          # against "реактивний"; not "звичайний режим", "звичайний день"
+                          r"(?<![а-яіїєґ'])звичайн(?:ий|і|их)\b(?!\s+(?:режим|день|розклад|громадян|люд|рух|порядок))", re.I)),
     # A bare rocket emoji means "a missile" on these channels, not "a ballistic missile". Reading it as
     # ballistic gave the loudest treatment in the app — white spike, one-second refresh — to an emoji.
     ("unspecified_missiles", re.compile(r"\U0001f680", re.I)),                                 # 🚀
@@ -2684,6 +2687,36 @@ def _telemetry(ms, text):
     return ms
 
 
+# 1.58.28: "Лукʼянівка зайшов звичайний" (@chyste_nebo, 03:19): a target that came in ("зайшов") or went out ("вийшов")
+# crossed the edge of the tracker's oblast there — never a district in the middle of Kyiv (it was drawn 3 km from the
+# centre, on the Kyiv district; the village of Brovary raion on the oblast's eastern edge was meant). Of the places
+# called so, a district of the city is no candidate; between the villages left, nothing decides by itself.
+CROSS_RX = re.compile(r"(?<![а-яіїєґ'])(?:за|ви|у|в)(?:йшо?в|йшла|йшли|летів|летіла|летіли)(?![а-яіїєґ'])", re.I)
+_CITY_IN_RX = re.compile(r"(?<![а-яіїєґ'])(?:місто|міста|місті|столиц\w*|києв\w*|київ\b)", re.I)
+
+
+def _cross_settle(m, text):
+    cands = m.get("candidates")
+    if not cands or not CROSS_RX.search(_norm(text or "")) or _CITY_IN_RX.search(_norm(text or "")):
+        return m
+    rest = [c for c in cands if c[3] != "31"]
+    if not rest or len(rest) == len(cands):
+        return m
+    m["candidates"] = rest
+    m["ambiguous"] = len(rest) > 1
+    key, lon, lat, uid = rest[0]
+    pre = "→ " if str(m.get("place") or "").startswith("→ ") else ""
+    m.update(place=pre + key, lon=lon, lat=lat, oblast_uid=uid)
+    if pre:
+        m["target"] = key
+    ev = dict(m.get("evidence") or {})
+    pos = dict(ev.get("position") or {}, place=key, confidence="low")
+    pos["method"] = (pos.get("method") or "") + " — it crossed the oblast's edge there (\"зайшов\" / \"вийшов\"): not a district of Kyiv"
+    ev["position"] = pos
+    m["evidence"] = ev
+    return m
+
+
 def parse_for_channel(channel, text, near=None):
     """`near` (1.45): the oblasts this regional channel named in its last posts. A tracker follows its targets into the
     next oblast — "Це він на Хмельниччині", then "Маневр на Гулівці", "Далі на Кути" (@rivne_radar): a post that names
@@ -2699,7 +2732,7 @@ def parse_for_channel(channel, text, near=None):
         hc = _OBL_CENTRE.get(home)
         ms = [m for m in ms if m.get("lon") is None or m.get("oblast_uid") in named or not hc
               or _km((m["lon"], m["lat"]), hc) <= 300]
-    return _telemetry([_city_settle(_rel_settle(_raion_settle(_settle(m)))) for m in ms], text)
+    return _telemetry([_city_settle(_rel_settle(_raion_settle(_cross_settle(_settle(m), text)))) for m in ms], text)
 
 
 # 1.45.1: "БпЛА на півночі від Миколаєва, курс на захід" (the Air Force) is north OF the city, at a distance the post

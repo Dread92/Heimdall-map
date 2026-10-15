@@ -639,6 +639,18 @@ def _clean_post(text):
 # as an uncertainty circle: a cruise missile has covered 150 km, a ballistic one has already arrived.
 MISSILE_TTL_MIN = 12
 
+# 1.58.28: a channel's destinations of the last few minutes break a tie between villages of one name, and a height alone
+# is a target's only if it could have climbed or dived to it since the last height stated for it — a climb of 50 m/s,
+# a dive of 150 m/s (a Shahed's last dive), and 300 m for how loosely a height is said
+DEST_CTX_MIN = 5
+DEST_LINK_KM = 150       # a destination farther than this from the channel's last report is not that target's
+ALT_CLIMB_MS, ALT_DIVE_MS, ALT_TOL_M = 50.0, 150.0, 300.0
+
+
+def alt_reachable(h0, h1, dt_s):
+    dt = max(0.0, dt_s)
+    return (h1 - h0) <= ALT_TOL_M + ALT_CLIMB_MS * dt and (h0 - h1) <= ALT_TOL_M + ALT_DIVE_MS * dt
+
 # 1.43.1: how long a regional tracker's report of a drone stays — the Kyiv channels report a target every minute, the
 # Chernihiv, Odesa or Kharkiv ones every five to twenty. Shown as "location not updated" after the first, gone after
 # the second; an unspecified threat ("Придніпровськ – уважно") goes after the first. The oblast's all-clear ends them.
@@ -3474,6 +3486,8 @@ class State:
         # 1.44.1: the weapon each channel last named (from its posts' tags) — "Пуски КАБів в нашому напрямку" names no
         # place, and the reports after it ("Пролітають …", "Впали") name no weapon
         weapon_by_channel = {}
+        dest_by_channel = {}     # 1.58.28: each stream's latest destinations ("На Яготин") — a shared name's last resort
+        alt_by_channel = {}      # 1.58.28: each stream's last stated height: (its position's time, when, metres)
         near_by_channel = {}     # 1.45: the oblasts each channel named (or reported in) lately — geo's `near`
         ahead = None             # 1.54.7: each channel's placed reports, for a shared name's next report (_reports_ahead)
         for p in posts:
@@ -3537,6 +3551,15 @@ class State:
                         best = min(feas, key=lambda c: sum(geo._km((c[1], c[2]), h) for h, _ in near_pts))
                         if min(geo._km((best[1], best[2]), h) for h, _ in near_pts) <= geo._REG_KM:
                             pick = best
+                    if pick is None and m.get("ambiguous") and pts:
+                        # 1.58.28: no report of this channel the target could have come from or gone to — the place
+                        # the channel said, a moment before, its targets were heading for ("На Яготин", then "Лукʼянівка
+                        # зайшов звичайний": the Lukyanivka 36 km from Yahotyn, not the one 160 km away), within 60 km
+                        dst = [(lo, la) for t_, lo, la in dest_by_channel.get(ck, ()) if 0 <= (pts - t_).total_seconds() <= DEST_CTX_MIN * 60]
+                        if dst:
+                            best = min(m["candidates"], key=lambda c: min(geo._km((c[1], c[2]), d) for d in dst))
+                            if min(geo._km((best[1], best[2]), d) for d in dst) <= geo._REG_KM:
+                                pick = best
                     if pick is None and m.get("ambiguous"):
                         continue
                     if pick is not None:
@@ -3560,6 +3583,14 @@ class State:
                     # gives the height of the one it follows), at that report's place and time, of its kind
                     if not (ctx and pts and (pts - ctx[0]).total_seconds() <= 15 * 60 and not ctx[1].get("status")):
                         continue
+                    # 1.58.28: "300", then "6700" ten seconds later (@chyste_nebo, 03:19) — no target climbs 6.4 km in ten
+                    # seconds: the channel gave another target's height, and which one it does not say. A height the
+                    # target could not have reached since the last one stated for it is not drawn on it.
+                    a_new, prev = (m.get("alt") or {}).get("m"), alt_by_channel.get(ck)
+                    if a_new is not None and prev and prev[0] == ctx[2] and not alt_reachable(prev[2], a_new, (pts - prev[1]).total_seconds()):
+                        continue
+                    if a_new is not None:
+                        alt_by_channel[ck] = (ctx[2], pts, a_new)
                     c1 = ctx[1]
                     m.update(lon=c1["lon"], lat=c1["lat"], place=c1["place"], oblast_uid=c1.get("oblast_uid"), pos_ts=ctx[2],
                              type=c1.get("type") or "unknown", jet=bool(c1.get("jet")), likely=c1.get("likely"))
@@ -3583,6 +3614,10 @@ class State:
                     else:
                         continue
                 elif m.get("dest_only"):
+                    if pts and m.get("target") in geo.PLACES:          # 1.58.28: where this stream's targets were heading
+                        dl = dest_by_channel.setdefault(ck, [])
+                        dl.append((pts, geo.PLACES[m["target"]][0], geo.PLACES[m["target"]][1]))
+                        del dl[:-6]
                     # "Два йдуть на Васильків": only where it is going. The target this channel reported last (within
                     # 8 min) is the one going there: it stays where that report put it, turned toward the destination.
                     # Without one it stays drawn at the destination, as an approach — never moved on past it.
@@ -3592,7 +3627,10 @@ class State:
                     if ctx and pts and (pts - ctx[0]).total_seconds() <= 8 * 60 and m.get("target") in geo.PLACES \
                             and same_weapon(m, ctx[1]):
                         dlon, dlat, _ = geo.PLACES[m["target"]]
-                        if math.hypot((dlon - ctx[1]["lon"]) * 70.7, (dlat - ctx[1]["lat"]) * 111) >= 0.4:
+                        # 1.58.28: and only a destination that target could be heading for — "Реактивний на Годунівку" read
+                        # as a village of Sumy oblast drew the jet drone at Musiiky, the channel's last report, 300 km away
+                        dd = math.hypot((dlon - ctx[1]["lon"]) * 70.7, (dlat - ctx[1]["lat"]) * 111)
+                        if 0.4 <= dd <= DEST_LINK_KM:
                             m.update(lon=ctx[1]["lon"], lat=ctx[1]["lat"], place=ctx[1]["place"], oblast_uid=ctx[1].get("oblast_uid"),
                                      approach=False, dest_only=False, pos_ts=ctx[2],
                                      heading=round(geo.bearing(ctx[1]["lon"], ctx[1]["lat"], dlon, dlat)))
@@ -3618,6 +3656,12 @@ class State:
                 if m.get("lon") is not None and not m.get("status") and not m.get("approach"):
                     # a carried position keeps the time it was reported at; only a newly named place resets the clock
                     last_by_channel[ck] = ctx if (m.get("pos_ts") and ctx) else (pts, m, p["ts"], n_here)
+                    if not m.get("pos_ts") and pts:
+                        a0 = (m.get("alt") or {}).get("m")
+                        if a0 is not None:
+                            alt_by_channel[ck] = (p["ts"], pts, a0)
+                        else:
+                            alt_by_channel.pop(ck, None)
                 fixed.append(m)
             ms = fixed
             if pts:
