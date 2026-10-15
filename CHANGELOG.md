@@ -2,6 +2,15 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.27 — 2026-10-15
+
+### Added
+- **Every night in one file** — the owner: "a sort of mega JSON document with all the reports compiled … so I can hand you
+  the readable report for pattern analysis". The dashboard's night card (Analytics) downloads every night of the last 90
+  days that recorded something, in one file: **JSON Lines** — a header line, then one night a line, its record and the
+  AI's report on it — for code to read, or the same as **text**. The record (the tags, their paths and heights, the
+  alerts, the Air Force's figures) is what patterns are counted from; the AI's report is a reading of it.
+
 ## 1.58.26 — 2026-10-15
 
 ### Fixed

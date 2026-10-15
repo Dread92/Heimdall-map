@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Heimdall (Kyiv Air Watch) — the full technical documentation, with a map of the system.">
-<meta name="heimdall-version" content="1.58.26">
-<meta name="heimdall-docs" content="7b9efd2d35c42ed4">
+<meta name="heimdall-version" content="1.58.27">
+<meta name="heimdall-docs" content="16947c881e744f43">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Heimdall Technical Manual</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -237,7 +237,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
 <header class="top">
   <div class="wrap">
     <a class="brand" href="#top"><b>Heimdall</b><span>Technical manual</span></a>
-    <span class="ver">1.58.26</span>
+    <span class="ver">1.58.27</span>
     <nav class="nav" aria-label="Sections">
       <a href="#map">Map</a><a href="#journeys">Journeys</a><a href="#rules">Rules</a><a href="#reference">Reference</a><a href="#safety">Safety</a>
     </nav>
@@ -256,7 +256,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
       <h1 class="title">How Heimdall works</h1>
       <p class="lead">An unofficial air-threat map for Kyiv and the oblasts around it. One Python process reads the official
       alert data and the channels that track drones and missiles, stores every post before it reads it, rebuilds the map
-      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.26, 15 October 2026:
+      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.27, 15 October 2026:
       the map first, then everything in full.</p>
     </div>
     <dl class="facts">
@@ -646,7 +646,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
     <div class="doc" id="doc">
 <section class="part" id="tech" data-label="Reference"><p class="partlabel">Part I · The reference</p>
 <h1 id="heimdall--technical-documentation">Heimdall — technical documentation</h1>
-<p><strong>Documented version: 1.58</strong> · last updated 2026-10-15 (1.58.26)</p>
+<p><strong>Documented version: 1.58</strong> · last updated 2026-10-15 (1.58.27)</p>
 <p>The repository is <strong>Dread92/Heimdall-map</strong>. The Fly app keeps its first name, <code>kyiv-air-watch-gb</code>: Fly cannot rename
 an app (§15 has the move to a domain of its own).</p>
 <p>This is the complete technical reference: what runs, where the data comes from, how a Telegram post becomes a
@@ -2362,6 +2362,17 @@ data (<code>/api/…</code>) is never kept.</p>
 <p><strong>Full-screen map (1.53)</strong>: the last button of the map's column (<code>#fsbtn</code>, yellow) hides the header and the drawer
 (<code>body.fullmap</code>) and asks the browser for full screen where it allows it (Android); the alert status stays as a chip
 top left (<code>#fmchip</code>, mirroring the band <code>#kyiv</code>; a tap, Escape or the phone's Back leaves).</p>
+<p><strong>Every night in one file (1.58.27).</strong> The owner: &quot;a sort of mega JSON document with all the reports compiled … so
+that I can hand you the readable report for pattern analysis&quot;. The dashboard's night card has <em>Every night, 90 days:
+JSON Lines · text</em> (<code>GET /api/admin/nights_export</code>, <code>State.nights_export</code>). <strong>JSON Lines</strong> — one JSON object a line, not
+one huge document: it is read a night at a time, a line cut off loses one night, and a new night is one more line. The
+first line is a header (<code>schema: &quot;heimdall-nights/1&quot;</code>, the app's version, the window, the note on what the figures
+are); each next line is a night: <code>night</code>, <code>summary</code> (the record, <code>State.night_summary</code>, exactly what <em>Record (JSON)</em>
+gives for one night) and <code>ai_report</code> (<code>at</code>, <code>model</code>, <code>text</code>, <code>error</code>, <code>cost</code>, or null). <strong>Text</strong> is the same night by
+night for a person or an AI to read (<code>State.night_text</code>, compact, then the report). <strong>For patterns, the record is the
+source</strong>: the tags, their paths and heights, the alerts and the Air Force's figures as recorded; the AI's report is a
+reading of them — useful to read, never a number to count (it can be wrong). The direction patterns' own moves are
+<code>/api/admin/patterns?raw=1</code> (§7.12).</p>
 <h3 id="711-the-bulletins-154">7.11 The bulletins (1.54)<a class="anc" href="#711-the-bulletins-154" aria-label="Link to this section">#</a></h3>
 <p>The owner: &quot;instead of all that on the map, summaries of the activity of the last hour / the last 24 hours, a bit like
 a weather bulletin&quot;. The <code>bulletins</code> thread (<code>Bulletins</code>) writes two, on the clock: <strong>the last hour</strong> and
@@ -3625,6 +3636,10 @@ every day — never stored, never logged; the dashboard sees counts of refusals 
 <tr>
 <td>🔒 <code>GET /api/admin/night?night=YYYY-MM-DD</code></td>
 <td>1.53: one night in full (§7.10): <code>summary</code> (<code>State.night_summary</code>), <code>text</code> (<code>State.night_text</code>), <code>report</code> (the AI's, or null), <code>reports</code> (the nights that have one), <code>writing</code>, <code>report_hour</code></td>
+</tr>
+<tr>
+<td>🔒 <code>GET /api/admin/nights_export?format=jsonl|md&amp;from=&amp;to=</code></td>
+<td>1.58.27: every night of a window that recorded something (a target tag or the AI's report; the last 90 days by default, 180 nights at most) in one file to save (<code>State.nights_export</code>, §7.10): JSON Lines (<code>heimdall-nights/1</code>: a header line, then <code>{night, summary, ai_report}</code> a line) or text (<code>State.night_text</code> and the report, night by night); gzipped when the browser takes it</td>
 </tr>
 <tr>
 <td>🔒 <code>GET /api/admin/patterns?days=&amp;kind=&amp;res=&amp;min=&amp;raw=</code></td>
@@ -5236,7 +5251,7 @@ d'alerte ne sont pas des préférences de style.</p>
 </section>
     </div>
   </div>
-  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.26, 15 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
+  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.27, 15 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
 </main>
 
 <script>

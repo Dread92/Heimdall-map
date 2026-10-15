@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-15 (1.58.26)
+**Documented version: 1.58** · last updated 2026-10-15 (1.58.27)
 
 The repository is **Dread92/Heimdall-map**. The Fly app keeps its first name, `kyiv-air-watch-gb`: Fly cannot rename
 an app (§15 has the move to a domain of its own).
@@ -1330,6 +1330,18 @@ data (`/api/…`) is never kept.
 (`body.fullmap`) and asks the browser for full screen where it allows it (Android); the alert status stays as a chip
 top left (`#fmchip`, mirroring the band `#kyiv`; a tap, Escape or the phone's Back leaves).
 
+**Every night in one file (1.58.27).** The owner: "a sort of mega JSON document with all the reports compiled … so
+that I can hand you the readable report for pattern analysis". The dashboard's night card has *Every night, 90 days:
+JSON Lines · text* (`GET /api/admin/nights_export`, `State.nights_export`). **JSON Lines** — one JSON object a line, not
+one huge document: it is read a night at a time, a line cut off loses one night, and a new night is one more line. The
+first line is a header (`schema: "heimdall-nights/1"`, the app's version, the window, the note on what the figures
+are); each next line is a night: `night`, `summary` (the record, `State.night_summary`, exactly what *Record (JSON)*
+gives for one night) and `ai_report` (`at`, `model`, `text`, `error`, `cost`, or null). **Text** is the same night by
+night for a person or an AI to read (`State.night_text`, compact, then the report). **For patterns, the record is the
+source**: the tags, their paths and heights, the alerts and the Air Force's figures as recorded; the AI's report is a
+reading of them — useful to read, never a number to count (it can be wrong). The direction patterns' own moves are
+`/api/admin/patterns?raw=1` (§7.12).
+
 ### 7.11 The bulletins (1.54)
 
 The owner: "instead of all that on the map, summaries of the activity of the last hour / the last 24 hours, a bit like
@@ -2499,6 +2511,7 @@ All JSON unless stated. Public unless marked 🔒 (`ADMIN_KEY`).
 | 🔒 `POST /api/admin/channel` | `{action: add|set|delete, name, mode: map|trial|off, via: web|api, home}` — the channels read (§7.1); `home` is the compartment (an oblast uid, `31`, `ua`, or `""`); `add` checks `t.me/s/<name>` for readable posts and starts it on trial |
 | 🔒 `POST /api/admin/ai` | `{reader: bool}` — the AI at all (every call stops); 1.54 (§7.11): `{bulletin_public: bool}` — the bulletins in the app; `{bulletin_now: "1h"\|"24h"}` — asks the `bulletins` thread to write one now. (`live`, `mode`, `check_now` went with the AI's reading in 1.54) |
 | 🔒 `GET /api/admin/night?night=YYYY-MM-DD` | 1.53: one night in full (§7.10): `summary` (`State.night_summary`), `text` (`State.night_text`), `report` (the AI's, or null), `reports` (the nights that have one), `writing`, `report_hour` |
+| 🔒 `GET /api/admin/nights_export?format=jsonl\|md&from=&to=` | 1.58.27: every night of a window that recorded something (a target tag or the AI's report; the last 90 days by default, 180 nights at most) in one file to save (`State.nights_export`, §7.10): JSON Lines (`heimdall-nights/1`: a header line, then `{night, summary, ai_report}` a line) or text (`State.night_text` and the report, night by night); gzipped when the browser takes it |
 | 🔒 `GET /api/admin/patterns?days=&kind=&res=&min=&raw=` | 1.55: the direction patterns (§7.12) — `days` 0–3650 (0: all; 90), `kind` `drones`\|`drone`\|`jet`\|`unstated`, `res` 1\|2\|4 (×14 km), `min` (3): `coverage` (`moves`, `tracks`, `nights`, `first`, `last`, `stated`, `cells`, `by_kind`, 1.56.1 `by_src`, `stated_first`, `built`, `version`), 1.56.1 `plain` (`en`, `uk`: the sentences, the first on what they are built from; `found`), `cell_deg`, `cell_km`, `cells` (≤ 400, busiest first: `cell`, `lon`, `lat`, `name`, `names`, `moves`, `tracks`, `nights`, `dir`, `dir_p`, `mean_bearing`, `consistency`, `stay`, `next`, `next_places`, `through`, `final`, `final_places`, `origins`, `stated`, `stated_n`, `said`, `speed_kmh`, `gap_min`; each share `{n, p, lo, hi}` in %, Wilson 95%); `raw=1` adds `moves` (≤ 50,000, not cached). Cached 5 min |
 | 🔒 `POST /api/admin/ai_report` | 1.53: `{night}` — asks the `night-reports` thread to write (again) that night's report |
 | 🔒 `POST /api/admin/channel_switch` | 1.58.3 (§9c): `{on: bool}` — the private Telegram channel's kill switch (`kv` `chan_on`); answers `{channel: {configured, running, on, health}}`, also on `/api/online` |

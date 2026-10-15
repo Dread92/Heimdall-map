@@ -4545,6 +4545,46 @@ class State:
                    "findings": dict(found), "notes": notes, "parted": parted},
         }
 
+    # 1.58.27, the owner: "a sort of mega JSON document with all the reports compiled … so I can hand you the readable
+    # report for pattern analysis". Every night of a window in one file — JSON Lines (a header line, then one night a
+    # line: its record and the AI's report on it) for code to read, or the same as text for a person or an AI to read.
+    # The record is the facts (State.night_summary); the AI's report is a reading of them, never the source of a number.
+    NIGHTS_EXPORT_MAX = 180
+    EXPORT_NOTE = ("Reports of public monitoring channels as Heimdall's rules read them, and the official alerts — not radar, "
+                   "not a count of drones: a tag is a target as the posts followed it, often more than one drone, sometimes "
+                   "one drone twice. Times in Kyiv time; a night runs from 12:00 to 12:00. The AI's report is a reading of "
+                   "the record, not a source: check any number against the record.")
+
+    def export_nights(self, first, last):
+        """The nights of [first, last] that recorded anything — a target tag or the AI's report — the latest
+        NIGHTS_EXPORT_MAX of them, oldest first."""
+        st = self.store
+        with st.lock:
+            ns = {r[0] for r in st.conn.execute("SELECT DISTINCT night FROM targets WHERE night BETWEEN ? AND ?", (first, last))}
+            ns |= {r[0] for r in st.conn.execute("SELECT night FROM ai_reports WHERE night BETWEEN ? AND ?", (first, last))}
+        return sorted(ns)[-self.NIGHTS_EXPORT_MAX:]
+
+    def nights_export(self, first, last, fmt="jsonl"):
+        nights = self.export_nights(first, last)
+        if fmt == "md":
+            L = [f"# Heimdall — the nights {first} → {last} ({len(nights)})", "", self.EXPORT_NOTE, ""]
+            for n in nights:
+                r = self.store.ai_report(n)
+                L += [f"## {n}", "", State.night_text(self.night_summary(n), compact=True), ""]
+                if r and r.get("text"):
+                    L += [f"### The AI's report ({r.get('model') or '—'})", "", r["text"], ""]
+            return "\n".join(L) + "\n"
+        head = {"_about": self.EXPORT_NOTE, "schema": "heimdall-nights/1", "app": APP_VERSION, "generated": now_iso(),
+                "from": first, "to": last, "nights": len(nights), "timezone": "Europe/Kyiv",
+                "lines": "this header, then one night a line: {night, summary (State.night_summary), ai_report}"}
+        out = [json.dumps(head, ensure_ascii=False)]
+        for n in nights:
+            r = self.store.ai_report(n)
+            out.append(json.dumps({"night": n, "summary": self.night_summary(n),
+                                   "ai_report": {k: r.get(k) for k in ("at", "model", "text", "error", "cost")} if r else None},
+                                  ensure_ascii=False))
+        return "\n".join(out) + "\n"
+
     @staticmethod
     def night_text(d, compact=False):
         """The same night as plain text, for any AI or person to read. `compact`: each target's path cut to its first
@@ -7858,6 +7898,21 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
+    def _download(self, body, name, ctype):
+        """1.58.27: a file to save (the dashboard's exports), gzipped on the way when the browser takes it."""
+        gz = gzip.compress(body, 6) if len(body) > 1400 and "gzip" in (self.headers.get("Accept-Encoding") or "") else None
+        self.send_response(200)
+        self.send_header("Content-Type", ctype)
+        self.send_header("Content-Disposition", f'attachment; filename="{name}"')
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Vary", "Accept-Encoding")
+        if gz is not None:
+            self.send_header("Content-Encoding", "gzip")
+        data = gz if gz is not None else body
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
+
     def _json(self, obj, code=200, extra=()):
         body = json.dumps(obj, ensure_ascii=False).encode("utf-8")
         self.send_response(code)
@@ -8345,6 +8400,19 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json({"night": night, "summary": d, "text": State.night_text(d), "report": st.store.ai_report(night),
                                    "reports": st.store.ai_report_nights(), "writing": rp.busy if rp else None,
                                    "report_hour": st.cfg.get("ai_report_hour", 9)})
+            # 1.58.27: every night of a window in one file (State.nights_export) — JSON Lines or text, downloaded
+            if u.path == "/api/admin/nights_export":
+                if not self._admin_ok(q):
+                    return self._json({"error": "set ADMIN_KEY to read the nights"}, 403)
+                fmt = q.get("format", ["jsonl"])[0]
+                last = q.get("to", [""])[0] or tag_night(now_iso())
+                first = q.get("from", [""])[0] or ((datetime.fromisoformat(last) - timedelta(days=89)).date().isoformat()
+                                                   if re.fullmatch(r"\d{4}-\d{2}-\d{2}", last) else "")
+                if fmt not in ("jsonl", "md") or not all(re.fullmatch(r"\d{4}-\d{2}-\d{2}", x) for x in (first, last)) or first > last:
+                    return self._json({"error": "format=jsonl|md&from=YYYY-MM-DD&to=YYYY-MM-DD"}, 400)
+                body = st.nights_export(first, last, fmt).encode("utf-8")
+                return self._download(body, f"heimdall-nights-{first}_{last}.{fmt}",
+                                      "application/x-ndjson; charset=utf-8" if fmt == "jsonl" else "text/markdown; charset=utf-8")
             # 1.55: the direction patterns, cell by cell — where the next report put a target seen there, where the targets
             # that passed through were last reported, the directions, each share with its 95% range. Yours alone: the
             # app shows none of it yet (the owner)

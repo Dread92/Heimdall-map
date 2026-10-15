@@ -192,7 +192,7 @@ table.aivt{max-width:440px;margin:0 0 16px}
 .anh{display:flex;justify-content:space-between;align-items:center;gap:10px}
 .anh h3{margin:0;font:700 12.5px/1.3 var(--mono);letter-spacing:.07em;text-transform:uppercase;color:var(--ink)}
 .ans{color:var(--ink3);font:12px/1.45 var(--sans);margin:3px 0 8px}
-.csvb{flex:none;background:transparent;border:1px solid var(--line);color:var(--ink2);font:600 11px var(--mono);letter-spacing:.06em;padding:4px 9px;cursor:pointer;border-radius:2px}
+a.csvb{text-decoration:none;display:inline-block}.csvb{flex:none;background:transparent;border:1px solid var(--line);color:var(--ink2);font:600 11px var(--mono);letter-spacing:.06em;padding:4px 9px;cursor:pointer;border-radius:2px}
 .csvb:hover{color:var(--ink);border-color:var(--ink3)}
 .ch{width:100%;height:auto;display:block;overflow:visible}
 .ch .gl{stroke:#232833;stroke-width:1}.ch .gl0{stroke:#3a4150}
@@ -462,7 +462,7 @@ const T={
   ai_ck_err:'failed: {0}',ai_ck_unsure:'unsure: {0}',ai_chk:'check {0}',ai_checks_m:'Checks this month',ai_per_check:'{0} per check',
   f_missed:'missed by the rules',f_place:'misplaced by the rules',f_weapon:'wrong weapon',f_outcome:'outcome',f_not_sky:'not about the sky',f_facts:'adds facts',f_returned:'findings given',
   an_c_night:'The night — the AI’s report',an_src_night:'Everything recorded over one night (12:00 to 12:00 Kyiv time): the alerts by oblast, every tag with its path, heights, origins, the reports by hour and oblast, outcomes, the Air Force, the AI’s checks and their notes. The record downloads in full, as JSON or text, for any AI to read; the AI’s own report on it is written after {0}:00.',
-  an_n_pick:'Night of',an_n_write:'Write the report now',an_n_rewrite:'Write it again',an_n_json:'Record (JSON)',an_n_txt:'Record (text)',
+  an_n_pick:'Night of',an_n_write:'Write the report now',an_n_rewrite:'Write it again',an_n_json:'Record (JSON)',an_n_txt:'Record (text)',an_n_all:'Every night, 90 days:',an_n_all_j:'JSON Lines',an_n_all_t:'text',an_n_all_h:'Every night that recorded something, the last 90 days, in one file — its record and the AI’s report on it. JSON Lines: a header line, then one night a line.',
   an_n_none:'No report on this night yet — it is written after {0}:00 Kyiv time, or now with the button.',an_n_writing:'Being written…',
   an_n_asked:'Asked — the report appears here within a minute or two.',an_n_err:'Not written: {0}',an_n_meta:'written {0} · {1} · ${2}',
   an_n_stats:'{0} tags · {1} reports · {2} oblasts under alert · {3} AI checks (${4})',an_n_loading:'Loading the night…',
@@ -604,7 +604,7 @@ const T={
   ai_ck_err:'не вдалася: {0}',ai_ck_unsure:'сумнів: {0}',ai_chk:'перевірка {0}',ai_checks_m:'Перевірок за місяць',ai_per_check:'{0} за перевірку',
   f_missed:'правила пропустили',f_place:'правила поставили не там',f_weapon:'інша зброя',f_outcome:'результат',f_not_sky:'не про небо',f_facts:'додає факти',f_returned:'знахідок дано',
   an_c_night:'Ніч — звіт ШІ',an_src_night:'Усе, що записано за одну ніч (з 12:00 до 12:00 за Києвом): тривоги за областями, кожен номер із його шляхом, висоти, звідки летіли, повідомлення за годинами й областями, результати, Повітряні сили, перевірки ШІ та їхні нотатки. Увесь запис можна завантажити — JSON або текст — для будь-якого ШІ; власний звіт ШІ пишеться після {0}:00.',
-  an_n_pick:'Ніч',an_n_write:'Написати звіт зараз',an_n_rewrite:'Написати знову',an_n_json:'Запис (JSON)',an_n_txt:'Запис (текст)',
+  an_n_pick:'Ніч',an_n_write:'Написати звіт зараз',an_n_rewrite:'Написати знову',an_n_json:'Запис (JSON)',an_n_txt:'Запис (текст)',an_n_all:'Усі ночі, 90 днів:',an_n_all_j:'JSON Lines',an_n_all_t:'текст',an_n_all_h:'Кожна ніч, у якій щось записано, за останні 90 днів, одним файлом — її запис і звіт ШІ про неї. JSON Lines: рядок-заголовок, далі одна ніч на рядок.',
   an_n_none:'Звіту за цю ніч ще немає — він пишеться після {0}:00 за Києвом або зараз кнопкою.',an_n_writing:'Пишеться…',
   an_n_asked:'Запит надіслано — звіт з’явиться тут за хвилину-дві.',an_n_err:'Не написано: {0}',an_n_meta:'написано {0} · {1} · ${2}',
   an_n_stats:'номерів: {0} · повідомлень: {1} · областей під тривогою: {2} · перевірок ШІ: {3} (${4})',an_n_loading:'Завантаження ночі…',
@@ -1171,7 +1171,10 @@ function nightList(A){ const s=new Set(); (A.targets||[]).forEach(r=>{ if(r.tota
   ((NIGHT&&NIGHT.reports)||[]).forEach(n=>{ if(n>=A.from) s.add(n); }); if(A.to) s.add(A.to); return [...s].sort().reverse(); }
 function nightCard(A){ const hr=(NIGHT&&NIGHT.report_hour)||9, ns=nightList(A); if(!NIGHT_SEL||!ns.includes(NIGHT_SEL)) NIGHT_SEL=ns[0];
   return card('c0',tr('an_c_night'),tr('an_src_night',hr),`<div class="nbar"><label>${escA(tr('an_n_pick'))}<select id="nsel">${ns.map(n=>`<option value="${n}"${n===NIGHT_SEL?' selected':''}>${escA(dshort(n))} → ${escA(dshort(nextDay(n)))}</option>`).join('')}</select></label><span class="sp"></span>`
-    +`<button class="dgb" id="nwrite">${escA(tr('an_n_write'))}</button><button class="csvb" id="njson">${escA(tr('an_n_json'))}</button><button class="csvb" id="ntxt">${escA(tr('an_n_txt'))}</button></div><div id="nightbox"><div class="ans">${escA(tr('an_n_loading'))}</div></div>`); }
+    +`<button class="dgb" id="nwrite">${escA(tr('an_n_write'))}</button><button class="csvb" id="njson">${escA(tr('an_n_json'))}</button><button class="csvb" id="ntxt">${escA(tr('an_n_txt'))}</button></div>`
+    // 1.58.27: every night in one file, for an analysis of patterns (the session cookie goes with the link)
+    +`<div class="nbar" title="${escA(tr('an_n_all_h'))}"><span class="ans">${escA(tr('an_n_all'))}</span><a class="csvb" id="nallj" href="/api/admin/nights_export?format=jsonl" download>${escA(tr('an_n_all_j'))}</a><a class="csvb" id="nallt" href="/api/admin/nights_export?format=md" download>${escA(tr('an_n_all_t'))}</a></div>`
+    +`<div id="nightbox"><div class="ans">${escA(tr('an_n_loading'))}</div></div>`); }
 async function loadNight(){ const n=NIGHT_SEL; if(!n) return;
   try{ const r=await fetch('/api/admin/night?night='+n+(KEYQ?'&'+KEYQ.slice(1):'')); const d=await r.json(); if(d.error) throw new Error(d.error);
        if(n!==NIGHT_SEL) return; NIGHT=d; NIGHT_ERR=''; }
