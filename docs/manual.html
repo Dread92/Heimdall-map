@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Heimdall (Kyiv Air Watch) — the full technical documentation, with a map of the system.">
-<meta name="heimdall-version" content="1.58.29">
-<meta name="heimdall-docs" content="549d2252c4f6aee5">
+<meta name="heimdall-version" content="1.58.30">
+<meta name="heimdall-docs" content="512bf7e2a152bb88">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Heimdall Technical Manual</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -237,7 +237,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
 <header class="top">
   <div class="wrap">
     <a class="brand" href="#top"><b>Heimdall</b><span>Technical manual</span></a>
-    <span class="ver">1.58.29</span>
+    <span class="ver">1.58.30</span>
     <nav class="nav" aria-label="Sections">
       <a href="#map">Map</a><a href="#journeys">Journeys</a><a href="#rules">Rules</a><a href="#reference">Reference</a><a href="#safety">Safety</a>
     </nav>
@@ -256,7 +256,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
       <h1 class="title">How Heimdall works</h1>
       <p class="lead">An unofficial air-threat map for Kyiv and the oblasts around it. One Python process reads the official
       alert data and the channels that track drones and missiles, stores every post before it reads it, rebuilds the map
-      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.29, 15 October 2026:
+      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.30, 15 October 2026:
       the map first, then everything in full.</p>
     </div>
     <dl class="facts">
@@ -646,7 +646,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
     <div class="doc" id="doc">
 <section class="part" id="tech" data-label="Reference"><p class="partlabel">Part I · The reference</p>
 <h1 id="heimdall--technical-documentation">Heimdall — technical documentation</h1>
-<p><strong>Documented version: 1.58</strong> · last updated 2026-10-15 (1.58.29)</p>
+<p><strong>Documented version: 1.58</strong> · last updated 2026-10-15 (1.58.30)</p>
 <p>The repository is <strong>Dread92/Heimdall-map</strong>. The Fly app keeps its first name, <code>kyiv-air-watch-gb</code>: Fly cannot rename
 an app (§15 has the move to a domain of its own).</p>
 <p>This is the complete technical reference: what runs, where the data comes from, how a Telegram post becomes a
@@ -2434,12 +2434,25 @@ areas, <code>weather</code>). <strong>A weapon not stated</strong> (<code>kind_n
 when no missile and no carrier was reported in the window, <code>&quot;drone or missile (type not stated)&quot;</code> when one was — with
 how many of them carried a drone tracker's signs (a height, a count, its drone mark). The night's report uses the same
 words (<code>kind_name(…, raw=True)</code>). The marks it is built from keep what they stated (<code>marker_log</code> 1.54.8 columns,
-<code>Store.MLOG_EXTRA</code>: <code>alt_m</code>, <code>alt_state</code>, <code>speed_kmh</code>, <code>origin</code>, <code>target</code>, <code>likely</code>, <code>tag</code>, <code>approach</code>).</li>
+<code>Store.MLOG_EXTRA</code>: <code>alt_m</code>, <code>alt_state</code>, <code>speed_kmh</code>, <code>origin</code>, <code>target</code>, <code>likely</code>, <code>tag</code>, <code>approach</code>).
+<strong>1.58.30, what it held, said right</strong> (the owner: &quot;I have the impression the current AI reports don't take the data
+of the dashboard's 'AI' part at all&quot; — they are written from this record; the AI tab's readings and checks are
+1.50–1.53's and feed nothing). Replayed from the night of 15 Oct, the record said less than it held, and now: a
+<strong>followed target keeps the kind its reports said</strong> — its points joined to <code>marker_log</code> by report: a jet in any report
+is a jet drone over the whole path, and a track tagged <code>unknown</code> takes the weapon its reports named (the jet followed
+from Pyriatyn to Borshchiv was &quot;drone&quot;); <strong>the heights are one list</strong>, each report once — the marks' (<code>marker_log</code>)
+and the followed targets' reports (<code>target_points</code>, where a height alone, &quot;6700&quot;, lands) — so the count, the range,
+the median, the bands and the oblasts are all of it (it counted 18 reports and gave the range and bands of the 5 the
+marks carried); the top band reads <code>3000+ m</code> (<code>State.band</code>; it read &quot;3000 m&quot;, in the night's record too); and <strong>where
+a target was only heading is not where it was</strong>: a report drawn only at its destination (&quot;→ Славутич&quot;, <code>approach</code>)
+is no longer among the places most reported — &quot;where a post put a target&quot; — but listed apart (<code>heading_for</code>,
+<code>heading_by_oblast</code>: &quot;where they were going, not where they were — for the record, not for the bulletin&quot;; 37 of 61
+reports that hour). <code>BULLETIN_VERSION</code> 3: the prompt names it with the origins and courses it keeps out.</li>
 <li><strong>Only while there is activity</strong> (<code>State.activity_active</code>: a report, an outcome, an alert, a target on the map). A
 window with nothing in it gets the server's own line (<code>Bulletins.QUIET</code>, <code>quiet</code> = 1), once, with no call. The same
 record (<code>sig</code>, a hash of the text) is never written twice. The 24 hours are written again only after an hour with
 activity, or every 6 hours.</li>
-<li><strong>One call, three languages</strong> (<code>AIReader.ask_bulletin</code>): <code>BULLETIN_SYSTEM</code> (<code>BULLETIN_VERSION</code> 2 since 1.54.8) and a
+<li><strong>One call, three languages</strong> (<code>AIReader.ask_bulletin</code>): <code>BULLETIN_SYSTEM</code> (<code>BULLETIN_VERSION</code> 2 since 1.54.8, 3 since 1.58.30) and a
 strict schema <code>{uk, en, fr}</code>; <code>bulletin_clean</code> takes out markdown, links, channel names and card numbers and cuts a text
 past <code>BULLETIN_CHARS</code> (1.54.8: 1,100 / 2,600 characters; it was 700 / 1,600) at its last full sentence; a language
 missing is an error. 1.54.8, &quot;more leeway on the token cutoff&quot;: <code>MAX_OUT_BULLETIN</code> 4,000 / 8,000 tokens (it was
@@ -2465,7 +2478,11 @@ it was written and &quot;written by AI from the channels' posts and the official
 every 2 minutes; <code>localStorage.bulk</code> remembers the tab).</li>
 <li><strong>Dashboard → AI</strong>: the AI's switch and the app's, &quot;write the last hour / 24 hours now&quot;, the month's bulletins and their
 cost, each bulletin in three languages with the record it was written from; the readings and checks of 1.50–1.53 are
-folded below.</li>
+folded below (&quot;stopped — not used by the bulletins&quot;). 1.58.30: each bulletin says first what its record held —
+&quot;Written from: 61 reports (37 of them only where heading) · 4 targets followed · 18 heights · official alerts in 2
+oblast(s) (1 on now) · 3 outcomes · 22 on the map · the Air Force's figures · the night's weather&quot; (<code>bulFacts</code>) —
+read back from the record itself by <code>State.record_facts</code> (so the bulletins written before say it too; a quiet
+window's line has none).</li>
 </ul>
 <h3 id="712-the-direction-patterns-155-the-dashboard-only">7.12 The direction patterns (1.55; the dashboard only)<a class="anc" href="#712-the-direction-patterns-155-the-dashboard-only" aria-label="Link to this section">#</a></h3>
 <p>The owner (10 Oct 2026): &quot;one crucial detail we need to aggregate through time and accumulate is the pattern of
@@ -3698,7 +3715,7 @@ every day — never stored, never logged; the dashboard sees counts of refusals 
 </tr>
 <tr>
 <td>🔒 <code>GET /api/ai_reads?limit=&amp;all=</code></td>
-<td>the dashboard's AI tab: <code>stats</code> (<code>key</code>, <code>enabled</code>, <code>model</code>, <code>prompt_v</code>, <code>mode</code> &quot;bulletins&quot;, <code>usd_month</code>, <code>cap_usd</code>, <code>paused</code>, <code>last_error</code>, 1.54 <code>bulletins_month</code>, <code>usd_bulletins_month</code>, <code>bulletin_errors_month</code>; and of the readings before 1.54 <code>reads_month</code>, <code>by_verdict</code>, <code>ms_median</code>), 1.54 <code>bulletins</code> (the last 30, with the record each was written from) and <code>bulletin</code> (<code>public</code>, <code>every_min</code>, <code>writing</code>, <code>why</code>), <code>checks</code>, and <code>reads</code> (newest first, ≤ 300; only the disagreements and errors unless <code>all=1</code>): post, channel, <code>stored</code>, <code>verdict</code>, <code>rules</code>, <code>ai</code> (<code>targets</code>, <code>uncertain</code>), <code>dropped</code>, <code>cost</code>, <code>ms</code>, <code>model</code>, <code>error</code></td>
+<td>the dashboard's AI tab: <code>stats</code> (<code>key</code>, <code>enabled</code>, <code>model</code>, <code>prompt_v</code>, <code>mode</code> &quot;bulletins&quot;, <code>usd_month</code>, <code>cap_usd</code>, <code>paused</code>, <code>last_error</code>, 1.54 <code>bulletins_month</code>, <code>usd_bulletins_month</code>, <code>bulletin_errors_month</code>; and of the readings before 1.54 <code>reads_month</code>, <code>by_verdict</code>, <code>ms_median</code>), 1.54 <code>bulletins</code> (the last 30, with the record each was written from; 1.58.30 <code>facts</code>, what it held — <code>State.record_facts</code>) and <code>bulletin</code> (<code>public</code>, <code>every_min</code>, <code>writing</code>, <code>why</code>), <code>checks</code>, and <code>reads</code> (newest first, ≤ 300; only the disagreements and errors unless <code>all=1</code>): post, channel, <code>stored</code>, <code>verdict</code>, <code>rules</code>, <code>ai</code> (<code>targets</code>, <code>uncertain</code>), <code>dropped</code>, <code>cost</code>, <code>ms</code>, <code>model</code>, <code>error</code></td>
 </tr>
 <tr>
 <td>🔒 <code>GET /api/digests</code></td>
@@ -5286,7 +5303,7 @@ d'alerte ne sont pas des préférences de style.</p>
 </section>
     </div>
   </div>
-  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.29, 15 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
+  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.30, 15 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
 </main>
 
 <script>

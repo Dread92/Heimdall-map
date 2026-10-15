@@ -4448,6 +4448,11 @@ class State:
     # -- 1.53: the whole night, for the AI's report and for any reader of patterns ------------------------------------
     NIGHT_ALT_BANDS = ((0, 500), (500, 1000), (1000, 2000), (2000, 3000), (3000, 99999))
 
+    @staticmethod
+    def band(lo, hi):
+        """A band's label: "500-1000 m"; the last one "3000+ m" (1.58.30 — it read "3000 m", as if exactly)."""
+        return f"{lo}-{hi} m" if hi < 99999 else f"{lo}+ m"
+
     def night_bounds(self, night):
         """(start, end) in UTC of a tag night: 12:00 Kyiv time on its date to 12:00 the next day."""
         d = datetime.fromisoformat(night)
@@ -4521,7 +4526,7 @@ class State:
         by_letter = collections.Counter(t["letter"] for t in targets)
         entry = collections.Counter(t["path"][0]["place"] for t in targets if t["path"])
         heights = [h for t in targets for h in t["heights_m"]]
-        bands = {f"{lo}-{hi if hi < 99999 else ''}".rstrip("-") + " m": sum(1 for h in heights if lo <= h < hi) for lo, hi in self.NIGHT_ALT_BANDS}
+        bands = {State.band(lo, hi): sum(1 for h in heights if lo <= h < hi) for lo, hi in self.NIGHT_ALT_BANDS}
         # 3. the reports, by hour and oblast; region-wide ones; outcomes
         missiles = any(typ in MISSILE_SIGNS and not status for ts, typ, status, *_ in ml)        # 1.54.8: no "unknown"
         fam = lambda typ, jet: kind_name(typ, jet, missiles, raw=True)   # noqa: E731
@@ -4710,10 +4715,12 @@ class State:
               for a in self.alert_rows(parse_iso(S), parse_iso(U)) if a["alert_type"] == "air_raid"]      # 1.58.4
         with st.lock:
             ml = st.conn.execute("SELECT ts, type, status, place, oblast_uid, jet, count, heading, alt_m, alt_state, speed_kmh, origin, "
-                                 "approach, likely FROM marker_log WHERE ts>=? AND ts<?", (P, U)).fetchall()
+                                 "approach, likely, id FROM marker_log WHERE ts>=? AND ts<?", (P, U)).fetchall()
             oc = st.conn.execute("SELECT ts, status, type, place, oblast_uid, count FROM outcomes WHERE ts>=? AND ts<?", (S, U)).fetchall()
-            pts = st.conn.execute("SELECT p.night, p.n, p.ts, p.place, p.alt_m, t.type, t.origin FROM target_points p LEFT JOIN targets t "
-                                  "ON t.night=p.night AND t.n=p.n WHERE p.ts>=? AND p.ts<? ORDER BY p.ts", (S, U)).fetchall()
+            # 1.58.30: each point of a followed target with what its report said of it (a jet, its weapon), when the map logged it
+            pts = st.conn.execute("SELECT p.night, p.n, p.ts, p.place, p.alt_m, t.type, t.origin, p.report, m.jet, m.type "
+                                  "FROM target_points p LEFT JOIN targets t ON t.night=p.night AND t.n=p.n "
+                                  "LEFT JOIN marker_log m ON m.id=p.report WHERE p.ts>=? AND p.ts<? ORDER BY p.ts", (S, U)).fetchall()
             air = st.conn.execute("SELECT kind, phase, ts FROM air_reports WHERE ts>=? AND ts<? ORDER BY ts", (S, U)).fetchall()
         # 0. missiles in the window — on the map's oblasts, or their carriers anywhere: an unstated weapon is then a drone
         #    or a missile; without them, a probable drone
@@ -4752,9 +4759,10 @@ class State:
         C = collections.Counter
         slices, by_obl, kinds, wide = C(), collections.defaultdict(C), C(), C()
         places, last_at, before, before_k = C(), {}, 0, C()
-        courses, alt_all, alt_obl, desc, speeds, origins = collections.defaultdict(C), [], collections.defaultdict(list), 0, [], C()
+        courses, hrep, desc, speeds, origins = collections.defaultdict(C), {}, 0, [], C()
         unstated, unstated_signs, approach, first_t, last_t = 0, 0, 0, None, None
-        for ts, typ, status, place, uid, jet, cnt, hdg, alt_m, alt_st, spd, orig, appr, likely in ml:
+        heading_for, appr_obl = C(), C()
+        for ts, typ, status, place, uid, jet, cnt, hdg, alt_m, alt_st, spd, orig, appr, likely, mid in ml:
             if status or not inside(uid):
                 continue
             k = parse_iso(ts)
@@ -4777,8 +4785,7 @@ class State:
             if hdg is not None:
                 courses[uid or "?"][self.COMPASS[int(((float(hdg) % 360) + 22.5) // 45) % 8]] += 1
             if alt_m:
-                alt_all.append(int(alt_m))
-                alt_obl[uid or "?"].append(int(alt_m))
+                hrep[mid] = (int(alt_m), uid or "?")
             if alt_st == "descending":
                 desc += 1
             if spd:
@@ -4789,15 +4796,29 @@ class State:
                 approach += 1
             if place == "область":
                 wide[uid or "?"] += cnt or 1
+            elif place and appr:
+                # 1.58.30: a report of only where a target was heading ("→ Славутич") is not a place it was at
+                heading_for[f"{place.lstrip('→ ').strip()} ({names.get(uid, ('', uid or '?'))[1]})"] += 1
+                appr_obl[uid or "?"] += 1
             elif place:
                 key = f"{place} ({names.get(uid, ('', uid or '?'))[1]})"
                 places[key] += 1
                 last_at[key] = max(last_at.get(key, ""), ts)
         total = sum(kinds.values())
         # 3. the targets it followed: the places their reports put them at, in order (two places or more)
+        #    1.58.30: with the kind its reports said — a jet ("реактивний" at Berezan) is a jet drone over its whole path, and
+        #    a track tagged before any report named its weapon takes the weapon its reports named
         tracks = collections.OrderedDict()
-        for night, n, ts, place, alt, typ, orig in pts:
-            tracks.setdefault((night, n), {"type": typ, "origin": orig, "pts": []})["pts"].append((ts, place, alt))
+        for night, n, ts, place, alt, typ, orig, rep, jet, mtyp in pts:
+            t = tracks.setdefault((night, n), {"type": typ, "origin": orig, "pts": [], "jet": False, "said": C()})
+            t["pts"].append((ts, place, alt))
+            t["jet"] |= bool(jet)
+            if mtyp and mtyp != "unknown":
+                t["said"][mtyp] += 1
+            if alt:                                   # every report's height, the ones a height alone added to a track too
+                u = (geo.PLACES.get(place) or (None, None, None))[2] if geo and place else None
+                if inside(u):
+                    hrep[rep] = (int(alt), u or "?")
         followed = []
         one = lambda x: "…" if x is None else f"{x[1]} {loc(x[0])}" + (f" ({x[2]} m)" if x[2] else "")      # noqa: E731
         for (night, n), t in tracks.items():
@@ -4806,12 +4827,17 @@ class State:
             if len(path) < 2:
                 continue
             a, b = parse_iso(p[0][0]), parse_iso(p[-1][0])
-            followed.append({"tag": tag_id(n), "kind": fam(t["type"], False), "reports": len(p),
+            typ = t["type"] if t["type"] not in (None, "", "unknown") or not t["said"] else t["said"].most_common(1)[0][0]
+            followed.append({"tag": tag_id(n), "kind": fam(typ, t["jet"]), "reports": len(p),
                              "minutes": round((b - a).total_seconds() / 60) if a and b else None, "origin": t["origin"],
                              "heights": [x[2] for x in p if x[2]][:12],
                              "path": [one(x) for x in (path if len(path) <= 12 else path[:6] + [None] + path[-5:])]})
         followed.sort(key=lambda x: -x["reports"])
         heights = sorted(x[2] for t in tracks.values() for x in t["pts"] if x[2])
+        # 1.58.30: one list of heights — each report once, the map's marks and the followed targets' reports together
+        alt_all, alt_obl = [h for h, _ in hrep.values()], collections.defaultdict(list)
+        for h, u in hrep.values():
+            alt_obl[u].append(h)
         # 4. the outcomes the channels reported
         outs, oplaces, otimes = collections.defaultdict(C), C(), {}
         for ts, status, typ, place, uid, cnt in oc:
@@ -4861,12 +4887,14 @@ class State:
                             "region_wide": [{"oblast": nm(u), "targets": n} for u, n in wide.most_common()],
                             "places": [{"place": k, "reports": n, "last": loc(last_at[k])} for k, n in places.most_common(40 if long_w else 25)],
                             "unstated": {"reports": unstated, "with_drone_signs": unstated_signs, "read_as": unstated_kind(missiles)},
-                            "approach_marks": approach},
+                            "approach_marks": approach,
+                            "heading_for": [{"place": k, "reports": n} for k, n in heading_for.most_common(25)],
+                            "heading_by_oblast": [{"oblast": nm(u), "reports": n} for u, n in appr_obl.most_common()]},
                 "missiles": {"in_window": missiles, "marks": {kind_name(k, raw=False): v for k, v in msl.items()}, "carriers": carriers[:30]},
                 "courses": [{"oblast": nm(u), **courses[u]} for u in order if courses.get(u)],
                 "heights_all": {"reports": len(alt_all), "min": min(alt_all) if alt_all else None, "median": med(alt_all),
                                 "max": max(alt_all) if alt_all else None, "descending": desc,
-                                "bands": {f"{lo}-{hi if hi < 99999 else ''}".rstrip("-") + " m": sum(1 for h in alt_all if lo <= h < hi)
+                                "bands": {State.band(lo, hi): sum(1 for h in alt_all if lo <= h < hi)
                                           for lo, hi in self.NIGHT_ALT_BANDS} if alt_all else {},
                                 "by_oblast": [{"oblast": nm(u), "reports": len(v), "median": med(v)} for u, v in alt_obl.items()]},
                 "speeds": {"reports": len(speeds), "min": min(speeds) if speeds else None, "max": max(speeds) if speeds else None},
@@ -4902,9 +4930,13 @@ class State:
             L.append(f"First {r['first']}, last {r['last']}" + (f"; busiest {r['slice_min']} min from {r['peak']['at']} ({r['peak']['reports']} reports)" if r.get("peak") else ""))
             L.append(f"By {r['slice_min']} min: " + "; ".join(f"{k} {v}" for k, v in r["by_slice"].items()))
             L.append("By oblast: " + "; ".join(f"{o['oblast']}: {fmt(o)}" for o in r["by_oblast"]))
+            if r.get("heading_by_oblast"):
+                L.append("Of these, reported only heading for a place in that oblast: "
+                         + "; ".join(f"{o['oblast']} {o['reports']}" for o in r["heading_by_oblast"]))
             if r["region_wide"]:
                 L.append("Reported for a whole oblast, no town: " + "; ".join(f"{o['oblast']} {o['targets']}" for o in r["region_wide"]))
-            L.append("Places most reported: " + ("; ".join(f"{p['place']} ×{p['reports']} (last {p['last']})" for p in r["places"]) or "—"))
+            L.append("Places most reported (where a post put a target): "
+                     + ("; ".join(f"{p['place']} ×{p['reports']} (last {p['last']})" for p in r["places"]) or "—"))
             u = r.get("unstated") or {}
             if u.get("reports"):
                 L.append(f"Weapon not stated: {u['reports']} reports ({u['with_drone_signs']} with a drone tracker's signs: a height, a "
@@ -4912,7 +4944,10 @@ class State:
                          + ("missiles or their carriers were reported in this window, so it may be either"
                             if "missile" in u["read_as"] else "no missile was reported in this window, so most likely Shahed-type drones (jet or not)"))
             if r.get("approach_marks"):
-                L.append(f"Reported only by where they were heading: {r['approach_marks']} reports")
+                L.append(f"Reported only by where they were heading: {r['approach_marks']} reports"
+                         + (" — " + "; ".join(f"{p['place']} ×{p['reports']}" for p in r["heading_for"])
+                            + " (where they were going, not where they were — for the record, not for the bulletin)"
+                            if r.get("heading_for") else ""))
         m = d.get("missiles") or {}
         if m.get("marks") or m.get("carriers"):
             L += ["", "MISSILES AND CARRIERS REPORTED: " + (fmt(m["marks"]) or "no missile mark") + "; carriers: "
@@ -4924,10 +4959,9 @@ class State:
             L += ["", f"TARGETS FOLLOWED over two places or more: {d['followed_total']}" + (", the longest:" if d["followed_total"] > len(d["followed"]) else ":")]
             L += [f"- {f['tag']} {f['kind']}, {f['reports']} reports" + (f" over {f['minutes']} min" if f.get("minutes") else "") + ": "
                   + " → ".join(f["path"]) for f in d["followed"]]
-        h, ha = d["heights"], d.get("heights_all") or {}
-        if ha.get("reports") or h["reports"]:
-            L += ["", f"HEIGHTS REPORTED: {max(ha.get('reports') or 0, h['reports'])} reports, from {ha.get('min') or h['min']} m to "
-                  f"{ha.get('max') or h['max']} m (median {ha.get('median') or h['median']} m)"
+        ha = d.get("heights_all") or {}
+        if ha.get("reports"):          # 1.58.30: one list — the count, the range, the median and the bands all of it
+            L += ["", f"HEIGHTS REPORTED: {ha['reports']} reports, from {ha['min']} m to {ha['max']} m (median {ha['median']} m)"
                   + (f"; descending in {ha['descending']}" if ha.get("descending") else "")]
             if ha.get("bands"):
                 L.append("By band: " + "; ".join(f"{k} {v}" for k, v in ha["bands"].items() if v))
@@ -4957,6 +4991,35 @@ class State:
                   + (f"; the launch areas ({la['points']} points) — wind {la.get('wind')} km/h, gusts {la.get('gust')}, cloud {la.get('cloud')} %, "
                      f"rain {la.get('precip')} mm" if la else "")]
         return "\n".join(L)
+
+    # 1.58.30, the owner: "I have the impression the current AI reports don't take the data of the dashboard's AI part at all
+    # to compile each 'last hour' / 'last 24 hours' report". They do — from the window's record, kept with each bulletin —
+    # and the dashboard now says so on each one: what its record held, read back from the record itself (so the bulletins
+    # written before say it too).
+    _FACT_RX = {"reports": re.compile(r"^TARGETS REPORTED: (\d+) reports", re.M),
+                "followed": re.compile(r"^TARGETS FOLLOWED over two places or more: (\d+)", re.M),
+                "heights": re.compile(r"^HEIGHTS REPORTED: (\d+) reports", re.M),
+                "heading": re.compile(r"^Reported only by where they were heading: (\d+) reports", re.M)}
+
+    @staticmethod
+    def record_facts(text):
+        """What a bulletin's record held, in numbers: reports, targets followed, heights, reports of only where they were
+        heading, oblasts under an official alert (and on now), outcomes, what was on the map, and whether it had missiles,
+        the Air Force's figures, the night's weather. None for no record (a quiet window's line)."""
+        if not text or not text.startswith("RECORD "):
+            return None
+        out = {k: int(m.group(1)) if (m := rx.search(text)) else 0 for k, rx in State._FACT_RX.items()}
+        sec = text.split("OFFICIAL AIR-RAID ALERTS", 1)[1].split("\n\n", 1)[0] if "OFFICIAL AIR-RAID ALERTS" in text else ""
+        al = [x for x in sec.splitlines() if x.startswith("- ") and x != "- none"]
+        out["alerts"], out["alerts_on"] = len(al), sum(1 for x in al if "ON NOW" in x)
+        oc = re.search(r"^OUTCOMES REPORTED: (.*)$", text, re.M)
+        out["outcomes"] = sum(int(n) for n in re.findall(r"(?:shot down|explosions) (\d+)", oc.group(1))) if oc else 0
+        om = re.search(r"^ON THE MAP WHEN THIS WAS RECORDED: (.*)$", text, re.M)
+        out["on_map"] = sum(int(n) for n in re.findall(r" (\d+)(?=[,;]|$)", om.group(1))) if om else 0
+        out["missiles"] = "\nMISSILES AND CARRIERS REPORTED:" in text
+        out["air_force"] = "\nAIR FORCE (all of Ukraine):" in text
+        out["weather"] = "\nWEATHER OF THE NIGHT" in text
+        return out
 
     # -- statistics of past attacks (cached 5 min) ---------------------------
     _stats_res = {}
@@ -8526,7 +8589,7 @@ class Handler(BaseHTTPRequestHandler):
                 ai = getattr(st, "ai", None)
                 bl = getattr(st, "bulletins", None)
                 return self._json({"stats": ai.stats() if ai else None,
-                                   "bulletins": st.store.bulletins(30),
+                                   "bulletins": [dict(b, facts=State.record_facts(b.get("input"))) for b in st.store.bulletins(30)],
                                    "bulletin": {"public": st.store.kv_get("ai_bulletin_public") == "1", "every_min": bl.every("1h") if bl else None,
                                                 "writing": bl.busy if bl else None, "why": dict(bl.why) if bl else {}},
                                    "reads": st.store.ai_reads(lim, diff=q.get("all", ["0"])[0] != "1"),

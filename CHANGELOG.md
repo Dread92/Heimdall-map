@@ -2,6 +2,22 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.30 — 2026-10-15
+
+### Fixed
+- **The AI's bulletins are written from the data — and the dashboard now says which** — the owner: "I have the
+  impression the current AI reports don't take the data of the dashboard's 'AI' part at all". Each bulletin (the last
+  hour, the last 24 hours) is written from the server's record of the window, kept with it; the AI tab's readings of
+  posts and its checks are from 1.50–1.53, stopped in 1.54, and feed nothing — the tab now says so. Each bulletin on
+  the dashboard now starts with what its record held: "Written from: 61 reports · 4 targets followed · 18 heights ·
+  official alerts in 2 oblasts …" (the bulletins already written too).
+- **The record said less than it held** (that night's posts, replayed):
+  - a followed target keeps the kind its reports said — the jet drone followed from Pyriatyn to Borshchiv was "drone";
+  - the heights are one list, each report once: it counted 18 heights and gave the range and the bands of only 5; the
+    top band reads "3000+ m" (it read "3000 m");
+  - a report of only where a target was heading ("→ Slavutych", 37 of 61 that hour) is no longer among the places the
+    targets were at, but listed apart, for the record — a bulletin never says where a target is heading.
+
 ## 1.58.29 — 2026-10-15
 
 ### Fixed

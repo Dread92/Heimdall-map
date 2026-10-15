@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-15 (1.58.29)
+**Documented version: 1.58** · last updated 2026-10-15 (1.58.30)
 
 The repository is **Dread92/Heimdall-map**. The Fly app keeps its first name, `kyiv-air-watch-gb`: Fly cannot rename
 an app (§15 has the move to a domain of its own).
@@ -1405,11 +1405,24 @@ a weather bulletin". The `bulletins` thread (`Bulletins`) writes two, on the clo
   how many of them carried a drone tracker's signs (a height, a count, its drone mark). The night's report uses the same
   words (`kind_name(…, raw=True)`). The marks it is built from keep what they stated (`marker_log` 1.54.8 columns,
   `Store.MLOG_EXTRA`: `alt_m`, `alt_state`, `speed_kmh`, `origin`, `target`, `likely`, `tag`, `approach`).
+  **1.58.30, what it held, said right** (the owner: "I have the impression the current AI reports don't take the data
+  of the dashboard's 'AI' part at all" — they are written from this record; the AI tab's readings and checks are
+  1.50–1.53's and feed nothing). Replayed from the night of 15 Oct, the record said less than it held, and now: a
+  **followed target keeps the kind its reports said** — its points joined to `marker_log` by report: a jet in any report
+  is a jet drone over the whole path, and a track tagged `unknown` takes the weapon its reports named (the jet followed
+  from Pyriatyn to Borshchiv was "drone"); **the heights are one list**, each report once — the marks' (`marker_log`)
+  and the followed targets' reports (`target_points`, where a height alone, "6700", lands) — so the count, the range,
+  the median, the bands and the oblasts are all of it (it counted 18 reports and gave the range and bands of the 5 the
+  marks carried); the top band reads `3000+ m` (`State.band`; it read "3000 m", in the night's record too); and **where
+  a target was only heading is not where it was**: a report drawn only at its destination ("→ Славутич", `approach`)
+  is no longer among the places most reported — "where a post put a target" — but listed apart (`heading_for`,
+  `heading_by_oblast`: "where they were going, not where they were — for the record, not for the bulletin"; 37 of 61
+  reports that hour). `BULLETIN_VERSION` 3: the prompt names it with the origins and courses it keeps out.
 - **Only while there is activity** (`State.activity_active`: a report, an outcome, an alert, a target on the map). A
   window with nothing in it gets the server's own line (`Bulletins.QUIET`, `quiet` = 1), once, with no call. The same
   record (`sig`, a hash of the text) is never written twice. The 24 hours are written again only after an hour with
   activity, or every 6 hours.
-- **One call, three languages** (`AIReader.ask_bulletin`): `BULLETIN_SYSTEM` (`BULLETIN_VERSION` 2 since 1.54.8) and a
+- **One call, three languages** (`AIReader.ask_bulletin`): `BULLETIN_SYSTEM` (`BULLETIN_VERSION` 2 since 1.54.8, 3 since 1.58.30) and a
   strict schema `{uk, en, fr}`; `bulletin_clean` takes out markdown, links, channel names and card numbers and cuts a text
   past `BULLETIN_CHARS` (1.54.8: 1,100 / 2,600 characters; it was 700 / 1,600) at its last full sentence; a language
   missing is an error. 1.54.8, "more leeway on the token cutoff": `MAX_OUT_BULLETIN` 4,000 / 8,000 tokens (it was
@@ -1435,7 +1448,11 @@ a weather bulletin". The `bulletins` thread (`Bulletins`) writes two, on the clo
   every 2 minutes; `localStorage.bulk` remembers the tab).
 - **Dashboard → AI**: the AI's switch and the app's, "write the last hour / 24 hours now", the month's bulletins and their
   cost, each bulletin in three languages with the record it was written from; the readings and checks of 1.50–1.53 are
-  folded below.
+  folded below ("stopped — not used by the bulletins"). 1.58.30: each bulletin says first what its record held —
+  "Written from: 61 reports (37 of them only where heading) · 4 targets followed · 18 heights · official alerts in 2
+  oblast(s) (1 on now) · 3 outcomes · 22 on the map · the Air Force's figures · the night's weather" (`bulFacts`) —
+  read back from the record itself by `State.record_facts` (so the bulletins written before say it too; a quiet
+  window's line has none).
 
 ### 7.12 The direction patterns (1.55; the dashboard only)
 
@@ -2552,7 +2569,7 @@ All JSON unless stated. Public unless marked 🔒 (`ADMIN_KEY`).
 | 🔒 `POST /api/admin/channel_switch` | 1.58.3 (§9c): `{on: bool}` — the private Telegram channel's kill switch (`kv` `chan_on`); answers `{channel: {configured, running, on, health}}`, also on `/api/online` |
 | 🔒 `POST /api/admin/region` | `{id, on}` — an oblast on or off as a whole (1.43, §7.1): its place on the map and its channels; `31` is always on |
 | 🔒 `POST /api/admin/notice` | `{text: {uk, en, fr}, level: info|warn|alert, hours: 0–168 (0 = until removed), push: bool}` or `{clear: true}` — the team's message (§9) |
-| 🔒 `GET /api/ai_reads?limit=&all=` | the dashboard's AI tab: `stats` (`key`, `enabled`, `model`, `prompt_v`, `mode` "bulletins", `usd_month`, `cap_usd`, `paused`, `last_error`, 1.54 `bulletins_month`, `usd_bulletins_month`, `bulletin_errors_month`; and of the readings before 1.54 `reads_month`, `by_verdict`, `ms_median`), 1.54 `bulletins` (the last 30, with the record each was written from) and `bulletin` (`public`, `every_min`, `writing`, `why`), `checks`, and `reads` (newest first, ≤ 300; only the disagreements and errors unless `all=1`): post, channel, `stored`, `verdict`, `rules`, `ai` (`targets`, `uncertain`), `dropped`, `cost`, `ms`, `model`, `error` |
+| 🔒 `GET /api/ai_reads?limit=&all=` | the dashboard's AI tab: `stats` (`key`, `enabled`, `model`, `prompt_v`, `mode` "bulletins", `usd_month`, `cap_usd`, `paused`, `last_error`, 1.54 `bulletins_month`, `usd_bulletins_month`, `bulletin_errors_month`; and of the readings before 1.54 `reads_month`, `by_verdict`, `ms_median`), 1.54 `bulletins` (the last 30, with the record each was written from; 1.58.30 `facts`, what it held — `State.record_facts`) and `bulletin` (`public`, `every_min`, `writing`, `why`), `checks`, and `reads` (newest first, ≤ 300; only the disagreements and errors unless `all=1`): post, channel, `stored`, `verdict`, `rules`, `ai` (`targets`, `uncertain`), `dropped`, `cost`, `ms`, `model`, `error` |
 | 🔒 `GET /api/digests` | the stored nights and weeks: figures, written summary (EN / UK), model |
 | 🔒 `POST /api/digest/run` | `{kind: night|week}` — asks the `Digests` thread to write the last one up now (never calls the model itself) |
 | 🔒 `GET /api/flags`, `/api/corpus`; `POST /api/corpus/review`, `/api/corpus/translate` | flags and corpus review — no longer in the dashboard (1.19); used by `scripts/corpus.py` |

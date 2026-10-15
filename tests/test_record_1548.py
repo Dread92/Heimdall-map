@@ -147,7 +147,7 @@ def test_the_bulletins_are_kept_one_an_hour_and_one_a_day_after_90_days():
 # ---- room to write ---------------------------------------------------------------------------------------------------------------
 def test_the_bulletins_have_room():
     assert A.MAX_OUT_BULLETIN == {"1h": 4000, "24h": 8000} and A.BULLETIN_CHARS == {"1h": 1100, "24h": 2600}
-    assert A.BULLETIN_TIMEOUT == 120 and A.BULLETIN_VERSION == "2"
+    assert A.BULLETIN_TIMEOUT == 120 and A.BULLETIN_VERSION == "3"            # 1.58.30
     p = A.BULLETIN_SYSTEM
     assert "at most 90 words" in p and "at most 220 words" in p
     assert 'Never write "unknown", "unidentified" or "unspecified" for a target' in p and "Never turn \"probably\" into a certainty" in p
