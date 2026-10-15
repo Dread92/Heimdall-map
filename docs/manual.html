@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Heimdall (Kyiv Air Watch) — the full technical documentation, with a map of the system.">
-<meta name="heimdall-version" content="1.58.31">
-<meta name="heimdall-docs" content="33cef9e63f694288">
+<meta name="heimdall-version" content="1.58.32">
+<meta name="heimdall-docs" content="afa4199551454962">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Heimdall Technical Manual</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -237,7 +237,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
 <header class="top">
   <div class="wrap">
     <a class="brand" href="#top"><b>Heimdall</b><span>Technical manual</span></a>
-    <span class="ver">1.58.31</span>
+    <span class="ver">1.58.32</span>
     <nav class="nav" aria-label="Sections">
       <a href="#map">Map</a><a href="#journeys">Journeys</a><a href="#rules">Rules</a><a href="#reference">Reference</a><a href="#safety">Safety</a>
     </nav>
@@ -256,7 +256,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
       <h1 class="title">How Heimdall works</h1>
       <p class="lead">An unofficial air-threat map for Kyiv and the oblasts around it. One Python process reads the official
       alert data and the channels that track drones and missiles, stores every post before it reads it, rebuilds the map
-      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.31, 15 October 2026:
+      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.32, 15 October 2026:
       the map first, then everything in full.</p>
     </div>
     <dl class="facts">
@@ -646,7 +646,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
     <div class="doc" id="doc">
 <section class="part" id="tech" data-label="Reference"><p class="partlabel">Part I · The reference</p>
 <h1 id="heimdall--technical-documentation">Heimdall — technical documentation</h1>
-<p><strong>Documented version: 1.58</strong> · last updated 2026-10-15 (1.58.31)</p>
+<p><strong>Documented version: 1.58</strong> · last updated 2026-10-15 (1.58.32)</p>
 <p>The repository is <strong>Dread92/Heimdall-map</strong>. The Fly app keeps its first name, <code>kyiv-air-watch-gb</code>: Fly cannot rename
 an app (§15 has the move to a domain of its own).</p>
 <p>This is the complete technical reference: what runs, where the data comes from, how a Telegram post becomes a
@@ -2442,7 +2442,18 @@ over Kyiv oblast, ~200 tiles), never with <code>saveData</code> or on 2G. Esri's
 data (<code>/api/…</code>) is never kept.</p>
 <p><strong>Full-screen map (1.53)</strong>: the last button of the map's column (<code>#fsbtn</code>, yellow) hides the header and the drawer
 (<code>body.fullmap</code>) and asks the browser for full screen where it allows it (Android); the alert status stays as a chip
-top left (<code>#fmchip</code>, mirroring the band <code>#kyiv</code>; a tap, Escape or the phone's Back leaves).</p>
+top left (<code>#fmchip</code>, mirroring the band <code>#kyiv</code>; a tap, Escape or the phone's Back leaves). 1.58.32: on a computer it is
+the map alone, the whole width — it kept a blank 360 px column where the card had been (<code>body.fullmap #stage{left:0}</code>).</p>
+<p><strong>Side panels that fold (1.58.32, a computer or a landscape tablet, ≥ 1000 px).</strong> Oleksandr Tymoshenko: &quot;an option to
+collapse or hide the side panels and to give users maximum map visibility … panels can collapse into a narrow ~50 px
+strip: on the left only the colour status dot and the total target count, on the right only the three tab icons&quot;. A
+chevron on each panel's inner edge (<code>#lcolb</code>, <code>#rcolb</code>, 18 × 56 px, mid-height) folds the card column (<code>#mycard</code>) or the
+drawer into a 52 px strip (<code>body.lcol</code> / <code>body.rcol</code>, the widths <code>--lw</code> / <code>--rw</code>: 360 / 380 px open, 52 px folded; the
+map, the sheet, the toasts and the bars follow them). The left strip (<code>#lrail</code>) keeps the band's colour (<code>.rdot</code> R / Y / P
+/ H / N, from <code>#kyiv</code>) and the number of targets on the map (not ended, not stale; <code>syncRails</code>, on every change of the
+band and every 3 s), its tooltip the band's text; a click opens the panel. The right strip (<code>#rrail</code>) has Feed, Alerts
+and Stats — a click opens the drawer on that tab. Each panel's state is kept on the device (<code>localStorage</code> <code>lcol</code>,
+<code>rcol</code>); on a 1,024 px tablet the map goes from 284 px wide to 920. A phone keeps its drawer.</p>
 <p><strong>Every night in one file (1.58.27).</strong> The owner: &quot;a sort of mega JSON document with all the reports compiled … so
 that I can hand you the readable report for pattern analysis&quot;. The dashboard's night card has <em>Every night, 90 days:
 JSON Lines · text</em> (<code>GET /api/admin/nights_export</code>, <code>State.nights_export</code>). <strong>JSON Lines</strong> — one JSON object a line, not
@@ -5349,7 +5360,7 @@ d'alerte ne sont pas des préférences de style.</p>
 </section>
     </div>
   </div>
-  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.31, 15 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
+  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.32, 15 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
 </main>
 
 <script>

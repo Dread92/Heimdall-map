@@ -2,6 +2,18 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.32 — 2026-10-15
+
+### Added
+- **Side panels that fold, on a computer and a landscape tablet** — Oleksandr Tymoshenko: "an option to collapse or
+  hide the side panels and to give users maximum map visibility". A chevron on each panel's inner edge folds it into a
+  narrow strip: on the left, the alert colour and the number of targets on the map; on the right, Feed, Alerts and Stats
+  (a click opens the panel on that tab). Remembered on the device. On a 1,024 px tablet the map goes from 284 px wide to
+  920.
+
+### Fixed
+- **The full-screen map on a computer** kept a blank column on the left where the card had been: it is the whole width now.
+
 ## 1.58.31 — 2026-10-15
 
 ### Fixed

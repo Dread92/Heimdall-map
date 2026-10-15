@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-15 (1.58.31)
+**Documented version: 1.58** · last updated 2026-10-15 (1.58.32)
 
 The repository is **Dread92/Heimdall-map**. The Fly app keeps its first name, `kyiv-air-watch-gb`: Fly cannot rename
 an app (§15 has the move to a domain of its own).
@@ -1407,7 +1407,19 @@ data (`/api/…`) is never kept.
 
 **Full-screen map (1.53)**: the last button of the map's column (`#fsbtn`, yellow) hides the header and the drawer
 (`body.fullmap`) and asks the browser for full screen where it allows it (Android); the alert status stays as a chip
-top left (`#fmchip`, mirroring the band `#kyiv`; a tap, Escape or the phone's Back leaves).
+top left (`#fmchip`, mirroring the band `#kyiv`; a tap, Escape or the phone's Back leaves). 1.58.32: on a computer it is
+the map alone, the whole width — it kept a blank 360 px column where the card had been (`body.fullmap #stage{left:0}`).
+
+**Side panels that fold (1.58.32, a computer or a landscape tablet, ≥ 1000 px).** Oleksandr Tymoshenko: "an option to
+collapse or hide the side panels and to give users maximum map visibility … panels can collapse into a narrow ~50 px
+strip: on the left only the colour status dot and the total target count, on the right only the three tab icons". A
+chevron on each panel's inner edge (`#lcolb`, `#rcolb`, 18 × 56 px, mid-height) folds the card column (`#mycard`) or the
+drawer into a 52 px strip (`body.lcol` / `body.rcol`, the widths `--lw` / `--rw`: 360 / 380 px open, 52 px folded; the
+map, the sheet, the toasts and the bars follow them). The left strip (`#lrail`) keeps the band's colour (`.rdot` R / Y / P
+/ H / N, from `#kyiv`) and the number of targets on the map (not ended, not stale; `syncRails`, on every change of the
+band and every 3 s), its tooltip the band's text; a click opens the panel. The right strip (`#rrail`) has Feed, Alerts
+and Stats — a click opens the drawer on that tab. Each panel's state is kept on the device (`localStorage` `lcol`,
+`rcol`); on a 1,024 px tablet the map goes from 284 px wide to 920. A phone keeps its drawer.
 
 **Every night in one file (1.58.27).** The owner: "a sort of mega JSON document with all the reports compiled … so
 that I can hand you the readable report for pattern analysis". The dashboard's night card has *Every night, 90 days:

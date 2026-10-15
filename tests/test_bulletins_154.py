@@ -309,7 +309,7 @@ def test_the_docs():
 def test_on_a_computer_the_card_is_a_card_beside_the_list_and_the_target_stays_in_view():
     i = PAGE.index("/* 1.54.1, the owner:")
     css = PAGE[i:PAGE.index("\n}\n", i)]
-    assert "@media (min-width:1000px){" in css and "#sheet{left:372px;right:auto;bottom:12px;width:min(420px," in css
+    assert "@media (min-width:1000px){" in css and "#sheet{left:calc(var(--lw) + 12px);right:auto;bottom:12px;width:min(420px," in css
     assert "max-height:calc(100vh - var(--sat) - var(--top) - 24px)" in css and "#sheet .shact{position:sticky;bottom:0;" in css
     assert "  sheetClear(x,y);\n}" in PAGE and "function sheetClear(x,y){" in PAGE
     fn = PAGE[PAGE.index("function sheetClear(x,y){"):PAGE.index("\n}\n", PAGE.index("function sheetClear(x,y){"))]

@@ -341,7 +341,7 @@ body.lite #drawer .dchev{background:#111;border-color:#fff;color:#fff}
    computer it is a card over the map's lower left, beside the list: 420 px wide, as high as it needs and no higher,
    scrolling inside, its buttons always in view; the map moves the target out from under it (sheetClear). */
 @media (min-width:1000px){
-  #sheet{left:372px;right:auto;bottom:12px;width:min(420px,max(300px,calc(100vw - 764px)));max-height:calc(100vh - var(--sat) - var(--top) - 24px);
+  #sheet{left:calc(var(--lw) + 12px);right:auto;bottom:12px;width:min(420px,max(300px,calc(100vw - var(--lw) - var(--rw) - 24px)));max-height:calc(100vh - var(--sat) - var(--top) - 24px);
     border:1px solid var(--line);border-top:3px solid var(--ua-yellow);border-radius:12px;padding:12px 14px 0;
     box-shadow:0 14px 40px rgba(0,0,0,.55);transform:translateY(calc(100% + 24px));opacity:0;visibility:hidden;
     transition:transform .24s cubic-bezier(.2,.8,.2,1),opacity .2s,visibility 0s .24s}
@@ -385,7 +385,7 @@ body.kbd #homelist{flex:1 1 auto;min-height:0;max-height:none}
 /* ---------- desktop ---------- */
 @media (min-width:1000px){
   :root{--peek:0px}
-  #stage{right:380px}
+  #stage{right:var(--rw)}
   .toast{top:auto;bottom:64px;left:16px;right:auto;width:360px}
   #drawer{left:auto;width:380px;top:calc(var(--sat) + var(--top));height:auto!important;border-top:0;border-left:1px solid var(--line)}
   #drawer .handle{cursor:default}#drawer .handle .bar{display:none}
@@ -684,9 +684,9 @@ body.lite .leader{stroke:#fff;stroke-opacity:.6}body.lite .anchor{fill:#fff}
 #updbar{bottom:calc(var(--peek) + var(--sab) + 8px);border-left-color:var(--green)}
 #pwabar{bottom:calc(var(--peek) + var(--sab) + 8px)}
 /* 1.41: the server does not answer — said plainly, at the top, with what does not depend on it */
-#netbar{top:calc(var(--sat) + var(--top) + 8px);border-left-color:var(--red2)}@media (min-width:1000px){#netbar{left:376px;right:396px}}
+#netbar{top:calc(var(--sat) + var(--top) + 8px);border-left-color:var(--red2)}@media (min-width:1000px){#netbar{left:calc(var(--lw) + 16px);right:calc(var(--rw) + 16px)}}
 #updbar:not([hidden]) ~ #pwabar{bottom:calc(var(--peek) + var(--sab) + 72px)}
-@media (min-width:1000px){#updbar,#pwabar{left:auto;right:396px;width:360px;bottom:16px}}
+@media (min-width:1000px){#updbar,#pwabar{left:auto;right:calc(var(--rw) + 16px);width:360px;bottom:16px}}
 .sup{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);padding:8px 10px;margin-top:8px;font:600 14px var(--mono);word-break:break-all}
 .sup b{flex:1;font-weight:600;color:var(--ua-yellow)}
 .hsec{margin-top:12px}.hsec h4{margin:0 0 3px;font:700 14px var(--cond);letter-spacing:.04em;text-transform:uppercase;color:var(--ink)}
@@ -1077,12 +1077,43 @@ body.m-day .bul .bai{color:#2340a0;border-color:#2340a0}body.m-day .bul .bm,body
 @media (min-width:1000px){
   #mycard{position:fixed;z-index:14;left:0;top:calc(var(--sat) + var(--top));bottom:0;width:360px;margin:0;padding:10px;border:0;border-right:1px solid var(--line);border-radius:0;overflow-y:auto}
   #mycard.lv3,#mycard.lv4{box-shadow:inset 3px 0 0 var(--red2)}
-  #stage{left:360px}
+  #stage{left:var(--lw)}
   .nearl{display:block;margin-top:6px}
   #bulL:not([hidden]){display:block;margin:8px 0 0}
   .mcfold{display:none}
   #tabs button[data-tab="near"]{display:none}
-  .toast{left:376px}
+  .toast{left:calc(var(--lw) + 16px)}
+}
+/* 1.58.32, Oleksandr Tymoshenko: "an option to collapse or hide the side panels … maximum map visibility, together with
+   the full-screen mode" — a chevron on each panel's inner edge folds it into a 52 px strip: on the left the status dot
+   and the targets on the map, on the right the Feed, Alerts and Stats tabs. A computer only; remembered on this device. */
+.pcol,.rail{display:none}
+@media (min-width:1000px){
+  :root{--lw:360px;--rw:380px}
+  body.lcol{--lw:52px}body.rcol{--rw:52px}
+  body.lcol #mycard,body.rcol #drawer{display:none}
+  .pcol{display:flex;position:fixed;z-index:16;top:calc(50% + (var(--sat) + var(--top))/2 - 28px);width:18px;height:56px;padding:0;align-items:center;justify-content:center;
+    border:1px solid var(--line);background:var(--panel);color:var(--ink2);font:700 16px/1 var(--sans);cursor:pointer;opacity:.85;box-shadow:0 4px 14px rgba(0,0,0,.35)}
+  .pcol:hover,.pcol:focus-visible{opacity:1;color:var(--ink);background:var(--panel2)}
+  #lcolb{left:calc(var(--lw) - 1px);border-left:0;border-radius:0 9px 9px 0}
+  #rcolb{right:calc(var(--rw) - 1px);border-right:0;border-radius:9px 0 0 9px}
+  body.lcol #lrail,body.rcol #rrail{display:flex}
+  .rail{position:fixed;z-index:14;top:calc(var(--sat) + var(--top));bottom:0;width:52px;flex-direction:column;align-items:center;gap:6px;padding:10px 0;
+    background:var(--panel);border:0 solid var(--line)}
+  #lrail{left:0;border-right-width:1px}#rrail{right:0;border-left-width:1px}
+  .rail button{width:44px;min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:4px 0;border:1px solid transparent;
+    border-radius:10px;background:transparent;color:var(--ink2);cursor:pointer;font:600 10px/1.1 var(--sans)}
+  .rail button:hover,.rail button:focus-visible{background:var(--panel2);color:var(--ink)}.rail button.on{border-color:var(--line);color:var(--ink)}
+  .rail button svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .rail .rdot{width:16px;height:16px;border-radius:50%;background:var(--green);box-shadow:0 0 0 3px rgba(47,191,113,.18)}
+  .rail .rdot.R,.rail .rdot.A{background:var(--red);box-shadow:0 0 0 3px rgba(229,72,77,.22)}
+  .rail .rdot.Y,.rail .rdot.P,.rail .rdot.H{background:var(--yellow);box-shadow:0 0 0 3px rgba(245,185,64,.22)}
+  .rail #lrn{font:800 19px/1 var(--cond);color:var(--ink)}
+  /* the full-screen map is the map alone: no panel, no strip (its chip carries the status); it kept a blank 360 px
+     column on the left, where the card had been */
+  body.fullmap .rail,body.fullmap .pcol{display:none!important}body.fullmap #stage{left:0!important}
+  body.m-day .rail,body.m-day .pcol{background:#fff;color:#12161c;border-color:#9aa1ac}
+  body.m-night .rail,body.m-night .pcol{background:#070a0f;color:#8fa3b8;border-color:#1c242f}
 }
 body.m-day .panel,body.m-day #mycard{background:#fff;color:#12161c;border-color:#9aa1ac}body.m-day .hb{background:#fff;color:#12161c}
 body.m-day .slotrow button{background:#eceef2;color:#12161c;border-color:#c3c8d0}body.m-day .slotrow button.on{background:#12161c;color:#fff}
@@ -1288,6 +1319,14 @@ body.lite #mycard,body.lite .panel{background:#000;border-color:#666}body.lite .
   </div>
 </aside>
 
+<button type="button" class="pcol" id="lcolb" aria-controls="mycard" aria-expanded="true"><span aria-hidden="true">‹</span></button>
+<button type="button" class="pcol" id="rcolb" aria-controls="drawer" aria-expanded="true"><span aria-hidden="true">›</span></button>
+<div class="rail" id="lrail"><button type="button" id="lrailb"><i class="rdot N" id="lrdot"></i><b id="lrn">0</b><span data-t="rl_tgts">targets</span></button></div>
+<div class="rail" id="rrail">
+  <button type="button" data-rt="feedwrap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span data-t="rl_feed">Feed</span></button>
+  <button type="button" data-rt="alerts"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2.5 20h19z"/><path d="M12 10v4.5M12 17.4v.1"/></svg><span data-t="rl_alerts">Alerts</span></button>
+  <button type="button" data-rt="hist"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V11M12 20V5M19 20v-6"/></svg><span data-t="rl_stats">Stats</span></button>
+</div>
 <div class="sheet" id="homesheet"><div class="grab"></div><button type="button" class="shx" data-t-aria="btn_close" aria-label="Close">✕</button><div class="type" id="homet" data-t="h_title">Priority location</div><div id="homed" style="color:var(--ink3);font:12px var(--mono);margin:6px 0 10px" data-t="h_desc">Your district or village.</div>
 <div class="pinrow"><input id="homen" maxlength="24" autocomplete="off" data-t-ph="sl_name" placeholder="Name — kept only on this phone" aria-label="Name"><button class="tgl" id="homemap" type="button" data-t="sl_onmap">📍 Put it on the map</button></div>
 <input id="homeq" data-t-ph="h_ph" placeholder="Search: Troieshchyna, Bucha, Boryspil, Obolon…" autocomplete="off" enterkeyhint="search">
@@ -2911,6 +2950,22 @@ function syncFmChip(){ const c=$('fmchip'), k=$('kyiv'); if(!c||!k) return; cons
   const lv=(k.className.match(/\b(N|R|A|Y|P|H)\b/)||[])[1]||'N';
   c.className=lv; c.innerHTML=`<span class="t">${esc(big?big.textContent:'')}${sm&&sm.textContent?' · '+esc(sm.textContent.split('·')[0].trim()):''}</span><span class="x">✕</span>`; }
 $('fsbtn').onclick=()=>setFull(!FULL);
+// 1.58.32: the side panels fold into a strip on a computer (the CSS above); the strips say what the panels said first
+function setCol(side,on){ on=!!on; document.body.classList.toggle(side+'col',on); try{ localStorage.setItem(side+'col',on?'1':'0'); }catch(e){}
+  const b=$(side+'colb'); if(b){ const k=on?'pc_show':'pc_hide'; b.setAttribute('aria-expanded',on?'false':'true'); b.title=t(k); b.setAttribute('aria-label',t(k));
+    b.firstChild.textContent=(side==='l')===on?'›':'‹'; }
+  syncRails(); requestAnimationFrame(()=>{ syncTop(); if(MAP) setView(VB.x+VB.w/2,VB.y+VB.h/2,VB.w); tabInd(); }); }
+function syncRails(){ const k=$('kyiv'), d=$('lrdot'); if(!k||!d) return;
+  const lv=(k.className.match(/\b(N|R|A|Y|P|H)\b/)||[])[1]||'N', big=k.querySelector('.big'), n=(MK||[]).filter(m=>!m.status&&!m.endedBy&&!m.stale).length;
+  d.className='rdot '+lv; $('lrn').textContent=n; const lab=(big?big.textContent+' · ':'')+t('pc_show'); $('lrailb').title=lab; $('lrailb').setAttribute('aria-label',lab);
+  const on=(document.querySelector('#tabs button.on')||{}).dataset; document.querySelectorAll('#rrail button').forEach(x=>x.classList.toggle('on',!!on&&x.dataset.rt===on.tab)); }
+$('lcolb').onclick=()=>setCol('l',!document.body.classList.contains('lcol'));
+$('rcolb').onclick=()=>setCol('r',!document.body.classList.contains('rcol'));
+$('lrailb').onclick=()=>setCol('l',false);
+document.querySelectorAll('#rrail button').forEach(x=>x.onclick=()=>{ showTab(x.dataset.rt); setCol('r',false); });
+try{ ['l','r'].forEach(s=>{ if(localStorage.getItem(s+'col')==='1') setCol(s,true); else setCol(s,false); }); }catch(e){}
+setInterval(()=>{ if(document.body.classList.contains('lcol')) syncRails(); },3000);
+try{ new MutationObserver(()=>{ if(document.body.classList.contains('lcol')) syncRails(); }).observe($('kyiv'),{attributes:true,childList:true,subtree:true,characterData:true}); }catch(e){}
 $('fmchip').onclick=()=>setFull(false);
 $('fmchip').onkeydown=e=>{ if(e.key==='Enter'||e.key===' ') setFull(false); };
 document.addEventListener('fullscreenchange',()=>{ if(!document.fullscreenElement&&FULL) setFull(false); });   // the phone's Back
