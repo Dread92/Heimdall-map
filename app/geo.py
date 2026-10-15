@@ -1091,7 +1091,13 @@ def _place_role(text, p):
     m = _DEST_PRE.search(pre)
     if m:
         if m.group(0).strip() == "на" and _LOC_END.search(text[p[0]:p[1]].strip()):
-            return None
+            # 1.58.29: unless the word is the place's own name — "На любарці" (@chyste_nebo, 03:24): Любарці, Кулажинці,
+            # Ходосівці end like a locative but are the name itself (the accusative of a plural is the name): it is
+            # going there. "на Позняках", "на Троєщині" are not the name (Позняки, Троєщина): it is there.
+            said = _norm(text[p[0]:p[1]].strip()).replace("’", "'").replace("ʼ", "'")
+            own = _norm(str(p[2]).split(" (")[0]).replace("’", "'").replace("ʼ", "'") if len(p) > 2 else ""
+            if not own or said != own:
+                return None
         return "dest"
     if _FROM_PRE.search(pre):
         return "from"
@@ -2691,6 +2697,7 @@ def _telemetry(ms, text):
 # crossed the edge of the tracker's oblast there — never a district in the middle of Kyiv (it was drawn 3 km from the
 # centre, on the Kyiv district; the village of Brovary raion on the oblast's eastern edge was meant). Of the places
 # called so, a district of the city is no candidate; between the villages left, nothing decides by itself.
+REGULAR_RX = re.compile(r"(?<![а-яіїєґ'])звичайн(?:ий|і|их)\b", re.I)
 CROSS_RX = re.compile(r"(?<![а-яіїєґ'])(?:за|ви|у|в)(?:йшо?в|йшла|йшли|летів|летіла|летіли)(?![а-яіїєґ'])", re.I)
 _CITY_IN_RX = re.compile(r"(?<![а-яіїєґ'])(?:місто|міста|місті|столиц\w*|києв\w*|київ\b)", re.I)
 
@@ -2732,6 +2739,10 @@ def parse_for_channel(channel, text, near=None):
         hc = _OBL_CENTRE.get(home)
         ms = [m for m in ms if m.get("lon") is None or m.get("oblast_uid") in named or not hc
               or _km((m["lon"], m["lat"]), hc) <= 300]
+    if ms and REGULAR_RX.search(_norm(text)) and not JET_RX.search(_norm(text)):
+        for m in ms:
+            if m.get("type") in ("drones", "unknown") and not m.get("status"):
+                m["regular"], m["jet"] = True, False        # 1.58.29: "звичайний" — a Shahed, never one of the jets
     return _telemetry([_city_settle(_rel_settle(_raion_settle(_cross_settle(_settle(m), text)))) for m in ms], text)
 
 

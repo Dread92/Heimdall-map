@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Heimdall (Kyiv Air Watch) — the full technical documentation, with a map of the system.">
-<meta name="heimdall-version" content="1.58.28">
-<meta name="heimdall-docs" content="d76e6ebc00d4a996">
+<meta name="heimdall-version" content="1.58.29">
+<meta name="heimdall-docs" content="549d2252c4f6aee5">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Heimdall Technical Manual</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -237,7 +237,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
 <header class="top">
   <div class="wrap">
     <a class="brand" href="#top"><b>Heimdall</b><span>Technical manual</span></a>
-    <span class="ver">1.58.28</span>
+    <span class="ver">1.58.29</span>
     <nav class="nav" aria-label="Sections">
       <a href="#map">Map</a><a href="#journeys">Journeys</a><a href="#rules">Rules</a><a href="#reference">Reference</a><a href="#safety">Safety</a>
     </nav>
@@ -256,7 +256,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
       <h1 class="title">How Heimdall works</h1>
       <p class="lead">An unofficial air-threat map for Kyiv and the oblasts around it. One Python process reads the official
       alert data and the channels that track drones and missiles, stores every post before it reads it, rebuilds the map
-      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.28, 15 October 2026:
+      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.29, 15 October 2026:
       the map first, then everything in full.</p>
     </div>
     <dl class="facts">
@@ -646,7 +646,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
     <div class="doc" id="doc">
 <section class="part" id="tech" data-label="Reference"><p class="partlabel">Part I · The reference</p>
 <h1 id="heimdall--technical-documentation">Heimdall — technical documentation</h1>
-<p><strong>Documented version: 1.58</strong> · last updated 2026-10-15 (1.58.28)</p>
+<p><strong>Documented version: 1.58</strong> · last updated 2026-10-15 (1.58.29)</p>
 <p>The repository is <strong>Dread92/Heimdall-map</strong>. The Fly app keeps its first name, <code>kyiv-air-watch-gb</code>: Fly cannot rename
 an app (§15 has the move to a domain of its own).</p>
 <p>This is the complete technical reference: what runs, where the data comes from, how a Telegram post becomes a
@@ -1883,7 +1883,7 @@ decide as above, and then — new — <strong>the places its targets were said a
 (<code>dest_by_channel</code>, <code>DEST_CTX_MIN</code> 5 min, within 60 km): &quot;На Яготин&quot; made it the Lukyanivka of Brovary raion, 36 km from
 Yahotyn. Nothing to go on: it is not drawn. &quot;Звичайний&quot; alone is a Shahed (the trackers' word, against &quot;реактивний&quot;).
 A destination farther than 150 km (<code>DEST_LINK_KM</code>) from the channel's last report is not that report's target going
-there: &quot;Реактивний на Годунівку&quot;, read as a village of Sumy oblast, had drawn a jet drone at Musiiky, 300 km away.</p>
+there: &quot;Реактивний на Годунівку&quot; (Hodunivka, east of Yahotyn) had drawn a jet drone at Musiiky, near Ivankiv, 160 km away.</p>
 <p><strong>A weapon not stated, in the app (1.54.8).</strong> The owner: &quot;'unknown' is badly worded — it is most likely a drone (a jet
 Shahed); the only exception is when we know ballistic or cruise missiles are also coming&quot;. A mark of type <code>unknown</code> is
 named by what else is in the air (<code>mslCtx(m)</code>: a missile on the map — <code>MSL_TYPES</code> — or a MiG-31K / ballistic /
@@ -2026,6 +2026,28 @@ somewhere in the oblast&quot; (<code>oblWhere</code>, <code>nearRows</code> <cod
 of you&quot; for it (<code>proximity_watch</code>) — only a ballistic warning, which covers the region anyway, is still sent, naming
 the oblast; the Light page's radar does not draw it.</p>
 <p>Fires, ground damage and the channels' own &quot;чисто&quot; are not drawn (<code>HIDDEN_STATUS</code> on the pages).</p>
+<p><strong>One target, one track (1.58.29).</strong> The owner, showing another map that drew one jet drone from Pyriatyn past
+Borshchiv: &quot;it would be cool to define the trajectories properly&quot; — and &quot;despite the channels placing it, the app did not
+place the drone&quot;. @chyste_nebo had followed it from Pyriatyn (03:12) through Yahotyn, Berezan (&quot;реактивний зі сходу&quot;) and
+Borshchiv, then only where it went (&quot;На любарці&quot;, &quot;На Сошників&quot;, &quot;На Кийлів&quot;, &quot;На Українку&quot;); Heimdall had three pieces:</p>
+<ul>
+<li><strong>a bare place name continues the tracker's drone track</strong> (<code>State._chain</code>, <code>kin</code>): &quot;Борщів&quot; (no type: <code>likely</code>
+drones) after &quot;Березань реактивний&quot; of the same channel — the families had to be equal, so a bare name never continued
+a drone; never a &quot;звичайний&quot; and a &quot;реактивний&quot; (<code>regular</code> against <code>jet</code>: two targets the posts told apart);</li>
+<li><strong>what an earlier report of the track said of its kind stays said</strong> (<code>type_said</code>): the bare report becomes the
+track's jet drone, its card saying &quot;as this track's report at Berezan said&quot;;</li>
+<li><strong>a turn the post explains is allowed</strong>: &quot;зі сходу&quot; — it came from where the earlier report is (<code>came_from</code>,
+<code>ORIGIN_BEARING</code>), even off that report's course;</li>
+<li><strong>&quot;На Любарці&quot; is where it goes</strong>: after &quot;на&quot; a word ending like a locative (-і) is the locative only when it is not the
+place's own name — Любарці, Кулажинці end so in the nominative (<code>geo._place_role</code>); &quot;на Позняках&quot; is still there;</li>
+<li><strong>no course between two targets</strong>: the course worked out from the stream's report before is kept only if one target
+could have flown between them (<code>reach_km</code> with a jet's speed) — &quot;Від Славутича три&quot;, then &quot;Борщів&quot; 20 s later, 140 km
+south, had given Borshchiv a course from Slavutych;</li>
+<li><strong>reported again after &quot;lost&quot; is found again</strong>: &quot;Не спостерігається&quot; closes a target reported before it, never one
+reported after (the pages' <code>linkStatus</code>, the channel's <code>link_outcomes</code>: 0 instead of −2 minutes for <code>lost</code>).
+The track's line is the posts' places joined (the card's path, <code>drawSelPath</code>) — straight between them, never a curve
+nobody reported.</li>
+</ul>
 <h3 id="76-the-carriers-take-offs-launches-stand-downs-133">7.6 The carriers: take-offs, launches, stand-downs (1.33)<a class="anc" href="#76-the-carriers-take-offs-launches-stand-downs-133" aria-label="Link to this section">#</a></h3>
 <p><code>parse_air_report(text)</code> reads what a post reports about the aircraft and ships that carry the missiles — <code>mig31k</code>
 (MiG-31K, Kinzhal), <code>strategic</code> (Tu-95MS / Tu-160), <code>tu22</code> (Tu-22M3, Kh-22/32), <code>kalibr</code> (the ships) — as
@@ -5264,7 +5286,7 @@ d'alerte ne sont pas des préférences de style.</p>
 </section>
     </div>
   </div>
-  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.28, 15 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
+  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.29, 15 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
 </main>
 
 <script>

@@ -326,7 +326,7 @@ def link_outcomes(marks, extra=()):
             if k in ended or tt is None:
                 continue
             dt = (st - tt) / 60
-            if dt < -2 or dt > 40:
+            if dt < (0 if s_.get("status") == "lost" else -2) or dt > 40:      # 1.58.29: reported after "lost": found again
                 continue
             if (t.get("type") == "drones") != (s_.get("type") == "drones"):
                 continue

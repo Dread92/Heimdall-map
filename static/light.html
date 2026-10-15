@@ -352,7 +352,7 @@ const icoSvg=(m,c)=>`<svg viewBox="-13 -13 26 26" aria-hidden="true"><g class="$
 function link(ms){
   const tr=ms.filter(m=>!m.status), st=ms.filter(m=>m.status&&CLOSING.has(m.status)&&m.lat!=null&&m.lon!=null);   // an oblast-wide outcome has no point to link from
   for(const s of st){ let best=null;
-    for(const m of tr){ if(m.endedBy) continue; const dt=(Date.parse(s.ts)-Date.parse(m.ts))/60000; if(dt<-2||dt>40) continue;
+    for(const m of tr){ if(m.endedBy) continue; const dt=(Date.parse(s.ts)-Date.parse(m.ts))/60000; if(dt<(s.status==='lost'?0:-2)||dt>40) continue;
       if((m.type==='drones')!==(s.type==='drones')) continue;
       const d=km(m.lat,m.lon,s.lat,s.lon); if(d>60) continue;
       if(m.heading!=null&&d>8&&angDiff(m.heading,brg(m.lat,m.lon,s.lat,s.lon))>55) continue;

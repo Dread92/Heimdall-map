@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-15 (1.58.28)
+**Documented version: 1.58** · last updated 2026-10-15 (1.58.29)
 
 The repository is **Dread92/Heimdall-map**. The Fly app keeps its first name, `kyiv-air-watch-gb`: Fly cannot rename
 an app (§15 has the move to a domain of its own).
@@ -816,7 +816,7 @@ decide as above, and then — new — **the places its targets were said a momen
 (`dest_by_channel`, `DEST_CTX_MIN` 5 min, within 60 km): "На Яготин" made it the Lukyanivka of Brovary raion, 36 km from
 Yahotyn. Nothing to go on: it is not drawn. "Звичайний" alone is a Shahed (the trackers' word, against "реактивний").
 A destination farther than 150 km (`DEST_LINK_KM`) from the channel's last report is not that report's target going
-there: "Реактивний на Годунівку", read as a village of Sumy oblast, had drawn a jet drone at Musiiky, 300 km away.
+there: "Реактивний на Годунівку" (Hodunivka, east of Yahotyn) had drawn a jet drone at Musiiky, near Ivankiv, 160 km away.
 
 **A weapon not stated, in the app (1.54.8).** The owner: "'unknown' is badly worded — it is most likely a drone (a jet
 Shahed); the only exception is when we know ballistic or cruise missiles are also coming". A mark of type `unknown` is
@@ -964,6 +964,27 @@ of you" for it (`proximity_watch`) — only a ballistic warning, which covers th
 the oblast; the Light page's radar does not draw it.
 
 Fires, ground damage and the channels' own "чисто" are not drawn (`HIDDEN_STATUS` on the pages).
+
+**One target, one track (1.58.29).** The owner, showing another map that drew one jet drone from Pyriatyn past
+Borshchiv: "it would be cool to define the trajectories properly" — and "despite the channels placing it, the app did not
+place the drone". @chyste_nebo had followed it from Pyriatyn (03:12) through Yahotyn, Berezan ("реактивний зі сходу") and
+Borshchiv, then only where it went ("На любарці", "На Сошників", "На Кийлів", "На Українку"); Heimdall had three pieces:
+- **a bare place name continues the tracker's drone track** (`State._chain`, `kin`): "Борщів" (no type: `likely`
+  drones) after "Березань реактивний" of the same channel — the families had to be equal, so a bare name never continued
+  a drone; never a "звичайний" and a "реактивний" (`regular` against `jet`: two targets the posts told apart);
+- **what an earlier report of the track said of its kind stays said** (`type_said`): the bare report becomes the
+  track's jet drone, its card saying "as this track's report at Berezan said";
+- **a turn the post explains is allowed**: "зі сходу" — it came from where the earlier report is (`came_from`,
+  `ORIGIN_BEARING`), even off that report's course;
+- **"На Любарці" is where it goes**: after "на" a word ending like a locative (-і) is the locative only when it is not the
+  place's own name — Любарці, Кулажинці end so in the nominative (`geo._place_role`); "на Позняках" is still there;
+- **no course between two targets**: the course worked out from the stream's report before is kept only if one target
+  could have flown between them (`reach_km` with a jet's speed) — "Від Славутича три", then "Борщів" 20 s later, 140 km
+  south, had given Borshchiv a course from Slavutych;
+- **reported again after "lost" is found again**: "Не спостерігається" closes a target reported before it, never one
+  reported after (the pages' `linkStatus`, the channel's `link_outcomes`: 0 instead of −2 minutes for `lost`).
+The track's line is the posts' places joined (the card's path, `drawSelPath`) — straight between them, never a curve
+nobody reported.
 
 ### 7.6 The carriers: take-offs, launches, stand-downs (1.33)
 

@@ -642,6 +642,8 @@ MISSILE_TTL_MIN = 12
 # 1.58.28: a channel's destinations of the last few minutes break a tie between villages of one name, and a height alone
 # is a target's only if it could have climbed or dived to it since the last height stated for it — a climb of 50 m/s,
 # a dive of 150 m/s (a Shahed's last dive), and 300 m for how loosely a height is said
+# 1.58.29: a side a post says a target came from ("зі сходу"), as a bearing from where it is now
+ORIGIN_BEARING = {"n": 0, "ne": 45, "e": 90, "se": 135, "s": 180, "sw": 225, "w": 270, "nw": 315}
 DEST_CTX_MIN = 5
 DEST_LINK_KM = 150       # a destination farther than this from the channel's last report is not that target's
 ALT_CLIMB_MS, ALT_DIVE_MS, ALT_TOL_M = 50.0, 150.0, 300.0
@@ -3593,7 +3595,8 @@ class State:
                         alt_by_channel[ck] = (ctx[2], pts, a_new)
                     c1 = ctx[1]
                     m.update(lon=c1["lon"], lat=c1["lat"], place=c1["place"], oblast_uid=c1.get("oblast_uid"), pos_ts=ctx[2],
-                             type=c1.get("type") or "unknown", jet=bool(c1.get("jet")), likely=c1.get("likely"))
+                             type=c1.get("type") or "unknown", jet=bool(c1.get("jet")), likely=c1.get("likely"),
+                             regular=c1.get("regular"))       # 1.58.29: "звичайний" stays said of it
                     m.pop("needs_context", None)
                     ev = dict(m.get("evidence") or {})
                     ev["position"] = dict(ev.get("position") or {}, matched=c1.get("place"), place=c1.get("place"))
@@ -3649,6 +3652,10 @@ class State:
                     if ctx and pts and not multi and (pts - ctx[0]).total_seconds() <= 8 * 60 and m.get("heading") is None:
                         d = math.hypot((m["lon"] - ctx[1]["lon"]) * 70.7, (m["lat"] - ctx[1]["lat"]) * 111)
                         brg = round(geo.bearing(ctx[1]["lon"], ctx[1]["lat"], m["lon"], m["lat"])) if d >= 0.4 else None
+                        # 1.58.29: and only between two reports one target could be — "Від Славутича три", then "Борщів"
+                        # 20 s later and 140 km south were two targets; the course Slavutych → Borshchiv was nobody's
+                        if brg is not None and d > reach_km((pts - ctx[0]).total_seconds() / 60, True):   # even a jet's
+                            brg = None
                         if brg is not None and not outward(m, brg):
                             m["heading"] = brg
                             ev = dict(m.get("evidence") or {}); ev["heading"] = {"matched": f"{ctx[1].get('place')} → {m.get('place')}", "method": "bearing between the two latest reports of this live-tracking channel", "confidence": "medium"}
@@ -5404,13 +5411,34 @@ class State:
 
         def vague(m):
             return (m.get("place") or "") == "область"      # "БпЛА на Харківщині": the oblast, no town named
+
+        def kin(pm, m):
+            """May `m` continue `pm`'s track, by what the posts said of their kind? The same family; or — 1.58.29, the
+            owner: "it would be cool to define the trajectories properly" — a bare place name of the same live tracker
+            (no type stated: `likely` drones) after its drone report, or the reverse: "Березань реактивний зі сходу",
+            then "Борщів", "На любарці" was one jet drone in three pieces. Never a "звичайний" and a "реактивний": the
+            posts told those two apart."""
+            fa, fb = fam(pm), fam(m)
+            if fa != fb and not ({fa, fb} == {"drone", "unknown"} and pm["channel"] == m["channel"]
+                                 and (pm if fa == "unknown" else m).get("likely") == "drones"):
+                return False
+            return not ((pm.get("jet") and m.get("regular")) or (pm.get("regular") and m.get("jet")))
+
+        def came_from(m, pm):
+            """The side `m`'s post said it came from ("зі сходу") is where `pm` is: a turn the posts themselves explain."""
+            o = (m.get("origin") or {}).get("o") if isinstance(m.get("origin"), dict) else None
+            b0 = ORIGIN_BEARING.get(o)
+            if b0 is None:
+                return False
+            b = (math.degrees(math.atan2((pm["lon"] - m["lon"]) * 70.7, (pm["lat"] - m["lat"]) * 111)) + 360) % 360
+            return abs(((b - b0) + 540) % 360 - 180) <= 60
         for i, m in enumerate(tracks):
             t1 = parse_iso(m["ts"])
             best = None
             for pm in tracks[:i]:
                 # 1.52: an approach mark a track took over is that track's now — continued from it, a later report
                 # made a second track out of the same report (and the two shared one tag)
-                if pm["superseded_by"] or pm.get("absorbed") or fam(pm) != fam(m):
+                if pm["superseded_by"] or pm.get("absorbed") or not kin(pm, m):
                     continue
                 dt = (t1 - parse_iso(pm["ts"])).total_seconds() / 60
                 same = pm["channel"] == m["channel"]
@@ -5451,7 +5479,7 @@ class State:
                 if pm.get("heading") is not None and d > 12:
                     b = (math.degrees(math.atan2((m["lon"] - pm["lon"]) * 70.7, (m["lat"] - pm["lat"]) * 111)) + 360) % 360
                     diff = abs(((pm["heading"] - b) + 540) % 360 - 180)
-                    if diff > 60:
+                    if diff > 60 and not came_from(m, pm):        # 1.58.29: unless the post said it came from there
                         continue
                 score = d + dt * 0.8 + (0 if pm["channel"] == m["channel"] else 10) + (0 if (pm.get("count") or 1) == (m.get("count") or 1) else 5)
                 if best is None or score < best[0]:
@@ -5475,6 +5503,18 @@ class State:
                         pm["evidence"] = ev
                     continue
                 pm["superseded_by"] = m["id"]
+                if pm.get("regular") and not m.get("jet"):
+                    m["regular"] = True
+                if pm["type"] == "drones" and m["type"] in ("unknown", "drones") and not m.get("regular") \
+                        and (m["type"] == "unknown" or (pm.get("jet") and not m.get("jet"))):
+                    # 1.58.29: what an earlier report of the track said it is — "реактивний" at Berezan — stays said of
+                    # it when the next post names a place alone ("Борщів"), and says so on the card
+                    said = pm.get("type_said") or {"by": pm["id"], "place": pm.get("place"), "ts": pm["ts"]}
+                    m.update(type="drones", jet=bool(pm.get("jet") or m.get("jet")), likely=None, type_said=said)
+                    ev = dict(m.get("evidence") or {})
+                    ev["type"] = {"matched": None, "confidence": "medium",
+                                  "method": f"as this track's report at {said.get('place')} said — this post named the place alone"}
+                    m["evidence"] = ev
                 m["reports"] = pm["reports"] + [m["id"]]
                 m["origin_t"] = pm.get("origin_t") or m.get("origin_t")
                 m["first_uid"] = pm.get("first_uid") or m.get("first_uid")

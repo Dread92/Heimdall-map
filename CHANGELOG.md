@@ -2,6 +2,23 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.29 — 2026-10-15
+
+### Fixed
+- **A target followed by a tracker is one track again** — the owner, beside another map that drew one jet drone from
+  Pyriatyn past Borshchiv: "it would be cool to define the trajectories properly", and "despite the channels placing it,
+  the app did not place the drone". @chyste_nebo had followed it — Pyriatyn, Yahotyn, Berezan ("реактивний зі сходу"),
+  Borshchiv, then "На любарці", "На Сошників", "На Кийлів", "На Українку" — and the map had three pieces: the jet at
+  Berezan, closed by a "not observed" posted before it, and two marks of no type at Borshchiv and Liubartsi. Now:
+  - a place named alone by a tracker continues its drone's track, and keeps what an earlier report of it said — a jet
+    drone stays a jet drone, the card saying so; never a "regular" one and a "jet" one: two targets;
+  - "На Любарці" is where it is going (it was read as being there), so the drone stays at Borshchiv, its last stated
+    place, heading for Ukrainka;
+  - a target reported again after "not observed" is found again, not closed;
+  - a course is no longer drawn between two of a tracker's targets 140 km apart (Slavutych, then Borshchiv 20 s later);
+  - a turn the post explains ("from the east") joins the track.
+  The line on the card joins the places the posts gave, straight — never a curve nobody reported.
+
 ## 1.58.28 — 2026-10-15
 
 ### Fixed
@@ -13,8 +30,8 @@ Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md
 - **"300", then "6700" ten seconds later, on one target** — no target climbs 6.4 km in ten seconds: a height alone that
   the target could not have reached since its last one is another target's, and is not drawn on it.
 - **"Звичайний" is a Shahed** (it read "type not specified").
-- **A jet drone drawn 300 km from where it was heading** — "Реактивний на Годунівку", read as a village of Sumy oblast,
-  was put at the channel's last report near Ivankiv; a destination that far is not that report's target.
+- **A jet drone drawn where another target was** — "Реактивний на Годунівку" (Hodunivka, east of Yahotyn) was put at
+  the channel's last report, Musiiky near Ivankiv, 160 km away; a destination that far is not that report's target.
 
 ## 1.58.27 — 2026-10-15
 

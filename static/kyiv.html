@@ -2173,7 +2173,7 @@ function linkStatus(){
   for(const s of st){
     const [sx,sy]=proj(s.lon,s.lat); let best=null;
     for(const t of tr){
-      if(t.endedBy) continue; const dt=(new Date(s.ts)-new Date(t.ts))/60000; if(dt<-2||dt>40) continue;
+      if(t.endedBy) continue; const dt=(new Date(s.ts)-new Date(t.ts))/60000; if(dt<(s.status==='lost'?0:-2)||dt>40) continue;   // 1.58.29: reported again after "lost": found again
       const fam=(t.type==='drones')===(s.type==='drones'); if(!fam) continue;
       const [tx,ty]=proj(t.lon,t.lat); const d=Math.hypot(sx-tx,sy-ty); if(d>60) continue;
       if(t.heading!=null&&d>8){ const b=(Math.atan2(sx-tx,-(sy-ty))*180/Math.PI+360)%360; const diff=Math.abs(((t.heading-b)+540)%360-180); if(diff>55) continue; }

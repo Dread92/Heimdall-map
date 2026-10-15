@@ -38,16 +38,17 @@ def _post(n, minutes, text):
 def test_no_course_between_two_targets():
     with mock.patch.object(server, "outward", lambda m, b: False):            # the border rule aside
         ms = _marks(POSTS)
-        one = _marks([_post(200, 10, "Сеньківка"), _post(201, 5, "Любеч")])
+        # 1.58.29: 88 km apart — 8 minutes, a jet drone's reach (in 5 minutes, as here before, no drone flies it)
+        one = _marks([_post(200, 12.9, "Сеньківка"), _post(201, 5, "Любеч")])
     assert ms["chernihiv_nebo/100#1"]["place"] == "Любеч" and all(m.get("heading") is None for m in ms.values())
     assert one["chernihiv_nebo/201#0"].get("heading") is not None             # one target each time: its course
 
 
 def test_a_course_worked_out_back_across_the_border_is_not_kept():
-    ms = _marks([_post(200, 10, "Козелець"), _post(201, 5, "Любеч")])
+    ms = _marks([_post(200, 12.9, "Козелець"), _post(201, 5, "Любеч")])
     m = ms["chernihiv_nebo/201#0"]                                             # Kozelets → Liubech: north, to Belarus
     assert m["place"] == "Любеч" and m.get("heading") is None
-    back = _marks([_post(300, 10, "Любеч"), _post(301, 5, "Козелець")])["chernihiv_nebo/301#0"]
+    back = _marks([_post(300, 12.9, "Любеч"), _post(301, 5, "Козелець")])["chernihiv_nebo/301#0"]
     assert back.get("heading") is not None                                    # into Ukraine: kept
     liubech = {"oblast_uid": "25", "lon": 30.65, "lat": 51.70}
     assert server.outward(liubech, 324) and server.outward(liubech, 0) and not server.outward(liubech, 190)

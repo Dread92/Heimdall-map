@@ -4,8 +4,8 @@ The owner (15 Oct 2026, 03:19, @chyste_nebo): "there must be an error here" — 
 the centre of Kyiv, "300 m → 6.7 km". The channel had written "На Яготин", then "Лукʼянівка зайшов звичайний" (a regular
 one came in at Lukyanivka), "300", "6700". It came in — crossed the oblast's edge — so it was the village of Brovary raion,
 36 km from Yahotyn, not the Kyiv district; "звичайний" is a Shahed; and no target climbs 6.4 km in ten seconds: "6700" was
-another target's height. And "Реактивний на Годунівку", read as a village of Sumy oblast, drew a jet drone at Musiiky —
-the channel's last report, 300 km from it.
+another target's height. And "Реактивний на Годунівку" (Hodunivka, east of Yahotyn) drew a jet drone at Musiiky — the
+channel's last report, near Ivankiv, 160 km from it.
 """
 from datetime import datetime, timedelta, timezone
 
