@@ -57,7 +57,7 @@ def test_while_the_heat_map_is_on_the_alerts_are_a_faint_tint_and_the_legend_say
 
 
 def test_the_switch_slides_then_opens_the_other_version():
-    assert '<a href="/light" data-sw data-t="sw_light">' in PAGE and '<a href="/m" data-sw>' in LIGHT
+    assert '<a href="/light" data-sw><span data-t="sw_light">' in PAGE and '<a href="/m" data-sw>' in LIGHT   # 1.58.33: a tab, its meaning under it
     assert "#top .vsw.go::before{transform:translateX(-100%)}" in PAGE and ".sw.go::before{transform:translateX(100%)}" in LIGHT
     i = I18N.index("function swGo(a)")
     body = I18N[i:I18N.index("function whenShown", i)]

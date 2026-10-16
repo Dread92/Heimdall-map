@@ -70,8 +70,10 @@ def test_it_stays_light():
     # once an alert names a hromada (the outlines and their test are not part of the page)
     # 1.58.24 raised the sum by 0.1 KB: a live line that keeps failing is asked again later and later, one at a time
     # 1.58.31 raised both by 0.1 KB: with the raion source silent, a raion the oblast-only mirror cannot see is unknown
-    assert page < 26_400, f"the light page is no longer light ({page} B gzipped)"
-    assert page + extra < 67_400, f"page + map data = {page + extra} B gzipped"   # 1.58.16: the same 0.6 KB
+    # 1.58.33 raised both by 0.1 KB: the official status as a flat (red, yellow) or a rule (green), the switch as two tabs
+    # 1.58.34: the pins that exist and a "+"
+    assert page < 26_600, f"the light page is no longer light ({page} B gzipped)"
+    assert page + extra < 67_600, f"page + map data = {page + extra} B gzipped"   # 1.58.16: the same 0.6 KB
     # 1.29: the live line is allowed — the light variant only (alerts and marks, no feed, no raw events). An open
     # line costs the server nothing any more (one thread holds them all) and the phone ~100 bytes every 15 s,
     # against ~8 KB every 15 s for asking.

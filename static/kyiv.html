@@ -26,6 +26,7 @@ history.replaceState(null,'',location.pathname+location.search);}catch(e){}})();
 @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Barlow:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap');
 :root{--top:86px;--peek:58px;--bg:#0b0d11;--ink:#e8e6df;--ink2:#b5b3ab;--ink3:#8f8d86;--line:#242830;--panel:#12151b;--panel2:#181c24;
   --ua-blue:#0057b7;--ua-yellow:#ffd500;--red:#e0342c;--red2:#ff5b52;--yellow:#f2c200;--green:#2fbf71;--orange:#ff8a3d;--purple:#b07cff;--blue:#5b9cff;
+  --r:2px;--line2:#3a414c;
   --cond:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;--sans:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
   --sat:env(safe-area-inset-top,0px);--sab:env(safe-area-inset-bottom,0px)}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -41,7 +42,7 @@ button{font:inherit;cursor:pointer}
 #stats a{color:#8fb4ff}
 /* the one way out of the notice: big, full width, centred, well clear of the links above it — a small button
    at the edge was missed, and the tap landed on something else */
-.dok{display:block;position:sticky;bottom:calc(10px + var(--sab));box-shadow:0 -12px 22px 6px #14171d;width:100%;max-width:340px;margin:18px auto 2px;padding:15px 18px;border:2px solid var(--ua-yellow);border-radius:6px;background:var(--ua-yellow);color:#111;font:800 17px/1.1 var(--sans);letter-spacing:.03em;text-transform:uppercase;cursor:pointer}
+.dok{display:block;position:sticky;bottom:calc(10px + var(--sab));box-shadow:0 -12px 22px 6px #14171d;width:100%;max-width:340px;margin:18px auto 2px;padding:15px 18px;border:2px solid var(--ua-yellow);border-radius:var(--r);background:var(--ua-yellow);color:#0b0d11;font:800 19px/1.1 var(--cond);letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
 #top .name{font:700 17px/1 var(--cond);letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
 .menu{position:absolute;right:8px;top:44px;background:#14171d;border:1px solid var(--line);display:flex;flex-direction:column;min-width:230px;max-width:min(320px,calc(100vw - 16px));max-height:calc(100vh - 56px);max-height:calc(100dvh - 56px - var(--sat));overflow-y:auto;overscroll-behavior:contain;z-index:25;box-shadow:0 8px 24px #0009}
 .menu[hidden]{display:none}
@@ -69,7 +70,7 @@ button{font:inherit;cursor:pointer}
 .notice .ntb{flex:1;min-width:0;font:500 13px/1.4 var(--sans);white-space:pre-wrap;overflow-wrap:anywhere;max-height:30vh;overflow:auto}
 .notice .nth{display:block;font:700 10.5px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--ink2);margin-bottom:2px}
 .notice .mvgo{display:inline-block;margin-top:6px;padding:7px 12px;background:var(--ua-yellow);color:#111;font:700 13px var(--sans);border-radius:4px;text-decoration:none}
-.notice .nx{flex:none;background:transparent;border:1px solid var(--line);color:var(--ink2);width:32px;height:32px;border-radius:4px;font:600 14px var(--sans);cursor:pointer}
+.notice .nx{flex:none;background:transparent;border:1px solid var(--line);color:var(--ink2);width:32px;height:32px;border-radius:var(--r);font:600 14px var(--sans);cursor:pointer}
 body.m-day .notice{background:#e8f0ff;color:#12161c}body.m-day .notice.lv-warn{background:#fff1e0}body.m-day .notice.lv-alert{background:#ffe3e0}
 /* 1.32: the admin's message, loud: bright green for information, bright red — slowly pulsing — for urgent. The same
    in every display mode; the pulse is one cycle in 1.6 s and stops for a reader who asks for less motion. */
@@ -103,12 +104,13 @@ body.m-day .notice{background:#e8f0ff;color:#12161c}body.m-day .notice.lv-warn{b
 .dset{margin-top:10px;border-top:1px solid var(--line);padding-top:8px;display:flex;flex-direction:column;gap:8px}.dset label{display:flex;flex-direction:column;gap:4px;font:600 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink2)}.dset select{width:100%;padding:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font:14px var(--sans);border-radius:2px}.dset .tgl{align-self:flex-start;text-transform:none;letter-spacing:0;font:600 13px var(--sans)}
 .kv1{font:500 14.5px/1.4 var(--sans);margin-top:6px}.kv1.muted{color:var(--muted);font-size:13.5px}.kv1.green{color:#a8f0cf}.kv1.yellow{color:#ffd166}.kv1 a{color:#8fb4ff}
 .sheet .type{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.tstrip{font:800 16px/1.25 var(--sans);letter-spacing:.02em;text-transform:uppercase;padding:10px 12px;border-radius:10px;background:#3a1030;color:#ffd0f0;border:1px solid #7a2a6a;animation:tpulse 1.6s ease-in-out infinite}.tstrip small{display:block;font:600 13.5px/1.35 var(--sans);color:inherit;opacity:.92;text-transform:none;letter-spacing:0;margin-top:3px}
+.tstrip{font:800 16px/1.25 var(--sans);letter-spacing:.02em;text-transform:uppercase;padding:10px 12px 10px 11px;border-radius:0;background:#3a1030;color:#ffd0f0;border:0;border-left:4px solid #7a2a6a;animation:tpulse 1.6s ease-in-out infinite}.tstrip small{display:block;font:600 13.5px/1.35 var(--sans);color:inherit;opacity:.92;text-transform:none;letter-spacing:0;margin-top:3px}
 .tstrip.bal{background:#7a0f16;color:#fff;border-color:#b3262e}.tstrip.mig{background:#5b2fa8;color:#fff;border-color:#7a45f0}.tstrip[hidden]{display:none}
+.tstrip .gico{width:20px;height:20px;vertical-align:-5px;margin-right:4px}
 .tstrip .tsgo{display:block;margin-top:5px;font:700 14.5px/1.3 var(--sans);text-transform:none;letter-spacing:0}
 .tsrow{display:flex;flex-wrap:wrap;align-items:center;column-gap:10px}.tsrow .tsgo{flex:1 1 200px;min-width:0}.tsrow .tsbtn{flex:none}
 .shact{margin-top:8px;display:flex;gap:8px;justify-content:flex-end}
-.tstrip .tsbtn{display:inline-flex;align-items:center;min-height:44px;margin-top:6px;padding:0 16px;border-radius:10px;background:#fff;color:#1d0c3f;font:800 15px var(--sans);text-transform:none;letter-spacing:0;text-decoration:none}
+.tstrip .tsbtn{display:inline-flex;align-items:center;min-height:44px;margin-top:6px;padding:0 16px;border-radius:var(--r);background:var(--ua-yellow);color:#0b0d11;font:800 15px var(--cond);text-transform:uppercase;letter-spacing:.08em;text-decoration:none}
 @media (prefers-reduced-motion:reduce){.tstrip{animation:none}}
 /* past the freshness window it stops shouting: no pulse, muted amber, past tense, age on the face of it */
 .tstrip.old{background:#221d13;color:#d9cba4;border-color:#4d411f;animation:none}
@@ -116,7 +118,7 @@ body.m-day .notice{background:#e8f0ff;color:#12161c}body.m-day .notice.lv-warn{b
 .tstrip.offr{background:#7a0f16;color:#fff;border-color:#b3262e}
 .tstrip.offy{background:#4a3a06;color:#ffe9a8;border-color:#8a6d00}
 body.lite .tstrip.offr,body.lite .tstrip.offy{background:#fff;color:#000;border-color:#fff;animation:none}
-.tstrip .tsmore{margin-top:6px;min-height:44px;font:700 13px var(--sans);text-transform:none;background:rgba(255,255,255,.1);color:inherit;border:1px solid currentColor;border-radius:8px;padding:0 12px;cursor:pointer;opacity:.9}
+.tstrip .tsmore{margin-top:6px;min-height:44px;font:700 13px var(--sans);text-transform:none;background:rgba(255,255,255,.1);color:inherit;border:1px solid currentColor;border-radius:var(--r);padding:0 12px;cursor:pointer;opacity:.9}
 .tstrip .tsmore:active{background:rgba(255,255,255,.18)}
 .tstrip .tsrest{margin-top:5px;padding-top:5px;border-top:1px solid currentColor;display:flex;flex-direction:column;gap:4px;opacity:.92}
 .tstrip .tsr{font:700 14px/1.3 var(--sans)}
@@ -125,7 +127,7 @@ body.lite .tstrip.calm{background:#fff;color:#000;border-color:#fff}
 body.lite .tstrip.old{background:#111;color:#ddd;border-color:#555}
 @keyframes tpulse{0%,100%{filter:brightness(1)}50%{filter:brightness(1.35)}}
 .mi.lrow{display:flex;align-items:center;gap:10px;cursor:default}
-.lsel{margin-left:auto;min-width:0;max-width:60%;padding:6px 8px;border:1px solid var(--line);border-radius:3px;background:var(--panel);color:var(--ink);font:600 13px var(--sans);cursor:pointer}
+.lsel{margin-left:auto;min-width:0;max-width:60%;padding:6px 8px;border:1px solid var(--line);border-radius:var(--r);background:var(--panel);color:var(--ink);font:600 13px var(--sans);cursor:pointer}
 .mi{background:transparent;border:0;border-bottom:1px solid var(--line);color:var(--ink);text-align:left;padding:9px 14px;font:500 13px var(--sans);text-decoration:none;display:block}.mi:last-child{border-bottom:0}.mi[hidden]{display:none}.mi.on::after{content:' ✓';color:var(--ua-yellow)}
 /* the menu is a list of seventeen things; without groups you read all of them to find one */
 .menu .mg{padding:7px 14px 5px;font:700 9.5px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ink3,#6c6b66);background:#0f1217;border-bottom:1px solid var(--line)}
@@ -134,7 +136,7 @@ body.lite .tstrip.old{background:#111;color:#ddd;border-color:#555}
 .mrow .ml{font:500 12px var(--sans);color:var(--ink3,#6c6b66);margin-right:auto;white-space:nowrap}
 .mi2{flex:0 0 auto;background:#1b1f27;border:1px solid var(--line);color:var(--ink);padding:6px 10px;font:600 12px var(--sans);cursor:pointer;border-radius:2px}
 .mrow:not(.z) .mi2{flex:1 1 0;text-align:center}
-.mi2:hover{background:#232833}.mi2.on{border-color:var(--ua-yellow);color:var(--ua-yellow)}.mi2.on::after{content:' ✓'}
+.mi2:hover{background:#232833}.mi2.on{border-color:var(--ua-yellow);color:var(--ink);box-shadow:inset 3px 0 0 var(--ua-yellow)}
 .mi.bt{color:var(--muted);font:11px var(--mono);cursor:default}
 .mrow.vol .ml{margin-right:0}.mrow.vol input{flex:1 1 auto;min-width:70px;margin:0 2px;accent-color:var(--ua-yellow);height:28px}
 .mrow.vol #sndtest{min-width:40px;padding:6px 0;text-align:center}.mrow.vol b{min-width:40px;text-align:right;font:600 11.5px var(--mono);color:var(--ink2)}.mrow.vol.off b,.mrow.vol.off .ml{color:var(--muted)}.mrow.vol.off #sndtest{opacity:.4;pointer-events:none}
@@ -150,29 +152,33 @@ body.lite .tstrip.old{background:#111;color:#ddd;border-color:#555}
 /* Light | Tactical — the two versions, one tap apart, where the eye lands first */
 /* 1.39: the switch takes the room between the logos and the two buttons, centred in it, and its words shrink with the
    screen (clamp) instead of being cut — "ПРОСТА›" was clipped on narrow phones */
-#top .vsw{display:flex;position:relative;isolation:isolate;flex:1 1 auto;min-width:0;max-width:340px;margin:0 auto;border:2px solid var(--orange,#ff8a3d);border-radius:7px;overflow:hidden;box-shadow:0 0 0 3px rgba(255,138,61,.14);background:#1a202b}
-#top .vsw>*{flex:1 1 0;min-width:0;display:flex;align-items:center;justify-content:center;min-height:44px;font:800 clamp(10.5px,3.3vw,12.5px)/1 var(--sans);letter-spacing:clamp(.01em,.45vw,.08em);padding:0 clamp(3px,1.5vw,12px);color:#fff;text-decoration:none;background:transparent;white-space:nowrap;transition:color .2s,background-color .2s}
+/* 1.58.33, the audit ("the loudest object on the screen, and it says nothing of the danger"): two tabs, the same vocabulary
+   as the drawer's, each with its one-line meaning; the yellow line under the current one slides to the other on a tap */
+#top .vsw{display:flex;position:relative;isolation:isolate;flex:1 1 auto;min-width:0;max-width:340px;margin:0 auto;border-bottom:1px solid var(--line);background:transparent}
+#top .vsw>*{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:44px;font:700 clamp(11px,3.3vw,13px)/1 var(--cond);letter-spacing:clamp(.04em,.45vw,.1em);text-transform:uppercase;padding:3px clamp(3px,1.5vw,12px) 5px;color:var(--ink3);text-decoration:none;background:transparent;white-space:nowrap;transition:color .2s}
+#top .vsw small{font:500 clamp(9.5px,2.6vw,11px)/1 var(--sans);letter-spacing:0;text-transform:none;color:var(--ink3)}
 /* 1.40: the orange half is one thumb; a tap on the other half slides it across (0.2 s), then that version opens —
    the browser fades one page into the other (@view-transition) and has usually loaded it on the press already */
-#top .vsw::before{content:'';position:absolute;z-index:-1;top:0;bottom:0;left:50%;width:50%;background:var(--orange,#ff8a3d);transition:transform .22s cubic-bezier(.3,.7,.2,1)}
+#top .vsw::before{content:'';position:absolute;z-index:1;bottom:-1px;left:50%;width:50%;height:2px;background:var(--ua-yellow);transition:transform .22s cubic-bezier(.3,.7,.2,1)}
 #top .vsw.go::before{transform:translateX(-100%)}
-#top .vsw .on{color:#14100a}#top .vsw.go .on{color:#fff}#top .vsw.go a{color:#14100a;background:transparent}
-#top .vsw a::after{content:' ›'}
-#top .vsw a:hover,#top .vsw a:focus{background:#242c3a}
+#top .vsw .on{color:var(--ink)}#top .vsw .on small{color:var(--ink2)}#top .vsw.go .on{color:var(--ink3)}#top .vsw.go .on small{color:var(--ink3)}#top .vsw.go a{color:var(--ink)}
+#top .vsw a:hover,#top .vsw a:focus{color:var(--ink)}
 @media (max-width:380px){#top .logo.ngo{display:none}}
-body.m-day #top .vsw{border-color:#b9b2a4;background:#fff}body.m-day #top .vsw>*{color:#333}body.m-day #top .vsw::before{background:#e0701f}body.m-day #top .vsw .on,body.m-day #top .vsw.go a{color:#fff}body.m-day #top .vsw.go .on{color:#333}body.m-day #top .vsw a:hover{background:#f1ede6}
-body.lite #top .vsw::before{background:#fff;transition:none}body.lite #top .vsw .on,body.lite #top .vsw.go a{color:#000}body.lite #top .vsw.go .on{color:#fff}
+body.m-day #top .vsw{border-color:#c3c8d0}body.m-day #top .vsw>*,body.m-day #top .vsw small{color:#5a6270}body.m-day #top .vsw::before{background:#9a7b00}body.m-day #top .vsw .on,body.m-day #top .vsw.go a{color:#12161c}body.m-day #top .vsw .on small{color:#3a414c}body.m-day #top .vsw.go .on{color:#5a6270}
+body.lite #top .vsw{border-color:#666}body.lite #top .vsw::before{background:#fff;transition:none}body.lite #top .vsw>*,body.lite #top .vsw small{color:#999}body.lite #top .vsw .on,body.lite #top .vsw .on small,body.lite #top .vsw.go a{color:#fff}body.lite #top .vsw.go .on{color:#999}
 .ib{width:34px;height:30px;border:1px solid var(--line);background:var(--panel);color:var(--ink2);border-radius:2px;font:600 12px var(--mono);display:inline-flex;align-items:center;justify-content:center;padding:0}
 .ib.on{color:var(--ua-yellow);border-color:#5a4d00;background:#1e1a05}
 /* the official block of the card = #kyiv (filled by render): the official status of the watched place's raion, in
    the alert's own colour, full width — or, with no place set, of the reader's oblast as before */
-.band{min-height:44px;display:flex;align-items:center;gap:10px;padding:6px 12px;border-radius:10px;background:rgba(47,191,113,.14);border:1px solid rgba(47,191,113,.4);color:var(--ink);position:relative}
-.band.R,.band.A{background:#c62a22;border-color:#c62a22;color:#fff}.band.Y,.band.P{background:var(--yellow);border-color:var(--yellow);color:#111}.band.H{background:#4a3a06;border-color:#8a6d00;color:#ffe9a8}
+/* 1.58.33, the audit: the red and the yellow are the government app's own flats; "no alert" is an absence — a green rule
+   and a green word on the panel, never a tinted box. Condensed for the state, as everywhere else. */
+.band{min-height:48px;display:flex;align-items:center;gap:10px;padding:7px 12px 7px 11px;border-radius:0;background:var(--panel);border:0;border-left:4px solid var(--green);color:var(--ink);position:relative}
+.band.R,.band.A{background:#c62a22;border-left-color:#7a1611;color:#fff}.band.Y,.band.P{background:var(--ua-yellow);border-left-color:#b89400;color:#0b0d11}.band.H{background:var(--panel);border-left-color:var(--yellow);color:#ffe9a8}
 .band .dot{display:none}.band>div:not(.dur):not(.dot){flex:1;min-width:0}
-.band .big{font:800 17px/1.15 var(--sans);letter-spacing:.01em;text-transform:uppercase}
-.band .small{font:600 13px/1.3 var(--sans);margin-top:2px;opacity:.96}
-.band .dur{margin-left:auto;font:700 15px/1 var(--mono);white-space:nowrap}
-.band.N .big{font-size:16px;color:#bff3d6;text-transform:none}.band.N .small{color:var(--ink2)}.band.N .dur{display:none}
+.band .big{font:800 19px/1.05 var(--cond);letter-spacing:.04em;text-transform:uppercase}
+.band .small{font:500 13px/1.3 var(--sans);margin-top:3px;opacity:.96}
+.band .dur{margin-left:auto;font:600 14px/1 var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.band.N .big{color:var(--green)}.band.N .small{color:var(--ink2)}.band.N .dur{display:none}
 /* ---------- map ---------- */
 #stage{position:fixed;left:0;right:0;top:calc(var(--sat) + var(--top));bottom:calc(var(--peek) + var(--sab))}
 .mapwrap{position:absolute;inset:0;background:#0a0c10;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;overflow:hidden}
@@ -226,18 +232,21 @@ button.chip{cursor:pointer;font-family:var(--mono)}button.chip:hover{border-colo
 .grow.rep{cursor:default}.grow.rep.down{border-left-color:#39d98a}.grow.rep.fire{border-left-color:#ff9a3c}.grow.rep.damage{border-left-color:#c2564a}
 .livebar .chip.red{color:#ffd9d6;border-color:#6a2a26}.livebar .chip.orange{color:#ffc9a3}.livebar .chip.green{color:#c9f2da}.livebar .chip.yellow{color:#ffefa8}.livebar .chip.blue{color:#bcd5ff}
 .livebar .chip b{font-weight:600}
-.mapctl{position:absolute;right:8px;bottom:12px;display:flex;flex-direction:column;gap:8px}
-.mapctl button{width:44px;height:44px;border:1px solid var(--line);background:rgba(18,21,27,.94);color:var(--ink);border-radius:10px;font:600 18px var(--mono);padding:0;display:flex;align-items:center;justify-content:center}
+/* 1.58.33, the audit: one instrument, not six pebbles — the buttons share a bar, a divider between them, the active
+   layer marked by a yellow rule; the full-screen button in ink like the others (the alert's yellow was on it) */
+.mapctl{position:absolute;right:8px;bottom:12px;display:flex;flex-direction:column;gap:0;border:1px solid var(--line2);border-radius:var(--r);background:rgba(11,13,17,.92);overflow:hidden}
+.mapctl button{width:44px;height:44px;border:0;border-bottom:1px solid var(--line);background:transparent;color:var(--ink);border-radius:0;font:600 18px var(--mono);padding:0;display:flex;align-items:center;justify-content:center}
+.mapctl button:last-child{border-bottom:0}
 .mapctl svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2;stroke-linejoin:round}
-.mapctl button.on{color:var(--ua-yellow);border-color:#5a4d00}
+.mapctl button.on{color:var(--ink);box-shadow:inset 3px 0 0 var(--ua-yellow)}
 /* 1.53, the owner: the map alone on the whole screen of a phone — the last button of the column, under the thumb, in the
    yellow of the active buttons so it is found at once; the alert status stays on screen as a chip (a tap leaves) */
-#fsbtn{color:var(--ua-yellow);border-color:#5a4d00}#fsbtn .fsout{display:none}body.fullmap #fsbtn .fsin{display:none}body.fullmap #fsbtn .fsout{display:inline}
+#fsbtn .fsout{display:none}body.fullmap #fsbtn .fsin{display:none}body.fullmap #fsbtn .fsout{display:inline}
 body.fullmap #top,body.fullmap #drawer,body.fullmap #updbar,body.fullmap #pwabar{display:none!important}
 body.fullmap #stage{top:var(--sat)!important;bottom:var(--sab)!important;right:0!important}
 #fmchip{display:none}
 body.fullmap #fmchip{position:fixed;left:8px;top:calc(var(--sat) + 8px);z-index:16;display:flex;align-items:center;gap:8px;max-width:calc(100vw - 76px);
-  padding:7px 10px;border-radius:10px;background:rgba(18,40,28,.94);border:1px solid rgba(47,191,113,.6);color:#bff3d6;font:800 13.5px/1.2 var(--sans);cursor:pointer}
+  padding:7px 10px;border-radius:var(--r);background:rgba(18,40,28,.94);border:1px solid rgba(47,191,113,.6);color:#bff3d6;font:800 13.5px/1.2 var(--sans);cursor:pointer}
 #fmchip .t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-transform:uppercase}#fmchip .x{opacity:.75;font-weight:600}
 body.fullmap #fmchip.R,body.fullmap #fmchip.A{background:#c62a22;border-color:#c62a22;color:#fff}
 body.fullmap #fmchip.Y,body.fullmap #fmchip.P{background:var(--yellow);border-color:var(--yellow);color:#111}
@@ -288,7 +297,7 @@ body.lite .imp.dmg .ig{fill:#fff}
 /* the panel is opened and closed constantly during an attack, so the control is a 88x28 tab riding on the
    drawer's top edge — above the tabs, never on top of them */
 #drawer .dchev{position:absolute;left:50%;transform:translateX(-50%);top:-30px;width:110px;height:30px;
-  border:1px solid #5a4d00;border-bottom:0;border-radius:12px 12px 0 0;background:#1e1a05;
+  border:1px solid #5a4d00;border-bottom:0;border-radius:var(--r) var(--r) 0 0;background:#1e1a05;
   color:var(--ua-yellow);font:700 17px/28px var(--mono);padding:0;z-index:3;cursor:pointer;box-shadow:0 -4px 14px rgba(0,0,0,.5)}
 #drawer .dchev::before{content:'';position:absolute;inset:-14px -8px 0}
 #drawer .dchev:active{background:#2a2408;color:#fff}
@@ -296,14 +305,14 @@ body.lite #drawer .dchev{background:#111;border-color:#fff;color:#fff}
 @media (min-width:1000px){#drawer .dchev{display:none}}
 .tabs{display:flex;gap:0;width:100%}
 .tabs button{flex:1 1 0;min-width:0;display:flex;align-items:center;justify-content:center;gap:6px;border:0;background:transparent;color:var(--ink2);font:650 15px/1 var(--sans);padding:0 4px;height:48px;border-bottom:3px solid transparent;white-space:nowrap}
-.tabs button.on{color:var(--ink);border-bottom-color:var(--orange)}
-.tabs em{font:800 12.5px/1 var(--sans);font-style:normal;background:var(--orange);color:#111;border-radius:10px;padding:3px 7px}
+.tabs button.on{color:var(--ink);border-bottom-color:var(--ua-yellow)}
+.tabs em{font:800 12.5px/1 var(--sans);font-style:normal;background:var(--ink);color:#0b0d11;border-radius:var(--r);padding:3px 7px}
 .tabs em[hidden]{display:none}
 #drawer .body{flex:1;overflow:auto;min-height:0}
 .sec{padding:8px 12px}
 .filters{display:flex;gap:6px;margin:0 -12px 8px;padding:0 12px;overflow-x:auto;scrollbar-width:none}.filters::-webkit-scrollbar{display:none}
-.filters .chip{flex:none;min-height:44px;font:600 14px var(--sans);letter-spacing:0;text-transform:none;padding:0 14px;border:1px solid var(--line);border-radius:22px;background:transparent;color:var(--ink2);cursor:pointer}
-.filters .chip.on{color:var(--ink);background:var(--panel2);border-color:#4a5262}
+.filters .chip{flex:none;min-height:44px;font:600 14px var(--sans);letter-spacing:0;text-transform:none;padding:0 14px;border:1px solid var(--line2);border-radius:var(--r);background:transparent;color:var(--ink2);cursor:pointer}
+.filters .chip.on{color:var(--ink);background:var(--panel2);border-color:var(--ink3)}
 .card{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);align-items:flex-start}
 .card .when{flex:none;width:64px;font:600 13px/1.4 var(--mono);color:var(--ink2);word-break:break-word}
 .card .when b{display:block;color:var(--ink3);font:500 13px/1.3 var(--sans);margin-top:2px}
@@ -314,9 +323,9 @@ body.lite #drawer .dchev{background:#111;border-color:#fff;color:#fff}
 .card .mo{background:none;border:0;color:#9cc0ff;font:600 13px var(--sans);padding:8px 0 4px;min-height:44px;cursor:pointer}
 .card .rep{font:600 10px var(--mono);color:var(--ua-yellow);border:1px solid #5a4d00;padding:0 4px;margin-left:6px}
 .card .tags{display:flex;gap:4px;flex-wrap:wrap;margin-top:5px}
-.card .tags span{font:500 12.5px var(--sans);color:var(--ink2);border:1px solid var(--line);border-radius:4px;padding:1px 6px}
+.card .tags span{font:500 12.5px var(--sans);color:var(--ink2);border:1px solid var(--line);border-radius:var(--r);padding:1px 6px}
 #panelfoot a{display:inline-flex;align-items:center;min-height:44px}
-.fnote{margin:2px 2px 8px;padding:8px 10px;border-radius:8px;background:#1a1f29;font:500 13px/1.35 var(--sans);color:var(--ink2)}
+.fnote{margin:2px 2px 8px;padding:8px 10px;border-radius:var(--r);background:#1a1f29;font:500 13px/1.35 var(--sans);color:var(--ink2)}
 .card .meta2{margin-top:5px;font:500 13px/1.3 var(--sans);color:var(--ink2)}.card .meta2 b{color:var(--ink);font-weight:700}
 .card .tags span.kyiv{color:#bcd5ff;border-color:#2b4370}
 .card.kyiv{border-left:3px solid var(--ua-blue);padding-left:8px}
@@ -342,7 +351,7 @@ body.lite #drawer .dchev{background:#111;border-color:#fff;color:#fff}
    scrolling inside, its buttons always in view; the map moves the target out from under it (sheetClear). */
 @media (min-width:1000px){
   #sheet{left:calc(var(--lw) + 12px);right:auto;bottom:12px;width:min(420px,max(300px,calc(100vw - var(--lw) - var(--rw) - 24px)));max-height:calc(100vh - var(--sat) - var(--top) - 24px);
-    border:1px solid var(--line);border-top:3px solid var(--ua-yellow);border-radius:12px;padding:12px 14px 0;
+    border:1px solid var(--line);border-top:3px solid var(--ua-yellow);border-radius:var(--r);padding:12px 14px 0;
     box-shadow:0 14px 40px rgba(0,0,0,.55);transform:translateY(calc(100% + 24px));opacity:0;visibility:hidden;
     transition:transform .24s cubic-bezier(.2,.8,.2,1),opacity .2s,visibility 0s .24s}
   #sheet.show{transform:none;opacity:1;visibility:visible;transition:transform .24s cubic-bezier(.2,.8,.2,1),opacity .2s}
@@ -356,10 +365,10 @@ body.lite #drawer .dchev{background:#111;border-color:#fff;color:#fff}
 .sheet.show{transform:none}
 /* 1.57.4, the owner: "there is currently no way to quit this popup" — every sheet has its ✕, always in view (top right,
    sticky while it scrolls), 44 px, like the panels' */
-.sheet .shx{position:sticky;top:0;float:right;z-index:3;width:44px;height:44px;margin:-6px -6px 4px 8px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);color:var(--ink);font:600 18px var(--sans);cursor:pointer}
+.sheet .shx{position:sticky;top:0;float:right;z-index:3;width:44px;height:44px;margin:-6px -6px 4px 8px;border:1px solid var(--line2);border-radius:var(--r);background:var(--panel);color:var(--ink);font:600 18px var(--sans);cursor:pointer}
 body.m-day .sheet .shx{background:#eef0f3;color:#12161c;border-color:#9aa1ac}
 .sheet .grab{display:none}
-.shmore{display:none;align-items:center;gap:4px;margin-top:6px;background:transparent;border:1px solid var(--line);color:var(--ink2);border-radius:8px;padding:5px 10px;font:600 12.5px var(--sans);cursor:pointer}
+.shmore{display:none;align-items:center;gap:4px;margin-top:6px;background:transparent;border:1px solid var(--line);color:var(--ink2);border-radius:var(--r);padding:5px 10px;font:600 12.5px var(--sans);cursor:pointer}
 .sheet .type{font:800 22px/1.05 var(--cond);letter-spacing:.03em;text-transform:uppercase;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .sheet .kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:14px;margin:8px 0;color:var(--ink3)}
 .sheet .kv>span{font:600 12px/1.6 var(--mono);letter-spacing:.04em;text-transform:uppercase}
@@ -368,15 +377,35 @@ body.m-day .sheet .shx{background:#eef0f3;color:#12161c;border-color:#9aa1ac}
 .sheet a{color:#8fb4ff;font-size:13px}
 .chip{display:inline-flex;align-items:center;gap:4px;font:600 12px var(--mono);letter-spacing:.03em;text-transform:uppercase;padding:2px 7px;border:1px solid var(--line);color:var(--ink2)}
 .chip.red{color:#ffd9d6;border-color:#6a2a26}.chip.yellow{color:#ffefa8;border-color:#5a4d00}.chip.green{color:#c9f2da;border-color:#1f5a3a}.chip.blue{color:#bcd5ff;border-color:#2b4370}.chip.orange{color:#ffc9a3}
-.tgl{border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:8px;min-height:44px;padding:0 14px;font:600 14px var(--sans)}
-.tgl.on{color:var(--ua-yellow);border-color:#5a4d00}
+/* 1.58.33, the audit: one hierarchy — primary (.b-p: the one yellow of a screen, Condensed), secondary (.tgl / .b-s: a
+   1 px outline), text (.b-t: close, cancel), danger (.b-dgr: an outline, never a flat); an "on" state is a yellow rule */
+.tgl,.b-s{border:1px solid var(--line2);background:transparent;color:var(--ink);border-radius:var(--r);min-height:44px;padding:0 14px;font:600 14px var(--sans);cursor:pointer}
+.tgl.on{color:var(--ink);border-color:var(--ua-yellow);box-shadow:inset 3px 0 0 var(--ua-yellow)}
+.b-p{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 16px;border:1px solid var(--ua-yellow);border-radius:var(--r);background:var(--ua-yellow);color:#0b0d11;font:800 15px/1 var(--cond);letter-spacing:.08em;text-transform:uppercase;text-decoration:none;cursor:pointer}
+.b-t{border:0;background:transparent;color:var(--ink2);min-height:44px;padding:0 8px;font:600 14px var(--sans);cursor:pointer}.b-t:hover{color:var(--ink)}
+.b-dgr{border:1px solid #6a2a26;background:transparent;color:#ffb3ad;border-radius:var(--r);min-height:44px;padding:0 14px;font:600 14px var(--sans);cursor:pointer}
+#updGo,#pwaGo{background:var(--ua-yellow);border-color:var(--ua-yellow);color:#0b0d11;box-shadow:none;font:800 14px var(--cond);letter-spacing:.06em;text-transform:uppercase}
 /* 1.54.9, the owner: "on a phone the keyboard covers the suggestions". The sheet stands on the keyboard (the visual
    viewport, --kb / --vvh from vvSync), and while it is up the list takes the room that is left and scrolls */
 #homesheet{bottom:var(--kb,0px);max-height:calc(var(--vvh,100dvh) - 10px);display:flex;flex-direction:column}
 #homesheet>*{flex:0 0 auto}#homelist{overflow:auto;margin-top:8px;max-height:40vh;overscroll-behavior:contain}
 body.kbd #homesheet{max-height:calc(var(--vvh,100dvh) - 4px);padding-top:8px;padding-bottom:8px}body.kbd #homesheet .grab,body.kbd #homed{display:none}
 body.kbd #homelist{flex:1 1 auto;min-height:0;max-height:none}
-.pinrow{display:flex;gap:8px;align-items:center;margin:0 0 8px;flex-wrap:wrap}.pinrow input{flex:1 1 160px;min-width:0}.pinrow .tgl{flex:0 0 auto}
+/* 1.58.34, the audit: first "where?" — three ways of the same height, the most used first, six places people pick often —
+   then a name, filled in with the place; the search list appears only once something is typed */
+.hs[hidden]{display:none}.hshint{color:var(--ink2);font:13.5px/1.4 var(--sans);margin:4px 0 12px}
+.hsch{display:grid;gap:6px}.hsc{display:grid;grid-template-columns:36px 1fr auto;align-items:center;gap:10px;text-align:left;min-height:56px;padding:8px 12px 8px 10px;border:1px solid var(--line2);border-radius:var(--r);background:transparent;color:var(--ink);cursor:pointer}
+.hsc.p{border-color:var(--ua-yellow);box-shadow:inset 3px 0 0 var(--ua-yellow)}.hsc b{display:block;font:700 15px/1.2 var(--sans)}.hsc span{display:block;font:500 12.5px/1.3 var(--sans);color:var(--ink3);margin-top:2px}
+.hsc svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.hsc em{color:var(--ink3);font:600 18px var(--sans);font-style:normal}.hsc.busy{opacity:.6}
+.hslbl{font:600 11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);margin:14px 0 6px}
+.hschips{display:flex;flex-wrap:wrap;gap:6px}.hschips button{min-height:36px;font:600 13px var(--sans);padding:0 10px;border:1px solid var(--line2);border-radius:var(--r);background:transparent;color:var(--ink2);cursor:pointer}.hschips button:hover{color:var(--ink);border-color:var(--ink3)}
+.hspick{display:flex;align-items:center;gap:10px;padding:8px 8px 8px 12px;border:1px solid var(--line2);border-radius:var(--r);background:var(--bg)}.hspick>div{flex:1;min-width:0}.hspick b{display:block;font:700 15px/1.2 var(--sans);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.hspick span{font:500 12px var(--mono);color:var(--ink3)}
+.hspick svg{width:20px;height:20px;flex:none;fill:none;stroke:var(--ink2);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.hsact{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}.hsact .sp{flex:1}.hsact button{flex:none;white-space:nowrap}
+/* the sheet is a column (the keyboard, 1.54.9), where a float has no say: the ✕ at the top right, the title beside it */
+#homesheet .shx{align-self:flex-end;margin:-4px -4px -40px 0;position:relative;z-index:3}#homesheet .type{padding-right:48px}
+.hsconf{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:10px;padding:10px 12px;border:1px solid #6a2a26;border-radius:var(--r);color:#ffb3ad;font:600 14px var(--sans)}.hsconf span{flex:1 1 auto}.hsconf[hidden]{display:none}
+#homesheet #homen{margin:0}
 .hitem{padding:12px 6px;min-height:48px;border-bottom:1px solid var(--line);cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-size:15.5px}.hitem:hover{background:var(--panel2)}.hitem span{color:var(--ink3);font:500 13px var(--sans)}
 #homeq,#homen{width:100%;padding:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font:15px var(--sans);border-radius:2px}#homeq,#homen{font-size:16px}#homen{width:auto}
 .toast{position:fixed;left:10px;right:10px;top:calc(var(--sat) + var(--top) + 8px);z-index:40;background:#14171d;border:1px solid var(--line);border-left:4px solid var(--red);padding:10px 12px;display:none;box-shadow:0 10px 30px rgba(0,0,0,.6)}
@@ -432,8 +461,8 @@ body.m-day svg:not(.no-heat) :is(.nb,.rn,.kd):is(.R,.oR,.Y,.oY,.P){fill-opacity:
 svg:not(.vclose) .brgl:not(.at):not(.near):not(.hit){display:none}
 .brg{fill:none}
 body.m-day .brg{stroke:#4d5d78}body.m-day .brg.near{stroke:#c26a00}body.m-day .brg.at,body.m-day .brg.hit{stroke:#c4121c}body.m-day .brgl{fill:#1d2533;stroke:#fff}
-.brgbar{display:flex;align-items:center;flex-wrap:wrap;gap:2px 7px;min-height:44px;padding:4px 6px 4px 12px;border-radius:10px;font:700 14.5px/1.25 var(--sans);color:#fff;cursor:pointer}
-.brgbar .brt{flex:1 1 0;min-width:0}.brgbar .brn{flex:none;min-width:44px;min-height:36px;border:1px solid rgba(255,255,255,.55);border-radius:8px;background:rgba(0,0,0,.18);color:#fff;font:700 14px var(--sans);cursor:pointer}
+.brgbar{display:flex;align-items:center;flex-wrap:wrap;gap:2px 7px;min-height:44px;padding:4px 6px 4px 12px;border-radius:var(--r);font:700 14.5px/1.25 var(--sans);color:#fff;cursor:pointer}
+.brgbar .brt{flex:1 1 0;min-width:0}.brgbar .brn{flex:none;min-width:44px;min-height:36px;border:1px solid rgba(255,255,255,.55);border-radius:var(--r);background:rgba(0,0,0,.18);color:#fff;font:700 14px var(--sans);cursor:pointer}
 .brgbar[hidden]{display:none}.brgbar.at{background:#c4121c;animation:ntp 1.6s ease-in-out infinite}.brgbar.near{background:#8f4c00}.brgbar.hit{background:#5a1512}
 .brgbar small{font:500 13px var(--sans);opacity:.92}.brgbar .brmore{flex-basis:100%;font:500 13.5px var(--sans);opacity:.92}
 @media (prefers-reduced-motion:reduce){.brg.at,.brgbar.at{animation:none}}
@@ -492,8 +521,8 @@ svg.lbld #towns,svg.mapd #towns,svg.lbld #minorg,svg.lbld #villg,svg.mapd #minor
 /* 1.49: Layers → Background, one of three */
 .layermenu label[hidden]{display:none}
 .lbase{padding:10px 16px 12px;border-bottom:1px solid var(--line)}.lbase .lbh{display:block;font:600 11px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);margin-bottom:8px}
-.lbopts{display:flex;gap:6px}.layermenu .lbopts label{flex:1 1 0;min-height:44px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;justify-content:center;gap:6px;text-align:center}
-.layermenu .lbopts input{width:18px;height:18px}.lbopts label:has(input:checked){border-color:var(--orange);background:rgba(255,138,61,.12)}
+.lbopts{display:flex;gap:6px}.layermenu .lbopts label{flex:1 1 0;min-height:44px;padding:6px 8px;border:1px solid var(--line);border-radius:var(--r);justify-content:center;gap:6px;text-align:center}
+.layermenu .lbopts input{width:18px;height:18px}.lbopts label:has(input:checked){border-color:var(--ua-yellow);box-shadow:inset 3px 0 0 var(--ua-yellow)}
 /* 1.48: over a picture the oblast and raion names are light on a dark halo, as the towns are — dark slate on dark imagery could not be read */
 svg.tiled .oblbl,svg.tiled .rnlbl{fill:#dfe6ef;paint-order:stroke;stroke:rgba(5,8,12,.85);stroke-width:calc(var(--k,1)*3.2px);stroke-linejoin:round}svg.tiled .rnlbl{fill:#d3dae4;opacity:.66;stroke-width:calc(var(--k,1)*2.4px)}
 svg.tiled .road,svg.tiled .roadlbl,svg.tiled .river,svg.tiled .rvlbl,svg.tiled .bridge{display:none}svg.tiled .nb:not(.R):not(.Y):not(.oR):not(.oY),svg.tiled .ob.far:not(.R):not(.Y){fill:none}svg.tiled .nb.R{fill:rgba(229,72,77,.3)}svg.tiled .nb.Y{fill:rgba(245,185,64,.22)}svg.tiled .nb.oR{fill:rgba(229,72,77,.18)}svg.tiled .nb.oY{fill:rgba(245,185,64,.13)}
@@ -574,7 +603,7 @@ svg.dense #obllbl .oblbl:not(.hot){display:none}
 svg:not(.close) #obllbl .oblbl.faro.hot{display:inline}
 @keyframes obpulse{0%,100%{stroke-opacity:.8;fill-opacity:.05}50%{stroke-opacity:.28;fill-opacity:.015}}
 body.lite #oblevt .obring{fill:none;stroke:#fff;animation:none}body.lite #oblevt .obtxt{fill:#fff;stroke:#000}body.lite #oblevt .obglow{display:none}body.lite #oblevt .obbg{fill:#000;stroke:#fff}
-.mk .jetfx{display:none}.mk.jet .jetfx{display:block}.mk .flame{fill:#ffb347;opacity:.9;animation:flick .18s steps(2) infinite}.mk .flame2{fill:#fff4d6;animation:flick .12s steps(2) infinite alternate}
+.mk .jetfx{display:none}.mk.jet .jetfx,.mk.banderol_missiles .jetfx{display:block}.mk .flame{fill:#ffb347;opacity:.9;animation:flick .18s steps(2) infinite}.mk .flame2{fill:#fff4d6;animation:flick .12s steps(2) infinite alternate}
 @keyframes flick{0%{transform:scaleY(1)}100%{transform:scaleY(.6)}}.mk .flame,.mk .flame2{transform-origin:0 9px;transform-box:view-box}
 .mk .hdg{fill:#ff8a3d;stroke:#080b10;stroke-width:.6px;vector-effect:non-scaling-stroke}.mk.jet .hdg{fill:#ffb15c}.mk.inbound .hdg{fill:#ff4d57}.mk.tohome .hdg{fill:#ff2d55}.mk.ballistic_missiles .hdg,.mk.supersonic_missiles .hdg,.mk.cruise_missiles .hdg,.mk.banderol_missiles .hdg,.mk.unspecified_missiles .hdg{fill:#ff5a5a}.mk.guided_aerial_bombs .hdg{fill:#c78bff}
 /* Cruise and ballistic missiles: long range, minutes of warning, a much bigger warhead. They are the loudest
@@ -665,8 +694,16 @@ body.lite .mk.st-impact .glyph.x{fill:#fff;filter:none;animation:none}
 body.lite .trail.hist line{stroke:#000}
 .mk .cone{fill:#ff8a3d;fill-opacity:.07;stroke:none}.mk.inbound .cone{fill:#ff3b3f;fill-opacity:.10}
 .homemk .ring{stroke:#5b9cff;stroke-opacity:.5;stroke-dasharray:3 3}
-.homemk .ico{fill:#ffd9a8}.homemk .ico .pg{transform:scale(calc(var(--k,1)*.8))}.homemk .pnn{font:800 9px var(--mono);fill:#080b10;stroke:none;text-anchor:middle;dominant-baseline:central}
-.homemk .hl{fill:#bcd5ff;font:700 calc(var(--k,1)*11px) system-ui;paint-order:stroke;stroke:#080b10;stroke-width:calc(var(--k,1)*3px)}
+/* 1.58.34, the audit: a pin is a reticle in ink — a fixed point of reference, not a target, not a shelter, not the orange
+   drop of every map SDK (orange is "approaching" on this map). The current pin in white with its name and the official
+   status of its place; the other pins in grey. */
+.homemk .ico .pg{transform:scale(calc(var(--k,1)*.8));stroke:none;paint-order:normal}.homemk{cursor:pointer}
+.homemk .rh{fill:none;stroke:#080b10;stroke-width:4.6px;stroke-linecap:round}.homemk .rr{fill:none;stroke:#e8e6df;stroke-width:2.2px}.homemk .rc{fill:#e8e6df;stroke:none}.homemk .rt{fill:none;stroke:#e8e6df;stroke-width:2.2px;stroke-linecap:round}
+.homemk:not(.on) .rr,.homemk:not(.on) .rt{stroke:#8f8d86;stroke-width:1.7px}.homemk:not(.on) .rc{fill:#8f8d86}
+.homemk .hl{fill:#e8e6df;font:700 calc(var(--k,1)*12px) var(--sans);paint-order:stroke;stroke:#080b10;stroke-width:calc(var(--k,1)*3px)}.homemk:not(.on) .hl{fill:#8f8d86;font-weight:600}
+.homemk .hd{stroke:#080b10;stroke-width:calc(var(--k,1)*1.2px)}.homemk .hd.G{fill:var(--green)}.homemk .hd.Y,.homemk .hd.P,.homemk .hd.H{fill:var(--yellow)}.homemk .hd.R{fill:var(--red)}.homemk .hd.U,.homemk .hd{fill:#555}
+body.m-day .homemk .rr,body.m-day .homemk .rt{stroke:#12161c}body.m-day .homemk .rc{fill:#12161c}body.m-day .homemk .rh{stroke:#fff}body.m-day .homemk .hl{fill:#12161c;stroke:#fff}body.m-day .homemk .hd{stroke:#fff}
+body.m-day .homemk:not(.on) .rr,body.m-day .homemk:not(.on) .rt{stroke:#5a6270}body.m-day .homemk:not(.on) .rc{fill:#5a6270}body.m-day .homemk:not(.on) .hl{fill:#5a6270}
 .mk.tohome .glyph{fill:#ff2d55}.mk.tohome .halo{stroke:#ff2d55;animation-duration:.8s}.mk.tohome .ahead{stroke:#ff2d55}.mk.tohome .lbl2{fill:#ffb3c5}
 svg.no-trails .trail{display:none}svg.no-cones .ahead,svg.no-cones .cone{display:none}svg.no-rivers .river,svg.no-rivers .rvlbl{display:none}
 svg.no-roads .road,svg.no-roads .roadlbl,svg.no-roads .bridge{display:none}svg.no-infra .poi,svg.no-infra .poilbl{display:none}svg.no-rings .ring,svg.no-rings .ringlbl{display:none}svg.no-minor .minor{display:none}
@@ -693,7 +730,7 @@ body.lite .leader{stroke:#fff;stroke-opacity:.6}body.lite .anchor{fill:#fff}
 .hsec p{margin:0;font:400 13.5px/1.45 var(--sans);color:var(--ink2)}
 .warnbox{border-left:3px solid var(--red);background:rgba(224,52,44,.08);padding:8px 10px;font:500 13px/1.4 var(--sans);margin-top:8px}
 /* 1.35: the what-to-do guide (/guide) — in More, on the card and at the top of the help sheet */
-.mi.gdm{font-weight:700}.gdl{display:block;margin-top:8px;padding:9px 10px;border:1px solid var(--line);border-radius:4px;background:var(--panel2);color:var(--ink);text-decoration:none;font:700 13px/1.3 var(--sans)}
+.mi.gdm{font-weight:700}.gdl{display:block;margin-top:8px;padding:9px 10px;border:1px solid var(--line);border-radius:var(--r);background:var(--panel2);color:var(--ink);text-decoration:none;font:700 13px/1.3 var(--sans)}
 /* descending: the moment a drone dives on its target */
 .mk.desc .glyph{fill:#ff2d55}.mk.desc .halo{stroke:#ff2d55;animation-duration:.9s}
 .mk .dn{display:none;font:800 calc(var(--k,1)*10px) var(--mono);fill:#ff2d55;paint-order:stroke;stroke:#080b10;stroke-width:calc(var(--k,1)*3px);text-anchor:middle}
@@ -747,29 +784,29 @@ body.rp .livebar,body.rp #heatleg,body.rp #pinhold,body.rp #zkyiv,body.rp #rpbtn
 .mk.rp.appr .rptr{display:none}
 .rpl{font:700 calc(var(--k,1)*10.5px) var(--mono);fill:#fff;paint-order:stroke;stroke:#080b10;stroke-width:calc(var(--k,1)*3px)}
 svg.veryfar .rpl{display:none}
-#rpbar{position:absolute;left:8px;right:60px;bottom:8px;z-index:8;background:rgba(18,21,27,.96);border:1px solid var(--line);border-radius:12px;padding:8px 10px 9px;color:var(--ink);font:13px/1.35 var(--sans);box-shadow:0 6px 24px rgba(0,0,0,.45)}
+#rpbar{position:absolute;left:8px;right:60px;bottom:8px;z-index:8;background:rgba(18,21,27,.96);border:1px solid var(--line);border-radius:var(--r);padding:8px 10px 9px;color:var(--ink);font:13px/1.35 var(--sans);box-shadow:0 6px 24px rgba(0,0,0,.45)}
 #rpbar[hidden]{display:none}
 .rph{display:flex;align-items:center;gap:8px;min-width:0}
 .rptag{font:800 10.5px var(--mono);letter-spacing:.12em;color:#fff;background:#c62828;border-radius:4px;padding:2px 6px;flex:none}
 #rptime{font:800 26px/1 var(--cond);letter-spacing:.02em;font-variant-numeric:tabular-nums}
 #rpdate{color:var(--ink2);font:600 13px var(--sans);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.rpx{margin-left:auto;flex:none;width:36px;height:36px;border:1px solid var(--line);border-radius:9px;background:transparent;color:var(--ink);font:600 16px var(--sans)}
+.rpx{margin-left:auto;flex:none;width:36px;height:36px;border:1px solid var(--line);border-radius:var(--r);background:transparent;color:var(--ink);font:600 16px var(--sans)}
 .rpdays{display:flex;gap:6px;overflow-x:auto;margin:7px 0 4px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
 .rpdays::-webkit-scrollbar{display:none}
-.rpdays button{flex:none;height:30px;padding:0 10px;border:1px solid var(--line);border-radius:15px;background:var(--panel2);color:var(--ink2);font:600 12px var(--sans);white-space:nowrap}
+.rpdays button{flex:none;height:30px;padding:0 10px;border:1px solid var(--line);border-radius:var(--r);background:var(--panel2);color:var(--ink2);font:600 12px var(--sans);white-space:nowrap}
 .rpdays button.on{background:var(--ua-yellow);border-color:var(--ua-yellow);color:#111}
 .rptrack{position:relative;height:40px}
 #rpcv{position:absolute;left:8px;right:8px;top:0;height:20px;width:calc(100% - 16px)}
 #rprange{position:absolute;left:0;right:0;bottom:0;width:100%;height:22px;margin:0;accent-color:#ff8a3d;cursor:pointer}
 .rpctl{display:flex;align-items:center;gap:6px;margin-top:4px}
-.rpctl button{min-width:44px;height:36px;padding:0 8px;white-space:nowrap;border:1px solid var(--line);border-radius:9px;background:var(--panel2);color:var(--ink);font:700 13px var(--mono)}
+.rpctl button{min-width:44px;height:36px;padding:0 8px;white-space:nowrap;border:1px solid var(--line);border-radius:var(--r);background:var(--panel2);color:var(--ink);font:700 13px var(--mono)}
 .rpctl .rpp{min-width:52px;background:#ff8a3d;border-color:#ff8a3d;color:#111;font-size:16px}
 #rpcount{margin-left:auto;color:var(--ink2);font:12px var(--mono);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .rpspin{display:inline-block;width:30px;height:30px;border:3px solid rgba(255,138,61,.25);border-top-color:#ff8a3d;border-radius:50%;animation:rpspin .8s linear infinite;flex:none}
 .rpspin.sm{width:13px;height:13px;border-width:2px;vertical-align:-2px;margin-right:7px}@keyframes rpspin{to{transform:rotate(360deg)}}
 #rpbar.loading #rpcount{color:#ffb27a;font-weight:700}#rpbar.loading .rpctl button,#rpbar.loading .rptrack{opacity:.35;pointer-events:none}
 #rpbar.loading .rptrack{background:linear-gradient(90deg,transparent 0,rgba(255,138,61,.35) 50%,transparent 100%) 0 0/40% 100% no-repeat;animation:rpslide 1.2s linear infinite;opacity:1}@keyframes rpslide{from{background-position:-40% 0}to{background-position:140% 0}}
-#rpwait{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%);z-index:9;display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px 22px;border-radius:14px;background:rgba(10,12,16,.9);border:1px solid #3a2a1c;color:#f4f1e8;font:600 14px system-ui;text-align:center;pointer-events:none;max-width:min(80vw,320px);box-shadow:0 8px 28px rgba(0,0,0,.45)}
+#rpwait{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%);z-index:9;display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px 22px;border-radius:var(--r);background:rgba(10,12,16,.9);border:1px solid #3a2a1c;color:#f4f1e8;font:600 14px system-ui;text-align:center;pointer-events:none;max-width:min(80vw,320px);box-shadow:0 8px 28px rgba(0,0,0,.45)}
 #rpwait[hidden]{display:none}#rpwait small{font:12px/1.35 system-ui;color:#b9b4a8}
 body.m-day #rpwait{background:rgba(255,255,255,.96);color:#14171c;border-color:#e3c9b2}body.m-day #rpwait small{color:#59616e}body.m-day #rpbar.loading #rpcount{color:#a24a00}
 body.m-night #rpwait{background:#070a0f;color:#a9b6c4;border-color:#1c242f}body.m-night .rpspin{border-color:rgba(160,90,40,.25);border-top-color:#a8602c}
@@ -817,8 +854,8 @@ body.m-day .ob{stroke:#4a515c}body.m-day .oblbl,body.m-day .nblbl,body.m-day .rn
 body.m-day .town,body.m-day .roadlbl,body.m-day .rvlbl{fill:#12161c;paint-order:stroke;stroke:#fff;stroke-width:calc(var(--k,1)*3px)}
 body.m-day .nb.R,body.m-day .nb.oR,body.m-day .rn.R{fill:#b3140d;fill-opacity:.30}
 body.m-day .nb.Y,body.m-day .nb.oY,body.m-day .rn.Y{fill:#c99700;fill-opacity:.32}
-body.m-day .livebar .chip,body.m-day .slotrow button{background:#fff;color:#12161c;border-color:#6d7581}
-body.m-day .slotrow button.on{background:#12161c;color:#fff;border-color:#12161c}
+body.m-day .livebar .chip{background:#fff;color:#12161c;border-color:#6d7581}body.m-day .slotrow button{color:#5a6270}
+body.m-day .slotrow button.on{color:#12161c;border-bottom-color:#9a7b00}
 body.m-day .tstrip.calm{background:#d8f0e2;color:#04321d;border-color:#0d6b3f}
 body.m-day .tstrip.offy{background:#ffe9a8;color:#3a2c00;border-color:#8a6d00}
 body.m-day .tstrip.offr,body.m-day .tstrip.bal,body.m-day .tstrip.mig{background:#b3140d;color:#fff;border-color:#6d0b06;animation:none}
@@ -865,8 +902,8 @@ body.m-night .town{fill:#63788d;stroke:#04060a}body.m-night svg.tiled .oblbl,bod
 body.m-night .town.big{fill:#8fa3b8}
 /* Overlays that hardcode a dark panel rather than using the tokens. In daylight they were dark boxes with
    dark text in them — unreadable, which for a warning panel is worse than not drawing it at all. */
-body.m-day .tip,body.m-day .homerow,body.m-day .rt,body.m-day .livebar .chip,body.m-day .mapctl button,
-body.m-day #toast,body.m-day .menu,body.m-day .mbox{background:#fff;color:#12161c;border-color:#7d858f}
+body.m-day .tip,body.m-day .homerow,body.m-day .rt,body.m-day .livebar .chip,body.m-day .mapctl,
+body.m-day #toast,body.m-day .menu,body.m-day .mbox{background:#fff;color:#12161c;border-color:#7d858f}body.m-day .mapctl button{color:#12161c;border-color:#c3c8d0}
 body.m-day .tip{border-left-color:#b8480a}
 body.m-day .menu .mi,body.m-day .menu .mi2,body.m-day .menu .ml{color:#12161c}
 body.m-day .menu .mi2{background:#eceef2;border-color:#8d95a1}
@@ -886,7 +923,7 @@ body.m-night .nb.Y,body.m-night .nb.oY,body.m-night .rn.Y{fill:#7a6a20;fill-opac
 body.m-night .ob.region.R{fill:rgba(140,42,38,.10)}body.m-night .ob.region.Y{fill:rgba(122,106,32,.08)}
 body.m-night .hl,body.m-night .homemk .ico{opacity:.7}
 body.m-night .tip,body.m-night .homerow,body.m-night .rt,body.m-night .livebar .chip,
-body.m-night .mapctl button,body.m-night #toast,body.m-night .menu,body.m-night .mbox{background:#070a0f;color:#8fa3b8;border-color:#1c242f}
+body.m-night .mapctl,body.m-night #toast,body.m-night .menu,body.m-night .mbox{background:#070a0f;color:#8fa3b8;border-color:#1c242f}body.m-night .mapctl button{color:#8fa3b8;border-color:#1c242f}
 #modetag{display:none;position:absolute;right:8px;bottom:8px;z-index:7;font:700 9.5px var(--mono);letter-spacing:.1em;color:var(--ink3);border:1px solid var(--line);padding:2px 5px;pointer-events:none}
 body.m-night #modetag,body.m-day #modetag{display:block}
 
@@ -913,11 +950,11 @@ body.lite #litetag{bottom:8px}
 body.lite .livebar .chip,body.lite .rt,body.lite .chip{color:#fff;border-color:#666;background:#000}
 body.lite .rt.R{background:#fff;color:#000;border-left-color:#fff}body.lite .rt.Y{background:#2a2a2a;color:#fff;border-left-color:#fff}
 body.lite .towndot{fill:#fff;stroke:#000}body.lite .town{fill:#fff;stroke:#000}body.lite .town.big{fill:#fff}
-body.lite .homemk .ring{stroke:#fff}body.lite .homemk .hl{fill:#fff}
+body.lite .homemk .ring{stroke:#fff}body.lite .homemk .hl,body.lite .homemk .rc{fill:#fff}body.lite .homemk .rr,body.lite .homemk .rt{stroke:#fff}
 body.lite .toast{border-left-color:#fff!important;background:#000}
 body.lite .sheet{border-top-color:#fff}body.lite .mbox{border-top-color:#fff}
 body.lite .tabs button.on{border-bottom-color:#fff;color:#fff}
-body.lite .upd .cd{color:#fff}body.lite .ib.on,body.lite .mapctl button.on,body.lite .tgl.on{color:#fff;border-color:#fff;background:#222}
+body.lite .upd .cd{color:#fff}body.lite .ib.on,body.lite .tgl.on{color:#fff;border-color:#fff;background:#222}body.lite .mapctl{background:#000;border-color:#666}body.lite .mapctl button{color:#fff;border-color:#333}body.lite .mapctl button.on{box-shadow:inset 3px 0 0 #fff}
 body.lite .mi.on::after{color:#fff}body.lite .card.kyiv{border-left-color:#fff}
 body.lite .nbar{border-left-color:#fff}body.lite .kv1.green,body.lite .kv1.yellow{color:#fff}
 body.lite .sup b{color:#fff}
@@ -929,20 +966,24 @@ body.lite .mk.inbound .lbl2,body.lite .mk.tohome .lbl2{fill:#ff9ab0}
    1.36 — the redesign (docs/TECHNICAL.md §10.1): a "my place" card in the header, the menu split into the bell,
    "more" and the map's layers button, a tab bar with "Near", 44 px targets and 13 px text everywhere one reads.
    ========================================================================================================== */
-.hb{width:44px;height:44px;flex:none;position:relative;display:flex;align-items:center;justify-content:center;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:10px;padding:0;cursor:pointer}
+.hb{width:44px;height:44px;flex:none;position:relative;display:flex;align-items:center;justify-content:center;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:var(--r);padding:0;cursor:pointer}
 .hb svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.hb svg circle{fill:currentColor;stroke:none}
 .hb .bdot{position:absolute;top:8px;right:9px;width:10px;height:10px;border-radius:50%;border:2px solid var(--panel);display:none}
 .bdot.l1{display:block;background:var(--yellow)}.bdot.l2{display:block;background:var(--orange)}.bdot.l3{display:block;background:var(--red2)}.bdot.l4{display:block;background:#8e5cff}
-#mycard{margin:2px 8px 6px;padding:5px;display:flex;flex-direction:column;gap:5px;background:var(--panel);border:1px solid var(--line);border-radius:14px}
+#mycard{margin:2px 8px 6px;padding:5px;display:flex;flex-direction:column;gap:5px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r)}
 /* 1.39: on a computer the card is a column of fixed height that scrolls: its blocks keep their height (the "nothing
    reported" line, min-height 0, was squeezed under the footer when a warning made the card tall) */
 #mycard>*{flex-shrink:0}
 #mycard.lv2{border-color:#8a4a1c}#mycard.lv3{border-color:var(--red2);box-shadow:inset 0 0 0 1px var(--red2)}#mycard.lv4{border-color:#7a45f0;box-shadow:inset 0 0 0 1px #7a45f0}
-.slotrow{display:flex;gap:6px}
-.slotrow button{flex:1 1 0;min-width:0;height:44px;display:flex;align-items:center;justify-content:center;gap:5px;padding:0 4px;border:1px solid transparent;border-radius:10px;background:var(--panel2);color:var(--ink2);font:600 14px/1 var(--sans);white-space:nowrap;cursor:pointer}
+/* 1.58.34, the audit: the row shows the pins that exist and a "+" while there is room — four chips, three empty, was a
+   placeholder. The current one is underlined in yellow, like a tab; a tap on it opens its sheet (rename, move, delete):
+   the long press that did that was written nowhere. */
+.slotrow{display:flex;gap:2px;padding:0 2px;border-bottom:1px solid var(--line)}
+.slotrow button{flex:0 1 auto;min-width:0;height:44px;display:flex;align-items:center;justify-content:center;gap:7px;padding:0 10px;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;border-radius:0;background:transparent;color:var(--ink3);font:600 14px/1 var(--sans);white-space:nowrap;cursor:pointer}
+.slotrow button.add{flex:none;margin-left:auto;width:44px;padding:0;font:500 24px/1 var(--sans);color:var(--ink3)}.slotrow button.add:hover{color:var(--ink)}
 @media (max-width:380px){.slotrow{gap:4px}.slotrow button{font-size:13px;gap:4px}}
-.slotrow button .sl{overflow:hidden;text-overflow:ellipsis}
-.slotrow button.on{color:var(--ink);border-color:#5a6478;background:#262d3b}
+.slotrow button .sl{overflow:hidden;text-overflow:ellipsis;max-width:34vw}
+.slotrow button.on{color:var(--ink);border-bottom-color:var(--ua-yellow)}
 .slotrow button i{flex:none;width:10px;height:10px;border-radius:50%;border:1.5px dashed var(--ink3)}
 .slotrow button i.R{background:var(--red);border:0}.slotrow button i.Y{background:var(--yellow);border:0}.slotrow button i.H{border:2px solid var(--yellow)}.slotrow button i.G{background:var(--green);border:0}.slotrow button i.U{border:1.5px solid var(--ink3)}
 /* 1.57: the city's shelters — a square; filled for metro, underpasses and civil-defence shelters; the nearest to the pin ringed */
@@ -951,26 +992,31 @@ body.lite .mk.inbound .lbl2,body.lite .mk.tohome .lbl2{fill:#ff9ab0}
 #shelg .shr{fill:rgba(90,169,255,.05);stroke:#5aa9ff;stroke-width:1.5px;stroke-dasharray:6 5;vector-effect:non-scaling-stroke;pointer-events:none}#shelg .shl.no{opacity:.4}#shelg .shl rect.hit{fill:transparent;stroke:none}svg.no-shelters #shelg{display:none}
 .mych.mysh{border-left-color:#5aa9ff;min-height:48px}.mysh .shg{flex:none;width:40px;font-size:24px;text-align:center}.mysh .km{font-size:19px}
 .shh{font:700 12px/1.6 var(--mono);letter-spacing:.04em;text-transform:uppercase;color:var(--ink3);margin-top:12px}
-.shi{display:block;width:100%;text-align:left;background:var(--panel);border:1px solid var(--line);border-left:3px solid #2e4f78;border-radius:8px;padding:7px 10px;margin-top:5px;color:var(--ink);cursor:pointer}
+.shi{display:block;width:100%;text-align:left;background:var(--panel);border:1px solid var(--line);border-left:3px solid #2e4f78;border-radius:var(--r);padding:7px 10px;margin-top:5px;color:var(--ink);cursor:pointer}
 .shi.st{border-left-color:#5aa9ff}.shi b{display:block;font:650 14.5px/1.3 var(--sans)}.shi small{display:block;font:500 13px/1.35 var(--sans);color:var(--ink2);margin-top:2px}
 .shi .hx,.sheet .hx,.shout{color:#ffd166}
-.mych{display:flex;align-items:center;gap:10px;min-height:56px;padding:8px 10px;border-radius:10px;background:var(--panel2);border-left:4px solid var(--orange);cursor:pointer}
+/* 1.58.33, the audit: a list with rules, not a card a row — the 3 px rule carries the meaning (red: near, blue: a shelter,
+   orange: a bridge), the glyph sits in a fixed column, the number is the focus in Condensed, its unit small beside it */
+.mych{display:flex;align-items:center;gap:10px;min-height:56px;padding:8px 10px 8px 12px;border-radius:0;background:transparent;border-top:1px solid var(--line);border-bottom:1px solid var(--line);box-shadow:inset 3px 0 0 var(--orange);cursor:pointer}
+.mych+.mych{border-top:0}
 .mych[hidden]{display:none}.mych>div{flex:1;min-width:0}
-.mych svg{width:40px;height:40px;flex:none}
-.mych b{display:block;font:750 17px/1.2 var(--sans)}
-.mych small{display:block;font:500 13.5px/1.3 var(--sans);color:var(--ink2);margin-top:2px}
-.mych .km{flex:1 0 auto;max-width:96px;text-align:right;font:800 24px/1 var(--mono)}.mych .km small{font:600 12.5px/1.25 var(--sans);margin-top:3px;white-space:nowrap}
-.mych.near{border-left-color:var(--red2);background:rgba(224,52,44,.14)}
-.mych.calm{border-left-color:var(--line);cursor:default;min-height:44px}.mych.calm b{font:600 15px/1.3 var(--sans)}
+.mych svg{width:36px;height:36px;flex:none}
+.mych b{display:block;font:700 16px/1.2 var(--sans)}
+.mych small{display:block;font:500 13px/1.3 var(--sans);color:var(--ink2);margin-top:2px}
+.mych .km{flex:1 0 auto;max-width:96px;text-align:right;font:800 24px/1 var(--cond);font-variant-numeric:tabular-nums}.mych .km small{font:500 11px/1.25 var(--mono);letter-spacing:.04em;color:var(--ink3);margin-top:3px;white-space:nowrap}
+.mych.near{box-shadow:inset 3px 0 0 var(--red2)}
+.mych.calm{box-shadow:inset 3px 0 0 var(--line);cursor:default;min-height:44px}.mych.calm b{font:600 15px/1.3 var(--sans)}
 /* 1.37: "nothing reported" is two short lines of text, not a box — the map is what people look at then */
-.mych.calm[hidden]{display:none}.mych.calm:not(.set){display:block;min-height:0;padding:2px 6px;background:transparent;border-left:0}
+.mych.calm[hidden]{display:none}.mych.calm:not(.set){display:block;min-height:0;padding:2px 6px;background:transparent;border:0;box-shadow:none}
 .mych.calm:not(.set) b,.mych.calm:not(.set) small{display:inline;font:600 13.5px/1.4 var(--sans);color:var(--ink)}.mych.calm:not(.set) small{font-weight:500;color:var(--ink2);margin:0}
-.mych.set{cursor:pointer;border-left-color:#9cc0ff}.mych.set em{font:700 22px var(--sans);font-style:normal;color:#9cc0ff}
+/* no place set: choosing one is the screen's primary action — the yellow, unless a warning's button already has it */
+.mych.set{cursor:pointer;border:0;box-shadow:none;background:var(--ua-yellow);color:#0b0d11;border-radius:var(--r)}.mych.set b{font:800 17px/1.1 var(--cond);letter-spacing:.04em;text-transform:uppercase}.mych.set small{color:#2a2500}.mych.set em{font:700 22px var(--sans);font-style:normal;color:#0b0d11}
+#mycard:has(.tsbtn) .mych.set{background:transparent;color:var(--ink);border:1px solid var(--line2)}#mycard:has(.tsbtn) .mych.set small{color:var(--ink2)}#mycard:has(.tsbtn) .mych.set em{color:var(--ink2)}
 .mych.old{opacity:.55;filter:grayscale(1)}
 .mcfoot{display:grid;grid-template-columns:auto 1fr auto;grid-template-areas:"s s f" "n w f";align-items:center;column-gap:8px;min-height:44px;padding:0 4px;font:500 13px/1.25 var(--sans);color:var(--ink2)}
 .mcfoot .srcs{grid-area:s;justify-self:start}.mcfoot .mcun{grid-area:n;justify-self:start}.mcfoot .mcwhat{grid-area:w}
-.mcfold{grid-area:f;width:44px;height:44px;margin-left:4px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);color:var(--ink2);font:700 15px/1 var(--sans);cursor:pointer}
-.mcmini.w{border-radius:10px;padding:0 10px;background:#3a1030;color:#ffd0f0}.mcmini.w b{font:800 13.5px/1.2 var(--sans);text-transform:uppercase;white-space:normal}
+.mcfold{grid-area:f;width:44px;height:44px;margin-left:4px;border:1px solid var(--line);border-radius:var(--r);background:var(--panel2);color:var(--ink2);font:700 15px/1 var(--sans);cursor:pointer}
+.mcmini.w{border-radius:var(--r);padding:0 10px;background:#3a1030;color:#ffd0f0}.mcmini.w b{font:800 13.5px/1.2 var(--sans);text-transform:uppercase;white-space:normal}
 .mcmini.w.mig{background:#5b2fa8;color:#fff}.mcmini.w.bal,.mcmini.w.offr{background:#7a0f16;color:#fff}.mcmini.w.offy{background:#4a3a06;color:#ffe9a8}.mcmini.w em{color:inherit}
 body.lite .mcmini.w{background:#fff;color:#000}
 #mycard:has(.tsbtn) .mcwhat{display:none}
@@ -984,7 +1030,7 @@ body.lite .mcmini.w{background:#fff;color:#000}
 .asof .aqt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
 .asof .aqd{font:500 12.5px/1.3 var(--sans);color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .asof .upd.wait::before{background:var(--ink3)}
-.rfr{flex:none;width:42px;height:42px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);color:var(--ink2);display:grid;place-items:center;cursor:pointer;padding:0}
+.rfr{flex:none;width:42px;height:42px;border:1px solid var(--line);border-radius:var(--r);background:var(--panel2);color:var(--ink2);display:grid;place-items:center;cursor:pointer;padding:0}
 .rfr svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .rfr.spin svg{animation:rfspin .8s linear infinite}@keyframes rfspin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.rfr.spin svg{animation:none;opacity:.45}}
@@ -992,7 +1038,7 @@ body.lite .mcmini.w{background:#fff;color:#000}
 body.m-day .rfr{background:#fff;color:#12161c;border-color:#9aa1ac}body.lite .rfr{background:#000;color:#fff;border-color:#fff}
 .mcfoot .srcs .sn{display:none}
 .mcun{position:relative;background:none;border:0;min-height:24px;padding:2px 0;color:var(--ink3);font:500 13px var(--sans);text-align:left;cursor:pointer}.mcun::before{content:'';position:absolute;inset:-10px -4px}
-.mcwhat{position:relative;justify-self:end;display:flex;align-items:center;min-height:24px;padding:2px 2px 2px 8px;color:#9cc0ff;font:700 14px var(--sans);text-decoration:none;white-space:nowrap}.mcwhat::before{content:'';position:absolute;inset:-10px -2px}
+.mcwhat{position:relative;justify-self:end;display:flex;align-items:center;min-height:24px;padding:2px 2px 2px 8px;color:var(--ink);font:800 14px var(--cond);letter-spacing:.06em;text-transform:uppercase;text-decoration:none;white-space:nowrap}.mcwhat::before{content:'';position:absolute;inset:-10px -2px}
 .mcmini{display:flex;align-items:center;gap:10px;width:100%;min-height:44px;padding:0 8px;border:0;background:transparent;color:var(--ink);font:600 15px var(--sans);text-align:left;cursor:pointer}
 .mcmini[hidden]{display:none}.mcmini i{flex:none;width:12px;height:12px;border-radius:50%;background:var(--green)}.mcmini i.R{background:var(--red)}.mcmini i.Y,.mcmini i.H,.mcmini i.P{background:var(--yellow)}
 .mcmini b{flex:none;white-space:nowrap}.mcmini span{color:var(--ink2);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.mcmini em{margin-left:auto;font-style:normal;color:var(--ink2)}
@@ -1002,7 +1048,7 @@ body.m-day .rfr{background:#fff;color:#12161c;border-color:#9aa1ac}body.lite .rf
 .sil .jetfx{display:none}.sil.jet .jetfx{display:inline}.sil .flame{fill:#ffb347;stroke:none}.sil .flame2{fill:#fff4d6;stroke:none}
 .sil.bal .glyph{fill:#fff;stroke:#ff1744;stroke-width:1.4px}.sil.sup .glyph{fill:#ffdca8;stroke:#ff6a00;stroke-width:1.3px}
 /* the three panels: a sheet from the bottom on a phone, a drop-down under the header on a computer */
-.panel{position:fixed;z-index:42;left:0;right:0;bottom:0;max-height:86vh;max-height:86dvh;overflow-y:auto;overscroll-behavior:contain;background:#14171d;border-top:1px solid var(--line);border-radius:18px 18px 0 0;padding:0 0 calc(10px + var(--sab));box-shadow:0 -12px 32px rgba(0,0,0,.6);color:var(--ink)}
+.panel{position:fixed;z-index:42;left:0;right:0;bottom:0;max-height:86vh;max-height:86dvh;overflow-y:auto;overscroll-behavior:contain;background:#14171d;border-top:1px solid var(--line);border-radius:var(--r) var(--r) 0 0;padding:0 0 calc(10px + var(--sab));box-shadow:0 -12px 32px rgba(0,0,0,.6);color:var(--ink)}
 .panel[hidden]{display:none}
 /* 1.40: motion — short and eased, never bouncy; none in blackout mode or with "reduce motion". A panel rises in (a
    phone) or drops in (a computer), its rows follow a few milliseconds apart, and it leaves faster than it came. */
@@ -1018,21 +1064,21 @@ body.m-day .rfr{background:#fff;color:#12161c;border-color:#9aa1ac}body.lite .rf
 .sec:not([hidden]){animation:secin .22s cubic-bezier(.2,.8,.2,1)}@keyframes secin{from{opacity:0;transform:translateY(4px)}}
 .tabs{position:relative}
 .tabs.ind button.on{border-bottom-color:transparent}
-.tabs.ind::after{content:'';position:absolute;left:0;bottom:0;height:3px;width:var(--tw,0px);transform:translateX(var(--tx,0px));border-radius:2px;background:var(--orange);transition:transform .28s cubic-bezier(.2,.8,.2,1),width .28s cubic-bezier(.2,.8,.2,1)}
+.tabs.ind::after{content:'';position:absolute;left:0;bottom:0;height:3px;width:var(--tw,0px);transform:translateX(var(--tx,0px));border-radius:0;background:var(--ua-yellow);transition:transform .28s cubic-bezier(.2,.8,.2,1),width .28s cubic-bezier(.2,.8,.2,1)}
 body.lite .tabs.ind::after{background:#fff}
 @media (prefers-reduced-motion:reduce){.panel,.panel>*,.sec,.tabs.ind::after,#top .vsw::before{animation:none!important;transition:none!important}}
 body.lite .panel,body.lite .panel>*,body.lite .sec,body.lite .tabs.ind::after{animation:none!important;transition:none!important}
 .pgrab{width:40px;height:5px;border-radius:3px;background:#3a4252;margin:8px auto 2px}
 .ph{display:flex;align-items:center;gap:8px;padding:4px 8px 6px 16px}.ph b{flex:1;font:800 19px/1.2 var(--sans)}
-.px{flex:none;width:44px;height:44px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);color:var(--ink2);font:600 16px var(--sans);cursor:pointer}
+.px{flex:none;width:44px;height:44px;border:1px solid var(--line);border-radius:var(--r);background:var(--panel2);color:var(--ink2);font:600 16px var(--sans);cursor:pointer}
 .pnote{padding:0 16px 8px;font:500 13.5px/1.4 var(--sans);color:var(--ink3)}
 .panel .mg{padding:16px 16px 6px;font:750 12.5px/1 var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)}
 .panel .mi{display:block;width:100%;min-height:48px;padding:12px 16px;border:0;border-bottom:1px solid var(--line);background:transparent;color:var(--ink);font:500 15.5px/1.3 var(--sans);text-align:left;text-decoration:none;cursor:pointer}
-.panel .mi.lrow{display:flex;align-items:center;gap:10px}.panel .lsel{min-height:44px;font:600 15px var(--sans);border-radius:8px}
+.panel .mi.lrow{display:flex;align-items:center;gap:10px}.panel .lsel{min-height:44px;font:600 15px var(--sans);border-radius:var(--r)}
 .panel .mi.bt{font:500 13px var(--mono);color:var(--ink3);cursor:default}
 .panel .mrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--line)}
 .panel .mrow .ml{font:500 15px var(--sans);color:var(--ink2);margin-right:auto}
-.panel .mi2{min-height:44px;padding:0 14px;border-radius:8px;font:600 14px var(--sans)}
+.panel .mi2{min-height:44px;padding:0 14px;border-radius:var(--r);font:600 14px var(--sans)}
 .panel .mrow.z:not(.vol) .ml{flex:1 0 100%}.panel .mrow.z:not(.vol) .mi2{flex:1 1 0;min-width:0;padding:4px 4px;font-size:clamp(12px,3.6vw,14px);line-height:1.15;overflow-wrap:anywhere}
 .panel .mrow.vol input{min-width:110px;height:44px}.panel .mrow.vol b{font:600 13px var(--mono)}.panel .mrow.vol #sndtest{min-width:56px;padding:0 10px}
 .mi.tg{position:relative;display:flex!important;flex-direction:column;align-items:flex-start;padding-right:88px!important}
@@ -1042,17 +1088,17 @@ body.lite .panel,body.lite .panel>*,body.lite .sec,body.lite .tabs.ind::after{an
 .mi.tg.on::after{content:'';background:var(--green);color:transparent}.mi.tg.on::before{right:19px}
 .layermenu{display:flex;flex-direction:column;gap:0;padding:0;border-bottom:1px solid var(--line);font:500 15px var(--sans);color:var(--ink)}
 .layermenu label{display:flex;align-items:center;gap:12px;min-height:48px;padding:6px 16px;border-bottom:1px solid var(--line);white-space:normal;cursor:pointer}
-.layermenu input{width:22px;height:22px;flex:none;accent-color:var(--orange)}
+.layermenu input{width:22px;height:22px;flex:none;accent-color:var(--ua-yellow)}
 .lgd summary{min-height:48px;display:flex;align-items:center;padding:0 16px;font:600 15px var(--sans);cursor:pointer;color:#9cc0ff}
 @media (min-width:1000px){.panel:not([hidden]){animation-name:pind}.panel.closing{animation-name:poutd}@keyframes pind{from{transform:translateY(-8px) scale(.98);opacity:0}}@keyframes poutd{to{transform:translateY(-6px) scale(.98);opacity:0}}.panel{transform-origin:top right}}
-@media (min-width:1000px){.panel{left:auto;right:10px;top:calc(var(--sat) + 58px);bottom:auto;width:400px;max-height:calc(100vh - 80px);border:1px solid var(--line);border-radius:14px;padding-bottom:8px}.pgrab{display:none}}
+@media (min-width:1000px){.panel{left:auto;right:10px;top:calc(var(--sat) + 58px);bottom:auto;width:400px;max-height:calc(100vh - 80px);border:1px solid var(--line);border-radius:var(--r);padding-bottom:8px}.pgrab{display:none}}
 /* "Near": every live target, by distance from the place being watched */
 #near{padding-top:4px}
 .nrh{display:flex;align-items:center;gap:8px;min-height:44px;padding:0 2px}.nrh b{flex:1;font:750 16px var(--sans)}
 .nrh button{min-height:44px;padding:0 6px;border:0;background:none;color:#9cc0ff;font:600 14px var(--sans);cursor:pointer}
 .nrb{padding:12px 2px 4px;font:750 12.5px/1 var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)}
 .nrow{display:flex;align-items:center;gap:10px;width:100%;min-height:64px;padding:10px 2px;border:0;border-bottom:1px solid var(--line);background:transparent;color:var(--ink);text-align:left;cursor:pointer;font:inherit}
-.nrow>svg{width:38px;height:38px;flex:none;border-radius:10px;background:#0e1117;border:1px solid var(--line)}
+.nrow>svg{width:38px;height:38px;flex:none;border-radius:var(--r);background:#0e1117;border:1px solid var(--line)}
 .nrow>div{flex:1;min-width:0}
 .nrow b{display:block;font:700 16px/1.25 var(--sans)}.nrow small{display:block;font:500 13.5px/1.3 var(--sans);color:var(--ink2);margin-top:1px}
 .nrow .km{flex:none;text-align:right;font:800 21px/1 var(--mono);white-space:nowrap}.nrow .km small{font:600 12.5px var(--sans);color:var(--ink2)}
@@ -1061,11 +1107,11 @@ body.lite .panel,body.lite .panel>*,body.lite .sec,body.lite .tabs.ind::after{an
 .nearl{display:none}
 /* 1.54: the AI's bulletin — the last hour / the last 24 hours, like a weather bulletin (behind the dashboard's switch).
    Over the Near list: on a phone in the drawer, on a computer in the left column under the card. */
-.bul{margin:4px 10px 10px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--panel2);color:var(--ink)}
+.bul{margin:4px 10px 10px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r);background:var(--panel2);color:var(--ink)}
 .bul .bh{display:flex;align-items:center;gap:8px;margin-bottom:6px}
 .bul .bt{font:800 14px var(--sans);letter-spacing:.02em}
-.bul .bai{font:800 10.5px var(--mono);color:#b9c8ff;border:1px solid #7f9cff;border-radius:6px;padding:1px 5px}
-.bul .bseg{display:flex;margin-left:auto;border:1px solid var(--line);border-radius:999px;overflow:hidden;flex:none}
+.bul .bai{font:800 10.5px var(--mono);color:#b9c8ff;border:1px solid #7f9cff;border-radius:var(--r);padding:1px 5px}
+.bul .bseg{display:flex;margin-left:auto;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;flex:none}
 .bul .bseg button{background:none;border:0;color:var(--ink3);font:700 12.5px var(--sans);padding:0 11px;min-height:32px;cursor:pointer}
 .bul .bseg button.on{background:var(--ink);color:#0b0d11}.bul .bseg button:disabled{opacity:.4;cursor:default}
 .bul .bx{font:500 14.5px/1.45 var(--sans);white-space:pre-line}
@@ -1095,14 +1141,14 @@ body.m-day .bul .bai{color:#2340a0;border-color:#2340a0}body.m-day .bul .bm,body
   .pcol{display:flex;position:fixed;z-index:16;top:calc(50% + (var(--sat) + var(--top))/2 - 28px);width:18px;height:56px;padding:0;align-items:center;justify-content:center;
     border:1px solid var(--line);background:var(--panel);color:var(--ink2);font:700 16px/1 var(--sans);cursor:pointer;opacity:.85;box-shadow:0 4px 14px rgba(0,0,0,.35)}
   .pcol:hover,.pcol:focus-visible{opacity:1;color:var(--ink);background:var(--panel2)}
-  #lcolb{left:calc(var(--lw) - 1px);border-left:0;border-radius:0 9px 9px 0}
-  #rcolb{right:calc(var(--rw) - 1px);border-right:0;border-radius:9px 0 0 9px}
+  #lcolb{left:calc(var(--lw) - 1px);border-left:0;border-radius:0 var(--r) var(--r) 0}
+  #rcolb{right:calc(var(--rw) - 1px);border-right:0;border-radius:var(--r) 0 0 var(--r)}
   body.lcol #lrail,body.rcol #rrail{display:flex}
   .rail{position:fixed;z-index:14;top:calc(var(--sat) + var(--top));bottom:0;width:52px;flex-direction:column;align-items:center;gap:6px;padding:10px 0;
     background:var(--panel);border:0 solid var(--line)}
   #lrail{left:0;border-right-width:1px}#rrail{right:0;border-left-width:1px}
   .rail button{width:44px;min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:4px 0;border:1px solid transparent;
-    border-radius:10px;background:transparent;color:var(--ink2);cursor:pointer;font:600 10px/1.1 var(--sans)}
+    border-radius:var(--r);background:transparent;color:var(--ink2);cursor:pointer;font:600 10px/1.1 var(--sans)}
   .rail button:hover,.rail button:focus-visible{background:var(--panel2);color:var(--ink)}.rail button.on{border-color:var(--line);color:var(--ink)}
   .rail button svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
   .rail .rdot{width:16px;height:16px;border-radius:50%;background:var(--green);box-shadow:0 0 0 3px rgba(47,191,113,.18)}
@@ -1116,10 +1162,10 @@ body.m-day .bul .bai{color:#2340a0;border-color:#2340a0}body.m-day .bul .bm,body
   body.m-night .rail,body.m-night .pcol{background:#070a0f;color:#8fa3b8;border-color:#1c242f}
 }
 body.m-day .panel,body.m-day #mycard{background:#fff;color:#12161c;border-color:#9aa1ac}body.m-day .hb{background:#fff;color:#12161c}
-body.m-day .slotrow button{background:#eceef2;color:#12161c;border-color:#c3c8d0}body.m-day .slotrow button.on{background:#12161c;color:#fff}
-body.m-day .band.N{background:#d8f0e2;border-color:#0d6b3f}body.m-day .band.N .big{color:#04321d}body.m-day .mych{background:#eceef2}
-body.m-night .panel,body.m-night #mycard,body.m-night .hb,body.m-night .slotrow button{background:#070a0f;color:#8fa3b8;border-color:#1c242f}
-body.m-night .band.R,body.m-night .band.A{background:#5a1a16;border-color:#5a1a16;color:#e8c9c6}body.m-night .band.N .big{color:#7fa395}
+body.m-day .slotrow{border-bottom-color:#c3c8d0}
+body.m-day .band{background:#fff}body.m-day .band.N{border-left-color:#0d6b3f}body.m-day .band.N .big{color:#0d6b3f}body.m-day .band.H{color:#5a4600}body.m-day .mych{background:transparent}
+body.m-night .panel,body.m-night #mycard,body.m-night .hb{background:#070a0f;color:#8fa3b8;border-color:#1c242f}body.m-night .slotrow button{background:transparent}
+body.m-night .band{background:#070a0f}body.m-night .band.R,body.m-night .band.A{background:#5a1a16;border-left-color:#3a0e0b;color:#e8c9c6}body.m-night .band.N .big{color:#7fa395}
 body.m-night .tstrip.bal,body.m-night .tstrip.mig,body.m-night .tstrip.offr{background:#2a0e14;color:#d8b7bd;border-color:#4a1a22}
 /* 1.42.1: on a phone the map comes first. On 7 Oct at 01:20 a ballistic warning, the admin's message and a mark's sheet
    left the map 260 px of an 860 px screen — and 7 px with the sheet open. The card is tighter (slots, warning, foot on
@@ -1162,11 +1208,11 @@ body.m-day .nbar{box-shadow:0 10px 30px rgba(0,0,0,.2)}
 body.m-day .dok{box-shadow:0 -12px 22px 6px #fff}
 body.m-day .panel .mi2{background:#eceef2;border-color:#8d95a1;color:#12161c}body.m-day .panel .mi2:hover{background:#e1e4e9}
 body.m-day .panel .mi2.on,body.m-day .menu .mi2.on{background:#12161c;border-color:#12161c;color:#fff}
-body.m-day .mi2.on,body.m-day .tgl.on,body.m-day .ib.on,body.m-day .mapctl button.on{color:#7a5f00;border-color:#8a6d00}
+body.m-day .mi2.on,body.m-day .ib.on{color:#7a5f00;border-color:#8a6d00}body.m-day .tgl.on,body.m-day .mapctl button.on{color:#12161c;box-shadow:inset 3px 0 0 #9a7b00}
 body.m-day .ib.on{background:#fff6cc}body.m-day .mi2:hover{background:#e1e4e9}
 body.m-day .menu .mg{background:#eceef2}
 body.m-day .fnote{background:#eef1f5;color:var(--ink2)}
-body.m-day .card .mo,body.m-day .mcwhat,body.m-day .mych.set em,body.m-day .sheet a,body.m-day .kv1 a,body.m-day #stats a,body.m-day .afh a,body.m-day .hfoot a{color:#14459c}
+body.m-day .card .mo,body.m-day .sheet a,body.m-day .kv1 a,body.m-day #stats a,body.m-day .afh a,body.m-day .hfoot a{color:#14459c}
 body.m-day .mych.set{border-left-color:#14459c}
 body.m-day .afl,body.m-day .afchip b{color:#b8480a}
 body.m-day .afd,body.m-day .aftot,body.m-day .afchip i,body.m-day .kv1.green{color:#0d6b3f}
@@ -1192,7 +1238,7 @@ body.lite #mycard,body.lite .panel{background:#000;border-color:#666}body.lite .
 <header id="top">
   <div class="r1">
     <img class="logo" src="/static/heimdall-64.png" alt="Heimdall"><img class="logo ngo" src="/static/logo-64.png" alt="07300">
-    <nav class="vsw" data-t-title="sw_title" title="Two versions"><a href="/light" data-sw data-t="sw_light">LIGHT</a><span class="on" data-t="sw_tac">TACTICAL</span></nav>
+    <nav class="vsw" data-t-title="sw_title" title="Two versions"><a href="/light" data-sw><span data-t="sw_light">LIGHT</span><small data-t="sw_light_b">your place only</small></a><span class="on"><span data-t="sw_tac">TACTICAL</span><small data-t="sw_tac_b">the full map</small></span></nav>
     <span class="sp"></span>
     <button class="hb" id="bellbtn" type="button" data-t-title="m_bell" data-t-aria="m_bell" title="Alerts on this phone" aria-label="Alerts on this phone"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg><i class="bdot" id="bdot"></i></button>
     <button class="hb" id="menubtn" type="button" data-t-title="m_more" data-t-aria="m_more" title="Settings and about" aria-label="Settings and about"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg></button>
@@ -1292,7 +1338,7 @@ body.lite #mycard,body.lite .panel{background:#000;border-color:#666}body.lite .
   <div class="attrib" id="attrib" hidden>© OpenStreetMap contributors</div>
   <div id="pinhold"></div>
   <div id="pinarm" hidden><span data-t="sl_pin_arm">Tap the map where the pin goes</span><button type="button" id="pinarmx" data-t="sl_pin_cancel">Cancel</button></div>
-  <div class="mapctl"><button id="laybtn" type="button" data-t-title="m_layers" data-t-aria="m_layers" title="Map layers" aria-label="Map layers"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 3 8l9 5 9-5-9-5z"/><path d="m3 13 9 5 9-5"/></svg></button><button id="zin" type="button" aria-label="+">+</button><button id="zout" type="button" aria-label="−">−</button><button id="zkyiv" type="button" data-t-title="t_center" data-t-aria="t_center" title="Centre on my place">◎</button><button id="rpbtn" type="button" data-t-title="rp_open" data-t-aria="rp_open" title="Replay — the last 7 days" aria-label="Replay — the last 7 days"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1"/><path d="M3 4v4.5h4.5"/><path d="M12 7.5V12l3 2"/></svg></button><button id="fsbtn" type="button" data-t-title="m_full" data-t-aria="m_full" title="Full-screen map" aria-label="Full-screen map"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="fsin" d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/><path class="fsout" d="M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5"/></svg></button></div>
+  <div class="mapctl"><button id="laybtn" type="button" data-t-title="m_layers" data-t-aria="m_layers" title="Map layers" aria-label="Map layers"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 3 8l9 5 9-5-9-5z"/><path d="m3 13 9 5 9-5"/></svg></button><button id="zin" type="button" aria-label="+">+</button><button id="zout" type="button" aria-label="−">−</button><button id="zkyiv" type="button" data-t-title="t_center" data-t-aria="t_center" title="Centre on my place"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><path d="M12 2.5v4M12 17.5v4M2.5 12h4M17.5 12h4"/></svg></button><button id="rpbtn" type="button" data-t-title="rp_open" data-t-aria="rp_open" title="Replay — the last 7 days" aria-label="Replay — the last 7 days"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1"/><path d="M3 4v4.5h4.5"/><path d="M12 7.5V12l3 2"/></svg></button><button id="fsbtn" type="button" data-t-title="m_full" data-t-aria="m_full" title="Full-screen map" aria-label="Full-screen map"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="fsin" d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/><path class="fsout" d="M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5"/></svg></button></div>
   <div class="tip" id="tip" hidden></div>
   <div id="heatleg" hidden><div class="hlh" id="heath"><b class="hll" data-t="hm_title">Where drones were reported</b><b class="hls" data-t="hm_short">Heat map</b><span class="hlp" id="heatp"></span><button type="button" id="heatfold" data-t-aria="hm_fold" aria-label="Fold" aria-expanded="true">▾</button><button type="button" id="heatx" data-t-aria="hm_off" aria-label="Hide">✕</button></div>
     <div class="hlbody"><div class="hlw" id="heatw"></div><div class="hlt" id="heattop"></div><div class="hlr" id="heatramp"></div><div class="hln" data-t="hm_not_live">Not live.</div><div class="hln" data-t="hm_alerts">Official alerts: a faint tint while it is on.</div></div></div>
@@ -1327,11 +1373,18 @@ body.lite #mycard,body.lite .panel{background:#000;border-color:#666}body.lite .
   <button type="button" data-rt="alerts"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2.5 20h19z"/><path d="M12 10v4.5M12 17.4v.1"/></svg><span data-t="rl_alerts">Alerts</span></button>
   <button type="button" data-rt="hist"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V11M12 20V5M19 20v-6"/></svg><span data-t="rl_stats">Stats</span></button>
 </div>
-<div class="sheet" id="homesheet"><div class="grab"></div><button type="button" class="shx" data-t-aria="btn_close" aria-label="Close">✕</button><div class="type" id="homet" data-t="h_title">Priority location</div><div id="homed" style="color:var(--ink3);font:12px var(--mono);margin:6px 0 10px" data-t="h_desc">Your district or village.</div>
-<div class="pinrow"><input id="homen" maxlength="24" autocomplete="off" data-t-ph="sl_name" placeholder="Name — kept only on this phone" aria-label="Name"><button class="tgl" id="homemap" type="button" data-t="sl_onmap">📍 Put it on the map</button></div>
-<input id="homeq" data-t-ph="h_ph" placeholder="Search: Troieshchyna, Bucha, Boryspil, Obolon…" autocomplete="off" enterkeyhint="search">
-<div id="homelist"></div>
-<div style="margin-top:8px;display:flex;justify-content:space-between"><button class="tgl" id="homeclear" data-t="btn_clear">Clear</button><button class="tgl" onclick="$('homesheet').classList.remove('show')" data-t="btn_close">Close</button></div></div>
+<div class="sheet" id="homesheet"><div class="grab"></div><button type="button" class="shx" data-t-aria="btn_close" aria-label="Close">✕</button><div class="type" id="homet">Pin</div><div id="homed" class="hshint"></div>
+<div class="hs" id="hs-where"><div class="hsch">
+  <button type="button" class="hsc p" id="homemap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6-5.2-6-10a6 6 0 0 1 12 0c0 4.8-6 10-6 10z"/><circle cx="12" cy="11" r="2"/></svg><div><b data-t="sl_c_map">Put it on the map</b><span data-t="sl_c_map_b">tap the place, then adjust</span></div><em>›</em></button>
+  <button type="button" class="hsc" id="homegeo"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><path d="M12 2.5v4M12 17.5v4M2.5 12h4M17.5 12h4"/></svg><div><b data-t="lt_locate">Where I am now</b><span data-t="sl_c_geo_b">GPS, on this phone only</span></div><em>›</em></button>
+  <button type="button" class="hsc" id="homefind"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><div><b data-t="sl_c_find">Find an address</b><span data-t="sl_c_find_b">a district, a village, a street</span></div><em>›</em></button>
+</div><div class="hslbl" data-t="sl_freq">Often chosen</div><div class="hschips" id="homefreq"></div></div>
+<div class="hs" id="hs-find" hidden><input id="homeq" data-t-ph="h_ph" placeholder="Search: Troieshchyna, Bucha, Boryspil, Obolon…" autocomplete="off" enterkeyhint="search"><div id="homelist"></div></div>
+<div class="hs" id="hs-name" hidden><div class="hslbl" data-t="sl_place">Place</div>
+<div class="hspick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6-5.2-6-10a6 6 0 0 1 12 0c0 4.8-6 10-6 10z"/><circle cx="12" cy="11" r="2"/></svg><div><b id="hspn"></b><span id="hsps"></span></div><button type="button" class="b-t" id="hschg" data-t="sl_change">change</button></div>
+<div class="hslbl" data-t="sl_name_l">Name, on this phone</div><input id="homen" maxlength="24" autocomplete="off" data-t-ph="sl_name" placeholder="Name — kept only on this phone" aria-label="Name"><div class="hschips" id="homesug" style="margin-top:8px"></div>
+<div class="hsact"><button type="button" class="b-dgr" id="homeclear" data-t="sl_delete" hidden>Delete</button><span class="sp"></span><button type="button" class="b-t" id="homecancel" data-t="btn_cancel">Cancel</button><button type="button" class="b-p" id="homesave" data-t="sl_save">Save the pin</button></div>
+<div class="hsconf" id="homeconf" hidden><span data-t="sl_delete_q">Delete this pin?</span><button type="button" class="b-dgr" id="homedel" data-t="sl_delete_yes">Yes, delete</button><button type="button" class="b-t" id="homedelno" data-t="btn_no">No</button></div></div></div>
 <div id="fmchip" role="button" tabindex="0" data-t-title="m_full_exit" title="Exit full screen"></div>
 <div class="sheet" id="sheet"><div class="grab"></div><button type="button" class="shx" data-t-aria="btn_close" aria-label="Close">✕</button><div id="sheetbody"></div></div>
 <div class="toast" id="toast"></div>
@@ -1426,7 +1479,6 @@ const dirName=d=>DIRS[Math.round(d/45)%8];
 // buy. They live in localStorage, the server is never told they exist, and push notifications keep using
 // only the coarse ~10 km cell of the browser's own geolocation, exactly as before.
 const SLOT_IDS=['home','work','kids','pin'];
-const SLOT_ICO={home:'📍',work:'📍',kids:'📍',pin:'📍'};   // 1.54.9: four pins alike, numbered and named by their owner
 let SLOTS={home:null,work:null,kids:null,pin:null};
 let ACTIVE='home';
 try{ const raw=JSON.parse(localStorage.getItem('slots')||'null');
@@ -1931,6 +1983,7 @@ function dropPin(px,py){
   // along the street it was put on keeps the street's name)
   setSlot(id,keep?Object.assign({lon,lat},keep):{lon,lat,dropped:true});
   if(navigator.vibrate&&vibOn) navigator.vibrate(40);
+  if(PIN_NAME){ PIN_NAME=false; setTimeout(()=>openPinSheet(id,'edit'),250); }      // 1.58.34: now its name
   notify('📍 '+slotName(id),t('sl_pin_b'),'end'); }
 $('pinarmx').onclick=()=>armPin(false);
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&PIN_ARM) armPin(false); });
@@ -2086,30 +2139,29 @@ function etaBand(m,dist){
   if(hi>90) return null;                        // beyond an hour and a half it is not an estimate any more
   return {lo:Math.max(0,lo),hi:hi,off:off};
 }
-function drawHome(){ if(typeof drawShelters==='function') setTimeout(drawShelters,0); if(!MAP) return; svg.classList.toggle('hashome',!!HOME); if(!HOME){$('homeg').innerHTML='';return;} const [x,y]=proj(HOME.lon,HOME.lat);
-  $('homeg').innerHTML=`<g class="homemk"><circle class="ring" cx="${x}" cy="${y}" r="5" fill="none" style="stroke-width:1px;vector-effect:non-scaling-stroke"/><circle class="ring" cx="${x}" cy="${y}" r="10" fill="none" style="stroke-width:1px;vector-effect:non-scaling-stroke"/><g class="ico" transform="translate(${x} ${y})"><g class="pg">${POI_G.pin}<text class="pnn" x="0" y="-.6">${SLOT_ORDER.indexOf(ACTIVE)+1}</text></g></g><text class="hl" x="${x}" y="${kx(y-11*KPX)}" text-anchor="middle">${esc(slotNames()[ACTIVE]&&!HOME.dropped?slotName(ACTIVE)+' · '+homeName():homeName())}</text></g>`; }
+function drawHome(){ if(typeof drawShelters==='function') setTimeout(drawShelters,0); if(!MAP) return; svg.classList.toggle('hashome',!!HOME); if(!HOME){$('homeg').innerHTML='';return;}
+  // every pin that exists, the current one on top (1.58.34): a reticle, the official status of its place, its name
+  const one=(id,p,on)=>{ const [x,y]=proj(p.lon,p.lat), k=placeLevel(p).k||'U', own=String(slotNames()[id]||'').trim(), pl=hsPlaceName(p);
+    const lab=on&&own&&!p.dropped&&own!==pl?own+' · '+pl:pinLabel(id);
+    return `<g class="homemk${on?' on':''}" data-slot="${id}">${on?`<circle class="ring" cx="${x}" cy="${y}" r="5" fill="none" style="stroke-width:1px;vector-effect:non-scaling-stroke"/><circle class="ring" cx="${x}" cy="${y}" r="10" fill="none" style="stroke-width:1px;vector-effect:non-scaling-stroke"/>`:''}<g class="ico" transform="translate(${x} ${y})"><g class="pg"><path class="rh" d="M0-15V-9M0 9v6M-15 0h6M9 0h6"/><circle class="rh" r="10"/><circle class="rr" r="10"/><circle class="rc" r="2.8"/><path class="rt" d="M0-15V-9M0 9v6M-15 0h6M9 0h6"/></g></g><circle class="hd ${k}" cx="${kx(x+15*KPX)}" cy="${y}" r="${kx(3.6*KPX)}"/><text class="hl" x="${kx(x+21*KPX)}" y="${kx(y+4.2*KPX)}">${esc(lab)}</text></g>`; };
+  $('homeg').innerHTML=SLOT_IDS.filter(id=>SLOTS[id]&&id!==ACTIVE).map(id=>one(id,SLOTS[id],false)).join('')+one(ACTIVE,HOME,true); }
+$('homeg').addEventListener('click',e=>{ const g=e.target.closest('.homemk'); if(!g) return; const id=g.dataset.slot; if(id===ACTIVE) openPinSheet(id,'edit'); else useSlot(id); });
+// 1.58.34: a pin's label — the name its owner gave it, else the place's own name (a dropped pin: its number)
+// — a district or a town; never a street or a dropped point, which would put an address on the screen for whoever stands behind (1.36)
+function pinLabel(id){ const n=String(slotNames()[id]||'').trim(); if(n) return n; const p=SLOTS[id];
+  return !p||p.dropped||p.street||!(p.name||p.uk)?t('sl_n',SLOT_ORDER.indexOf(id)+1):(LANG==='uk'&&p.uk?p.uk:townName(p.name||p.uk)); }
 function paintSlots(){ const el=$('slotrow'); if(!el) return;
-  const html=SLOT_IDS.map(id=>{const p=SLOTS[id]; const on=id===ACTIVE&&p;
-    // The role, not the place. Shorter, so the four fit one line on a phone — and the place a child is at does
-    // not sit permanently on screen for whoever is standing behind you. The place itself is named in the card
-    // below, and in the button's own tooltip. The dot is that place's official status (1.36).
-    // 1.54.9: the pin's number, or the name its owner gave it
-    const nm=!p?slotName(id):p.dropped?t('sl_pin_dropped'):(LANG==='uk'&&p.uk?p.uk:townName(p.name));
-    const k=p?placeLevel(p).k:'';
-    return `<button type="button" data-slot="${id}" class="${on?'on':''}${p?'':' empty'}" aria-pressed="${on?'true':'false'}" title="${esc(p?t('sl_switch',nm):t('sl_set',slotName(id)))}"><i class="${k}"></i><span class="sl">${esc(slotName(id))}</span></button>`;}).join('');
+  // the pins that exist, the current one underlined, and a "+" while one of the four is free; the dot is each place's
+  // official status (1.36). The place a child is at is named by its owner, not by the app (1.54.9).
+  const free=SLOT_IDS.find(id=>!SLOTS[id]);
+  const html=SLOT_IDS.filter(id=>SLOTS[id]).map(id=>{const p=SLOTS[id], on=id===ACTIVE, nm=pinLabel(id), k=placeLevel(p).k;
+    return `<button type="button" data-slot="${id}" class="${on?'on':''}" aria-pressed="${on?'true':'false'}" title="${esc(on?t('sl_edit',nm):t('sl_switch',nm))}"><i class="${k}"></i><span class="sl">${esc(nm)}</span></button>`;}).join('')
+    +(free?`<button type="button" class="add" data-add="${free}" title="${esc(t('sl_add'))}" aria-label="${esc(t('sl_add'))}">+</button>`:'');
   if(el._h!==html){ el._h=html; el.innerHTML=html; } }
-// Tap switches. Long-press (or a tap on an empty one) sets the place. The pin is set on the map: its chip arms
-// the map, and the next tap there puts it down (press and hold anywhere on the map does the same).
-(()=>{ let hold=null, held=false;
-  const row=()=>$('slotrow'); if(!row()) return;
-  // 1.54.9: every pin the same way — its sheet: a name, a search, or "on the map"
-  const setFor=id=>{ held=true; SLOT_PICKING=id; if($('homebtn')) $('homebtn').onclick(); };
-  row().addEventListener('pointerdown',e=>{const b=e.target.closest('[data-slot]'); if(!b) return;
-    held=false; hold=setTimeout(()=>setFor(b.dataset.slot),550);});
-  const cancel=()=>{clearTimeout(hold);hold=null;};
-  row().addEventListener('pointerup',e=>{cancel(); const b=e.target.closest('[data-slot]'); if(!b||held) return;
-    const id=b.dataset.slot; if(SLOTS[id]) useSlot(id); else setFor(id);});
-  row().addEventListener('pointercancel',cancel); row().addEventListener('pointerleave',cancel);
+// a tap on another pin watches it; on the current one, opens its sheet (rename, move, delete); on "+", a new one
+(()=>{ const row=$('slotrow'); if(!row) return;
+  row.addEventListener('click',e=>{ const a=e.target.closest('[data-add]'); if(a){ openPinSheet(a.dataset.add,'new'); return; }
+    const b=e.target.closest('[data-slot]'); if(!b) return; const id=b.dataset.slot; if(id===ACTIVE) openPinSheet(id,'edit'); else useSlot(id); });
 })();
 // The two minutes between a track going quiet and its mark disappearing.
 //
@@ -2127,19 +2179,15 @@ function lostGoneIn(m){                       // minutes left before the mark is
   const over=agoMin(m.ts)-(ttl||45);
   return over>=0?Math.max(0,LOST_FADE_MIN-over):null;
 }
-let SLOT_PICKING=null;   // which slot the place picker is currently filling
 let PLACES_ALL=[];
 const homeName=()=>!HOME?'':HOME.dropped?slotName(ACTIVE):(LANG==='uk'&&HOME.uk?HOME.uk:townName(HOME.name));   // 1.54.9: a pin put on the map is its own name
 async function loadPlacesList(){try{const pl=(await (await fetch('/api/places?oblast=scope')).json()).places;PLACES_ALL=pl.filter(p=>!/громада|берег|столиця|водосховище|море|АЕС|ГЕС|траса|шосе|проспект/i.test(p.name)).map(p=>({name:translit(p.name),uk:p.name,lon:p.lon,lat:p.lat,obl:p.oblast_uid,kind:OBL_N[p.oblast_uid]?oblFull(p.oblast_uid):t('kd_region')}));
   for(const [r,n] of Object.entries(RAION)) if(r!=='kyiv-city'){const c=RAION_LBL[r];PLACES_ALL.push({name:RAION_N[r][0]+' raion',uk:(RAION_ADJ[r]||RAION_N[r][1])+' район',lon:C[0]+c[0]/KX,lat:C[1]-c[1]/KY,obl:'14',kind:t('kd_raion')});}
   PLACES_ALL.sort((a,b)=>a.name.localeCompare(b.name));}catch(e){}}
-function renderHomeList(q){const s=(q||'').toLowerCase();const rows=PLACES_ALL.filter(p=>!s||p.name.toLowerCase().includes(s)||p.uk.toLowerCase().includes(s)).slice(0,60);
-  $('homelist').innerHTML=rows.map((p,i)=>`<div class="hitem" data-i="${PLACES_ALL.indexOf(p)}"><div>${esc(LANG==='uk'?p.uk:p.name)} <span>${esc(LANG==='uk'?p.name:p.uk)}</span></div><span>${esc(p.kind)}</span></div>`).join('')||`<div class="empty">${t('hl_nomatch')}</div>`;
-  $('homelist').querySelectorAll('.hitem').forEach(el=>el.onclick=()=>{const p=PLACES_ALL[+el.dataset.i];
-    const slot=SLOT_PICKING||ACTIVE; SLOT_PICKING=null;
-    setSlot(slot,{name:p.name,uk:p.uk,lon:p.lon,lat:p.lat,obl:p.obl});
-    $('homesheet').classList.remove('show');
-    notify(t('n_home',homeName()),t('n_home_b'),'end');});}
+// 1.58.34: the list appears once something is typed — an alphabet of all Ukraine, from "Академмістечко", was the first screen
+function renderHomeList(q){const s=(q||'').trim().toLowerCase();const rows=s?PLACES_ALL.filter(p=>p.name.toLowerCase().includes(s)||p.uk.toLowerCase().includes(s)).slice(0,60):[];
+  $('homelist').innerHTML=rows.map((p,i)=>`<div class="hitem" data-i="${PLACES_ALL.indexOf(p)}"><div>${esc(LANG==='uk'?p.uk:p.name)} <span>${esc(LANG==='uk'?p.name:p.uk)}</span></div><span>${esc(p.kind)}</span></div>`).join('')||(s?`<div class="empty">${t('hl_nomatch')}</div>`:'');
+  $('homelist').querySelectorAll('.hitem').forEach(el=>el.onclick=()=>{const p=PLACES_ALL[+el.dataset.i]; hsChoose({name:p.name,uk:p.uk,lon:p.lon,lat:p.lat,obl:p.obl});});}
 // 1.36: three panels instead of one menu — the bell (what makes this phone ring), "more" (settings, about) and the
 // map's layers. One open at a time; a tap outside, the ✕ or Escape closes it.
 const PANELS=['bell','menu','lay'];
@@ -2173,27 +2221,55 @@ function backSync(){ clearTimeout(BACK_T);
 window.addEventListener('popstate',()=>{ if(!BACK_ON) return; BACK_ON=false; clearTimeout(BACK_T); closeAll(); });
 try{ const mo=new MutationObserver(backSync); for(const el of [$('sheet'),$('homesheet'),...PANELS.map(id=>$(id))]) if(el) mo.observe(el,{attributes:true,attributeFilter:['class','hidden']}); }catch(e){}
 document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeAll(); });
-$('homebtn').onclick=async()=>{closePanels();if(!PLACES_ALL.length)await loadPlacesList();renderHomeList('');$('homeq').value='';
-  const id=SLOT_PICKING||ACTIVE; $('homet').textContent='📍 '+slotName(id); $('homed').textContent=t('sl_hint');
-  $('homen').value=String(slotNames()[id]||''); $('homen').placeholder=t('sl_n',SLOT_ORDER.indexOf(id)+1)+' — '+t('sl_name');
-  $('homesheet').classList.add('show');setTimeout(()=>$('homeq').focus(),100);hsOpen();};
-// 1.56: every street and village of the oblast chosen (OpenStreetMap), searched on this phone (static/streets.js)
-function hsOpen(){ const go=()=>HS.mount({q:$('homeq'),list:$('homelist'),style:'tac',obl:()=>(SLOTS[SLOT_PICKING||ACTIVE]||{}).obl,places:()=>PLACES_ALL,pick:hsPick});
-  if(window.HS) return go(); if(hsOpen.l) return; hsOpen.l=1; const s=document.createElement('script'); s.src='/static/streets.js?v='+APP_VERSION; s.onload=go; s.onerror=()=>{ hsOpen.l=0; }; document.head.appendChild(s); }
-function hsPick(p){ const slot=SLOT_PICKING||ACTIVE; SLOT_PICKING=null; const pl={name:p.name,uk:p.uk,lon:p.lon,lat:p.lat,obl:p.obl};
-  setSlot(slot,pl); $('homesheet').classList.remove('show'); notify(t('n_home',homeName()),t('n_home_b'),'end');
-  const [x,y]=proj(p.lon,p.lat); setView(x,y,Math.max(p.street?1.6:4,p.km*2.6));
+// 1.58.34, the audit: the sheet asks "where?" first — on the map, where I am, or an address — then a name, filled in
+// with the place; nothing is kept until "save". A pin that exists opens on its name, with "change" and "delete".
+let HS_PEND=null;        // {slot, mode: 'new' | 'edit', place, name}
+const HS_FREQ=['Оболонь','Троєщина','Позняки','Бровари','Буча','Бориспіль'];
+const hsStep=k=>{ for(const x of ['where','find','name']) $('hs-'+x).hidden=x!==k; };
+const hsPlaceName=p=>!p?'':p.dropped||!(p.name||p.uk)?t('sl_pin_dropped'):(LANG==='uk'&&p.uk?p.uk:townName(p.name||p.uk));
+async function openPinSheet(id,mode){ closePanels(); if(!SLOT_IDS.includes(id)) id=ACTIVE; if(!PLACES_ALL.length) await loadPlacesList();
+  HS_PEND={slot:id,mode:mode||'new',place:mode==='edit'?SLOTS[id]:null,name:mode==='edit'?String(slotNames()[id]||''):''};
+  $('homet').textContent=mode==='edit'?pinLabel(id):t('sl_new'); $('homed').textContent=t('sl_local_1');
+  if(mode==='edit'&&SLOTS[id]) hsName(); else { hsFreq(); hsStep('where'); }
+  $('homesheet').classList.add('show'); }
+$('homebtn').onclick=()=>openPinSheet(SLOTS[ACTIVE]?ACTIVE:(SLOT_IDS.find(x=>!SLOTS[x])||ACTIVE),SLOTS[ACTIVE]?'edit':'new');
+function hsFreq(){ const el=$('homefreq'); el.innerHTML=HS_FREQ.map(n=>{ const p=PLACES_ALL.find(x=>x.uk===n); return p?`<button type="button" data-i="${PLACES_ALL.indexOf(p)}">${esc(LANG==='uk'?p.uk:p.name)}</button>`:''; }).join(''); }
+$('homefreq').onclick=e=>{ const b=e.target.closest('[data-i]'); if(!b) return; const p=PLACES_ALL[+b.dataset.i]; hsChoose({name:p.name,uk:p.uk,lon:p.lon,lat:p.lat,obl:p.obl}); };
+function hsChoose(place){ if(!HS_PEND) return; HS_PEND.place=place; hsName(); }
+function hsName(){ const P=HS_PEND, p=P.place; $('hspn').textContent=hsPlaceName(p)||'—'; $('hsps').textContent=p&&p.obl&&typeof oblFull==='function'?oblFull(p.obl):'';
+  $('homen').value=P.name||(p&&!p.dropped&&!p.street?hsPlaceName(p):''); $('homen').placeholder=t('sl_name');
+  $('homesug').innerHTML=['sl_s_home','sl_s_work','sl_s_kids','sl_s_parents'].map(k=>`<button type="button" data-n="${esc(t(k))}">${esc(t(k))}</button>`).join('');
+  $('homeclear').hidden=P.mode!=='edit'; $('homeconf').hidden=true; hsStep('name'); }
+$('homesug').onclick=e=>{ const b=e.target.closest('[data-n]'); if(b){ $('homen').value=b.dataset.n; $('homen').focus(); } };
+$('hschg').onclick=()=>{ hsFreq(); hsStep('where'); };
+$('homefind').onclick=()=>{ hsStep('find'); $('homeq').value=''; renderHomeList(''); setTimeout(()=>$('homeq').focus(),60); hsOpen(); };
+$('homecancel').onclick=()=>{ HS_PEND=null; $('homesheet').classList.remove('show'); };
+$('homesave').onclick=()=>{ const P=HS_PEND; if(!P||!P.place) return; const p=P.place, slot=P.slot; setSlotName(slot,$('homen').value); setSlot(slot,p); HS_PEND=null;
+  $('homesheet').classList.remove('show'); notify(t('n_home',homeName()),t('n_home_b'),'end'); const [x,y]=proj(p.lon,p.lat); setView(x,y,Math.max(p.street?1.6:4,(p.km||8)*2.6));
+  // 1.56: a street is a line — the map is armed so the next tap moves the pin to the exact spot, the street's name kept
   if(p.street){ PIN_KEEP={name:p.name,uk:p.uk,obl:p.obl}; armPin(true,slot,true);
-    if(!LAYERS.sat&&!LAYERS.tiles){ LAYERS.tiles=true; applyLayers(); } } }   // the plain background shows no street: the map, for now
-// 1.54.9: the pin's own name, as it is typed — on this phone only
-$('homen').addEventListener('input',e=>{ setSlotName(SLOT_PICKING||ACTIVE,e.target.value); paintSlots(); $('homet').textContent='📍 '+slotName(SLOT_PICKING||ACTIVE); });
+    if(!LAYERS.sat&&!LAYERS.tiles){ LAYERS.tiles=true; applyLayers(); } } };
+$('homeclear').onclick=()=>{ $('homeconf').hidden=false; };
+$('homedelno').onclick=()=>{ $('homeconf').hidden=true; };
+$('homedel').onclick=()=>{ const P=HS_PEND; if(!P) return; SLOTS[P.slot]=null; setSlotName(P.slot,''); HS_PEND=null; $('homesheet').classList.remove('show');
+  useSlot(SLOT_IDS.find(id=>SLOTS[id])||P.slot); };
+$('homegeo').onclick=()=>{ const b=$('homegeo'), lb=b.querySelector('b'); if(!navigator.geolocation){ lb.textContent=t('lt_locate_fail'); return; }
+  b.classList.add('busy'); lb.textContent=t('lt_locating');
+  navigator.geolocation.getCurrentPosition(pos=>{ b.classList.remove('busy'); lb.textContent=t('lt_locate'); hsChoose({lon:+pos.coords.longitude.toFixed(4),lat:+pos.coords.latitude.toFixed(4),dropped:true}); },
+    ()=>{ b.classList.remove('busy'); lb.textContent=t('lt_locate_fail'); },{enableHighAccuracy:false,timeout:12000,maximumAge:300000}); };
+// 1.56: every street and village of the oblast chosen (OpenStreetMap), searched on this phone (static/streets.js)
+function hsOpen(){ const go=()=>HS.mount({q:$('homeq'),list:$('homelist'),style:'tac',obl:()=>((HS_PEND&&HS_PEND.place)||SLOTS[ACTIVE]||{}).obl,places:()=>PLACES_ALL,pick:hsPick});
+  if(window.HS) return go(); if(hsOpen.l) return; hsOpen.l=1; const s=document.createElement('script'); s.src='/static/streets.js?v='+APP_VERSION; s.onload=go; s.onerror=()=>{ hsOpen.l=0; }; document.head.appendChild(s); }
+function hsPick(p){ hsChoose({name:p.name,uk:p.uk,lon:p.lon,lat:p.lat,obl:p.obl,km:p.km,street:!!p.street}); }
 (function vvSync(){ const vv=window.visualViewport; if(!vv) return; const r=document.documentElement;
   const f=()=>{ const kb=Math.max(0,Math.round(innerHeight-(vv.height+vv.offsetTop))); r.style.setProperty('--kb',kb+'px'); r.style.setProperty('--vvh',Math.round(vv.height)+'px');
     const ae=document.activeElement; document.body.classList.toggle('kbd',!!ae&&/^(INPUT|TEXTAREA)$/.test(ae.tagName)&&(kb>60||vv.height<innerHeight*0.8||screen.height-vv.height>220)); };
   vv.addEventListener('resize',f); vv.addEventListener('scroll',f); document.addEventListener('focusin',()=>setTimeout(f,60)); document.addEventListener('focusout',()=>setTimeout(f,60)); f(); })();
-$('homemap').onclick=()=>{ const id=SLOT_PICKING||ACTIVE; $('homesheet').classList.remove('show'); armPin(true,id); };
+// "on the map": the sheet steps aside, the next tap on the map puts the pin there (dropPin), then the sheet comes back
+// for its name
+let PIN_NAME=false;
+$('homemap').onclick=()=>{ const id=HS_PEND?HS_PEND.slot:ACTIVE; $('homesheet').classList.remove('show'); PIN_NAME=true; armPin(true,id); };
 $('homeq').addEventListener('input',e=>renderHomeList(e.target.value));
-$('homeclear').onclick=()=>{const slot=SLOT_PICKING||ACTIVE; SLOT_PICKING=null; SLOTS[slot]=null; useSlot(slot); $('homesheet').classList.remove('show');};
 document.addEventListener('pointerdown',e=>{if($('homesheet').classList.contains('show')&&!$('homesheet').contains(e.target)&&e.target!==$('homebtn'))$('homesheet').classList.remove('show');});
 function inboundInfo(m,x,y){ // reported heading pointing at Kyiv centre (0,0)?
   const v=SPEED(m); const dist=Math.hypot(x,y); if(m.status||m.endedBy||!v||m.heading==null) return {inbound:false,dist};
@@ -2776,7 +2852,7 @@ function phaseLadder(m){ const L=m.phase_ladder; if(!m.phase||!L||!L.length) ret
 function showTip(m,e){
   const cur=MK.find(x=>x.id===m.id)||m; const [x,y]=posOf(cur,Date.now()); const info=inboundInfo(cur,x,y);
   const th=THREAT[cur.type]||THREAT.unknown;
-  const title=cur.status?`${statusIco(cur.status)} ${statusName(cur.status)}`:`${TAGS_SHOWN&&cur.tag?`<span class="tagid">${esc(cur.tag.id)}</span> `:''}${th[0]} ${cur.type==='drones'&&cur.jet?t('k_jet'):th[1]}${cur.count>1?' ×'+cur.count:''}`;
+  const title=cur.status?`${statusIco(cur.status)} ${statusName(cur.status)}`:`${TAGS_SHOWN&&cur.tag?`<span class="tagid">${esc(cur.tag.id)}</span> `:''}${thrIco(cur.type)}${cur.type==='drones'&&cur.jet?t('k_jet'):th[1]}${cur.count>1?' ×'+cur.count:''}`;
   const where=cur.place==='область'?oblWhere(cur):pn(cur.place);
   const ev=cur.evidence||{};
   // 1.50.2: a mark drawn at the town it is heading for was "spotted near" that town — "2 реактиви у бік Києва з півдня"
@@ -2868,7 +2944,7 @@ function openSheet(id){
     ${alt?`<div class="kv1 muted sec" style="font-size:11.5px">${esc(alt.state?(ALTL[alt.state]||alt.state):(alt.m+' m'))}: “${esc(alt.matched)}” — ${esc(altF?t('alt_src'):t('alt_old',Math.round(agoMin(m.ts))))}</div>`:''}
     ${(()=>{const gsd=groundSpeed(m); return gsd?`<div class="kv1 muted sec" style="font-size:11.5px">${esc(t('tel_gs',gsd.kmh))} — ${esc(t('tel_gs_src',gsd.mins))}</div>`:'';})()}
     ${contactLost(m)?`<div class="kv1 yellow sec">✖ ${esc(t('lost_t'))}<div style="color:var(--muted);font-size:11.5px;margin-top:3px">${esc(t('lost_b',m.stale))}</div></div>`:''}
-    <div class="shact"><button class="tgl" id="flagbtn" data-fid="${esc(m.id)}">${t('flag_btn')}</button><button class="tgl" id="shbtn">${t('share_btn')}</button><button class="tgl" onclick="closeSheet()">${t('btn_close')}</button></div>`;
+    <div class="shact"><button class="tgl" id="flagbtn" data-fid="${esc(m.id)}">${t('flag_btn')}</button><button class="tgl" id="shbtn">${t('share_btn')}</button><button class="b-t" onclick="closeSheet()">${t('btn_close')}</button></div>`;
   $('shbtn').onclick=()=>shareMarker(m.id,$('shbtn'));
   // 1.53: short first; "More" opens the rest (and "Less" folds it)
   $('sheet').classList.remove('more'); $('sheet').scrollTop=0;
@@ -3266,7 +3342,7 @@ function threatStrip(){
     const lb=(o?{mig31k_departure:t('ts_mig_old'),ballistic_missiles:t('ts_bal_old'),strategic_aircraft_activity:t('ts_strat_old'),cruise_missiles:t('ts_cruise_old')}
                :{mig31k_departure:t('ts_mig'),ballistic_missiles:unoff(x)?t('ts_bal_unoff'):t('ts_bal'),strategic_aircraft_activity:t('ts_strat'),cruise_missiles:t('ts_cruise')})[x.ty];
     const n=x.srcs?x.srcs.size:(x.src?1:0);
-    return `${esc(lb)} <small>· ${fmtT(x.ts)} · ${esc(o?t('ts_unconf',a):t('ts_ago',a))}${x.src?' · '+esc(x.src):''}${n>1?' · '+esc(t('ts_conf',n)):''}</small>`;};
+    return `${thrIco(x.ty,'currentColor')}${esc(lb)} <small>· ${fmtT(x.ts)} · ${esc(o?t('ts_unconf',a):t('ts_ago',a))}${x.src?' · '+esc(x.src):''}${n>1?' · '+esc(t('ts_conf',n)):''}</small>`;};
   // 1.36: a fresh ballistic or MiG-31K warning says what to do, in words, with the guide one tap away
   const now1=!old&&(tt.ty==='ballistic_missiles'||tt.ty==='mig31k_departure');
   el.innerHTML=one(tt)
@@ -3292,7 +3368,7 @@ const gIco=(k,col,cls)=>`<svg class="gico" viewBox="-14 -14 28 28" aria-hidden="
 const thrIco=(ty,col)=>{ const g=GLYPH_BY_TYPE[ty]; if(!g) return '';
   return gIco(g,col||(ty==='drones'?'#ff8a3d':/aircraft|mig31k|guided_aerial_bombs/.test(ty)?'#b07cff':'#ff5b52'),ty==='ballistic_missiles'?'bal':ty==='supersonic_missiles'?'sup':''); };
 function silSvg(m,col){ const k=glyphKey(m)==='arrow'?(((m.type==='drones'||asDrone(m))&&m.jet)?'jetdrone':asDrone(m)?'drone':(GLYPH_BY_TYPE[m.type]||'missile')):glyphKey(m);
-  const cls='sil'+((m.type==='drones'&&m.jet)?' jet':'')+(m.type==='ballistic_missiles'?' bal':'')+(m.type==='supersonic_missiles'?' sup':'');
+  const cls='sil'+(((m.type==='drones'&&m.jet)||m.type==='banderol_missiles')?' jet':'')+(m.type==='ballistic_missiles'?' bal':'')+(m.type==='supersonic_missiles'?' sup':'');
   return `<svg viewBox="-14 -14 28 28" aria-hidden="true"><g class="${cls}" style="--c:${col||KIND_COL(m)}">${G[k]||''}</g></svg>`; }
 const NEAR_MAX=350;     // km — the Near list: the reader's region, not the country
 function nearRows(){
@@ -3305,7 +3381,7 @@ function nearRows(){
     out.push({m,d,hi,n,chs,imm:IMMEDIATE.has(m.type)&&d<=REGION_R,vague:m.place==='область'||!!m.held}); }
   out.sort((a,b)=>(b.imm-a.imm)||(a.vague-b.vague)||((b.hi.inbound&&!b.m.stale)-(a.hi.inbound&&!a.m.stale))||(a.d-b.d));
   return out; }
-const fromWhere=()=>HOME?t('mc_f_n',slotName(ACTIVE)):t('mc_f_kyiv');
+const fromWhere=()=>HOME?t('mc_f_n',pinLabel(ACTIVE)):t('mc_f_kyiv');
 function rowSub(r){ const m=r.m, bits=[];
   if(r.hi.inbound) bits.push(t('mc_course',homeName()));
   else if(m.target&&!m.approach) bits.push(t('mc_course',tgtName(m)));
@@ -3421,9 +3497,9 @@ let FEED_MK='';
 function feedSync(){ if(!lastPosts.length) return;
   const sig=(HOME?HOME.lon+','+HOME.lat:'')+'|'+MK.filter(m=>m.lon!=null&&m.place!=='область').map(m=>m.id+(m.status||'')).join(',');
   if(sig===FEED_MK) return; FEED_MK=sig; renderFeed(lastPosts,false); }
-$('mych').onclick=()=>{ const el=$('mych'), id=el.dataset.id; if(id) openSheet(id); else if(el.classList.contains('set')){ SLOT_PICKING='home'; $('homebtn').onclick(); } };
+$('mych').onclick=()=>{ const el=$('mych'), id=el.dataset.id; if(id) openSheet(id); else if(el.classList.contains('set')) openPinSheet(SLOT_IDS.find(x=>!SLOTS[x])||'home','new'); };
 for(const id of ['near','nearL']) { const el=$(id); if(el) el.addEventListener('click',e=>{ const b=e.target.closest('[data-id],[data-act]'); if(!b) return;
-  if(b.dataset.act==='place'){ SLOT_PICKING=ACTIVE; $('homebtn').onclick(); return; } openSheet(b.dataset.id); }); }
+  if(b.dataset.act==='place'){ openPinSheet(SLOTS[ACTIVE]?ACTIVE:(SLOT_IDS.find(x=>!SLOTS[x])||ACTIVE),SLOTS[ACTIVE]?'edit':'new'); return; } openSheet(b.dataset.id); }); }
 // the drawer: three heights on a phone — the tab bar alone, half the screen, most of it. While it is pulled up the
 // card folds to one line, so the two never cover each other.
 function setDrawer(st){ const d=$('drawer'); d.classList.toggle('half',st==='half'); d.classList.toggle('open',st==='open'); syncMini(); if(typeof dchevSync==='function') dchevSync(); }
@@ -3784,7 +3860,7 @@ function supportSheet(){
     ${footerHTML({free:false,build:MYBUILD})}
     <div style="margin-top:10px;display:flex;justify-content:space-between;align-items:center">
       <button class="tgl" id="donnever" style="font-size:11px">${t('sup_never')}</button>
-      <button class="tgl" onclick="closeSheet()">${t('btn_close')}</button></div>`;
+      <button class="b-t" onclick="closeSheet()">${t('btn_close')}</button></div>`;
   $('sheetbody').querySelectorAll('[data-copy]').forEach(btn=>btn.onclick=()=>copyText(btn.dataset.copy,btn,t('sup_copied')));
   $('donnever').onclick=()=>{ls('sup_never','1');closeSheet();};
   $('sheet').classList.add('show'); }
@@ -3913,7 +3989,7 @@ function geoSheet(){
     <div style="margin-top:12px;display:flex;gap:8px;justify-content:space-between">
       <button class="tgl on" id="geogo">${t('geo_btn')}</button>
       ${GEO?`<button class="tgl" id="geooff">${t('btn_clear')}</button>`:''}
-      <button class="tgl" onclick="closeSheet()">${t('btn_close')}</button></div>`;
+      <button class="b-t" onclick="closeSheet()">${t('btn_close')}</button></div>`;
   let radius=cur;
   $('sheetbody').querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{radius=+b.dataset.r;
     $('sheetbody').querySelectorAll('[data-r]').forEach(x=>x.classList.toggle('on',+x.dataset.r===radius));});
@@ -3940,7 +4016,7 @@ function helpSheet(){
     <a class="gdl" href="/guide">${esc(t('m_guide'))} →</a>
     ${secs}
     ${footerHTML({support:true,build:MYBUILD})}
-    <div style="margin-top:10px;text-align:right"><button class="tgl" onclick="closeSheet()">${t('btn_close')}</button></div>`;
+    <div style="margin-top:10px;text-align:right"><button class="b-t" onclick="closeSheet()">${t('btn_close')}</button></div>`;
   $('sheet').classList.add('show'); }
 $('helpbtn').onclick=()=>{closePanels();helpSheet();};
 $('geobtn').onclick=()=>{closePanels();geoSheet();};

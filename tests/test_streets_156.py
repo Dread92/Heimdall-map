@@ -141,7 +141,7 @@ def test_what_is_typed_never_leaves_the_phone():
 
 
 def test_the_pages():
-    assert "function hsPick(p){" in PAGE and "PIN_KEEP={name:p.name,uk:p.uk,obl:p.obl}; armPin(true,slot,true);" in PAGE
+    assert "function hsPick(p){" in PAGE and "PIN_KEEP={name:p.name,uk:p.uk,obl:p.obl}; armPin(true,slot,true);" in PAGE   # 1.58.34: on save
     assert "setSlot(id,keep?Object.assign({lon,lat},keep):{lon,lat,dropped:true});" in PAGE      # moved: still the street
     assert "t(st?'sl_arm_st':'sl_arm_n',slotName(PIN_FOR))" in PAGE
     assert "pick:p=>setPlace({name:p.uk,uk:p.uk,lon:p.lon,lat:p.lat,obl:p.obl})" in LIGHT

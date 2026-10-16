@@ -2,6 +2,30 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.33 — 2026-10-16
+
+### Changed
+- **The "Instrument" look — the UX audit, done** — the owner: "an advanced UX audit, and design alternatives so that it
+  looks less like a default AI asset: the buttons, the gradients, the pin management", then "we'll do everything the
+  audit proposes". The three faces and the official colours stay; the chrome changes:
+  - one 2 px radius instead of pebbles; no halo, no gradient, no tinted box;
+  - buttons with a hierarchy: one yellow primary a screen (what to do, choose your place, save the pin), outlined
+    secondaries, text for close and cancel, a red outline for delete; "on" is a yellow rule;
+  - the Light / Tactical switch is two tabs with their meaning under them, the yellow line sliding between them — no
+    orange, no halo, no chevron; the drawer's tabs and the layer boxes take the same yellow;
+  - the map's six controls are one bar; the full-screen button is no longer in the alert's yellow;
+  - the alert band is the government app's flat (red, yellow); "no alert" is a green rule and a green word;
+  - the threat and shelter rows are a list with rules, the glyph in a column, the distance in Condensed.
+- **The pins** — the row shows the pins that exist and a "+"; a tap on the current one opens its sheet (the long press
+  is gone). The sheet asks "where?" first — on the map, where I am now, an address, or one of six places people pick
+  often — then the name, filled in with the town; nothing is kept before "save"; a pin that exists has "change" and
+  "delete" with an inline confirmation. The search list appears once something is typed, not as an alphabet of all
+  Ukraine. On the map a pin is a reticle in ink with its name and the status of its place, the other pins in grey.
+  A town or district names its pin; a street or a dropped point stays "Pin N".
+- **Icons** — the interface's own strings carry no colour emoji; the warning strip and a mark's tip show the weapon's
+  silhouette instead. **The Banderol** (the owner: "the icon is really ugly") is drawn again as the S8000 from above,
+  with its jet's flame.
+
 ## 1.58.32 — 2026-10-15
 
 ### Added

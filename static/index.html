@@ -10,7 +10,7 @@
   --bg:#0c0f14;--panel:#141922;--panel2:#1b2230;--line:#232c3b;--text:#e6e9ef;--muted:#8a94a6;
   --red:#e5484d;--red-soft:rgba(229,72,77,.16);--yellow:#f5b940;--yellow-soft:rgba(245,185,64,.16);
   --green:#3ecf8e;--green-soft:rgba(62,207,142,.14);--blue:#5b9cff;--orange:#ff8a3d;--purple:#b07cff;
-  --radius:12px;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --radius:2px;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
 }
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
@@ -31,9 +31,10 @@ button:hover{border-color:#3a475c}button.on{border-color:var(--green);color:var(
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;min-width:0}
 .favs{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin-bottom:14px}
 .fav{position:relative;overflow:hidden;border-width:1px}
-.fav.A{background:linear-gradient(160deg,rgba(229,72,77,.22),var(--panel) 60%);border-color:rgba(229,72,77,.6)}
-.fav.P{background:linear-gradient(160deg,rgba(245,185,64,.2),var(--panel) 60%);border-color:rgba(245,185,64,.5)}
-.fav.N{background:linear-gradient(160deg,rgba(62,207,142,.14),var(--panel) 60%);border-color:rgba(62,207,142,.35)}
+/* 1.58.34, the audit: no decorative gradient — a flat panel and a rule in the alert's colour */
+.fav.A{border-left:3px solid var(--red)}
+.fav.P{border-left:3px solid #f2c200}
+.fav.N{border-left:3px solid #2fbf71}
 .fav .name{font-size:13px;color:var(--muted)}
 .fav .status{font-size:26px;font-weight:700;margin:4px 0 2px;display:flex;align-items:center;gap:10px}
 .fav .since{font-family:var(--mono);color:var(--muted);font-size:12.5px}
@@ -86,7 +87,7 @@ button:hover{border-color:#3a475c}button.on{border-color:var(--green);color:var(
 .tlrow .lab{color:var(--muted);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .track{position:relative;height:22px;background:var(--panel2);border-radius:5px;border:1px solid var(--line);overflow:hidden}
 .bar{position:absolute;top:2px;bottom:2px;background:var(--red);opacity:.85;border-radius:3px;min-width:2px}
-.bar.open{background:linear-gradient(90deg,var(--red),#ff7b7f)}
+.bar.open{background:var(--red);opacity:1}
 .axis{display:grid;grid-template-columns:110px 1fr;gap:10px;font-family:var(--mono);font-size:10.5px;color:var(--muted)}
 .axis .ticks{display:flex;justify-content:space-between}
 .nowline{position:absolute;top:0;bottom:0;width:1px;background:var(--blue)}

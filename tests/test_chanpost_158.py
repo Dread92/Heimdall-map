@@ -69,10 +69,7 @@ def test_the_silhouettes_are_the_apps(name):
     my_polys = [p for p in mine if not isinstance(p, tuple)]
     my_rects = [p[1:] for p in mine if isinstance(p, tuple)]
     assert my_polys == polys
-    if name == "banderol":                                # the canopy (an arc path) is drawn as its bounding box
-        assert my_rects[:-1] == rects and my_rects[-1] == (-4.3, -8.4, 8.6, 3.9)
-    else:
-        assert my_rects == rects
+    assert my_rects == rects                              # 1.58.34: the Banderol drawn again — no arc left to box
     if name == "jetdrone":                                # the jet's flame
         fl = re.search(r'jetdrone:.*?<path class="flame" d="([^"]+)"', GLY, re.S).group(1)
         nums = [float(v) for v in re.findall(r"-?\d+(?:\.\d+)?", fl)]

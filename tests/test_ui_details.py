@@ -44,9 +44,8 @@ def test_press_and_hold_survives_a_trembling_finger():
 
 def test_the_empty_pin_chip_arms_the_map_instead_of_only_explaining():
     # 1.54.9: every pin opens its sheet; "on the map" there arms the map for that pin
-    i = PAGE.index("const setFor=id=>")
-    assert "$('homebtn').onclick()" in PAGE[i:i + 120]
-    assert "$('homemap').onclick=()=>{ const id=SLOT_PICKING||ACTIVE; $('homesheet').classList.remove('show'); armPin(true,id); };" in PAGE
+    assert "if(a){ openPinSheet(a.dataset.add,'new'); return; }" in PAGE                 # 1.58.34: "+" opens the sheet
+    assert "$('homemap').onclick=()=>{ const id=HS_PEND?HS_PEND.slot:ACTIVE; $('homesheet').classList.remove('show'); PIN_NAME=true; armPin(true,id); };" in PAGE   # 1.58.34
     assert "if(PIN_ARM&&tap){ dropPin(" in PAGE
     assert I18N.count("sl_pin_arm:") == 3 and I18N.count("sl_pin_cancel:") == 3
 

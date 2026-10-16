@@ -66,7 +66,7 @@ def test_the_school_is_not_left_sitting_on_the_screen():
     """The chips show the pin, not the place. Somebody standing behind you on the metro reads "Pin 3" — or the name
     the owner chose (1.54.9) — not the name of the school."""
     body = _fn("paintSlots")
-    assert '<span class="sl">${esc(slotName(id))}</span>' in body, "the chip prints the place name rather than the pin"
+    assert '<span class="sl">${esc(nm)}</span>' in body and "p.dropped||p.street||!(p.name||p.uk)?t('sl_n'" in PAGE, "the chip prints an address"   # 1.58.34: a town, never a street
 
 
 # ── switching and dropping ─────────────────────────────────────────────────────────────────────────────

@@ -93,7 +93,7 @@ def test_pictograms_not_emoji_in_stats_and_on_the_map():
     i = PAGE.index("const POIS=[")
     pois = PAGE[i:PAGE.index("];", i)]
     assert not EMOJI.search(pois), EMOJI.findall(pois)
-    assert "const POI_G={air:" in PAGE and "POI_G.pin" in PAGE           # 1.54.9: the active pin is a pin, numbered
+    assert "const POI_G={air:" in PAGE and '<circle class="rr" r="10"/>' in PAGE     # 1.58.34: a pin is a reticle in ink
     assert 'id="impbtn"' not in PAGE           # 1.54: the explosions layer and its button are gone (the owner)
 
 

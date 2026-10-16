@@ -38,35 +38,37 @@ header .hlogo{width:26px;height:26px;flex:none;margin-right:-2px}
 @keyframes vt-out{to{opacity:0}}@keyframes vt-in{from{opacity:0;transform:translateY(6px)}}
 /* Light | Tactical: the two versions, as one big switch across the top — the first thing the eye meets,
    each half saying what it is. Not a link hidden in a menu or a footer. */
-.sw{display:flex;position:relative;isolation:isolate;margin:0 14px 12px;border:2px solid var(--ora);border-radius:8px;overflow:hidden;box-shadow:0 0 0 3px rgba(255,138,61,.12);background:#1a202b}
-.sw>*{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:44px;padding:5px 6px;text-decoration:none;color:#fff;transition:color .2s}
-.sw b{font:800 14px/1 var(--sans);letter-spacing:.1em}
-.sw small{font:500 12px/1.2 var(--sans);opacity:.85;text-align:center}
-.sw::before{content:'';position:absolute;z-index:-1;top:0;bottom:0;left:0;width:50%;background:var(--ora);transition:transform .22s cubic-bezier(.3,.7,.2,1)}.sw.go::before{transform:translateX(100%)}
-.sw .on,.sw.go a{color:#14100a;background:none}.sw.go .on{color:#fff}
-.sw a b::after{content:' ›'}
-.sw a:hover,.sw a:focus{background:#242c3a}
+/* 1.58.33: two tabs, the yellow line under the current one slides to the other (no halo, no orange, no chevron) */
+.sw{display:flex;position:relative;margin:0 14px 12px;border-bottom:1px solid var(--line)}
+.sw>*{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:44px;padding:4px 6px 6px;text-decoration:none;color:var(--ink3);transition:color .2s}
+.sw b{font:800 13px/1 var(--sans);letter-spacing:.1em;text-transform:uppercase}
+.sw small{font:500 12px/1.2 var(--sans);text-align:center}
+.sw::before{content:'';position:absolute;z-index:1;bottom:-1px;left:0;width:50%;height:2px;background:var(--yel);transition:transform .22s cubic-bezier(.3,.7,.2,1)}.sw.go::before{transform:translateX(100%)}
+.sw .on,.sw.go a{color:var(--ink)}.sw .on small{color:var(--ink2)}.sw.go .on{color:var(--ink3)}
+.sw a:hover,.sw a:focus{color:var(--ink)}
 header .up{margin-left:auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:13px var(--sans);color:var(--ink2)}header b{white-space:nowrap}
-.slots{display:flex;gap:6px;padding:0 14px 10px}
-.slots button{flex:1 1 0;min-width:0;height:44px;display:flex;gap:5px;align-items:center;justify-content:center;padding:0 4px;border:1px solid var(--line);background:var(--panel);border-radius:10px;font:600 14px var(--sans);color:var(--ink2);white-space:nowrap}
+/* 1.58.34: the pins that exist and a "+", the current one underlined; a tap on the current one opens its sheet */
+.slots{display:flex;gap:2px;margin:0 14px 10px;border-bottom:1px solid var(--line)}
+.slots button{flex:0 1 auto;min-width:0;height:44px;display:flex;gap:7px;align-items:center;justify-content:center;padding:0 10px;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;font:600 14px var(--sans);color:var(--ink3);white-space:nowrap}
+.slots button.add{flex:none;margin-left:auto;width:44px;padding:0;font:500 24px/1 var(--sans)}
 .slots button span{overflow:hidden;text-overflow:ellipsis}.slots i{flex:none;width:10px;height:10px;border-radius:50%;border:1.5px dashed var(--ink3)}.slots i.R{background:var(--red);border:0}.slots i.Y{background:var(--yel);border:0}.slots i.H,.slots i.P{border:2px solid var(--yel)}.slots i.G{background:var(--grn);border:0}
 @media (max-width:380px){.slots{gap:4px}.slots button{font-size:13px;gap:4px}}
-.slots button.on{border-color:var(--ora);color:var(--ink);background:#281e12}
-.slots button.empty{opacity:.5}
+.slots button.on{color:var(--ink);border-bottom-color:var(--yel)}
 #imm{margin:0 14px 10px;padding:12px 14px;background:#4a0d12;border:1px solid #8a2a2a;border-left:5px solid var(--red);border-radius:3px}
 #imm b{display:block;font:800 16px/1.25 var(--sans);text-transform:uppercase;letter-spacing:.02em}
 #imm small{display:block;color:#ffd6d6;margin-top:4px;font-size:13.5px}
 #brg{margin:0 14px 10px;padding:9px 12px;border-radius:3px;color:#fff;font-size:14px;line-height:1.4}#brg[hidden]{display:none}
 #brg.at,#brg.hit{background:#c4121c}#brg.near{background:#8f4c00}#brg b{font-weight:800}#brg small{opacity:.9;margin-left:4px}
-.status{margin:0 14px;padding:16px 16px 14px;border-radius:4px;border:1px solid var(--line);background:var(--panel)}
-.status .big{font:800 22px/1.15 var(--sans);letter-spacing:.02em}
+/* 1.58.33: the red and the yellow are the government app's own flats; "no alert" is a green rule and a green word */
+.status{margin:0 14px;padding:14px 16px 14px 14px;border-radius:0;border:0;border-left:4px solid var(--ink3);background:var(--panel)}
+.status .big{font:800 22px/1.15 var(--sans);letter-spacing:.02em;text-transform:uppercase}
 .status .pl{font-size:14px;color:var(--ink2);margin-top:4px}
 .status .src{font:13px var(--sans);color:var(--ink3);margin-top:8px}
-.status.R{background:#3a0b10;border-color:#8a2a2a}.status.R .big{color:#ffd6d6}
-.status.Y{background:#332905;border-color:#7a6212}.status.Y .big{color:#ffe9a8}
-.status.G{background:#0e2018;border-color:#25503c}.status.G .big{color:#b8e6cc}
+.status.R{background:#c62a22;border-left-color:#7a1611;color:#fff}.status.R .big,.status.R .pl,.status.R .src,.status.R .lv,.status.R .nb,.status.R .oo{color:#fff}
+.status.Y{background:var(--yel);border-left-color:#b89400;color:#0b0d11}.status.Y .big,.status.Y .pl,.status.Y .src,.status.Y .lv,.status.Y .nb,.status.Y .nb b,.status.Y .oo{color:#0b0d11}
+.status.G{border-left-color:var(--grn)}.status.G .big{color:var(--grn)}
 .status.U .big{color:var(--ink2)}
-.status.H,.status.P{background:#231c0a;border-color:#6a5a1a}.status.H .big,.status.P .big{color:#ffe9a8}
+.status.H,.status.P{border-left-color:var(--yel)}.status.H .big,.status.P .big{color:#ffe9a8}
 .status .lv{font-size:13px;margin-top:6px;color:var(--ink)}
 .status .nb{font-size:13.5px;margin-top:6px;color:var(--ink2)}
 .status .nb b{color:#ffe9a8;font-weight:600}.status .nb b.R{color:#ffb4ae}
@@ -75,8 +77,8 @@ header .up{margin-left:auto;min-width:0;overflow:hidden;text-overflow:ellipsis;w
 /* the map zooms, never the page; unzoomed, one finger scrolls the page */
 #radar{display:block;width:100%;touch-action:pan-y;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;cursor:pointer}
 #radar.zoomed{touch-action:none;cursor:grab}
-#rwrap .zc{position:absolute;right:4px;top:4px;z-index:2;display:flex;flex-direction:column;gap:6px}
-#rwrap .zc button{width:44px;height:44px;border:1px solid var(--line);border-radius:4px;background:rgba(22,27,36,.94);color:var(--ink);font:700 19px/1 var(--mono)}
+#rwrap .zc{position:absolute;right:4px;top:4px;z-index:2;display:flex;flex-direction:column;gap:0;border:1px solid var(--line);border-radius:2px;overflow:hidden}#rwrap .zc button{border:0;border-bottom:1px solid var(--line);border-radius:0}#rwrap .zc button:last-child{border-bottom:0}
+#rwrap .zc button{width:44px;height:44px;border:1px solid var(--line);border-radius:2px;background:rgba(22,27,36,.94);color:var(--ink);font:700 19px/1 var(--mono)}
 #rwrap .zc button:disabled{opacity:.3;cursor:default}#rwrap .zc button[hidden]{display:none}
 #rwrap.empty .zc{display:none}
 #rcard{position:absolute;left:6px;right:6px;bottom:6px;z-index:3;max-height:62%;overflow:auto;background:rgba(16,20,27,.97);border:1px solid var(--line);border-left:4px solid var(--ora);border-radius:4px;padding:0 10px;box-shadow:0 6px 20px rgba(0,0,0,.55)}
@@ -140,7 +142,7 @@ header .up{margin-left:auto;min-width:0;overflow:hidden;text-overflow:ellipsis;w
 #radar .qm{font:800 3.6px var(--sans);fill:#cfd6e2;paint-order:stroke;stroke:#0b0d11;stroke-width:.8px;text-anchor:middle}
 #list{padding:4px 14px 8px}
 .row{display:flex;gap:10px;padding:11px 0;border-bottom:1px solid var(--line)}
-.row .ic{flex:0 0 30px;height:30px;border-radius:6px;background:#1a202b;display:flex;align-items:center;justify-content:center}
+.row .ic{flex:0 0 30px;height:30px;border-radius:2px;background:#1a202b;display:flex;align-items:center;justify-content:center}
 .row .ic svg{width:26px;height:26px;overflow:visible}
 .row.here .ic{background:#3a0f1a;box-shadow:inset 0 0 0 1.5px var(--cri)}
 .row .bd{flex:1;min-width:0}
@@ -165,7 +167,7 @@ header .up{margin-left:auto;min-width:0;overflow:hidden;text-overflow:ellipsis;w
 .notice .nx{flex:none;background:transparent;border:1px solid var(--line);color:var(--ink2);width:44px;height:44px;border-radius:4px;font-size:15px}
 #off{margin:8px 14px 0;padding:8px 10px;border:1px solid #6a5a1a;background:#221d0b;color:#ffe9a8;font-size:13.5px;border-radius:3px}
 footer{padding:14px 14px 24px;font-size:13px;color:var(--ink3);text-align:center}
-footer .fbs{display:flex;gap:8px;margin-top:10px}footer .fbs a{flex:1;display:flex;align-items:center;justify-content:center;min-height:44px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink);font:600 14px var(--sans);text-decoration:none}
+footer .fbs{display:flex;gap:8px;margin-top:10px}footer .fbs a{flex:1;display:flex;align-items:center;justify-content:center;min-height:44px;border:1px solid var(--line);border-radius:2px;background:var(--panel);color:var(--ink);font:600 14px var(--sans);text-decoration:none}
 /* the notice — once per opening, shared with Tactical (sessionStorage 'disc_seen') */
 /* the overlay scrolls, sized by inset:0 and never by vh (on an iPhone with Safari's bars showing, vh is taller
    than the screen and the button ended up out of reach under the bottom bar) */
@@ -175,7 +177,7 @@ footer .fbs{display:flex;gap:8px;margin-top:10px}footer .fbs a{flex:1;display:fl
 #dm b{display:block;font:800 17px/1.2 var(--sans);margin-bottom:8px}
 #dm p{font-size:14px;line-height:1.45;color:var(--ink2);margin:0 0 10px}#dm p b,#dm p strong{display:inline;font-size:inherit;color:var(--ink)}
 /* big, full width, centred (an edge button was missed) */
-#dm #dmok{display:block;width:100%;max-width:340px;margin:18px auto 2px;padding:15px 18px;border:2px solid var(--yel);border-radius:6px;background:var(--yel);color:#111;font:800 17px/1.1 var(--sans);letter-spacing:.03em;text-transform:uppercase}
+#dm #dmok{display:block;width:100%;max-width:340px;margin:18px auto 2px;padding:15px 18px;border:2px solid var(--yel);border-radius:2px;background:var(--yel);color:#111;font:800 17px/1.1 var(--sans);letter-spacing:.03em;text-transform:uppercase}
 #pick{position:fixed;left:0;right:0;top:var(--vvt,0px);height:var(--vvh,100%);background:rgba(5,6,9,.94);display:none;flex-direction:column;padding:16px 14px;z-index:9}
 #pick.show{display:flex;animation:lin .22s cubic-bezier(.2,.8,.2,1)}
 @keyframes lin{from{opacity:0;transform:translateY(9px)}}
@@ -477,8 +479,10 @@ function mapLayer(p,kx,loc,iz){
 function paintSlots(){
   // 1.36: each place carries its own official status, as on the Tactical page (its raion, worked out here)
   const st=p=>{ if(!p||!LMR||!STATE) return ''; const PR=raionsOf(p); const uid=(PR&&PR[0]&&PR[0].obl)||p.obl; return uid?placeStatus(uid,PR,ptOf(p)).k:''; };
-  $('slots').innerHTML=SLOT_IDS.map(id=>{const p=SLOTS[id];
-    return `<button data-s="${id}" class="${id===ACTIVE&&p?'on':''}${p?'':' empty'}"><i class="${st(p)}"></i><span>${esc(slotName(id))}</span></button>`;}).join('');
+  const free=SLOT_IDS.find(id=>!SLOTS[id]);
+  $('slots').innerHTML=SLOT_IDS.filter(id=>SLOTS[id]).map(id=>{const p=SLOTS[id];
+    return `<button data-s="${id}" class="${id===ACTIVE?'on':''}"><i class="${st(p)}"></i><span>${esc(slotNames()[id]||(p.dropped?slotName(id):placeName(p)))}</span></button>`;}).join('')
+    +(free?`<button class="add" data-s="${free}" aria-label="${esc(t('sl_add'))}">+</button>`:'');
 }
 
 let ldH=0;
@@ -750,7 +754,7 @@ async function usePlace(){ const p=place(); OBL=null; OBL_GUESS=false; PR=null; 
 // ---- choosing a place ------------------------------------------------------------------------------------
 let PICK=null, PLACES=null;
 async function openPick(slot){ PICK=slot; $('pick').classList.add('show');
-  $('pickh').textContent='📍 '+slotName(slot); $('pickp').textContent=t('lt_noplace_b');
+  $('pickh').textContent=slotName(slot); $('pickp').textContent=t('lt_noplace_b');
   $('pickn').value=String(slotNames()[slot]||''); $('pickn').placeholder=t('sl_n',SLOT_ORDER.indexOf(slot)+1)+' — '+t('sl_name');
   $('pickq').placeholder=t('lt_search'); $('pickq').value=''; $('pickloc').textContent=t('lt_locate');
   if(!PLACES){ try{ PLACES=(await (await fetch('/api/places?oblast=scope')).json()).places
@@ -767,12 +771,12 @@ function lShel(p,k){ if(window.SH) return SH.light($('lsh'),p,k,LANG,placeName(p
 function hsOpen(){ const go=()=>HS.mount({q:$('pickq'),list:$('pickres'),style:'light',obl:()=>(SLOTS[PICK]||{}).obl,places:()=>PLACES,
   pick:p=>setPlace({name:p.uk,uk:p.uk,lon:p.lon,lat:p.lat,obl:p.obl})});
   if(window.HS) return go(); if(hsOpen.l) return; hsOpen.l=1; const s=document.createElement('script'); s.src='/static/streets.js?v=1'; s.onload=go; s.onerror=()=>{ hsOpen.l=0; }; document.head.appendChild(s); }
-function listPick(q){ const s=q.trim().toLowerCase();
-  const r=(PLACES||[]).filter(x=>!s||x.name.toLowerCase().includes(s)).slice(0,60);
+function listPick(q){ const s=q.trim().toLowerCase();      // 1.58.34: a list once something is typed, not the alphabet
+  const r=s?(PLACES||[]).filter(x=>x.name.toLowerCase().includes(s)).slice(0,60):[];
   $('pickres').innerHTML=r.map((x,i)=>`<button data-i="${PLACES.indexOf(x)}">${esc(x.name)}<small>${esc(OBL_N[x.oblast_uid]?(typeof oblFull==='function'?oblFull(x.oblast_uid):''):'')}</small></button>`).join(''); }
 function setPlace(p){ SLOTS[PICK]=p; ACTIVE=PICK; save(); $('pick').classList.remove('show'); usePlace(); }
 $('pickq').addEventListener('input',e=>listPick(e.target.value));
-$('pickn').addEventListener('input',e=>{ setSlotName(PICK,e.target.value); $('pickh').textContent='📍 '+slotName(PICK); paintSlots(); });
+$('pickn').addEventListener('input',e=>{ setSlotName(PICK,e.target.value); $('pickh').textContent=slotName(PICK); paintSlots(); });
 // 1.54.9: the picker fills the part of the screen the keyboard leaves
 (()=>{ const vv=window.visualViewport; if(!vv) return; const f=()=>{ const r=document.documentElement.style; r.setProperty('--vvh',vv.height+'px'); r.setProperty('--vvt',vv.offsetTop+'px'); };
   vv.addEventListener('resize',f); vv.addEventListener('scroll',f); f(); })();
@@ -784,14 +788,9 @@ $('pickloc').onclick=()=>{ if(!navigator.geolocation){ $('pickloc').textContent=
     ()=>{ $('pickloc').textContent=t('lt_locate_fail'); },{enableHighAccuracy:false,timeout:12000,maximumAge:300000}); };
 $('pickx').onclick=()=>$('pick').classList.remove('show');
 
-// tap a place to watch it; tap an empty one — or hold any — to set it
-(()=>{ let hold=null, held=false;
-  $('slots').addEventListener('pointerdown',e=>{const b=e.target.closest('[data-s]'); if(!b) return; held=false;
-    hold=setTimeout(()=>{held=true; openPick(b.dataset.s);},550);});
-  const stop=()=>{clearTimeout(hold);hold=null;};
-  $('slots').addEventListener('pointerup',e=>{stop(); const b=e.target.closest('[data-s]'); if(!b||held) return;
-    const id=b.dataset.s; if(SLOTS[id]){ACTIVE=id; save(); usePlace();} else openPick(id);});
-  $('slots').addEventListener('pointercancel',stop); $('slots').addEventListener('pointerleave',stop); })();
+// tap another pin to watch it; the current one, or "+", opens the sheet (1.58.34: no long press)
+$('slots').addEventListener('click',e=>{ const b=e.target.closest('[data-s]'); if(!b) return; const id=b.dataset.s;
+  if(SLOTS[id]&&id!==ACTIVE){ ACTIVE=id; save(); usePlace(); } else openPick(id); });
 
 // the notice, once per opening of the app (the Tactical page reads the same flag)
 (()=>{ let seen=false; try{ seen=sessionStorage.getItem('disc_seen')==='1'; sessionStorage.setItem('disc_seen','1'); }catch(e){}

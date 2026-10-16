@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-15 (1.58.32)
+**Documented version: 1.58** · last updated 2026-10-16 (1.58.33)
 
 The repository is **Dread92/Heimdall-map**. The Fly app keeps its first name, `kyiv-air-watch-gb`: Fly cannot rename
 an app (§15 has the move to a domain of its own).
@@ -2267,12 +2267,65 @@ One place, what concerns it, nothing else. Built to load and be read on 2G (page
   same tiles. Fewer than 50 a view (`MAX_TILES`: one zoom less rather than more); zoom 10–11 for the whole disc, 12–13
   zoomed in.
 
+### 10.2b "Instrument" — the look (1.58.33)
+
+The owner, 16 Oct 2026, asked for a UX audit: "design alternatives so that it looks less like a default AI asset — the
+buttons, the gradients, the pin management in particular" — and approved all of it. The audit's diagnosis: a 10 px
+radius on everything (17 rules), an orange switch with a halo as the loudest object on the screen, every button at one
+weight, tinted translucent fills, emoji as icons, a row of four pins three of them empty, six map pebbles with the
+full-screen one in the alert's yellow. The direction, **Instrument** — a panel of instruments, not a SaaS dashboard —
+keeps the three faces and the official colours and changes the chrome:
+
+- **Tokens.** `--r: 2px` is the one radius (`:root`, kyiv.html); `--line2: #3a414c` the outline of a control. No
+  shadow halo, no gradient but the data's (the heat legend, the ballistic sweep). Light keeps its own `2px`.
+- **Buttons, a hierarchy.** `.b-p` primary: the one yellow of a screen, Condensed capitals — the warning strip's
+  "what to do" (`.tsbtn`), "choose your place" (`.mych.set`, unless the strip's button already has the yellow:
+  `#mycard:has(.tsbtn) .mych.set`), the update bar's "now" (`#updGo`, `#pwaGo`), the pin sheet's save. `.tgl` / `.b-s`
+  secondary: a 1 px `--line2` outline; "on" is a 3 px yellow rule inside (`.tgl.on`, `.mi2.on`, `.lbopts label:has(:checked)`,
+  `.mapctl button.on`). `.b-t` text: close, cancel. `.b-dgr` danger: a red outline, never a flat. The card's "what to do"
+  link (`.mcwhat`) is in ink, Condensed, no longer a blue link.
+- **The switch** (`#top .vsw`, Light `.sw`): two tabs on a hairline, each with its one-line meaning (`sw_light_b`,
+  `sw_tac_b`), the current one in ink; the yellow 2 px line under it is the thumb that slides (`::before`, the 1.40
+  motion kept). No orange, no halo, no chevron. The drawer's tabs, its count badge (ink, not orange) and the layer
+  boxes take the same yellow: one vocabulary for "chosen".
+- **The map's controls** (`.mapctl`): one bar, the buttons separated by a hairline, the active layer by the yellow
+  rule, "centre on my place" an SVG reticle (it was the ◎ character), the full-screen button in ink.
+- **The band** (`.band`): the red and the yellow are the government app's own flats, square, a darker rule on the
+  left; "no alert" is a green rule and a green word on the panel (`.band.N`), never a tinted box; the state in
+  Condensed 800 19 px, the duration in tabular mono. Light's `.status` the same.
+- **The rows** (`.mych`): a list with hairlines, not a card a row; a 3 px rule inside carries the meaning (orange: a
+  target, red: near, blue: a shelter), the glyph in a fixed 36 px column, the distance in Condensed 800 24 px with
+  its unit small in mono.
+- **The pins.** The row (`paintSlots`) shows the pins that exist and a "+" while one of the four is free; the current
+  one is underlined like a tab; a tap on it opens its sheet (`openPinSheet(id, 'edit')`), on another watches it, on
+  "+" starts a new one — the long press that opened the sheet was written nowhere. A pin's label (`pinLabel`): the
+  name its owner gave it, else the town or district; a street or a dropped point stays "Pin N" — the 1.36 rule: no
+  address on the screen for whoever stands behind. The sheet (`#homesheet`) is three steps: **where** (`#hs-where`:
+  "put it on the map" first, "where I am now" — the phone's geolocation, never sent — "find an address", and six
+  places people pick often, `HS_FREQ`), **find** (`#hs-find`: the search, the list only once something is typed —
+  `renderHomeList`, Light's `listPick`), **name** (`#hs-name`: the place with "change", the name filled in with the
+  town, four suggestions, cancel / save; a pin that exists adds "delete" with an inline confirmation, `#homeconf`).
+  Nothing is kept before "save" (`HS_PEND`); "on the map" arms the map and brings the sheet back for the name once
+  the pin is dropped (`PIN_NAME`). On the map (`drawHome`) a pin is a **reticle** in ink — the current one white
+  with its name and the official status of its place as a dot, the others grey — not the orange drop of every map
+  SDK (orange is "approaching" here); a tap on one switches or opens it.
+- **Icons.** The interface's own strings carry no colour emoji any more (📍 🔗 🔥 🚀 🟢 🚨 …): the warning strip and a
+  mark's tip put the weapon's SVG silhouette (`thrIco`) before the words; the monochrome dingbats (✕ ✸ ✓ ⚑ ⚠) stay.
+  The channels' posts keep theirs — they are the channels' words. Notifications keep theirs: they are the phone's.
+- **The Banderol** (the owner: "the icon is really ugly"): drawn again in `glyphs.js` as the S8000 from above — a
+  slim body, straight wings swept a touch, the turbojet block on its back, two tail fins, and a flame like the jet
+  drone's (`.mk.banderol_missiles .jetfx`); `mapshot.GLYPHS` mirrors it for the channel's pictures.
+- The legacy `/desktop` page: flat cards with a coloured rule, no gradient.
+
+The Light page's budget rose by 0.3 KB for the lot (`test_light.py`). Every rule has its Day, Night and Blackout
+version (`body.m-day`, `body.m-night`, `body.lite`).
+
 ### 10.3 The switch
 
-Both pages carry the **LIGHT | TACTICAL** switch (UK: ПРОСТА | ТАКТИЧНА, FR: LÉGÈRE | TACTIQUE): a full-width
-two-segment control on Light, each half captioned; a high-contrast pill in the Tactical header.
+Both pages carry the **LIGHT | TACTICAL** switch (UK: ПРОСТА | ТАКТИЧНА, FR: LÉGÈRE | TACTIQUE): two tabs with a
+one-line meaning each, the yellow line under the current one (1.58.33, §10.2b; until then a two-segment orange pill).
 
-1.40: **a toggle, not a reload.** The orange half is one thumb (`::before`); a tap on the other half (`a[data-sw]`,
+1.40: **a toggle, not a reload.** The yellow line is one thumb (`::before`); a tap on the other half (`a[data-sw]`,
 handled in `static/i18n.js`, `swGo()`) slides it across in 0.2 s, then opens the other page. Three things keep the
 screen from going blank in between:
 
