@@ -2,6 +2,21 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.34 — 2026-10-18
+
+### Changed
+- **The app's own address: heimdall.com.ua** — the owner bought the domain (NIC.UA) and `scripts\set-domain.bat`
+  attached it: Fly's certificate, the DNS records, `CANONICAL_HOST`. The first address, `kyiv-air-watch-gb.fly.dev`,
+  serves the same app — one machine, one database — and shows "Heimdall has moved to heimdall.com.ua" with a button;
+  it is not closed, because an installed app, its push subscription and its pins belong to the address they were
+  made on. The owner: "in the code we can now put the right references".
+  - The README's live links, the manual's cover, `release.bat`'s live check and `diagnose.bat`'s pings use the new
+    address (a `.site` file in the folder overrides it; `diagnose.bat` pings Fly's own address too, so a DNS or
+    certificate trouble is told from a machine trouble).
+  - The channel's posts link to `CANONICAL_HOST` when `PUBLIC_URL` is not set (`chanpost.public_url`): one setting for
+    the banner and the channel, no second restart.
+  - The Android app (a separate project) needs a new build for the new address; nothing else changes for readers.
+
 ## 1.58.33 — 2026-10-16
 
 ### Changed

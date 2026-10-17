@@ -718,12 +718,28 @@ def configured(env=None):
     return bool(env.get("TG_BOT_TOKEN") and env.get("TG_CHANNEL_ID"))
 
 
+# 1.58.34: the app's own address (heimdall.com.ua, 18 Oct 2026). The posts link there; `PUBLIC_URL` still overrides it.
+PUBLIC_URL = "https://heimdall.com.ua"
+
+
+def public_url(env=None):
+    """The address the channel's posts link to: `PUBLIC_URL` if the owner set one, else the app's own address
+    (`CANONICAL_HOST`, set by scripts/set-domain.bat — one setting for the move banner and the channel), else the
+    default above."""
+    env = os.environ if env is None else env
+    u = (env.get("PUBLIC_URL") or "").strip().rstrip("/")
+    if u:
+        return u
+    h = (env.get("CANONICAL_HOST") or "").strip().lower().strip("/")
+    return f"https://{h}" if h else PUBLIC_URL
+
+
 def start(state, log=print, ssl_ctx=None, env=None, sat=None):
     """Called by app/server.py's main(): the channel runs only when the owner has set both secrets."""
     env = os.environ if env is None else env
     if not configured(env):
         return None
-    url = env.get("PUBLIC_URL") or "https://kyiv-air-watch-gb.fly.dev"
+    url = public_url(env)
     p = ChannelPoster(state, env["TG_BOT_TOKEN"], env["TG_CHANNEL_ID"], url, log=log, ssl_ctx=ssl_ctx, sat=sat)
     p.start()
     return p

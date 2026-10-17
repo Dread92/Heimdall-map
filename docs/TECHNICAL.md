@@ -1,9 +1,9 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-16 (1.58.33)
+**Documented version: 1.58** · last updated 2026-10-18 (1.58.34)
 
-The repository is **Dread92/Heimdall-map**. The Fly app keeps its first name, `kyiv-air-watch-gb`: Fly cannot rename
-an app (§15 has the move to a domain of its own).
+The repository is **Dread92/Heimdall-map**. The app's address is **https://heimdall.com.ua** (1.58.34, 18 October
+2026); the Fly app keeps its first name, `kyiv-air-watch-gb`, and its first address keeps working (§15 has the move).
 
 This is the complete technical reference: what runs, where the data comes from, how a Telegram post becomes a
 mark on a map, how an official alert becomes a colour, what is stored, what is sent, and how to change any of
@@ -353,11 +353,11 @@ Environment variables win over `config.json`. On Fly they are set as **secrets**
 | `TRANSLATOR` | `google` (default) allows the free Google endpoint as last resort; anything else disables it. |
 | `TG_API_ID` | Telegram API app id (my.telegram.org). |
 | `TG_API_HASH` | Telegram API app hash. |
-| `CANONICAL_HOST` | The app's own address (e.g. `heimdall.com.ua`). Pages opened elsewhere show the move banner (§9). Set by `scripts/set-domain.bat`. |
+| `CANONICAL_HOST` | The app's own address (`heimdall.com.ua` since 1.58.34). Pages opened elsewhere show the move banner (§9); the channel's posts link there (§9c). Set by `scripts/set-domain.bat`. |
 | `TG_SESSION` | The signed-in Telegram session (a key to that account). Set only by `scripts/telegram-login.bat`, via `fly secrets import`. |
 | `TG_BOT_TOKEN` | 1.58: the owner's bot (@BotFather) that posts in his private channel (§9c). Set only by `scripts/set-telegram-channel.bat`, via `fly secrets import`; never logged. |
 | `TG_CHANNEL_ID` | 1.58: that channel's id (`-100…`), found by the same script. The channel runs only when both are set. |
-| `PUBLIC_URL` | 1.58: the address the channel's posts link to (`/m`). Default `https://kyiv-air-watch-gb.fly.dev`. |
+| `PUBLIC_URL` | 1.58: the address the channel's posts link to (`/m`). 1.58.34: unset, it is `https://` + `CANONICAL_HOST`, else `https://heimdall.com.ua` (`chanpost.public_url`). |
 
 Secrets live only in `config.json` (git-ignored) or in Fly secrets. They are never committed, never printed
 by the scripts, and `.dockerignore` keeps `config.json` out of the image.
@@ -1715,6 +1715,13 @@ type. Nothing about a reader is in it.
   `CARRY` list) travel in the link's `#fragment` (never sent to a server) and are stored there only where the new
   address has nothing of its own (`<script id="carry">`). The watched places do **not** travel: they never leave
   the phone, not even in a link that browser history might keep; the reader sets them again. `scripts/set-domain.bat` attaches the domain (Fly certificates, DNS records) and sets it.
+  **1.58.34 — done**: the address is `heimdall.com.ua` (bought 18 October 2026 at NIC.UA; its name servers; `A` and
+  `AAAA` for `@` and `www` to the app's Fly addresses; Fly's Let's Encrypt certificate; `CANONICAL_HOST` set). One
+  machine, one database, two doors: `kyiv-air-watch-gb.fly.dev` serves the same app and shows the banner — it is
+  not closed, because an installed app, its push subscription and its pins belong to the address they were made
+  on. The README, the manual's cover, `release.bat`'s live check and `diagnose.bat`'s pings use the new address
+  (`.site` overrides it); the channel's link follows `CANONICAL_HOST`. The Android app (§10.8) needs a new build
+  for the new address.
 
 ## 9b. The Kyiv bridges (1.34)
 
@@ -2557,7 +2564,8 @@ shelter the city lists, each labelled with what it is** — the city's own list 
 
 The owner: "an app we can really install on the phone, an APK, without going through the Play Store first — in a
 folder of its own, to keep things clear". It is **`heimdall-android`**, a separate folder (not in this repository): a
-Trusted Web Activity built on Google's `androidbrowserhelper` — the app shows `https://kyiv-air-watch-gb.fly.dev/m` full
+Trusted Web Activity built on Google's `androidbrowserhelper` — the app shows `https://heimdall.com.ua/m` (1.58.34; the
+first build showed `kyiv-air-watch-gb.fly.dev/m`) full
 screen through the phone's Chrome, with its notifications (the library's `DelegationService`; Android 13+ asks the
 reader once), its icon, a splash, and two shortcuts (Light, What to do). **Every release of this web app reaches the
 Android app at once**; a new APK is needed only for its name, icon, address or Android behaviour. Identifier
@@ -2837,8 +2845,8 @@ failing there). `static/i18n.js` must evaluate with no browser globals at all.
 - **The working folder** is `Desktop\Heimdall-map` on the owner's PC (`Desktop\clear-sky-main` until he renames it):
   a Git clone of the repository **Dread92/Heimdall-map**. Patches are committed there.
 - **Shipping a patch**: double-click **`scripts\release.bat`**. It refuses to run if anything is not committed,
-  deploys to Fly.io, pushes to GitHub, and prints the live `/api/version` — the version shown must be the
-  new one. The image is built by Fly's own builder (`--depot=false`); if that deploy fails — its builder machine
+  deploys to Fly.io, pushes to GitHub, and prints the live `/api/version` from `https://heimdall.com.ua` (1.58.34;
+  a `.site` file overrides the address) — the version shown must be the new one. The image is built by Fly's own builder (`--depot=false`); if that deploy fails — its builder machine
   sometimes does not answer ("failed to get status … unable to upgrade to h2c, received 500") — it tries once more
   with Fly's other builder, Depot (1.41.4). GitHub is pushed only after a deploy succeeded.
 - **First deployment, or changing a key**: `deploy-fly.bat` (Windows) — sign-in, app, volume, the dashboard

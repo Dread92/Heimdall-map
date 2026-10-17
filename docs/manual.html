@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Heimdall (Kyiv Air Watch) — the full technical documentation, with a map of the system.">
-<meta name="heimdall-version" content="1.58.33">
-<meta name="heimdall-docs" content="a2fd4e24615492ce">
+<meta name="heimdall-version" content="1.58.34">
+<meta name="heimdall-docs" content="361d6dad75e354bc">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Heimdall Technical Manual</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -237,7 +237,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
 <header class="top">
   <div class="wrap">
     <a class="brand" href="#top"><b>Heimdall</b><span>Technical manual</span></a>
-    <span class="ver">1.58.33</span>
+    <span class="ver">1.58.34</span>
     <nav class="nav" aria-label="Sections">
       <a href="#map">Map</a><a href="#journeys">Journeys</a><a href="#rules">Rules</a><a href="#reference">Reference</a><a href="#safety">Safety</a>
     </nav>
@@ -252,11 +252,11 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
 <main id="top">
   <div class="wrap intro">
     <div>
-      <p class="eyebrow">Kyiv Air Watch · kyiv-air-watch-gb.fly.dev</p>
+      <p class="eyebrow">Heimdall · heimdall.com.ua</p>
       <h1 class="title">How Heimdall works</h1>
       <p class="lead">An unofficial air-threat map for Kyiv and the oblasts around it. One Python process reads the official
       alert data and the channels that track drones and missiles, stores every post before it reads it, rebuilds the map
-      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.33, 16 October 2026:
+      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.34, 18 October 2026:
       the map first, then everything in full.</p>
     </div>
     <dl class="facts">
@@ -646,9 +646,9 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
     <div class="doc" id="doc">
 <section class="part" id="tech" data-label="Reference"><p class="partlabel">Part I · The reference</p>
 <h1 id="heimdall--technical-documentation">Heimdall — technical documentation</h1>
-<p><strong>Documented version: 1.58</strong> · last updated 2026-10-16 (1.58.33)</p>
-<p>The repository is <strong>Dread92/Heimdall-map</strong>. The Fly app keeps its first name, <code>kyiv-air-watch-gb</code>: Fly cannot rename
-an app (§15 has the move to a domain of its own).</p>
+<p><strong>Documented version: 1.58</strong> · last updated 2026-10-18 (1.58.34)</p>
+<p>The repository is <strong>Dread92/Heimdall-map</strong>. The app's address is <strong>https://heimdall.com.ua</strong> (1.58.34, 18 October
+2026); the Fly app keeps its first name, <code>kyiv-air-watch-gb</code>, and its first address keeps working (§15 has the move).</p>
 <p>This is the complete technical reference: what runs, where the data comes from, how a Telegram post becomes a
 mark on a map, how an official alert becomes a colour, what is stored, what is sent, and how to change any of
 it safely. It is <strong>updated with every patch</strong> — see <a href="#18-the-patch-checklist">§18</a>. <code>tests/test_docs.py</code> fails
@@ -1289,7 +1289,7 @@ the committed template.</p>
 </tr>
 <tr>
 <td><code>CANONICAL_HOST</code></td>
-<td>The app's own address (e.g. <code>heimdall.com.ua</code>). Pages opened elsewhere show the move banner (§9). Set by <code>scripts/set-domain.bat</code>.</td>
+<td>The app's own address (<code>heimdall.com.ua</code> since 1.58.34). Pages opened elsewhere show the move banner (§9); the channel's posts link there (§9c). Set by <code>scripts/set-domain.bat</code>.</td>
 </tr>
 <tr>
 <td><code>TG_SESSION</code></td>
@@ -1305,7 +1305,7 @@ the committed template.</p>
 </tr>
 <tr>
 <td><code>PUBLIC_URL</code></td>
-<td>1.58: the address the channel's posts link to (<code>/m</code>). Default <code>https://kyiv-air-watch-gb.fly.dev</code>.</td>
+<td>1.58: the address the channel's posts link to (<code>/m</code>). 1.58.34: unset, it is <code>https://</code> + <code>CANONICAL_HOST</code>, else <code>https://heimdall.com.ua</code> (<code>chanpost.public_url</code>).</td>
 </tr>
 </tbody>
 </table></div>
@@ -2737,7 +2737,14 @@ confirmed click and clears every page. <code>tests/test_nuke_analytics.py</code>
 to …&quot; with a button to the new one; the phone's <strong>settings</strong> (language, display, sound, oblast, layers — the
 <code>CARRY</code> list) travel in the link's <code>#fragment</code> (never sent to a server) and are stored there only where the new
 address has nothing of its own (<code>&lt;script id=&quot;carry&quot;&gt;</code>). The watched places do <strong>not</strong> travel: they never leave
-the phone, not even in a link that browser history might keep; the reader sets them again. <code>scripts/set-domain.bat</code> attaches the domain (Fly certificates, DNS records) and sets it.</li>
+the phone, not even in a link that browser history might keep; the reader sets them again. <code>scripts/set-domain.bat</code> attaches the domain (Fly certificates, DNS records) and sets it.
+<strong>1.58.34 — done</strong>: the address is <code>heimdall.com.ua</code> (bought 18 October 2026 at NIC.UA; its name servers; <code>A</code> and
+<code>AAAA</code> for <code>@</code> and <code>www</code> to the app's Fly addresses; Fly's Let's Encrypt certificate; <code>CANONICAL_HOST</code> set). One
+machine, one database, two doors: <code>kyiv-air-watch-gb.fly.dev</code> serves the same app and shows the banner — it is
+not closed, because an installed app, its push subscription and its pins belong to the address they were made
+on. The README, the manual's cover, <code>release.bat</code>'s live check and <code>diagnose.bat</code>'s pings use the new address
+(<code>.site</code> overrides it); the channel's link follows <code>CANONICAL_HOST</code>. The Android app (§10.8) needs a new build
+for the new address.</li>
 </ul>
 <h2 id="9b-the-kyiv-bridges-134">9b. The Kyiv bridges (1.34)<a class="anc" href="#9b-the-kyiv-bridges-134" aria-label="Link to this section">#</a></h2>
 <p>From 1 October 2026 the Dnipro bridges are the targets — the Southern bridge hit five times in two days, the
@@ -3562,7 +3569,8 @@ there in time: two walls between you and the street, away from windows.&quot; No
 <h3 id="108-the-android-app-1576">10.8 The Android app (1.57.6)<a class="anc" href="#108-the-android-app-1576" aria-label="Link to this section">#</a></h3>
 <p>The owner: &quot;an app we can really install on the phone, an APK, without going through the Play Store first — in a
 folder of its own, to keep things clear&quot;. It is <strong><code>heimdall-android</code></strong>, a separate folder (not in this repository): a
-Trusted Web Activity built on Google's <code>androidbrowserhelper</code> — the app shows <code>https://kyiv-air-watch-gb.fly.dev/m</code> full
+Trusted Web Activity built on Google's <code>androidbrowserhelper</code> — the app shows <code>https://heimdall.com.ua/m</code> (1.58.34; the
+first build showed <code>kyiv-air-watch-gb.fly.dev/m</code>) full
 screen through the phone's Chrome, with its notifications (the library's <code>DelegationService</code>; Android 13+ asks the
 reader once), its icon, a splash, and two shortcuts (Light, What to do). <strong>Every release of this web app reaches the
 Android app at once</strong>; a new APK is needed only for its name, icon, address or Android behaviour. Identifier
@@ -4136,8 +4144,8 @@ failing there). <code>static/i18n.js</code> must evaluate with no browser global
 <li><strong>The working folder</strong> is <code>Desktop\Heimdall-map</code> on the owner's PC (<code>Desktop\clear-sky-main</code> until he renames it):
 a Git clone of the repository <strong>Dread92/Heimdall-map</strong>. Patches are committed there.</li>
 <li><strong>Shipping a patch</strong>: double-click <strong><code>scripts\release.bat</code></strong>. It refuses to run if anything is not committed,
-deploys to Fly.io, pushes to GitHub, and prints the live <code>/api/version</code> — the version shown must be the
-new one. The image is built by Fly's own builder (<code>--depot=false</code>); if that deploy fails — its builder machine
+deploys to Fly.io, pushes to GitHub, and prints the live <code>/api/version</code> from <code>https://heimdall.com.ua</code> (1.58.34;
+a <code>.site</code> file overrides the address) — the version shown must be the new one. The image is built by Fly's own builder (<code>--depot=false</code>); if that deploy fails — its builder machine
 sometimes does not answer (&quot;failed to get status … unable to upgrade to h2c, received 500&quot;) — it tries once more
 with Fly's other builder, Depot (1.41.4). GitHub is pushed only after a deploy succeeded.</li>
 <li><strong>First deployment, or changing a key</strong>: <code>deploy-fly.bat</code> (Windows) — sign-in, app, volume, the dashboard
@@ -5163,6 +5171,14 @@ fly ssh console -a kyiv-air-watch-gb -C &quot;ls -la /data&quot;     # the datab
 <h3 id="d-its-own-address-domain">Its own address (domain)<a class="anc" href="#d-its-own-address-domain" aria-label="Link to this section">#</a></h3>
 <p>Fly cannot rename an app, and a new <code>*.fly.dev</code> name would be one more move for everybody who installed the
 app. Give it a real domain instead (for example <code>heimdall.com.ua</code>, open to anyone, ~700 UAH a year):</p>
+<blockquote>
+<p><strong>Done, 18 October 2026 (1.58.34): <code>heimdall.com.ua</code></strong>, registered at NIC.UA, on NIC.UA's name servers, with
+<code>A</code> and <code>AAAA</code> records for <code>@</code> and <code>www</code> to the app's Fly addresses (<code>fly ips list</code>); Fly's certificate was
+issued within the hour and <code>CANONICAL_HOST</code> is set. Two renewals to keep in mind at NIC.UA: the free name-server
+service (first due mid-January 2027 — &quot;Extend nameservers&quot;; without it the DNS zone, and the site, stop) and the
+domain itself (October 2027; auto-renew is off). <code>www</code> uses <code>A</code> + <code>AAAA</code> rather than the <code>CNAME</code> below: Fly
+recommends either, and NIC.UA's editor cannot change a record's type in place.</p>
+</blockquote>
 <ol>
 <li>Buy the domain at any registrar.</li>
 <li>Double-click <code>scripts\set-domain.bat</code>. It adds the free HTTPS certificates on Fly (<code>fly certs add</code>), shows
@@ -5411,7 +5427,7 @@ d'alerte ne sont pas des préférences de style.</p>
 </section>
     </div>
   </div>
-  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.33, 16 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
+  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.34, 18 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
 </main>
 
 <script>

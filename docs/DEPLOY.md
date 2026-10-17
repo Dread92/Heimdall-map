@@ -101,6 +101,13 @@ fly ssh console -a kyiv-air-watch-gb -C "ls -la /data"     # the database on the
 Fly cannot rename an app, and a new `*.fly.dev` name would be one more move for everybody who installed the
 app. Give it a real domain instead (for example `heimdall.com.ua`, open to anyone, ~700 UAH a year):
 
+> **Done, 18 October 2026 (1.58.34): `heimdall.com.ua`**, registered at NIC.UA, on NIC.UA's name servers, with
+> `A` and `AAAA` records for `@` and `www` to the app's Fly addresses (`fly ips list`); Fly's certificate was
+> issued within the hour and `CANONICAL_HOST` is set. Two renewals to keep in mind at NIC.UA: the free name-server
+> service (first due mid-January 2027 — "Extend nameservers"; without it the DNS zone, and the site, stop) and the
+> domain itself (October 2027; auto-renew is off). `www` uses `A` + `AAAA` rather than the `CNAME` below: Fly
+> recommends either, and NIC.UA's editor cannot change a record's type in place.
+
 1. Buy the domain at any registrar.
 2. Double-click `scripts\set-domain.bat`. It adds the free HTTPS certificates on Fly (`fly certs add`), shows
    the DNS records to create at the registrar (A and AAAA for the domain, CNAME for `www`), and checks the

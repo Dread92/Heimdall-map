@@ -9,6 +9,8 @@ alerts.sqlite*
 config.json
 # .flyapp is the Fly app name chosen on this machine
 .flyapp
+# .site overrides the app's own address (https://heimdall.com.ua) in release.bat and diagnose.bat
+.site
 vapid.json
 .env
 *.pem

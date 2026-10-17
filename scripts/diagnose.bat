@@ -5,6 +5,8 @@ rem (git-ignored, never committed). Nothing secret is written: no key, no token,
 cd /d "%~dp0.."
 set "PATH=%USERPROFILE%\.fly\bin;%PATH%"
 set APP=kyiv-air-watch-gb
+set SITE=https://heimdall.com.ua
+if exist .site set /p SITE=<.site
 if exist .flyapp set /p APP=<.flyapp
 where fly >nul 2>&1 || (echo flyctl not found - run deploy-fly.bat once first. & pause & exit /b 1)
 fly auth whoami >nul 2>&1 || fly auth login
@@ -29,8 +31,13 @@ for /f "tokens=*" %%m in ('fly machine list -a %APP% -q 2^>nul') do (
 >>"%OUT%" echo ===== recent logs =====
 fly logs -a %APP% --no-tail >>"%OUT%" 2>&1
 >>"%OUT%" echo.
->>"%OUT%" echo ===== 20 pings to /api/version (status, seconds) =====
+>>"%OUT%" echo ===== 20 pings to %SITE%/api/version (status, seconds) =====
 for /l %%i in (1,1,20) do (
+  curl -s -o NUL -m 20 -w "%%{http_code} %%{time_total}\n" %SITE%/api/version >>"%OUT%" 2>&1
+  timeout /t 2 /nobreak >nul
+)
+>>"%OUT%" echo ===== 5 pings to https://%APP%.fly.dev/api/version (a difference here is the domain, not the machine) =====
+for /l %%i in (1,1,5) do (
   curl -s -o NUL -m 20 -w "%%{http_code} %%{time_total}\n" https://%APP%.fly.dev/api/version >>"%OUT%" 2>&1
   timeout /t 2 /nobreak >nul
 )

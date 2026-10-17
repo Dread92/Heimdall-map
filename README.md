@@ -8,8 +8,9 @@
 Sumy, Kharkiv, Poltava, Cherkasy, Dnipro, Kirovohrad, Mykolaiv, Kherson, Odesa, Vinnytsia, Zhytomyr, Khmelnytskyi,
 Ternopil, Rivne, Volyn and Lviv.**
 
-**Live:** <https://kyiv-air-watch-gb.fly.dev/m> (Tactical) · <https://kyiv-air-watch-gb.fly.dev/light> (Light) ·
-<https://kyiv-air-watch-gb.fly.dev/guide> (what to do).
+**Live:** <https://heimdall.com.ua/m> (Tactical) · <https://heimdall.com.ua/light> (Light) ·
+<https://heimdall.com.ua/guide> (what to do). The first address, `kyiv-air-watch-gb.fly.dev`, keeps working and
+points the way.
 
 A single Python service (standard library only) reads the official «Повітряна тривога» alert data raion by raion and
 hromada by hromada, and two dozen public Telegram channels — the Air Force, the live trackers of the Kyiv sky, one

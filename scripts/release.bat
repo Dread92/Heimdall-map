@@ -6,6 +6,9 @@ cd /d "%~dp0.."
 set "PATH=%USERPROFILE%\.fly\bin;%PATH%"
 set APP=kyiv-air-watch-gb
 if exist .flyapp set /p APP=<.flyapp
+rem 1.58.34: the app's own address (scripts\set-domain.bat); a .site file overrides it
+set SITE=https://heimdall.com.ua
+if exist .site set /p SITE=<.site
 
 echo.
 echo === Heimdall - release ===
@@ -47,9 +50,9 @@ if errorlevel 1 (echo *** Push failed. Run scripts\github-push.bat, which repair
 rem 4. What is running now
 echo.
 echo === Live version ===
-curl -s https://%APP%.fly.dev/api/version
+curl -s %SITE%/api/version
 echo.
 echo.
-echo  Done: version !VER! is live on https://%APP%.fly.dev and on GitHub.
+echo  Done: version !VER! is live on %SITE% (and https://%APP%.fly.dev) and on GitHub.
 pause
 exit /b 0
