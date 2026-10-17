@@ -18,11 +18,13 @@ import bisect
 import collections
 import gzip
 import hashlib
+import hmac
 import html
 import json
 import math
 import os
 import re
+import secrets
 import selectors
 import socket
 import sqlite3
@@ -4098,6 +4100,129 @@ class State:
     def feed_now(self, limit):
         return self.cached(f"feed:{limit}", 15, lambda: self._feed_obj(limit), ver=self.seq)
 
+    # -- 1.58.36: what readers see of the sources — nothing ------------------------------------------------------------
+    # The owner: "the sources, we are not going to show them." Until then every mark, post and outcome named the channel
+    # it came from (`channel`, `oc`, `ch`), every id began with it (`kpszsu/123#0`), the state listed the channels read
+    # and their health. Now a channel reaches a reader only as an opaque token — a keyed hash, the key made once and
+    # kept in `kv` (`pub_salt`), so that a token is the same after a restart and cannot be matched against a list of
+    # likely names — and the health of the channels is one line, "channels: 27 of 31 read". The dashboard, the private
+    # channel and everything inside the service keep the real names: the rewriting happens at the edge, on a copy
+    # (`public()`), for the answers readers get and the live line.
+    PUB_CH_KEYS = ("channel", "oc", "ch")
+    PUB_ID_KEYS = ("id", "post_id", "superseded_by", "marker", "marker_id")
+    _CH_ID = re.compile(r"^([A-Za-z][A-Za-z0-9_]{3,31})/(\d.*)$")
+    _TOKEN = re.compile(r"^c[0-9a-f]{8}$")
+
+    def _pub_key(self):
+        k = getattr(self, "_pub_secret", None)
+        if k is None:
+            try:
+                k = self.store.kv_get("pub_salt")
+                if not k:
+                    k = secrets.token_hex(16)
+                    self.store.kv_set("pub_salt", k)
+            except Exception:
+                k = secrets.token_hex(16)
+            self._pub_secret = k
+            self._pub_map = {}
+        return k
+
+    def pub_ch(self, channel):
+        """A channel's public token: 'c' + 8 hex characters, stable for this deployment."""
+        tok = "c" + hmac.new(self._pub_key().encode(), str(channel).encode("utf-8"), hashlib.sha256).hexdigest()[:8]
+        self._pub_map[tok] = str(channel)
+        return tok
+
+    def real_ch(self, token):
+        """The channel behind a token this deployment made — None for a token it does not know."""
+        self._pub_key()
+        if token in self._pub_map:
+            return self._pub_map[token]
+        try:                                   # the map empties at a restart: fill it from the channels there are
+            with self.store.lock:
+                rows = self.store.conn.execute("SELECT DISTINCT channel FROM feed").fetchall()
+            for (ch,) in rows:
+                if ch:
+                    self.pub_ch(ch)
+            for ch in (self.cfg.get("telegram_channels") or []):
+                self.pub_ch(ch)
+        except Exception:
+            pass
+        return self._pub_map.get(token)
+
+    def pub_id(self, s):
+        m = self._CH_ID.match(s) if isinstance(s, str) else None
+        return f"{self.pub_ch(m.group(1))}/{m.group(2)}" if m else s
+
+    def real_id(self, s):
+        """An id a reader sends back (a flag): the token at its front replaced by the channel, when it is one of ours."""
+        if not isinstance(s, str) or "/" not in s:
+            return s
+        head, rest = s.split("/", 1)
+        ch = self.real_ch(head) if self._TOKEN.match(head) else None
+        return f"{ch}/{rest}" if ch else s
+
+    def public(self, obj):
+        """A copy of `obj` with every channel name replaced by its token: the keys that name a channel, the ids that
+        begin with one, the `sources` of a state folded into one line for the channels, and the `config.channels`
+        list dropped."""
+        if isinstance(obj, list):
+            return [self.public(x) for x in obj]
+        if not isinstance(obj, dict):
+            return obj
+        out = {}
+        for k, v in obj.items():
+            if k in self.PUB_CH_KEYS and isinstance(v, str) and v:
+                out[k] = self.pub_ch(v)
+            elif k in self.PUB_ID_KEYS:
+                out[k] = [self.pub_id(x) for x in v] if isinstance(v, list) else self.pub_id(v)
+            elif k == "sources" and isinstance(v, dict) and any(str(sk).startswith(("tg:", "tga:")) for sk in v):
+                keep = {sk: self.public(sv) for sk, sv in v.items() if not str(sk).startswith(("tg:", "tga:"))}
+                tg = [sv for sk, sv in v.items() if str(sk).startswith(("tg:", "tga:"))]
+                n_ok = sum(1 for sv in tg if isinstance(sv, dict) and sv.get("ok"))
+                keep["channels"] = {"ok": n_ok > 0, "n": len(tg), "n_ok": n_ok}
+                out[k] = keep
+            elif k == "config" and isinstance(v, dict):
+                out[k] = {ck: cv for ck, cv in v.items() if ck != "channels"}
+            else:
+                out[k] = self.public(v)
+        return out
+
+    def _markers_pub_obj(self):
+        real = self.cached("markers", 10, self._markers_obj, ver=self.seq)[3]
+        obj = self.public(real)
+        e = _keyed(obj["markers"], lambda m: str(m.get("id")))
+        self._entries["markers:pub"] = e
+        obj["h"] = e["h"]
+        return obj
+
+    def markers_pub(self):
+        return self.cached("markers:pub", 10, self._markers_pub_obj, ver=self.seq)
+
+    def _state_pub_obj(self):
+        snap = self.public(self.state_now()[3])
+        e = _keyed(snap["active"], _alert_id)
+        e["rest"] = {k: _canon(v) for k, v in snap.items() if k not in ("now", "active", "h")}
+        e["restd"] = {k: {sk: _canon(sv) for sk, sv in v.items()} for k, v in snap.items()
+                      if k not in ("now", "active", "h") and isinstance(v, dict)}
+        e["h"] = _hash(e["h"] + "".join(f"\n{k}\t{e['rest'][k]}" for k in sorted(e["rest"])))
+        e["obj"] = snap
+        self._entries["state:pub"] = e
+        snap["h"] = e["h"]
+        return snap
+
+    def state_pub(self):
+        return self.cached("state:pub", 5, self._state_pub_obj, ver=self.seq)
+
+    def _feed_pub_obj(self, limit):
+        f = self.public(self.feed_now(limit)[3]["feed"])
+        e = _keyed(f, lambda p: p["post_id"])
+        self._entries[f"feed:{limit}:pub"] = e
+        return {"feed": f, "h": e["h"]}
+
+    def feed_pub(self, limit):
+        return self.cached(f"feed:{limit}:pub", 15, lambda: self._feed_pub_obj(limit), ver=self.seq)
+
     # -- the dashboard's analytics (1.32): how the attacks change, week after week ----------------------------------
     # Three records, each for what it can say, never mixed:
     #   - the Air Force's summaries (af_reports): what was launched over Ukraine and shot down, type by type, the
@@ -5307,7 +5432,7 @@ class State:
                "impact_window_h": min(days * 24, 96), "windows": {str(k): v for k, v in windows.items()},
                "imp_windows": {str(k): v for k, v in imp_windows.items()}, "imp_max_h": min(days * 24, 96),
                # the Stats tab shows only these: the Air Force's own summaries, one row per night / day, newest first
-               "af_days": [{"day": r.get("date"), "period": r.get("period"), "post": r.get("post"),
+               "af_days": [{"day": r.get("date"), "period": r.get("period"),                       # 1.58.36: no link to the post
                             "drones": (r.get("launched") or {}).get("drones", 0),
                             "missiles": af_missiles(r.get("launched") or {}),
                             "down": (r.get("down") or {}).get("total", 0),
@@ -5424,7 +5549,7 @@ class State:
         once a minute. At most twelve windows are kept. `gate`: as for `cached` (1.58.17)."""
         name = f"replay:{t0}:{t1}"
         past = t1 < time.time() - 600
-        hit = self.cached(name, 3600 if past else 60, lambda: self.replay(t0, t1), gate=gate)
+        hit = self.cached(name, 3600 if past else 60, lambda: self.public(self.replay(t0, t1)), gate=gate)   # 1.58.36: no channel named
         if hit is not None and name not in self._replay_keys:   # a refused window does not push out a kept one
             self._replay_keys.append(name)
             while len(self._replay_keys) > 12:
@@ -8019,7 +8144,7 @@ class StreamHub(threading.Thread):
         with self.state.cond:
             items, self.q[:] = list(self.q), []
         if items:
-            chunk = b"".join(_sse(ev["kind"], ev) for ev in items)
+            chunk = b"".join(_sse(ev["kind"], self.state.public(ev)) for ev in items)     # 1.58.36: no channel named
             for c in self.clients.values():
                 if c["events"] and c not in new:
                     c["out"] += chunk
@@ -8110,14 +8235,14 @@ class StreamHub(threading.Thread):
 
     def _current(self, part):
         st = self.state
-        if part == "mk":
-            st.markers_now()
-            return st._entries.get("markers")
+        if part == "mk":                           # 1.58.36: the public parts — no channel named
+            st.markers_pub()
+            return st._entries.get("markers:pub")
         if part == "st":
-            st.state_now()
-            return st._entries.get("state")
-        st.feed_now(self.FEED_N)
-        return st._entries.get(f"feed:{self.FEED_N}")
+            st.state_pub()
+            return st._entries.get("state:pub")
+        st.feed_pub(self.FEED_N)
+        return st._entries.get(f"feed:{self.FEED_N}:pub")
 
     def _sync(self, new=()):
         st = self.state
@@ -8384,8 +8509,8 @@ class Handler(BaseHTTPRequestHandler):
 
     def _flag(self, data):
         st = self.state
-        mid = str(data.get("marker") or "")[:120]
-        post_id = mid.split("#")[0] if "#" in mid else (str(data.get("post_id") or "")[:120] or None)
+        mid = st.real_id(str(data.get("marker") or "")[:120])              # 1.58.36: the token at its front → the channel
+        post_id = mid.split("#")[0] if "#" in mid else (st.real_id(str(data.get("post_id") or "")[:120]) or None)
         reason = str(data.get("reason") or "other")[:32]
         if reason not in ("place", "type", "not_a_threat", "already_gone", "other"):
             reason = "other"
@@ -8677,8 +8802,7 @@ class Handler(BaseHTTPRequestHandler):
                     {"name": n.split(" (")[0], "lon": v[0], "lat": v[1], "oblast_uid": v[2]}
                     for n, v in (geo.PLACES.items() if geo else []) if obl is None or v[2] in obl]}, gate=self._gate))
             if u.path == "/api/markers":
-                st.markers_now()
-                return self._send_cached(st._resp["markers"])
+                return self._send_cached(st.markers_pub())      # 1.58.36: no channel named
             if u.path == "/api/bulletin":
                 # 1.54: the AI's bulletins — the last hour, the last 24 hours — behind the dashboard's switch
                 bl = getattr(st, "bulletins", None)
@@ -8690,7 +8814,7 @@ class Handler(BaseHTTPRequestHandler):
                     return self._json({"error": "night=YYYY-MM-DD&n=<number>"}, 400)
                 if not self._allow("build"):
                     return self._limited()
-                return self._json({"night": night, "n": int(n), "points": st.tags.trail(night, int(n))})
+                return self._json(st.public({"night": night, "n": int(n), "points": st.tags.trail(night, int(n))}))
             # The dashboard is yours alone: it needs ACCESS_KEY, and it refuses to serve anything when no key
             # is configured, so an open deployment can never expose it by accident.
             if u.path == "/admin":
@@ -8761,10 +8885,10 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send_gated(st.replay_cached(t0, t1, gate=self._gate))
             if u.path == "/api/impacts":
                 hours = self._int(q, "hours", 24, 1, 168)
-                return self._send_gated(st.cached(f"impacts:{hours}", 30, lambda: {"now": now_iso(), "hours": hours, "impacts": st.impacts(hours)},
+                return self._send_gated(st.cached(f"impacts:{hours}", 30, lambda: st.public({"now": now_iso(), "hours": hours, "impacts": st.impacts(hours)}),
                                                   gate=self._gate))
             if u.path == "/api/state":
-                return self._send_cached(st.state_now())
+                return self._send_cached(st.state_pub())        # 1.58.36: no channel named
             if u.path == "/api/feed":
                 limit = self._int(q, "limit", 80, 1, 200)
                 limit = next(x for x in (25, 80, 120, 150, 200) if x >= limit)   # 1.58.17: the sizes the pages ask
@@ -8774,7 +8898,7 @@ class Handler(BaseHTTPRequestHandler):
                 if tr and lang in ("en", "fr"):
                     tr.want(lang)
                     tr.add([p for p in hit[3]["feed"] if not (p["en_mt"] if lang == "en" else p["text_fr"])], lang)
-                return self._send_cached(hit)
+                return self._send_cached(st.feed_pub(limit))    # 1.58.36: no channel named
             if u.path == "/api/history":
                 # every open page asks for it after an alert starts or ends: one query for all of them (1.29)
                 hours = self._int(q, "hours", 24, 1, 168)
@@ -9258,6 +9382,7 @@ class Handler(BaseHTTPRequestHandler):
                     self.state.cond.wait(timeout=15)
                     items, q[:] = list(q), []
                 for ev in items:
+                    ev = self.state.public(ev)                                                      # 1.58.36
                     self.wfile.write(f"event: {ev['kind']}\ndata: {json.dumps(ev, ensure_ascii=False)}\n\n".encode("utf-8"))
                 if time.time() - last_beat > 20:
                     self.wfile.write(b": ping\n\n")

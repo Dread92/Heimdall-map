@@ -47,7 +47,7 @@ def test_one_computation_for_everybody():
 
 
 def test_the_busy_answers_are_cached():
-    for route, key in (('"/api/markers"', "st.markers_now()"), ('"/api/state"', 'st.state_now()'),
+    for route, key in (('"/api/markers"', "st.markers_pub()"), ('"/api/state"', 'st.state_pub()'),      # 1.58.36: the public copies, cached too
                        ('"/api/feed"', 'st.feed_now(limit)'), ('"/api/stats"', 'st.cached(f"stats:')):
         i = SRC.index(f"if u.path == {route}:")
         assert key in SRC[i:i + 700], route

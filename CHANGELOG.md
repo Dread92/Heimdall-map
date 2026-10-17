@@ -2,6 +2,19 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.36 — 2026-10-18
+
+### Changed
+- **The sources are not shown** — the owner: "the sources, we are not going to show them." A reader no longer sees
+  which channel a mark, a post or an outcome came from: no name in a mark's sheet, the list, the feed, the strip, a
+  toast or a shared text, no "view the post" link, no map of channel names in the page, no channel named in the
+  legend or the Stats tab. The answers readers get (`/api/state`, `/api/markers`, `/api/feed`, `/api/impacts`,
+  `/api/replay`, `/api/trail`, the live line) carry a channel only as an opaque token — a keyed hash, stable for this
+  deployment, that a list of likely names cannot be matched against — and the state says of the channels one thing,
+  "27 of 31 read", instead of naming them. A flag comes back with the token and is stored with the channel. The
+  dashboard, the private channel and everything inside the service keep the real names. The README no longer lists
+  the channels.
+
 ## 1.58.35 — 2026-10-18
 
 ### Security

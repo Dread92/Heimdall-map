@@ -47,7 +47,8 @@ def test_each_summary_is_listed_with_the_post_it_was_read_from():
     server.AFBackfill(st).from_feed()                # 1.32: summaries are kept in af_reports, read from there
     d = st.stats(14)
     days = d["af_days"]
-    assert [x["post"] for x in days] == ["kpszsu/101", "kpszsu/90"]           # newest first, one per day
+    assert [x["day"] for x in days] == sorted({x["day"] for x in days}, reverse=True) and len(days) == 2   # newest first, one per day
+    assert "post" not in days[0]                                              # 1.58.36: no link to the post, no channel named
     assert (days[0]["drones"], days[0]["missiles"], days[0]["down"]) == (87, 4, 71)
     assert d["windows"]["7"]["launched_drones"] == 87 + 64                    # the re-post is not counted twice
 
@@ -59,7 +60,7 @@ def test_the_stats_tab_shows_only_the_air_force_figures():
     for gone in ("imp_windows", "st_expl", "st_downs", "sbars", "impacts_total"):
         assert gone not in body, f"the Stats tab still shows {gone}"
     assert "af_days" in body and "st_af_src" in body
-    assert "https://t.me/" in body                                           # every figure links to its summary
+    assert "https://t.me/" not in body                                       # 1.58.36: the figures, not the post they came from
 
 
 def test_the_live_tally_moved_to_the_alerts_tab():

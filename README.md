@@ -263,11 +263,10 @@ still opened on the old address that Heimdall has moved (with a button that take
 ## Sources
 
 The official «Повітряна тривога» data by raion (api.ukrainealarm.com, or its keyless proxy siren.pp.ua), with
-the ubilling mirror as a stand-in; and twenty-four public Telegram channels by default: @kyiv_airdef, @chyste_nebo,
-@kievinfo_kyiv, @war_monitor, @eRadarrua, the Air Force @kpszsu, and the regional trackers @chernihiv_nebo,
-@monitoringodesa, @chyste_nebocherkasy, @radar_kharkov, @RadarDnepr, @kabusumy, @air_alert_mk, @PoltavaRadar,
-@vinnytsiappo, @zt_radar, @kherson_monitoring, @controlkrop, @radarhmel, @radarofternopil, @rivne_radar, @ppoualviv,
-@lutsk_radar and @vseok450 — and those the dashboard adds (on trial until they are trusted).
+the ubilling mirror as a stand-in; and public Telegram monitoring channels — Kyiv's, the Air Force's and the
+regional trackers' — plus those the dashboard adds (on trial until they are trusted). Which channels, and how
+each one is parsed, is the owner's: readers are not shown them (1.58.36 — a mark, a post or an outcome carries an
+opaque token, never a channel's name), and this file does not list them either.
 Villages and city districts of the regional trackers' oblasts: [GeoNames](https://www.geonames.org/) (CC BY 4.0).
 Rivers and roads outside Kyiv oblast: [Natural Earth](https://www.naturalearthdata.com/) (public domain).
 Satellite imagery: [ESA WorldCover](https://esa-worldcover.org) 2021 Sentinel-2 composite (CC BY 4.0), contains

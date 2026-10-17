@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-18 (1.58.35)
+**Documented version: 1.58** · last updated 2026-10-18 (1.58.36)
 
 The repository is **Dread92/Heimdall-map**. The app's address is **https://heimdall.com.ua** (1.58.34, 18 October
 2026); the Fly app keeps its first name, `kyiv-air-watch-gb`, and its first address keeps working (§15 has the move).
@@ -540,6 +540,24 @@ a day from mid-September and "the longest alert" ran from 24 September to 12 Oct
 ## 7. The Telegram feed and the map marks
 
 ### 7.1 The channels
+
+**1.58.36 — readers are not shown them.** The owner: "the sources, we are not going to show them." Until then a
+mark, a post and an outcome named their channel (`channel`, `oc`, `ch`), every id began with it (`kpszsu/123#0`), the
+state listed the channels read and their health, the pages mapped the names to labels and linked to the post. Now:
+
+- what readers get (`/api/state`, `/api/markers`, `/api/feed`, `/api/impacts`, `/api/replay`, `/api/trail`, the live
+  line's syncs and events) passes through `State.public()`: a channel name becomes a **token** — `c` + 8 hex characters
+  of an HMAC keyed with `kv.pub_salt`, made once for this deployment, so that a token is the same after a restart and
+  cannot be matched against a list of likely names (`pub_ch`); an id keeps its tail (`c1a2b3c4d/123#0`); the state's
+  `sources` fold every `tg:`/`tga:` entry into one, `channels: {ok, n, n_ok}`; `config.channels` is dropped;
+- a flag comes back with the token: `real_id` puts the channel back (the map token → channel is rebuilt from the feed
+  table after a restart) and the flag is stored with the real name, as before;
+- the real objects stay for the service itself (`markers_now`, `state_now`, `feed_now` — the bridges, the proximity
+  push, the private channel) and for the dashboard (`/api/health`, flags, the corpus); the public copies are cached
+  beside them (`markers:pub`, `state:pub`, `feed:N:pub`, with their own `h`);
+- the pages show the time of a report where they showed its channel; the "view the post" link, the map of display
+  names, the channel in a shared text, a toast and the strip, and the channel named in the legend and the Stats tab
+  are gone; the Air Force rows of the Stats tab keep their figures and lose their link.
 
 The defaults are in code (`AUTHORITATIVE_CHANNELS` — deployed configs list 33 channels, and a config
 whitelist would have changed nothing on any machine; `telegram_channels` in a config is still ignored). Since
@@ -2830,7 +2848,7 @@ SQLite in WAL mode (`DB_PATH`; on Fly, the volume). Tables:
 | `alerts` | every alert seen (active and finished) — the normalised shape. One row per region and alert type (key `ua:<region>:<type>`): a region's next alert rewrites the row — since 1.58.4 its start too (before, the start stayed the region's first). **Not a history**: what happened over time is read from `events` (`State.alert_rows`, below) |
 | `events` | start / end / threat / update events — the alert history the replay rebuilds intervals from (§10.3c) |
 | `feed` | posts: `post_id, channel, ts, text, tags, text_en, text_fr, en_mt` |
-| `kv` | small settings: the VAPID key pair, the usage counter's daily salt, the channels (`channels`), the admin's message (`notice`), the nuclear event (`nuke`), the AI's switches (`ai_reader_on`, 1.54 `ai_bulletin_public`), 1.58 the private channel's posts of the last 24 h (`chan_posts`: per target, the message id, when first and last reported, what was drawn — never the token), and similar |
+| `kv` | small settings: the VAPID key pair, the usage counter's daily salt, the channels (`channels`), the key of the channels' public tokens (`pub_salt`, 1.58.36), the admin's message (`notice`), the nuclear event (`nuke`), the AI's switches (`ai_reader_on`, 1.54 `ai_bulletin_public`), 1.58 the private channel's posts of the last 24 h (`chan_posts`: per target, the message id, when first and last reported, what was drawn — never the token), and similar |
 | `push_subs` | push subscriptions (`{endpoint, keys}` only, 1.58.35) with a ~10 km cell, the topics asked for (`bridges`), the language, `last_ok` and the strikes (`fails`) |
 | `marker_log` | every mark as computed, with its evidence; 1.54.8: and what it stated — `alt_m`, `alt_state`, `speed_kmh`, `origin`, `target`, `likely`, `tag` (night#n), `approach` (`MLOG_EXTRA`). Kept for good so far: `Store.prune_log(days)` exists but nothing calls it — the volume's size is the limit |
 | `outcomes` | shoot-downs, impacts, losses |

@@ -615,7 +615,7 @@ function paint(){
       +`<div class="more">${said?`<q>«${esc(said)}»</q>`:''}${LANG!=='uk'&&m.text&&said!==m.text?`<span class="orig">${esc(m.text)}</span>`:''}`
       +(track.length?`<div>${esc(t('lt_track'))}: ${track.join(' → ')} → <b>${esc(pn(m.place||'?'))} ${fmtT(m.ts)}</b></div>`:'')
       +(alt||tr?`<div>${esc(t('lt_alt'))}: ${esc(tr?tr.text:alt)}${tr&&alt?' · '+esc(alt):''} <span>(${esc(t('alt_src'))})</span></div>`:'')
-      +`<div>${esc(t('lt_src2'))}: @${esc(m.channel||'?')} · ${fmtT(m.ts)}</div></div>`
+      +`<div>${fmtT(m.ts)}</div></div>`
       +(open?'':`<div class="tap">${esc(t('lt_tap'))}</div>`)
       +`</div></div>`; };
   // the card of the mark tapped on the map, kept current, closed when the mark is gone

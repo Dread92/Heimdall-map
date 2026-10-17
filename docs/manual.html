@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Heimdall (Kyiv Air Watch) — the full technical documentation, with a map of the system.">
-<meta name="heimdall-version" content="1.58.35">
-<meta name="heimdall-docs" content="7a580a4615128a3d">
+<meta name="heimdall-version" content="1.58.36">
+<meta name="heimdall-docs" content="2883936a258b37fd">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Heimdall Technical Manual</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -237,7 +237,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
 <header class="top">
   <div class="wrap">
     <a class="brand" href="#top"><b>Heimdall</b><span>Technical manual</span></a>
-    <span class="ver">1.58.35</span>
+    <span class="ver">1.58.36</span>
     <nav class="nav" aria-label="Sections">
       <a href="#map">Map</a><a href="#journeys">Journeys</a><a href="#rules">Rules</a><a href="#reference">Reference</a><a href="#safety">Safety</a>
     </nav>
@@ -256,7 +256,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
       <h1 class="title">How Heimdall works</h1>
       <p class="lead">An unofficial air-threat map for Kyiv and the oblasts around it. One Python process reads the official
       alert data and the channels that track drones and missiles, stores every post before it reads it, rebuilds the map
-      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.35, 18 October 2026:
+      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.36, 18 October 2026:
       the map first, then everything in full.</p>
     </div>
     <dl class="facts">
@@ -646,7 +646,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
     <div class="doc" id="doc">
 <section class="part" id="tech" data-label="Reference"><p class="partlabel">Part I · The reference</p>
 <h1 id="heimdall--technical-documentation">Heimdall — technical documentation</h1>
-<p><strong>Documented version: 1.58</strong> · last updated 2026-10-18 (1.58.35)</p>
+<p><strong>Documented version: 1.58</strong> · last updated 2026-10-18 (1.58.36)</p>
 <p>The repository is <strong>Dread92/Heimdall-map</strong>. The app's address is <strong>https://heimdall.com.ua</strong> (1.58.34, 18 October
 2026); the Fly app keeps its first name, <code>kyiv-air-watch-gb</code>, and its first address keeps working (§15 has the move).</p>
 <p>This is the complete technical reference: what runs, where the data comes from, how a Telegram post becomes a
@@ -1509,6 +1509,24 @@ oblast&quot; while any raion of it is under one.</li>
 </ul>
 <h2 id="7-the-telegram-feed-and-the-map-marks">7. The Telegram feed and the map marks<a class="anc" href="#7-the-telegram-feed-and-the-map-marks" aria-label="Link to this section">#</a></h2>
 <h3 id="71-the-channels">7.1 The channels<a class="anc" href="#71-the-channels" aria-label="Link to this section">#</a></h3>
+<p><strong>1.58.36 — readers are not shown them.</strong> The owner: &quot;the sources, we are not going to show them.&quot; Until then a
+mark, a post and an outcome named their channel (<code>channel</code>, <code>oc</code>, <code>ch</code>), every id began with it (<code>kpszsu/123#0</code>), the
+state listed the channels read and their health, the pages mapped the names to labels and linked to the post. Now:</p>
+<ul>
+<li>what readers get (<code>/api/state</code>, <code>/api/markers</code>, <code>/api/feed</code>, <code>/api/impacts</code>, <code>/api/replay</code>, <code>/api/trail</code>, the live
+line's syncs and events) passes through <code>State.public()</code>: a channel name becomes a <strong>token</strong> — <code>c</code> + 8 hex characters
+of an HMAC keyed with <code>kv.pub_salt</code>, made once for this deployment, so that a token is the same after a restart and
+cannot be matched against a list of likely names (<code>pub_ch</code>); an id keeps its tail (<code>c1a2b3c4d/123#0</code>); the state's
+<code>sources</code> fold every <code>tg:</code>/<code>tga:</code> entry into one, <code>channels: {ok, n, n_ok}</code>; <code>config.channels</code> is dropped;</li>
+<li>a flag comes back with the token: <code>real_id</code> puts the channel back (the map token → channel is rebuilt from the feed
+table after a restart) and the flag is stored with the real name, as before;</li>
+<li>the real objects stay for the service itself (<code>markers_now</code>, <code>state_now</code>, <code>feed_now</code> — the bridges, the proximity
+push, the private channel) and for the dashboard (<code>/api/health</code>, flags, the corpus); the public copies are cached
+beside them (<code>markers:pub</code>, <code>state:pub</code>, <code>feed:N:pub</code>, with their own <code>h</code>);</li>
+<li>the pages show the time of a report where they showed its channel; the &quot;view the post&quot; link, the map of display
+names, the channel in a shared text, a toast and the strip, and the channel named in the legend and the Stats tab
+are gone; the Air Force rows of the Stats tab keep their figures and lose their link.</li>
+</ul>
 <p>The defaults are in code (<code>AUTHORITATIVE_CHANNELS</code> — deployed configs list 33 channels, and a config
 whitelist would have changed nothing on any machine; <code>telegram_channels</code> in a config is still ignored). Since
 1.31 the <strong>dashboard</strong> manages the list on top of them (<code>State.channel_list</code>, stored in <code>kv.channels</code>, so it
@@ -4022,7 +4040,7 @@ without the spaces and line ends around them, and every secret read from the env
 </tr>
 <tr>
 <td><code>kv</code></td>
-<td>small settings: the VAPID key pair, the usage counter's daily salt, the channels (<code>channels</code>), the admin's message (<code>notice</code>), the nuclear event (<code>nuke</code>), the AI's switches (<code>ai_reader_on</code>, 1.54 <code>ai_bulletin_public</code>), 1.58 the private channel's posts of the last 24 h (<code>chan_posts</code>: per target, the message id, when first and last reported, what was drawn — never the token), and similar</td>
+<td>small settings: the VAPID key pair, the usage counter's daily salt, the channels (<code>channels</code>), the key of the channels' public tokens (<code>pub_salt</code>, 1.58.36), the admin's message (<code>notice</code>), the nuclear event (<code>nuke</code>), the AI's switches (<code>ai_reader_on</code>, 1.54 <code>ai_bulletin_public</code>), 1.58 the private channel's posts of the last 24 h (<code>chan_posts</code>: per target, the message id, when first and last reported, what was drawn — never the token), and similar</td>
 </tr>
 <tr>
 <td><code>push_subs</code></td>
@@ -5488,7 +5506,7 @@ d'alerte ne sont pas des préférences de style.</p>
 </section>
     </div>
   </div>
-  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.35, 18 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
+  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.36, 18 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
 </main>
 
 <script>

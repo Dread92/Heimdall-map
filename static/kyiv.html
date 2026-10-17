@@ -1426,12 +1426,8 @@ document.querySelectorAll('[data-t-title]').forEach(el=>el.title=t(el.dataset.tT
 document.getElementById('mcun').onclick=()=>{ document.getElementById('disc').hidden=false; };
 // the language: a drop-down (static/i18n.js). In the opening notice, a change shows the notice again in the new language.
 langSelect(document.getElementById('langsel')); langSelect(document.getElementById('dlang'),true);
-const CH=LANG==='uk'?{kyiv_airdef:'ППО Київ',vseok450:'4.5.0',xydessa_live:'Одеса наживо',kpszsu:'Повітряні сили',povitryanatrivogaaa:'Мапа тривог',war_monitor:'монітор',monitor_ukr:'монітор UA',kyivoda:'КОВА',KyivCityOfficial:'КМДА',demo:'демо',
-  UkraineAlarmSignal:'єТривога',cherkasy_alerts:'Черкаси тривоги',cherkasy_monitor:'Черкаси наживо',poltavskaODA:'Полтавська ОВА',zhytomyrskaODA:'Житомирська ОВА',chernihiv_alert:'Чернігів сирена',Zhytomyr_alert:'Житомир сирена',sumy_alert:'Суми сирена',sumy_alerts:'Суми наживо',eRadarrua:'єРадар',kyiv_times_official:'Kyiv Times'}
- :LANG==='fr'?{kyiv_airdef:'DCA Kyiv',vseok450:'4.5.0',xydessa_live:'Odessa direct',kpszsu:'Forces aériennes',povitryanatrivogaaa:'Carte des alertes',war_monitor:'monitor',monitor_ukr:'monitor UA',kyivoda:'Adm. oblast Kyiv',KyivCityOfficial:'Mairie de Kyiv',demo:'démo',
-  UkraineAlarmSignal:'єТривога',cherkasy_alerts:'Alertes Tcherkassy',cherkasy_monitor:'Tcherkassy direct',poltavskaODA:'Adm. Poltava',zhytomyrskaODA:'Adm. Jytomyr',chernihiv_alert:'Sirène Tchernihiv',Zhytomyr_alert:'Sirène Jytomyr',sumy_alert:'Sirène Soumy',sumy_alerts:'Soumy direct',eRadarrua:'єРадар',kyiv_times_official:'Kyiv Times'}
- :{kyiv_airdef:'AirDef live',vseok450:'4.5.0',xydessa_live:'Odesa live',kpszsu:'Air Force',povitryanatrivogaaa:'Alert map',war_monitor:'monitor',monitor_ukr:'monitor UA',kyivoda:'Kyiv Oblast Admin',KyivCityOfficial:'City Admin',demo:'demo',
-  UkraineAlarmSignal:'єТривога',cherkasy_alerts:'Cherkasy alerts',cherkasy_monitor:'Cherkasy live',poltavskaODA:'Poltava Admin',zhytomyrskaODA:'Zhytomyr Admin',chernihiv_alert:'Chernihiv siren',Zhytomyr_alert:'Zhytomyr siren',sumy_alert:'Sumy siren',sumy_alerts:'Sumy live',eRadarrua:'єРадар',kyiv_times_official:'Kyiv Times'};
+// 1.58.36, the owner: "the sources, we are not going to show them" — no channel is named to a reader: not in a mark's sheet, the
+// feed, a shared text, the strip or a toast; the server sends their names as tokens (TECHNICAL §7). The map of display names went with it.
 const RAION=Object.fromEntries(Object.keys(RAION_N).map(r=>[r,raionName(r)]));
 // 1.57.8, the owner (Google's outline of Вишгородський район beside our map): "it's the Vyshhorod district here, not
 // the Vyshhorod city". The raions were named by their centre town alone — "ВИШГОРОД" written in the middle of the raion,
@@ -1965,7 +1961,7 @@ function drawBridges(){ const B=(S&&S.bridges)||{}, g=$('bridgeg'); if(!g||!MAP)
     if(bar.hidden){ bar.hidden=false; } syncTop(); }
   // one that rises — nothing → near → at — is said once: a toast, a tone at the reader's volume, a vibration
   if(BRG_PREV&&BRG_ON){ for(const [id,e] of act){ const p=BRG_PREV[id]||{};
-    if(e.lvl!=='hit'&&BRG_RANK[e.lvl]>(BRG_RANK[p.lvl]||0)){ notify(brgLine(id,e),t('br_toast_b',fmtT(e.ts),e.ch?' · '+(CH[e.ch]||e.ch):''),'bridge',
+    if(e.lvl!=='hit'&&BRG_RANK[e.lvl]>(BRG_RANK[p.lvl]||0)){ notify(brgLine(id,e),t('br_toast_b',fmtT(e.ts),''),'bridge',
       e.lvl==='at'?((e.jet||/missile/.test(e.type||''))?2:1.4):1,e.lvl==='at'?3:2); break; } } }
   BRG_PREV=Object.fromEntries(BRG.map(([id])=>[id,{lvl:(B[id]||{}).lvl}]));   // a copy: the live line updates S in place
 }
@@ -2468,7 +2464,7 @@ function oblEventSheet(uid){
          return N>1?`<div class="kv1" style="margin-bottom:8px">${esc(t('obl_est',N,t(k==='t:jet'?'k_jet':'k_shahed')))}</div>`:''; }).join(''); })()
     +evs.map(m=>`<div class="card plain"><div class="title">${esc(m.status?statusName(m.status):kindOf(m))}${m.count>1?' ×'+m.count:''} · ${fmtT(m.ts)}${!m.status&&(m.evidence||{}).position&&(m.evidence.position.quad||m.evidence.position.rel!=null||m.evidence.position.bank)?' · '+esc(oblWhere(m)):''}</div>`
       +`<div class="q" style="margin-top:4px">${esc(ptxt(m).slice(0,220))}</div>`
-      +`<div class="kv1 muted">${esc(CH[m.channel]||m.channel)}</div></div>`).join('');
+      +`</div>`).join('');
   $('tip').hidden=true; $('sheet').classList.add('show');
 }
 // The uncertainty ring has to keep growing between server updates. A ballistic missile adds half a kilometre
@@ -2865,7 +2861,7 @@ function showTip(m,e){
   // 1.50.2: a mark drawn at the town it is heading for was "spotted near" that town — "2 реактиви у бік Києва з півдня"
   // read as two jets seen over Kyiv. Where it is now was not given, and the card says so.
   const appr=!!cur.approach&&!cur.status&&!cur.endedBy;
-  $('tip').innerHTML=`<b>${title}</b><div class="m">${appr?esc(t('sh_appr',apprTo(cur))):`${cur.status?t('tp_reported'):t('tp_spotted')} ${t('tp_near')} <b style="display:inline">${esc(where)}</b>`} · ${fmtT(cur.ts)} (${t('tp_ago',Math.round(agoMin(cur.ts)))}) · ${esc(CH[cur.channel]||cur.channel)}</div>
+  $('tip').innerHTML=`<b>${title}</b><div class="m">${appr?esc(t('sh_appr',apprTo(cur))):`${cur.status?t('tp_reported'):t('tp_spotted')} ${t('tp_near')} <b style="display:inline">${esc(where)}</b>`} · ${fmtT(cur.ts)} (${t('tp_ago',Math.round(agoMin(cur.ts)))})</div>
     ${cur.status?'':`<div class="m">${t('tp_heading')} ${cur.heading==null?t('tp_nr'):dirName(cur.heading)+' ('+cur.heading+'°)'}${cur.target?' → '+esc(tgtName(cur)):''}${info.inbound?` · <span style="color:#ffb3b5">${t('tp_tokyiv')}</span>`:''}</div>`}
     ${phaseTxt(cur)?`<div class="m">${t('ph_label')}: <b style="display:inline">${esc(phaseTxt(cur))}</b></div>`:''}
     ${cur.endedBy?`<div class="m" style="color:#a8f0cf">${statusName(cur.endedBy.status)} ${t('tp_near')} ${esc(pn(cur.endedBy.place))} ${t('tp_at')} ${fmtT(cur.endedBy.ts)}</div>`:''}
@@ -2904,12 +2900,12 @@ function openSheet(id){
   const kind=m.status?`${statusIco(m.status)} ${statusName(m.status)}`:`${m.type==='drones'&&m.jet?t('k_jet'):m.type==='drones'?t('k_shahed'):m.type==='unknown'?(mslCtx(m)?'⚠ '+t('th_unk_mix'):'🛸 '+t('th_unk_dr')):th[1]}`;
   const ev=m.evidence||{}; const cor=corroboration(m); const closer=m.endedBy; const closed=m.closes?MK.find(o=>o.id===m.closes):null;
   const overall=ev.position?.confidence==='high'&&(m.status||ev.heading?.confidence==='high'||ev.heading?.confidence==='medium')?'high':ev.position?.confidence==='high'?'medium':'low';
-  const src=`${esc(CH[m.channel]||'@'+m.channel)} · ${fmtT(m.ts)} (${t('tp_ago',Math.round(agoMin(m.ts)))})`;
+  const src=`${fmtT(m.ts)} (${t('tp_ago',Math.round(agoMin(m.ts)))})`;
   // one-line situation
   // 1.42.1: "Балістика курсом на Київ" names where it is going, not where it is: the sheet said "Kyiv · 0 km from Kyiv"
   // and "near zone, up to 10 km" — read as "it is over Kyiv". It says "heading for Kyiv — position not given" now.
   const where=appr?`<b>${esc(t('sh_appr',apprTo(m)))}</b>`:[esc(placeEn), m.status?'':(m.heading==null?t('sh_hnr'):`→ ${dirName(m.heading)}${m.target?' '+t('sh_towards')+' '+esc(tgtName(m)):''}`), `${t('sh_fromkyiv',Math.round(info.dist))}${info.inbound&&!m.stale&&!closer?` · <b style="color:#ffb3b5">${t('tp_tokyiv')}</b>`:''}`].filter(Boolean).join(' · ');
-  const state=closer?`<div class="kv1 green">✕ ${statusName(closer.status)} ${t('tp_near')} ${esc(pn(closer.place))} ${t('tp_at')} ${fmtT(closer.ts)} (${esc(CH[closer.channel]||closer.channel)})</div>`
+  const state=closer?`<div class="kv1 green">✕ ${statusName(closer.status)} ${t('tp_near')} ${esc(pn(closer.place))} ${t('tp_at')} ${fmtT(closer.ts)}</div>`
     :m.stale&&!m.status?`<div class="kv1 yellow">${t('sh_stale',m.stale,esc(placeEn),fmtT(m.ts))}</div>`
     :closed?`<div class="kv1 green">${t('sh_closes',closed.type==='drones'?(closed.jet?t('k_jet_l'):t('k_shahed')):THREAT[closed.type]?.[1],esc(pn(closed.place)),fmtT(closed.ts))}</div>`:'';
   const merged=m.cids&&m.cids.length?`<div class="kv1 muted">${t('sh_merged',m.cids.length+1,m.csum)}</div>`:''; const track=m.history&&m.history.length?`<div class="kv1">${t('sh_track',m.history.length+1)}: ${(()=>{ const st=trackSteps([...m.history.map(h=>({pl:h.place,ts:h.ts,alt:h.alt_m})),{pl:m.place,ts:m.ts,alt:m.alt&&m.alt.m!=null?m.alt.m:null}]), cs=st.pop();
@@ -2920,7 +2916,7 @@ function openSheet(id){
   const ALTL={descending:t('alt_desc_l'),climbing:t('alt_climb'),low:t('alt_low'),high:t('alt_high')};
   const altChip=!altF?'':alt&&alt.state==='descending'?` <span class="chip desc">↓ ${esc(t('alt_desc'))}</span>`:alt&&alt.m?` <span class="chip alt">~${alt.m} ${t('m_unit')}</span>`:alt&&alt.state?` <span class="chip">${esc(ALTL[alt.state]||alt.state)}</span>`:'';
   $('sheetbody').innerHTML=`<div class="type">${kind}${m.count?` <span class="chip">×${m.count}</span>`:''}${altChip}${m.status?'':phaseChip(m)}${info.inbound&&!m.stale&&!closer?` <span class="chip red">${t('lb_tokyiv')}</span>`:''}<span class="chip ${CONF[overall][0]}" style="margin-left:auto">${cf(overall)}</span></div>
-    <div class="kv1 muted">${src} · <a href="https://t.me/${esc(m.id.split('#')[0])}" target="_blank" rel="noopener">${t('sh_post')}</a></div>
+    <div class="kv1 muted">${src}</div>
     ${tagLine(m)}
     <div class="kv1">${where}</div>${state}<div class="sec">${merged}${track}<div id="shtrail"></div></div>
     ${(()=>{ if(!HOME||m.status||m.endedBy||appr) return '';
@@ -2944,7 +2940,7 @@ function openSheet(id){
       ${(ev.segment&&ev.segment.trim().length<(m.text||'').trim().length-8)?`<div class="txt" style="margin-top:6px">${esc(ptxt(m))}</div>`:''}
       ${m.status?'':phaseLadder(m)}
       <div class="kv" style="margin-top:6px">${evRow(t('ev_type'),ev.type)}${evRow(t('ev_pos'),ev.position,null,accTxt('pos',ev.position,m))}${m.status?'':evRow(t('ev_hdg'),ev.heading,t('tp_nr'),accTxt('hdg',ev.heading,m))}${evRow(t('ev_count'),ev.count,t('ev_count_fb'))}
-      ${cor.length?`<span>${t('ev_others')}</span><b style="font-weight:500">${cor.map(o=>`${esc(CH[o.channel]||o.channel)} ${fmtT(o.ts)}`).join(', ')} ${t('ev_within')}</b>`:''}</div>
+      ${cor.length?`<span>${t('ev_others')}</span><b style="font-weight:500">${cor.map(o=>fmtT(o.ts)).join(', ')} ${t('ev_within')}</b>`:''}</div>
       <div style="font-size:11px;color:var(--muted);margin-top:6px">${t('sh_note',STALE)}</div>
       ${TAGS_SHOWN&&m.tag?`<div style="font-size:11px;color:var(--muted);margin-top:6px">${esc(t('tg_what'))}</div>`:''}
     </details>
@@ -3308,8 +3304,8 @@ function threatStrip(){
   // Донеччини" raised "ballistic — shelter now" in Vyshenky (the owner); one that names none still concerns everyone
   const ours=u=>mine.has(u)||(u==='14'&&mine.has('31'));
   for(const p of recent){ const tg=p.tags||[]; if(p.home&&!mine.has(p.home)) continue; if(p.obl&&p.obl.length&&!tg.includes('mig31k_departure')&&!p.obl.some(ours)) continue; if(tg.includes('clear')||tg.includes('forecast')||tg.includes('retract')||FORECAST.test(p.text||'')||retracted(p.ts)) continue;
-    if(tg.includes('mig31k_departure')){ if(!cancelledAfter(p.ts,'mig31k_departure')) thr.push({ty:'mig31k_departure',ts:p.ts,src:CH[p.channel]||p.channel,where:''}); }
-    else if(tg.includes('ballistic_missiles')&&(/(?:^|[^а-яіїє])пуск|запуск[а-яіїє]*\s+(?:баліст|іскандер|кинджал|кінжал)|швидкісн[а-яіїє]*\s+ціл|балістик[а-яіїє]*\s+(?:на|по)\s+ки[їєе]в|загроза\s+(?:застосування\s+)?баліст[а-яіїє]*\s+(?:для|по|на)?\s*ки[їєе]в|ballistic.*kyiv|launch/i.test(p.text+' '+(p.text_en||''))||(tg.includes('kyiv')&&tg.includes('official')))){ if(!cancelledAfter(p.ts,'ballistic_missiles')) thr.push({ty:'ballistic_missiles',ts:p.ts,src:CH[p.channel]||p.channel,where:''}); } }
+    if(tg.includes('mig31k_departure')){ if(!cancelledAfter(p.ts,'mig31k_departure')) thr.push({ty:'mig31k_departure',ts:p.ts,src:p.channel,where:''}); }
+    else if(tg.includes('ballistic_missiles')&&(/(?:^|[^а-яіїє])пуск|запуск[а-яіїє]*\s+(?:баліст|іскандер|кинджал|кінжал)|швидкісн[а-яіїє]*\s+ціл|балістик[а-яіїє]*\s+(?:на|по)\s+ки[їєе]в|загроза\s+(?:застосування\s+)?баліст[а-яіїє]*\s+(?:для|по|на)?\s*ки[їєе]в|ballistic.*kyiv|launch/i.test(p.text+' '+(p.text_en||''))||(tg.includes('kyiv')&&tg.includes('official')))){ if(!cancelledAfter(p.ts,'ballistic_missiles')) thr.push({ty:'ballistic_missiles',ts:p.ts,src:p.channel,where:''}); } }
   const el=$('tstrip');
   // Quiet is a state worth showing, not an absence. A blank header answers none of the questions somebody
   // opens this on a calm evening to ask — is anything happening at all, anywhere. So when nothing is
@@ -3349,7 +3345,7 @@ function threatStrip(){
     const lb=(o?{mig31k_departure:t('ts_mig_old'),ballistic_missiles:t('ts_bal_old'),strategic_aircraft_activity:t('ts_strat_old'),cruise_missiles:t('ts_cruise_old')}
                :{mig31k_departure:t('ts_mig'),ballistic_missiles:unoff(x)?t('ts_bal_unoff'):t('ts_bal'),strategic_aircraft_activity:t('ts_strat'),cruise_missiles:t('ts_cruise')})[x.ty];
     const n=x.srcs?x.srcs.size:(x.src?1:0);
-    return `${thrIco(x.ty,'currentColor')}${esc(lb)} <small>· ${fmtT(x.ts)} · ${esc(o?t('ts_unconf',a):t('ts_ago',a))}${x.src?' · '+esc(x.src):''}${n>1?' · '+esc(t('ts_conf',n)):''}</small>`;};
+    return `${thrIco(x.ty,'currentColor')}${esc(lb)} <small>· ${fmtT(x.ts)} · ${esc(o?t('ts_unconf',a):t('ts_ago',a))}${n>1?' · '+esc(t('ts_conf',n)):''}</small>`;};
   // 1.36: a fresh ballistic or MiG-31K warning says what to do, in words, with the guide one tap away
   const now1=!old&&(tt.ty==='ballistic_missiles'||tt.ty==='mig31k_departure');
   el.innerHTML=one(tt)
@@ -3668,7 +3664,7 @@ function myOblasts(){ const o=new Set([MYOBL.uid]); for(const p of Object.values
 function applyAlertMap(am){ for(const [el,c] of am.cls) if(el.getAttribute('class')!==c) el.setAttribute('class',c); }
 function render(){
   if(!S) return; satAvail(S.config); const ob=S.oblasts; threatStrip(); drawBridges();
-  {const all=Object.entries(S.sources),ok=all.filter(([k,v])=>v.ok).length; $('srcs').innerHTML=`<i class="${ok===all.length?'ok':ok?'warn':'bad'}"></i><span class="sn">${ok}/${all.length}</span>`; $('srcs').title=all.map(([k,v])=>`${v.ok?'●':'○'} ${k}`).join('\n');}
+  {const all=Object.entries(S.sources),ok=all.filter(([k,v])=>v.ok).length; $('srcs').innerHTML=`<i class="${ok===all.length?'ok':ok?'warn':'bad'}"></i><span class="sn">${ok}/${all.length}</span>`; $('srcs').title=all.map(([k,v])=>`${v.ok?'●':'○'} ${k}${v.n?` ${v.n_ok}/${v.n}`:''}`).join('\n');}
   const MYU=MYOBL.uid, MYN=MYOBL.name, isK=MYU==='14';
   const k=ob['31'], ko=ob[MYU]||{status:'N',threats:[]};
   const cityAlerts=isK?S.active.filter(a=>a.oblast_uid==='31'):[]; const oblAlerts=S.active.filter(a=>a.oblast_uid===MYU);
@@ -3746,7 +3742,7 @@ function renderFeed(posts,flash){
     return `<div class="meta2"><b>${d} ${esc(t('lt_km'))}</b> ${esc(fromWhere())} · ${esc(m.status?statusName(m.status):kindOf(m))} · ${esc(pn(m.place))}</div>`; };
   $('feed').innerHTML=shown.length?shown.map(p=>{const tags=(p.tags||[]).filter(t=>t==='trial'||t==='af_summary');const isNew=flash&&!seen.has(p.post_id);seen.add(p.post_id);
     const body=esc(ptxt(p)); const long=body.length>110||/\n/.test(ptxt(p));
-    return `<div class="card ${(p.tags||[]).includes('kyiv')?'kyiv':''} ${isNew?'new':''}"><div class="when">${fmtT(p.ts)}<b>${esc(CH[p.channel]||'@'+p.channel)}</b></div><div class="bd">
+    return `<div class="card ${(p.tags||[]).includes('kyiv')?'kyiv':''} ${isNew?'new':''}"><div class="when">${fmtT(p.ts)}</div><div class="bd">
       <div class="txt${long?' clamp':''}">${body}</div>${long?`<button class="mo">${t('fd_more')}</button>`:''}${where(p)}
       ${tags.length||p.merged>1?`<div class="tags">${tags.map(x=>`<span class="${x==='trial'?'trial':''}">${x==='trial'?t('fd_trial'):t('fd_af')}</span>`).join('')}${p.merged>1?`<span class="rep">${t('fd_times',p.merged)}</span>`:''}</div>`:''}</div></div>`;}).join('')
     :`<div class="empty">${t('fd_empty')}</div>`;
@@ -3810,7 +3806,7 @@ function renderStats(){ if(!STATS) return; const el=$('stats'); if(!el) return; 
   const fd=x=>{ try{ return new Date(x+'T12:00:00Z').toLocaleDateString(LOCALE(),{day:'numeric',month:'short',timeZone:'UTC'}); }catch(e){ return x; } };
   const chip=(k,x)=>{ const l=(x.launched||{})[k], dn=(x.down_by||{})[k], u=(x.used||[]).includes(k); if(l==null&&dn==null&&!u) return '';
     return `<span class="afchip">${esc(t('af_t_'+k))} <b>${l!=null?l:'✓'}</b>${dn!=null?` <i>↓${dn}</i>`:''}</span>`; };
-  const list=AF.length?`<div class="aflist">${AF.map(x=>`<div class="afrow"><div class="afh">${esc(fd(x.day))} · ${esc(t(x.period==='day'?'af_day':'af_night'))}${x.post?` · <a href="https://t.me/${esc(x.post)}" target="_blank" rel="noopener">${esc(t('st_af_post'))}</a>`:''}${(x.down_by||{}).total!=null?`<span class="aftot">↓ ${(x.down_by||{}).total}</span>`:''}</div>
+  const list=AF.length?`<div class="aflist">${AF.map(x=>`<div class="afrow"><div class="afh">${esc(fd(x.day))} · ${esc(t(x.period==='day'?'af_day':'af_night'))}${x.post?``:''}${(x.down_by||{}).total!=null?`<span class="aftot">↓ ${(x.down_by||{}).total}</span>`:''}</div>
       <div class="afchips">${TYPES.map(([k])=>chip(k,x)).join('')}${x.impacts!=null?`<span class="afchip">${gIco('impact','#ffb347')}${esc(t('af_hits_n',x.impacts))}</span>`:''}${x.debris!=null?`<span class="afchip">${esc(t('af_debris_s',x.debris))}</span>`:''}</div>
       ${(x.models||[]).length?`<div class="afm">${esc((x.models||[]).join(' · '))}</div>`:''}</div>`).join('')}</div>`:'';
   el.innerHTML=`<div class="card plain">
@@ -3899,7 +3895,6 @@ function markerText(m){
   // 1.54.9, the owner: "when we share a post through the app, the location of our pin must NOT be shared — it can be
   // sensitive". The text said "19 km — Вишеньки": how far the target was from the reader's own pin, and the pin's
   // place. A shared text says what the post said, and nothing about who shares it.
-  L.push(`(${CH[m.channel]||'@'+m.channel})`);
   L.push(t('share_foot'));
   L.push(location.origin+'/m');
   return L.join('\n'); }
@@ -4098,7 +4093,7 @@ function connect(){
     else if(kind==='threat'){const th=d.threat||{};notify(`⚠️ ${THREAT[th.threat_type]?.[1]||th.threat_type} — ${lt}`,th.source_message||'','threat',undefined,IMMEDIATE.has(th.threat_type)?4:2);}};
   ['start','end','threat','update'].forEach(k=>es.addEventListener(k,onA(k)));
   es.addEventListener('eradar',()=>{ if(!LIVE_SYNC) loadState(); });
-  es.addEventListener('feed',ev=>{const d=JSON.parse(ev.data);if(!LIVE_SYNC||LITE)loadFeed(true);if(!LIVE_SYNC)loadMarkers();if(!HOME&&(d.post.tags||[]).includes('kyiv')&&!(d.post.tags||[]).includes('official'))notify(t('n_kyivarea')+' — '+(CH[d.post.channel]||d.post.channel),ptxt(d.post).slice(0,160),'threat');});
+  es.addEventListener('feed',ev=>{const d=JSON.parse(ev.data);if(!LIVE_SYNC||LITE)loadFeed(true);if(!LIVE_SYNC)loadMarkers();if(!HOME&&(d.post.tags||[]).includes('kyiv')&&!(d.post.tags||[]).includes('official'))notify(t('n_kyivarea'),ptxt(d.post).slice(0,160),'threat');});
   es.onerror=()=>{LIVE_SYNC=false;es.close();esT=setTimeout(connect,Math.min(30000,3000*2**Math.min(esFail++,4))*(0.75+Math.random()*0.5));};
 }
 // 1.42: the switch to Light and back can keep this page in the browser's memory (back/forward cache). The live line is

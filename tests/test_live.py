@@ -155,7 +155,7 @@ def test_one_thread_holds_every_page_and_a_new_post_reaches_them_as_a_change():
             kinds = [e for e, _ in evs]
             assert "feed" in kinds, kinds
             fd = [d for e, d in evs if e == "sync" and "fd" in d][0]["fd"]
-            assert fd["pre"][0]["post_id"] == "t/1" and fd["h"] == st.feed_now(150)[3]["h"]
+            assert fd["pre"][0]["post_id"] == "t/1" and fd["h"] == st.feed_pub(150)[3]["h"]     # 1.58.36: the public copy's hash
         # a page that goes away is forgotten
         for s in socks[:30]:
             s.close()
