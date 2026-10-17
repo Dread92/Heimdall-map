@@ -47,7 +47,7 @@ def test_no_place_name_is_ever_put_in_the_push_request():
     body = _fn("pushSync")
     assert "name:" not in body, "a place name is back in the push payload"
     assert "homeRaion()" not in body, "the raion is back in the push payload"
-    assert "Object.assign({},GEO||{})" in body.replace(" ", "")
+    assert "home:cellOf(GEO)" in body.replace(" ", "")      # 1.58.35: and only the ~10 km cell of it
 
 
 def test_the_slots_are_never_read_into_anything_that_leaves_the_page():

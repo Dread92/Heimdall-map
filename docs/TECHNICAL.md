@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-18 (1.58.34)
+**Documented version: 1.58** · last updated 2026-10-18 (1.58.35)
 
 The repository is **Dread92/Heimdall-map**. The app's address is **https://heimdall.com.ua** (1.58.34, 18 October
 2026); the Fly app keeps its first name, `kyiv-air-watch-gb`, and its first address keeps working (§15 has the move).
@@ -340,7 +340,7 @@ Environment variables win over `config.json`. On Fly they are set as **secrets**
 | `ANDROID_PACKAGE` | 1.57.6: the Android app's identifier, default `com.blackflamestudio.heimdall`. |
 | `ADMIN_KEY` | Protects `/admin` and its APIs only. The map stays public. 1.58.21: typed at the sign-in page (§12.2), or sent by a script in an `X-Admin-Key` header — never in an address. |
 | `FLY_APP_NAME` | Set by Fly itself. 1.58.17: without Fly's `Fly-Client-IP` header nobody is limited (the peer would be Fly's proxy); 1.58.24: that header is believed only when this is set (§12.1); 1.58.21: the dashboard's session cookie is `Secure`. |
-| `ACCESS_KEY` | Puts the whole app behind a key. **Never on the public app.** |
+| `ACCESS_KEY` | Puts the whole app behind a key. **Never on the public app.** 1.58.35: a sign-in page and a 180-day session (`hacc`), never the key in the address; `X-Access-Key` for scripts (§11.1). |
 | `ALERTS_IN_UA_TOKEN` | alerts.in.ua token. |
 | `UKRAINEALARM_KEY` | Official ukrainealarm API key. |
 | `DEEPL_KEY` | DeepL key (`…:fx` = free plan → api-free.deepl.com). |
@@ -1660,7 +1660,12 @@ type. Nothing about a reader is in it.
 ## 9. Notifications
 
 - **Web Push** (`push.py`; the VAPID key pair is generated on first run and kept in the `kv` table). A subscription
-  stores the browser's coarse location snapped to a **~10 km cell** (`HOME_CELL_KM`), never a name.
+  stores the browser's coarse location snapped to a **~10 km cell** (`HOME_CELL_KM`), never a name — 1.58.35: the
+  phone snaps it before sending (`cellOf`), the server's rounding is the guard. 1.58.35: a subscription is accepted
+  only when it is a browser's (`push.clean_subscription`: https, one of the push services in `PUSH_HOSTS`, a 65-byte
+  `p256dh`, a 16-byte `auth`, at most 1 KB), and only `{endpoint, keys}` is stored; a send with no answer or a refusal
+  is a strike (`fails`), the third removes the row, a 2xx dates `last_ok`; rows that are not a browser's are removed
+  at start (§11.1).
 - **How it is sent** (1.29): all the phones at once — `push.Sender`, 32 sends in flight, each worker keeping one
   open HTTPS connection per push service, the VAPID signature made once an hour per service. It used to be one
   phone at a time on a new connection (~0.15 s per Android phone, up to ~0.5 s per iPhone): with a thousand
@@ -2635,6 +2640,61 @@ Android app at once**; a new APK is needed only for its name, icon, address or A
 - 1.58.17: the abuse limits (§12.1) hold a client as a salted hash of its address, in memory only, the salt changed
   every day — never stored, never logged; the dashboard sees counts of refusals by kind, nothing about who.
 
+### 11.1 The audit of 18 October 2026 (1.58.35)
+
+The owner: "a cybersecurity audit of the site, the network requests above all". It was done on 1.58.34 — the code
+read, the live service probed with ordinary requests, two findings reproduced on the demo server — and what it found
+was fixed in the same patch. Kept here so the next reader knows what each guard is for:
+
+- **A link could plant HTML in a page.** The `#carry=` importer (§9, the move to a new address) accepted any string
+  for a setting; `myobl` is read back as an oblast, an unknown oblast's name was its uid, and the band wrote it with
+  `innerHTML` — a crafted link, opened once by a phone that had not chosen an oblast, ran its script at every later
+  opening, with the four pins in `localStorage` within reach and no policy to stop a `fetch` to anywhere. Now every
+  carried setting has one shape (`shape()` in the importer: a language code, `0`/`1`, a small integer, an oblast uid,
+  a map of booleans), `myobl` is accepted only as a known uid (`OBL_N`), `oblName()` gives nothing for an unknown one,
+  and the band's names go through `esc()` — the official titles and hromada names included (they come from APIs, but
+  an API can be wrong too).
+- **Every page and every answer carries the headers** (`Handler._sec_headers`): `Content-Security-Policy` on HTML
+  (`default-src 'self'`, inline scripts and styles allowed — the pages are single files —, Google's fonts, the OSM
+  street tiles, and `connect-src 'self'`: a script that got into a page could not send anything anywhere),
+  `Strict-Transport-Security` (over HTTPS), `X-Content-Type-Options: nosniff`, `Referrer-Policy:
+  strict-origin-when-cross-origin`, `Permissions-Policy` (geolocation for this site, nothing else), `X-Frame-Options:
+  DENY`. The dashboard had them since 1.58.21; the map and the API had none.
+- **A push subscription is kept only when it is one** (`push.clean_subscription`, §9): until then any string was an
+  endpoint, every notification waited on it (a 10 s connect timeout each, 32 at a time — a thousand of them would
+  have put five minutes between a ballistic warning and the real phones), rows of up to 64 KB piled up at 5 a second
+  per address, and the same field pointed the server's POST at any host, Fly's private network included. Now:
+  https only, one of the browsers' push services (`PUSH_HOSTS`), keys of the right size, 1 KB at most, only
+  `{endpoint, keys}` stored; the sender refuses anything but https; a send that gets no answer or a refusal is a
+  strike and the third removes the row (`push_outcome`, `fails`), a 2xx dates `last_ok`; a test push goes to a
+  stored endpoint only; `/api/push/key` no longer tells the number of subscribers; rows stored before the check are
+  removed at start (`push_purge_invalid`). The per-address allowance (300, then 5 a second) is kept on purpose: a
+  carrier's NAT subscribes thousands of phones in a raid, and the check, not the allowance, is what stops the abuse.
+- **The whole-app lock (`ACCESS_KEY`) is done like the dashboard's** (§12.2): a sign-in page
+  (`static/access-login.html`, `POST /access/login`), the key compared in constant time, 5 tries then one every two
+  minutes, a session cookie (`hacc`, HttpOnly, Secure, SameSite=Strict, 180 days — a phone in a unit is not asked
+  twice a day, `adminauth.ACCESS_TTL_S`), sessions of their own (`State.access`, kept as `access_sessions` in `kv`),
+  a new key ending the old sessions; scripts send `X-Access-Key`. The key in the address (`?key=`) is refused and
+  the reader told to clear it from the history; the old `uak=` cookie, which held the key itself and was readable by
+  any script, is erased on sight. Pages get the sign-in page (401); the API and the tiles get a JSON 401.
+- **The address a reader is counted and budgeted by is Fly's** (`_peer_ip` → `limits.client_ip`): it read
+  `X-Forwarded-For`, which a client writes itself (Fly keeps the client's value and appends its own) — each value
+  made up was a fresh Esri tile allowance (3 000 an hour; the day's 180 000 gone in minutes, the satellite and
+  street layers dark for everyone), a fresh usage hash and a fresh daily flag allowance.
+- **A slow request no longer holds a thread for ever**: `Handler.timeout = 20` (a body sent a byte a minute was
+  one thread each, for as long as it liked). The live lines are unaffected: the hub makes their socket non-blocking.
+- **A bad parameter is a 400, not a 500 with Python's words**: `Handler._int` (bounds, default) on every integer
+  parameter; the two catch-alls answer "server error" and log the traceback.
+- **The dashboard's pages are served from `/admin` only** (`/static/admin.html` was open to read); `_file` checks
+  the path with `os.path.commonpath`, not a string prefix.
+- **The point sent for push is the ~10 km cell**, snapped on the phone (`cellOf`, the server's grid), not the
+  11-metre fix the server then coarsened: the request itself cannot say where the phone is.
+- **The container runs as its own user** (`docker-entry.sh`: `/data` handed to `heimdall`, then `setpriv`; as root
+  as before if either is missing — a map that is down is worse), and `deploy-fly.bat` gives its keys to `fly secrets
+  import` on stdin, as the `set-*.bat` scripts do, never on a command line.
+- Not changed, on purpose: the pages' inline scripts (`'unsafe-inline'` stays in the policy; the pages are single
+  files by design), the OSM tiles' host (a layer that is off by default), the `build` allowances.
+
 ## 12. HTTP API
 
 All JSON unless stated. Public unless marked 🔒 (`ADMIN_KEY`).
@@ -2666,7 +2726,8 @@ All JSON unless stated. Public unless marked 🔒 (`ADMIN_KEY`).
 | `GET /tiles/esri/{kind}/{z}/{x}/{y}.{jpg\|png}?lang=` | 1.49 (§10.1): `img` (the imagery again), `lbl` (roads and names over it, zoom 9–18), `map` / `mapn` (the street map, light / dark, zoom 4–18) — Esri's Static Basemap Tiles in the reader's language; same key, caps and answers |
 | `GET /api/places?oblast=` | gazetteer (names, coordinates, oblast; 1.46: built once an hour, gzipped): `oblast=14,31,…`, `all`, or (1.43) `scope` — the oblasts the map covers now; (1.45) `villages=scope`: the regional villages of those oblasts (hromada centres and places of 1,000+, `geo.villages`), for the map's villages layer, cached an hour |
 | `GET /api/drone_heat?days=1|7|30` | the heat layer: `points` `[lon, lat, posts, place, oblast]` — where drones and unidentified targets were reported (cached 10 min) |
-| `POST /api/push/subscribe`, `/api/push/unsubscribe`, `/api/push/test`; `GET /api/push/key` | Web Push; subscribe takes `{subscription, home, topics: ["bridges"], lang}` |
+| `POST /api/push/subscribe`, `/api/push/unsubscribe`, `/api/push/test`; `GET /api/push/key` | Web Push; subscribe takes `{subscription, home, topics: ["bridges"], lang}`. 1.58.35: `subscription` must be a browser's (https, a known push service, a 65-byte `p256dh`, a 16-byte `auth` — `push.clean_subscription`), else 400; only `{endpoint, keys}` is stored; `test` goes to a stored endpoint only (404 otherwise); `key` gives `{enabled, key}` and no count |
+| `POST /access/login` | 1.58.35: the whole-app lock's sign-in (`static/access-login.html`): `key=` and `next=` (a path of this site) → 303 there with the `hacc` session cookie; 401 for a wrong key (a second's wait), 429 past 5 tries; 404 when no `ACCESS_KEY` is set |
 | `POST /api/flag` | "this reading is wrong" report |
 | `GET /admin` | 1.58.21: the sign-in page (`static/admin-login.html`) until a session is open, then the dashboard (§12.2); `?key=` in the address is never accepted — the page says so |
 | `POST /admin/login` | 1.58.21: `key=` (form) or `{key}` (JSON) → 303 to `/admin` with the session cookie; 401 for a wrong key (a second's wait), 429 past 5 tries |
@@ -2770,7 +2831,7 @@ SQLite in WAL mode (`DB_PATH`; on Fly, the volume). Tables:
 | `events` | start / end / threat / update events — the alert history the replay rebuilds intervals from (§10.3c) |
 | `feed` | posts: `post_id, channel, ts, text, tags, text_en, text_fr, en_mt` |
 | `kv` | small settings: the VAPID key pair, the usage counter's daily salt, the channels (`channels`), the admin's message (`notice`), the nuclear event (`nuke`), the AI's switches (`ai_reader_on`, 1.54 `ai_bulletin_public`), 1.58 the private channel's posts of the last 24 h (`chan_posts`: per target, the message id, when first and last reported, what was drawn — never the token), and similar |
-| `push_subs` | push subscriptions with a ~10 km cell, the topics asked for (`bridges`) and the language |
+| `push_subs` | push subscriptions (`{endpoint, keys}` only, 1.58.35) with a ~10 km cell, the topics asked for (`bridges`), the language, `last_ok` and the strikes (`fails`) |
 | `marker_log` | every mark as computed, with its evidence; 1.54.8: and what it stated — `alt_m`, `alt_state`, `speed_kmh`, `origin`, `target`, `likely`, `tag` (night#n), `approach` (`MLOG_EXTRA`). Kept for good so far: `Store.prune_log(days)` exists but nothing calls it — the volume's size is the limit |
 | `outcomes` | shoot-downs, impacts, losses |
 | `channel_stats` | per channel per day: posts, posts with a reading, flagged readings |

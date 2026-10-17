@@ -16,6 +16,11 @@ of the site's pages and sent with every request to the public map. Now:
   one (each session keeps a fingerprint of the key it was opened with — never the key).
 
 Scripts and tests may send the key in an `X-Admin-Key` header instead (never in the address).
+
+1.58.35 (the audit): the same sessions serve the whole-app lock, ACCESS_KEY, which until then kept the key itself
+in the address (`?key=`) and in a cookie scripts could read, compared it with `==`, and never limited the tries. A
+private deployment now has a login form too (static/access-login.html, POST /access/login), a session of its own
+(`hacc`, HttpOnly/Secure/Strict, 180 days: a phone in a unit is not asked twice a day) and the same throttle.
 """
 import hashlib
 import hmac
@@ -29,6 +34,9 @@ TTL_S = 12 * 3600          # a session lasts 12 hours at the most
 MAX_SESSIONS = 20
 MAX_EVENTS = 200
 COOKIE = "hsess"
+ACCESS_COOKIE = "hacc"           # 1.58.35: the whole-app lock's session
+ACCESS_TTL_S = 180 * 86400
+ACCESS_MAX_SESSIONS = 2000       # every phone of a closed group
 
 
 def ua_short(ua):
@@ -62,16 +70,18 @@ def same_key(given, key):
 
 
 class AdminSessions:
-    def __init__(self, store=None, clock=time.time):
+    def __init__(self, store=None, clock=time.time, name="admin", ttl=TTL_S, max_sessions=MAX_SESSIONS):
+        """1.58.35: `name` keys the rows in the store (admin / access), so the two locks never share a session."""
         self.store, self.clock = store, clock
+        self.name, self.ttl, self.max_sessions = name, ttl, max_sessions
         self.lock = threading.Lock()
         self.s = {}            # sha256(token) → {at, seen, ua, net}
         self.events = []
         self._saved = 0
         if store is not None:
             try:
-                self.s = json.loads(store.kv_get("admin_sessions") or "{}") or {}
-                self.events = json.loads(store.kv_get("admin_events") or "[]") or []
+                self.s = json.loads(store.kv_get(f"{name}_sessions") or "{}") or {}
+                self.events = json.loads(store.kv_get(f"{name}_events") or "[]") or []
             except (ValueError, TypeError):
                 self.s, self.events = {}, []
         self._expire()
@@ -82,15 +92,15 @@ class AdminSessions:
 
     def _expire(self):
         now = self.clock()
-        for k in [k for k, v in self.s.items() if now - v.get("at", 0) > TTL_S]:
+        for k in [k for k, v in self.s.items() if now - v.get("at", 0) > self.ttl]:
             del self.s[k]
 
     def _save(self):
         if self.store is None:
             return
         try:
-            self.store.kv_set("admin_sessions", json.dumps(self.s))
-            self.store.kv_set("admin_events", json.dumps(self.events[-MAX_EVENTS:]))
+            self.store.kv_set(f"{self.name}_sessions", json.dumps(self.s))
+            self.store.kv_set(f"{self.name}_events", json.dumps(self.events[-MAX_EVENTS:]))
         except Exception:
             pass
 
@@ -98,7 +108,7 @@ class AdminSessions:
         token = secrets.token_urlsafe(32)
         with self.lock:
             self._expire()
-            while len(self.s) >= MAX_SESSIONS:             # the oldest goes
+            while len(self.s) >= self.max_sessions:        # the oldest goes
                 del self.s[min(self.s, key=lambda k: self.s[k]["at"])]
             now = self.clock()
             self.s[self._h(token)] = {"at": now, "seen": now, "ua": ua, "net": net, "kp": kp}
@@ -114,7 +124,7 @@ class AdminSessions:
             if not v:
                 return False
             now = self.clock()
-            if now - v["at"] > TTL_S or (kp is not None and v.get("kp", "") != kp):   # too old, or opened with another key
+            if now - v["at"] > self.ttl or (kp is not None and v.get("kp", "") != kp):   # too old, or opened with another key
                 del self.s[h]
                 self._save()
                 return False
@@ -155,7 +165,7 @@ class AdminSessions:
             day = self.clock() - 86400
             return {"sessions": ss, "events": list(reversed(self.events[-60:])),
                     "fails_24h": sum(1 for e in self.events if e["e"] == "login_fail" and e["t"] >= day),
-                    "ttl_h": TTL_S // 3600}
+                    "ttl_h": self.ttl // 3600}
 
 
 def cookie_value(headers, name=COOKIE):

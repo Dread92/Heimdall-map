@@ -36,7 +36,8 @@ fly secrets list -a %APP% 2>nul
 echo.
 set KEY=
 set /p KEY=Choose a dashboard key (12+ letters/digits, Enter to keep the current one): 
-if not "%KEY%"=="" fly secrets set ADMIN_KEY=%KEY% -a %APP% --stage
+rem 1.58.35: through stdin, never on the command line (a process list or a shell history would show it)
+if not "%KEY%"=="" (echo ADMIN_KEY=%KEY%| fly secrets import -a %APP% --stage)
 if not "%KEY%"=="" set SHOWKEY=%KEY%
 echo.
 echo  Translation key (optional). The free Google translator refuses servers, so without a key the
@@ -45,7 +46,7 @@ echo  clear - free plan: 500,000 characters a month, https://www.deepl.com/pro-a
 echo  translated while somebody is reading that language, so the allowance goes to what is read.
 set DK=
 set /p DK=DeepL API key (Enter to skip or keep the current one): 
-if not "%DK%"=="" fly secrets set DEEPL_KEY=%DK% -a %APP% --stage
+if not "%DK%"=="" (echo DEEPL_KEY=%DK%| fly secrets import -a %APP% --stage)
 echo.
 echo === 5/5 Deploy ===
 fly deploy -a %APP% --ha=false --depot=false

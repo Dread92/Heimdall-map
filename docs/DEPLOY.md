@@ -120,9 +120,10 @@ app. Give it a real domain instead (for example `heimdall.com.ua`, open to anyon
 
 ### Access key
 
-With `ACCESS_KEY` set, every request needs `?key=…` once per device; the key is then remembered in
-the browser. Open `https://<app>.fly.dev/m?key=YOUR_KEY` once on each phone. Without it the
-deployment is public.
+With `ACCESS_KEY` set, every page shows a sign-in form until the key is typed once on that phone
+(1.58.35: `POST /access/login`, a session cookie for 180 days — the key never goes in the address, and
+`?key=` is refused). Scripts send it in an `X-Access-Key` header. Without it the deployment is public.
+`ADMIN_KEY` is a different key, for the dashboard only (§the two keys of the README).
 
 ## GitHub Actions (optional automatic deploy)
 

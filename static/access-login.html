@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="same-origin">
+<title>Heimdall</title>
+<link rel="icon" href="/static/heimdall-64.png">
+<style>
+:root{--bg:#0b0d11;--panel:#141820;--line:#3a414c;--ink:#e8e9ec;--ink2:#9aa5b8;--yel:#ffd200;--bad:#ff5a5f;--r:2px}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:360px;margin:12vh auto 0;padding:0 16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:26px 22px}
+h1{font-size:19px;margin:12px 0 4px}p{margin:0 0 16px;color:var(--ink2);font-size:13.5px}
+label{display:block;font-size:13px;color:var(--ink2);margin-bottom:6px}
+input{width:100%;padding:11px 12px;font-size:16px;border-radius:var(--r);border:1px solid var(--line);background:#0b0d11;color:var(--ink)}
+input:focus{outline:2px solid var(--yel);outline-offset:1px}
+button{width:100%;margin-top:14px;padding:12px;font:800 15px system-ui;letter-spacing:.06em;text-transform:uppercase;border:0;border-radius:var(--r);background:var(--yel);color:#0b0d11;cursor:pointer}
+.msg{margin:0 0 14px;padding:9px 11px;border-radius:var(--r);background:rgba(255,90,95,.12);border:1px solid rgba(255,90,95,.4);color:#ffc9cb;font-size:13.5px}
+.msg:empty{display:none}
+.foot{margin-top:14px;font-size:12px;color:var(--ink2);text-align:center}
+img{width:56px;height:56px;border-radius:var(--r)}
+</style>
+</head>
+<body>
+<main>
+  <form class="card" method="post" action="/access/login" autocomplete="on">
+    <img src="/static/heimdall-192.png" alt="">
+    <h1 data-t="h">Heimdall</h1>
+    <p data-t="p">This copy is private. Type the access key you were given.</p>
+    <div class="msg" role="alert"><!--MSG--></div>
+    <input type="text" name="username" value="heimdall" autocomplete="username" hidden>
+    <input type="hidden" name="next" value="/m"><!--NEXT-->
+    <label for="key" data-t="l">Access key</label>
+    <input id="key" name="key" type="password" autocomplete="current-password" required autofocus>
+    <button type="submit" data-t="b">Open</button>
+    <div class="foot" data-t="f">This phone stays signed in for 180 days. The key never goes in the address.</div>
+  </form>
+</main>
+<script>
+// 1.58.35: the whole-app lock's login page (app/adminauth.py) — Ukrainian, English or French, as the phone
+(function(){
+  var T={uk:{h:'Heimdall',p:'Ця копія приватна. Введіть ключ доступу, який вам дали.',l:'Ключ доступу',b:'Відкрити',
+    f:'Цей телефон залишається у системі 180 днів. Ключ ніколи не йде в адресу.'},
+    fr:{h:'Heimdall',p:'Cette copie est privée. Entrez la clé d’accès qu’on vous a donnée.',l:'Clé d’accès',b:'Ouvrir',
+    f:'Ce téléphone reste connecté 180 jours. La clé ne va jamais dans l’adresse.'}};
+  var L='en'; try{ L=localStorage.getItem('lang')||(navigator.language||'').slice(0,2); }catch(e){}
+  if(T[L]){ document.documentElement.lang=L; document.querySelectorAll('[data-t]').forEach(function(e){ var v=T[L][e.dataset.t]; if(v) e.textContent=v; }); }
+  var m=document.querySelector('.msg'); if(m&&m.dataset[L]) m.textContent=m.dataset[L];
+})();
+</script>
+</body>
+</html>

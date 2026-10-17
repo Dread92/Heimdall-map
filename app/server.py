@@ -622,7 +622,7 @@ class Usage:
                     r["pings"] += tail
                     break
         return {"days": out, "today_devices": live,
-                "push_subs": len(self.store.push_all()),
+                "push_subs": self.store.push_count(),
                 "generated": now_iso()}
 
 
@@ -1242,7 +1242,8 @@ class Store:
         c.execute("CREATE TABLE IF NOT EXISTS kv(k TEXT PRIMARY KEY, v TEXT)")
         c.execute("CREATE TABLE IF NOT EXISTS push_subs(endpoint TEXT PRIMARY KEY, sub TEXT, home TEXT, created TEXT, last_ok TEXT)")
         # 1.34: what a phone asked for besides its own area ("bridges"), and the language to say it in
-        for col in ("topics TEXT", "lang TEXT"):
+        # 1.58.35: `fails` — sends that got no answer or a refusal in a row; three and the row goes
+        for col in ("topics TEXT", "lang TEXT", "fails INTEGER DEFAULT 0"):
             try:
                 c.execute("ALTER TABLE push_subs ADD COLUMN " + col)
             except sqlite3.OperationalError:
@@ -1439,13 +1440,61 @@ class Store:
     PUSH_TOPICS = ("bridges",)
 
     def push_add(self, sub, home, topics=None, lang=None):
+        """1.58.35: `sub` is what push.clean_subscription returned — endpoint and keys, nothing of the client's own."""
         topics = [t for t in (topics or []) if t in self.PUSH_TOPICS]
         lang = lang if lang in ("uk", "en", "fr") else None
         with self.lock:
-            self.conn.execute("INSERT OR REPLACE INTO push_subs(endpoint,sub,home,created,last_ok,topics,lang) VALUES(?,?,?,?,?,?,?)",
+            self.conn.execute("INSERT OR REPLACE INTO push_subs(endpoint,sub,home,created,last_ok,topics,lang,fails) VALUES(?,?,?,?,?,?,?,0)",
                               (sub["endpoint"], json.dumps(sub), json.dumps(coarse_home(home)), now_iso(), now_iso(),
                                ",".join(topics), lang))
             self.conn.commit()
+            self._push_cache = None
+
+    def push_get(self, endpoint):
+        """One subscription, or None — for a test push, instead of a walk through every row."""
+        with self.lock:
+            r = self.conn.execute("SELECT endpoint,sub,home,topics,lang FROM push_subs WHERE endpoint=?", (endpoint,)).fetchone()
+        return self._push_row(r) if r else None
+
+    def push_count(self):
+        with self.lock:
+            return self.conn.execute("SELECT COUNT(*) FROM push_subs").fetchone()[0]
+
+    def push_outcome(self, endpoint, code):
+        """1.58.35: after a send — a 2xx clears the strikes and dates `last_ok`; no answer (0) or a refusal (4xx other than
+        429, 404 and 410 — those two are removed at once) is a strike; the third removes the row. A 5xx or a 429 is the
+        service's trouble, not the phone's: no strike."""
+        strike = code == 0 or (400 <= code < 500 and code not in (404, 410, 429))
+        with self.lock:
+            if 200 <= code < 300:
+                self.conn.execute("UPDATE push_subs SET last_ok=?, fails=0 WHERE endpoint=?", (now_iso(), endpoint))
+            elif strike:
+                self.conn.execute("UPDATE push_subs SET fails=COALESCE(fails,0)+1 WHERE endpoint=?", (endpoint,))
+                self.conn.execute("DELETE FROM push_subs WHERE endpoint=? AND fails>=3", (endpoint,))
+            self.conn.commit()
+            self._push_cache = None
+
+    def push_purge_invalid(self):
+        """1.58.35, once at startup: rows stored before subscriptions were checked — anything that is not a browser's push
+        subscription (push.clean_subscription) goes. Returns how many went."""
+        if _push is None:
+            return 0
+        with self.lock:
+            rows = self.conn.execute("SELECT endpoint,sub FROM push_subs").fetchall()
+        bad = []
+        for ep, raw in rows:
+            try:
+                ok = _push.clean_subscription(json.loads(raw or "{}"))
+            except (ValueError, TypeError):
+                ok = None
+            if not ok or ok["endpoint"] != ep:
+                bad.append(ep)
+        if bad:
+            with self.lock:
+                self.conn.executemany("DELETE FROM push_subs WHERE endpoint=?", [(ep,) for ep in bad])
+                self.conn.commit()
+                self._push_cache = None
+        return len(bad)
 
     def bridge_event(self, bid, e):
         with self.lock:
@@ -1478,12 +1527,24 @@ class Store:
         with self.lock:
             self.conn.execute("DELETE FROM push_subs WHERE endpoint=?", (endpoint,))
             self.conn.commit()
+            self._push_cache = None
+
+    @staticmethod
+    def _push_row(r):
+        return {"endpoint": r[0], "sub": json.loads(r[1]), "home": json.loads(r[2] or "{}"),
+                "topics": [t for t in (r[3] or "").split(",") if t], "lang": r[4] or "uk"}
+
+    _push_cache = None     # 1.58.35: (monotonic, rows) — a raid queues many notifications a minute; one read serves them
 
     def push_all(self):
+        c = self._push_cache
+        if c and time.monotonic() - c[0] < 3:
+            return c[1]
         with self.lock:
             rows = self.conn.execute("SELECT endpoint,sub,home,topics,lang FROM push_subs").fetchall()
-        return [{"endpoint": r[0], "sub": json.loads(r[1]), "home": json.loads(r[2] or "{}"),
-                 "topics": [t for t in (r[3] or "").split(",") if t], "lang": r[4] or "uk"} for r in rows]
+        out = [self._push_row(r) for r in rows]
+        self._push_cache = (time.monotonic(), out)
+        return out
 
     # -- flagged readings ---------------------------------------------------
     # The map is read by people who know the ground far better than any parser does. When one of them sees a
@@ -2946,6 +3007,8 @@ class State:
         self._resp, self._resp_locks, self._stats_res, self._entries = {}, {}, {}, {}
         self.limits = limits.Limits()         # 1.58.17: the public API's abuse limits, in memory only
         self.admin = adminauth.AdminSessions(store)   # 1.58.21: the dashboard's sessions and its security log
+        # 1.58.35: the whole-app lock's sessions (ACCESS_KEY) — a lock of its own, never shared with the dashboard's
+        self.access = adminauth.AdminSessions(store, name="access", ttl=adminauth.ACCESS_TTL_S, max_sessions=adminauth.ACCESS_MAX_SESSIONS)
         try:
             self.notice = json.loads(store.kv_get("notice") or "null")
         except Exception:
@@ -7640,8 +7703,8 @@ class Pusher:
                 while not self.q:
                     self.cond.wait()
                 n = self.q.pop(0)
-            subs = [s_ for s_ in self.store.push_all()
-                    if not (n.get("only") and s_["endpoint"] != n["only"])
+            pool = [self.store.push_get(n["only"])] if n.get("only") else self.store.push_all()   # 1.58.35: one row for one phone
+            subs = [s_ for s_ in pool if s_
                     and not (n.get("raion") and (s_["home"] or {}).get("raion") != n["raion"])
                     and not (n.get("topic") and n["topic"] not in s_.get("topics", []))]
             if not subs:
@@ -7667,6 +7730,8 @@ class Pusher:
                 ok += 200 <= code < 300
                 if gone:
                     self.store.push_remove(s_["endpoint"])
+                else:
+                    self.store.push_outcome(s_["endpoint"], code)     # 1.58.35: strikes, and `last_ok`
             self.last_fanout = {"ts": now_iso(), "phones": len(subs), "ok": ok, "seconds": round(time.time() - t0, 2)}
             if len(subs) >= 20:
                 log(f"push: {ok}/{len(subs)} phones in {time.time() - t0:.1f} s")
@@ -8129,11 +8194,38 @@ class Server(ThreadingHTTPServer):
 # ---------------------------------------------------------------------------
 # HTTP
 # ---------------------------------------------------------------------------
+class BadRequest(ValueError):
+    """1.58.35: a parameter that is not what the route takes — answered 400, never a 500 with the exception's text
+    (a ValueError, so a route that chooses to fall back to its default still can)."""
+
+
 class Handler(BaseHTTPRequestHandler):
     state: State = None  # set at startup
+    # 1.58.35, the audit: a client that sends its request a byte a minute held a thread for ever. A live line
+    # (/api/stream) is adopted by the hub, which makes its socket non-blocking: this does not touch it.
+    timeout = 20
 
     def log_message(self, fmt, *args):  # quiet
         pass
+
+    # 1.58.35, the audit: the headers every answer carries (the dashboard's pages had them since 1.58.21, the map and
+    # the API had none). The policy for a page: this site's own scripts and styles (inline ones included — the pages
+    # are single files), Google's fonts, the street tiles, nothing else — above all `connect-src 'self'`: a script
+    # that got into a page could not send anything anywhere.
+    CSP = ("default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+           "font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://tile.openstreetmap.org; "
+           "media-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; manifest-src 'self'; frame-ancestors 'none'; "
+           "base-uri 'self'; form-action 'self'; object-src 'none'")
+
+    def _sec_headers(self, html=False):
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("Referrer-Policy", "strict-origin-when-cross-origin")
+        self.send_header("Permissions-Policy", "geolocation=(self), camera=(), microphone=(), payment=(), usb=(), interest-cohort=()")
+        if self._https():
+            self.send_header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+        if html:
+            self.send_header("Content-Security-Policy", self.CSP)
+            self.send_header("X-Frame-Options", "DENY")
 
     def _send_cached(self, hit):
         """A cached answer: the same bytes for everybody, gzipped once when the client takes it."""
@@ -8142,6 +8234,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Cache-Control", "no-store")
+        self._sec_headers()
         self.send_header("Vary", "Accept-Encoding")
         if use_gz:
             self.send_header("Content-Encoding", "gzip")
@@ -8157,6 +8250,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Disposition", f'attachment; filename="{name}"')
         self.send_header("Cache-Control", "no-store")
+        self._sec_headers()
         self.send_header("Vary", "Accept-Encoding")
         if gz is not None:
             self.send_header("Content-Encoding", "gzip")
@@ -8170,11 +8264,24 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(code)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Cache-Control", "no-store")
+        self._sec_headers()
         for k, v in extra:
             self.send_header(k, v)
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
+
+    @staticmethod
+    def _int(q, name, default, lo, hi):
+        """1.58.35: an integer parameter within its bounds — a value that is not a number is a 400, not a 500."""
+        raw = (q.get(name) or [None])[0]
+        if raw is None or raw == "":
+            return default
+        try:
+            v = int(raw)
+        except (TypeError, ValueError):
+            raise BadRequest(name)
+        return max(lo, min(v, hi))
 
     # 1.58.17: the abuse limits (app/limits.py) — what costs the server, never what a reader needs
     def _who(self):
@@ -8207,9 +8314,11 @@ class Handler(BaseHTTPRequestHandler):
         return self._limited() if hit is None else self._send_cached(hit)
 
     def _peer_ip(self):
-        # only ever used to make a daily, salted, one-way hash — never stored, never logged
-        fwd = self.headers.get("X-Forwarded-For") or ""
-        return (fwd.split(",")[0].strip() if fwd else (self.client_address[0] if self.client_address else ""))
+        # only ever used to make a daily, salted, one-way hash — never stored, never logged.
+        # 1.58.35, the audit: Fly's own header (limits.client_ip), never X-Forwarded-For — a client writes that one
+        # itself, and each value it made up was a fresh tile budget and a fresh daily hash.
+        peer = self.client_address[0] if self.client_address else ""
+        return limits.client_ip(self.headers, peer) or peer
 
     # A marker somebody says is wrong. The whole point is that this costs one tap while looking at the map:
     # capture that is any harder than noticing simply does not happen during a raid.
@@ -8346,12 +8455,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(code)
         self.send_header("Content-Type", "text/html; charset=utf-8")
         self.send_header("Cache-Control", "no-store")
-        self.send_header("X-Frame-Options", "DENY")
-        self.send_header("Content-Security-Policy", "frame-ancestors 'none'")
-        # same-origin, not no-referrer: with no-referrer a browser sends "Origin: null" with the page's own POSTs, and the
-        # check below could not tell them from another site's; nothing is sent to any other site either way
-        self.send_header("Referrer-Policy", "same-origin")
-        self.send_header("X-Content-Type-Options", "nosniff")
+        self._sec_headers(html=True)          # 1.58.35: the same policy as every page
         self.send_header("X-Robots-Tag", "noindex, nofollow")
         for c in cookies:
             self.send_header("Set-Cookie", c)
@@ -8430,14 +8534,76 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", "0")
         self.end_headers()
 
-    def _authorized(self, u, q):
-        key = self.state.cfg.get("access_key") or os.environ.get("ACCESS_KEY") or ""
+    # -- 1.58.35: the whole-app lock (ACCESS_KEY), on the same sessions as the dashboard ---------------------------------
+    def _access_key(self):
+        return (self.state.cfg.get("access_key") or os.environ.get("ACCESS_KEY") or "").strip()
+
+    def _authorized(self, u=None, q=None):
+        """True when there is no lock, or this phone opened a session at the login page (or a script sent the key in an
+        `X-Access-Key` header). The key in the address (`?key=`, until 1.58.34) is never accepted again, and never kept."""
+        key = self._access_key()
         if not key:
             return True
-        if q.get("key", [None])[0] == key:
-            return "set"
-        cookie = self.headers.get("Cookie") or ""
-        return any(c.strip() == f"uak={key}" for c in cookie.split(";"))
+        if adminauth.same_key(self.headers.get("X-Access-Key"), key):
+            return True
+        ss = getattr(self.state, "access", None)
+        return bool(ss and ss.check(adminauth.cookie_value(self.headers, adminauth.ACCESS_COOKIE), kp=adminauth.key_print(key)))
+
+    @staticmethod
+    def _safe_next(v):
+        """A path of this site to go back to after the login — never another site, never a scheme."""
+        v = (v or "").strip()
+        return v if v.startswith("/") and not v.startswith("//") and "\\" not in v and ":" not in v.split("?")[0] else "/m"
+
+    def _access_page(self, code=401, msg=None, nxt="/m"):
+        """The lock's login page: the pages get it (401); the API gets a JSON 401 instead."""
+        with open(os.path.join(STATIC, "access-login.html"), encoding="utf-8") as f:
+            page = f.read()
+        if msg:
+            en, uk = msg
+            page = page.replace('<div class="msg" role="alert"><!--MSG--></div>',
+                                f'<div class="msg" role="alert" data-uk="{uk}">{en}</div>')
+        page = page.replace('<input type="hidden" name="next" value="/m"><!--NEXT-->',
+                            '<input type="hidden" name="next" value="%s">' % html.escape(self._safe_next(nxt), quote=True))
+        cookies = ("uak=; Path=/; Max-Age=0; SameSite=Lax",) if "uak=" in (self.headers.get("Cookie") or "") else ()
+        return self._html(page.encode("utf-8"), code, cookies=cookies)
+
+    def _access_refused(self, u, q):
+        if u.path.startswith("/api/") or u.path.startswith("/tiles/"):
+            return self._json({"error": "unauthorized"}, 401)
+        if q.get("key"):             # the old way — the key in the address: never accepted, and the reader is told
+            return self._access_page(401, ("The key no longer goes in the address. Type it here — and clear it from "
+                                           "your browser's history.",
+                                           "Ключ більше не йде в адресу. Введіть його тут — і видаліть його з історії браузера."),
+                                     nxt=u.path)
+        return self._access_page(401, nxt=u.path)
+
+    def _access_login(self, raw):
+        key = self._access_key()
+        try:
+            form = parse_qs(raw.decode("utf-8"))
+        except (ValueError, AttributeError):
+            form = {}
+        given, nxt = (form.get("key") or [""])[0], self._safe_next((form.get("next") or ["/m"])[0])
+        if not key:
+            return self._json({"error": "this copy has no access key"}, 404)
+        if not self._allow("login"):
+            return self._access_page(429, ("Too many tries. Wait a few minutes.", "Забагато спроб. Зачекайте кілька хвилин."), nxt)
+        if not adminauth.same_key(str(given or ""), key):
+            time.sleep(1.0)                                 # each wrong key costs a second
+            return self._access_page(401, ("Wrong key.", "Неправильний ключ."), nxt)
+        ip = limits.client_ip(self.headers, self.client_address[0] if self.client_address else "")
+        token = self.state.access.create(adminauth.ua_short(self.headers.get("User-Agent")), adminauth.net_tag(key, ip),
+                                         kp=adminauth.key_print(key))
+        flags = "Path=/; HttpOnly; SameSite=Strict; Max-Age=%d%s" % (adminauth.ACCESS_TTL_S, "; Secure" if self._https() else "")
+        self.send_response(303)
+        self.send_header("Location", nxt)
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Set-Cookie", f"{adminauth.ACCESS_COOKIE}={token}; {flags}")
+        if "uak=" in (self.headers.get("Cookie") or ""):
+            self.send_header("Set-Cookie", "uak=; Path=/; Max-Age=0; SameSite=Lax")
+        self.send_header("Content-Length", "0")
+        self.end_headers()
 
     def do_GET(self):
         t0 = time.monotonic()
@@ -8461,12 +8627,8 @@ class Handler(BaseHTTPRequestHandler):
         if u.path.startswith(("/static/logo", "/static/heimdall-")) or u.path == "/favicon.ico":
             name = u.path.split("/")[-1] if u.path != "/favicon.ico" else "heimdall-64.png"
             return self._file(name, "image/png" if name.endswith(".png") else None)
-        auth = self._authorized(u, q)
-        if not auth:
-            body = b"<!doctype html><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><body style='font-family:system-ui;background:#0b0e13;color:#e6e9ef;padding:40px;text-align:center'><img src='/static/heimdall-192.png' style='width:96px;border-radius:18px'><h2>Heimdall</h2><form><input name=key placeholder='access key' style='padding:10px;font-size:16px;border-radius:8px;border:1px solid #333'> <button style='padding:10px 14px;border-radius:8px'>Enter</button></form></body>"
-            self.send_response(401); self.send_header("Content-Type", "text/html; charset=utf-8"); self.send_header("Content-Length", str(len(body))); self.end_headers(); self.wfile.write(body); return
-        if auth == "set":
-            self.send_response(302); self.send_header("Location", u.path or "/"); self.send_header("Set-Cookie", f"uak={q['key'][0]}; Path=/; Max-Age=31536000; SameSite=Lax"); self.end_headers(); return
+        if not self._authorized(u, q):
+            return self._access_refused(u, q)
         try:
             # 1.40: a page the browser loads ahead (Light ⇄ Tactical, Sec-Purpose: prefetch;prerender) is not a visit
             ahead = "prefetch" in (self.headers.get("Sec-Purpose") or self.headers.get("Purpose") or "").lower()
@@ -8542,12 +8704,12 @@ class Handler(BaseHTTPRequestHandler):
                     return self._json({"error": "sign in at /admin — ADMIN_KEY protects only the dashboard; "
                                                 "ACCESS_KEY would lock the whole map"}, 403)
                 usage = getattr(st, "usage", None)
-                return self._json(usage.report(int(q.get("days", ["30"])[0])) if usage else {"days": []})
+                return self._json(usage.report(self._int(q, "days", 30, 1, 3650)) if usage else {"days": []})
             if u.path == "/api/drone_heat":
                 # the Tactical map's heat layer: where drones were reported, place by place — public, counts per place
                 # from public posts, cached 10 min
                 try:
-                    d = int(q.get("days", ["7"])[0])
+                    d = self._int(q, "days", 7, 1, 3650)
                 except ValueError:
                     d = 7
                 d = d if d in (1, 7, 30) else 7
@@ -8555,7 +8717,7 @@ class Handler(BaseHTTPRequestHandler):
             if u.path == "/api/analytics":
                 if not self._admin_ok(q):
                     return self._json({"error": "unauthorized"}, 401)
-                days = max(7, min(int(q.get("days", ["30"])[0]), 365))
+                days = self._int(q, "days", 30, 7, 365)
                 return self._send_cached(st.cached(f"analytics:{days}", 300, lambda: st.analytics(days)))
             if u.path == "/api/online":
                 # the dashboard's live counter: how many pages have a live line open right now. A number, by page
@@ -8582,13 +8744,13 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json({"v": f"{seq}-{st.store.feed_count()}", "now": now_iso(),
                                    "missile": bool(lvl), "msl": lvl, "build": BUILD, "app": APP_VERSION})
             if u.path == "/api/stats":
-                days = max(1, min(int(q.get("days", ["14"])[0]), 30))
+                days = self._int(q, "days", 14, 1, 30)
                 return self._send_gated(st.cached(f"stats:{days}", 120, lambda: st.stats(days), gate=self._gate))
             if u.path == "/api/replay":
                 # 1.42: a past window for the time bar — at most 26 h, within the last 7 days (whole minutes, so the
                 # pages asking for the same window share one answer)
                 try:
-                    t0, t1 = int(q.get("from", [""])[0]), int(q.get("to", [""])[0])
+                    t0, t1 = self._int(q, "from", 0, 0, 2**40), self._int(q, "to", 0, 0, 2**40)
                 except ValueError:
                     return self._json({"error": "from and to are Unix seconds"}, 400)
                 now = int(time.time())
@@ -8598,13 +8760,13 @@ class Handler(BaseHTTPRequestHandler):
                     return self._json({"error": "a window of at most 26 hours within the last 7 days"}, 400)
                 return self._send_gated(st.replay_cached(t0, t1, gate=self._gate))
             if u.path == "/api/impacts":
-                hours = max(1, min(int(q.get("hours", ["24"])[0]), 168))
+                hours = self._int(q, "hours", 24, 1, 168)
                 return self._send_gated(st.cached(f"impacts:{hours}", 30, lambda: {"now": now_iso(), "hours": hours, "impacts": st.impacts(hours)},
                                                   gate=self._gate))
             if u.path == "/api/state":
                 return self._send_cached(st.state_now())
             if u.path == "/api/feed":
-                limit = max(1, min(int(q.get("limit", ["80"])[0]), 200))
+                limit = self._int(q, "limit", 80, 1, 200)
                 limit = next(x for x in (25, 80, 120, 150, 200) if x >= limit)   # 1.58.17: the sizes the pages ask
                 lang = q.get("lang", [""])[0]
                 hit = st.feed_now(limit)
@@ -8615,14 +8777,17 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send_cached(hit)
             if u.path == "/api/history":
                 # every open page asks for it after an alert starts or ends: one query for all of them (1.29)
-                hours = max(1, min(int(q.get("hours", ["24"])[0]), 168))
+                hours = self._int(q, "hours", 24, 1, 168)
                 obl = ",".join(sorted({x for x in (q.get("oblast", [""])[0] or "").split(",") if x in NAME_BY_UID}))
                 return self._send_gated(st.cached(f"hist:{hours}:{obl}", 20, lambda: {"alerts": st.store.history(hours, obl.split(",") if obl else None)},
                                                   ver=st.seq, gate=self._gate))
             if u.path == "/api/events_log":
                 # 1.58.24: the desktop page asks after every alert event — one copy for every page, rebuilt when an
                 # alert changes (a mass alert refused it once the allowance was spent); the limit rounded up, as the feed's
-                n = int(q.get("limit", ["200"])[0]) if (q.get("limit", ["200"])[0]).isdigit() else 200
+                try:
+                    n = self._int(q, "limit", 200, 1, 500)
+                except ValueError:                  # the desktop page's log: never refused for a bad limit (1.58.24)
+                    n = 200
                 n = next(x for x in (60, 200, 500) if x >= min(max(n, 1), 500))
                 return self._send_gated(st.cached(f"evlog:{n}", 30, lambda: {"events": st.store.events(n)}, ver=st.seq, gate=self._gate))
             # Flagged readings are yours alone, on the same terms as the dashboard: they quote posts and
@@ -8633,13 +8798,13 @@ class Handler(BaseHTTPRequestHandler):
             if u.path == "/api/corpus":
                 if not self._admin_ok(q):
                     return self._json({"error": "set ADMIN_KEY to review the corpus"}, 403)
-                return self._json(self._corpus_pending(int(q.get("limit", ["30"])[0])))
+                return self._json(self._corpus_pending(self._int(q, "limit", 30, 1, 2000)))
             # The written summaries of each night and week — the dashboard's, and yours alone.
             if u.path == "/api/digests":
                 if not self._admin_ok(q):
                     return self._json({"error": "set ADMIN_KEY to read the summaries"}, 403)
                 return self._json({"ai": bool(st.cfg.get("ai_key")), "model": st.cfg.get("ai_model"),
-                                   "digests": st.store.digests(int(q.get("limit", ["30"])[0]))})
+                                   "digests": st.store.digests(self._int(q, "limit", 30, 1, 2000))})
             # 1.53: one night in full — the summary any AI can read (JSON and text), and the AI's report on it
             if u.path == "/api/admin/night":
                 if not self._admin_ok(q):
@@ -8672,7 +8837,7 @@ class Handler(BaseHTTPRequestHandler):
                 if not self._admin_ok(q):
                     return self._json({"error": "set ADMIN_KEY to read the patterns"}, 403)
                 try:
-                    days, res, mn = (int(q.get(k, [d])[0]) for k, d in (("days", "90"), ("res", "1"), ("min", "3")))
+                    days, res, mn = self._int(q, "days", 90, 1, 3650), self._int(q, "res", 1, 1, 60), self._int(q, "min", 3, 1, 1000)
                 except ValueError:
                     return self._json({"error": "days, res and min are numbers"}, 400)
                 kind = q.get("kind", ["drones"])[0]
@@ -8688,7 +8853,7 @@ class Handler(BaseHTTPRequestHandler):
                 if not self._admin_ok(q):
                     return self._json({"error": "set ADMIN_KEY to read the AI reader"}, 403)
                 try:
-                    lim = max(1, min(int(q.get("limit", ["50"])[0]), 300))
+                    lim = self._int(q, "limit", 50, 1, 300)
                 except ValueError:
                     lim = 50
                 ai = getattr(st, "ai", None)
@@ -8707,7 +8872,7 @@ class Handler(BaseHTTPRequestHandler):
             if u.path == "/api/flags":
                 if not self._admin_ok(q):
                     return self._json({"error": "set ADMIN_KEY to read flagged readings"}, 403)
-                return self._json({"flags": st.store.flags(int(q.get("limit", ["200"])[0]),
+                return self._json({"flags": st.store.flags(self._int(q, "limit", 200, 1, 5000),
                                                            include_done=q.get("done", ["0"])[0] == "1")})
             if u.path == "/api/stream":
                 return self._stream()
@@ -8715,7 +8880,7 @@ class Handler(BaseHTTPRequestHandler):
                 return self._file("sw.js", "text/javascript")
             if u.path == "/api/push/key":
                 pu = getattr(st, "pusher", None)
-                return self._json({"enabled": bool(pu and pu.enabled), "key": pu.pub if pu and pu.enabled else None, "subs": len(st.store.push_all()) if pu and pu.enabled else 0})
+                return self._json({"enabled": bool(pu and pu.enabled), "key": pu.pub if pu and pu.enabled else None})   # 1.58.35: no count
             if u.path.startswith("/static/"):
                 return self._file(u.path[len("/static/"):], None)
             if u.path.startswith("/tiles/sat/"):
@@ -8725,24 +8890,31 @@ class Handler(BaseHTTPRequestHandler):
             if u.path == "/favicon.ico":
                 return self._file("heimdall-64.png", "image/png")
             self._json({"error": "not found"}, 404)
-        except (BrokenPipeError, ConnectionResetError):
+        except BadRequest as e:
+            self._json({"error": f"bad parameter: {e}"}, 400)
+        except (BrokenPipeError, ConnectionResetError, socket.timeout, TimeoutError):
             pass
-        except Exception as e:
-            traceback.print_exc()
+        except Exception:
+            traceback.print_exc()                     # the log has it; the client gets no exception text (1.58.35)
             try:
-                self._json({"error": str(e)}, 500)
+                self._json({"error": "server error"}, 500)
             except Exception:
                 pass
 
     def do_POST(self):
         u = urlparse(self.path); q = parse_qs(u.query); st = self.state
-        if not self._authorized(u, q):
+        if u.path != "/access/login" and not self._authorized(u, q):
             return self._json({"error": "unauthorized"}, 401)
         try:
             n = int(self.headers.get("Content-Length") or 0)
             if n < 0 or n > 65536:                         # 1.58.17: no request of the pages is near this (1.58.24: nor below 0 — read to the end)
                 return self._json({"error": "too large"}, 413)
             raw = self.rfile.read(n) if n else b""
+            if u.path == "/access/login":                  # 1.58.35: the whole-app lock's login (a form of this site)
+                org = self.headers.get("Origin")
+                if org and urlparse(org).netloc.lower() != (self.headers.get("Host") or "").lower():
+                    return self._json({"error": "cross-site request refused"}, 403)
+                return self._access_login(raw)
             # 1.58.21: what changes something on the dashboard's side comes from this site's own pages only
             adm = u.path.startswith(("/admin/", "/api/admin/", "/api/digest/", "/api/corpus/"))
             org = self.headers.get("Origin")
@@ -8931,26 +9103,46 @@ class Handler(BaseHTTPRequestHandler):
             if u.path.startswith("/api/push/") and not self._allow("push"):
                 return self._limited()
             if u.path == "/api/push/subscribe":
-                sub = data.get("subscription") or {}
-                if not sub.get("endpoint"):
+                # 1.58.35, the audit: a browser's push subscription or nothing — https, a known push service, keys of the
+                # right size; what is stored is that, never the client's whole object
+                sub = _push.clean_subscription(data.get("subscription")) if _push else None
+                if not sub:
                     return self._json({"error": "bad subscription"}, 400)
                 st.store.push_add(sub, data.get("home") or {}, data.get("topics"), data.get("lang"))
                 return self._json({"ok": True})
+            ep = data.get("endpoint")
+            if not isinstance(ep, str) or not (0 < len(ep) <= _push.ENDPOINT_MAX):
+                return self._json({"error": "bad endpoint"}, 400)
             if u.path == "/api/push/unsubscribe":
-                st.store.push_remove((data.get("endpoint") or ""))
+                st.store.push_remove(ep)
                 return self._json({"ok": True})
             if u.path == "/api/push/test":
-                pu.send_test(data.get("endpoint"))
+                if not st.store.push_get(ep):              # 1.58.35: a test goes to a phone that subscribed, nowhere else
+                    return self._json({"error": "unknown subscription"}, 404)
+                pu.send_test(ep)
                 return self._json({"ok": True})
             self._json({"error": "not found"}, 404)
-        except Exception as e:
+        except BadRequest as e:
+            self._json({"error": f"bad parameter: {e}"}, 400)
+        except (BrokenPipeError, ConnectionResetError, socket.timeout, TimeoutError):
+            pass
+        except Exception:
             traceback.print_exc()
-            self._json({"error": str(e)}, 500)
+            try:
+                self._json({"error": "server error"}, 500)
+            except Exception:
+                pass
 
     def _file(self, name, ctype):
         p = os.path.normpath(os.path.join(STATIC, name))
-        if not p.startswith(STATIC) or not os.path.isfile(p):
+        try:
+            inside = os.path.commonpath([STATIC, p]) == STATIC     # 1.58.35: a real prefix, not a string one
+        except ValueError:
+            inside = False
+        if not inside or not os.path.isfile(p):
             return self._json({"error": "not found"}, 404)
+        if os.path.basename(p) in ("admin.html", "admin-login.html", "access-login.html") and not self._admin_ok():
+            return self._json({"error": "not found"}, 404)          # 1.58.35: the dashboard's pages come from /admin only
         with open(p, "rb") as f:
             body = f.read()
         ext = p.rsplit(".", 1)[-1]
@@ -8972,6 +9164,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header("Content-Type", ctype)
         self.send_header("Cache-Control", "no-cache")
+        self._sec_headers(html=ctype.startswith("text/html"))
         self.send_header("ETag", etag)
         self.send_header("Vary", "Accept-Encoding")
         if enc:
@@ -9083,9 +9276,12 @@ def load_config(args):
         with open(CONFIG_PATH, encoding="utf-8") as f:
             cfg.update(json.load(f))
     else:
-        with open(CONFIG_PATH, "w", encoding="utf-8") as f:
-            json.dump(cfg, f, indent=2, ensure_ascii=False)
-        log("created config.json — add your alerts.in.ua token there")
+        try:
+            with open(CONFIG_PATH, "w", encoding="utf-8") as f:
+                json.dump(cfg, f, indent=2, ensure_ascii=False)
+            log("created config.json — add your alerts.in.ua token there")
+        except OSError:              # 1.58.35: in the container the service no longer owns its folder — the settings come from the environment
+            log("config.json not written (folder not writable) — settings come from the environment")
     if args.demo:
         cfg["demo"] = True
     if args.port:
@@ -9158,6 +9354,12 @@ def main():
             log(f"push: coarsened {n} stored home location(s) to ~{int(HOME_CELL_KM)} km cells")
     except Exception as e:
         log("could not coarsen stored homes:", e)
+    try:
+        n = store.push_purge_invalid()                 # 1.58.35: rows stored before subscriptions were checked
+        if n:
+            log(f"push: removed {n} stored subscription(s) that are not a browser's")
+    except Exception as e:
+        log("could not check stored subscriptions:", e)
     if state.pusher.enabled:
         threading.Thread(target=proximity_watch, args=(state,), daemon=True, name="proximity").start()
     threading.Thread(target=bridge_watch, args=(state,), daemon=True, name="bridges").start()

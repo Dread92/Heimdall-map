@@ -20,7 +20,8 @@ import server  # noqa: E402
 class _H:
     """Just enough of the request handler to exercise the two gates."""
     def __init__(self, cfg=None, cookie="", key=None, header=None):
-        self.state = type("S", (), {"cfg": cfg or {}, "admin": adminauth.AdminSessions()})()
+        self.state = type("S", (), {"cfg": cfg or {}, "admin": adminauth.AdminSessions(),
+                                    "access": adminauth.AdminSessions(name="access", ttl=adminauth.ACCESS_TTL_S)})()
         self.headers = {"Cookie": cookie}
         if header:
             self.headers["X-Admin-Key"] = header
@@ -28,6 +29,7 @@ class _H:
 
     _admin_key = server.Handler._admin_key
     _admin_ok = server.Handler._admin_ok
+    _access_key = server.Handler._access_key
     _authorized = server.Handler._authorized
 
 
@@ -77,10 +79,23 @@ def test_a_new_key_ends_the_sessions_opened_with_the_old_one():
 
 
 def test_access_key_still_locks_the_whole_app_for_a_private_deployment():
+    """1.58.35: the lock is a session from its login page (app/adminauth.py, `hacc`), or the key in an X-Access-Key
+    header for scripts — never the key in the address, never the key itself in a cookie (`uak=`, until 1.58.34)."""
     with mock.patch.dict(os.environ, {"ACCESS_KEY": "priv"}, clear=True):
         assert _H()._authorized(None, {}) is False
-        assert _H()._authorized(None, {"key": ["priv"]}) == "set"
-        assert _H(cookie="uak=priv")._authorized(None, {}) is True
+        assert _H()._authorized(None, {"key": ["priv"]}) is False
+        assert _H(cookie="uak=priv")._authorized(None, {}) is False
+        h = _H(); h.headers["X-Access-Key"] = "priv"
+        assert h._authorized(None, {}) is True
+        h = _H()
+        token = h.state.access.create("Chrome · Android", "abcd1234", kp=adminauth.key_print("priv"))
+        h.headers["Cookie"] = "hacc=" + token
+        assert h._authorized(None, {}) is True
+        h.headers["Cookie"] = "hsess=" + token             # the dashboard's cookie name does not open the app
+        assert h._authorized(None, {}) is False
+    with mock.patch.dict(os.environ, {"ACCESS_KEY": "other"}, clear=True):
+        h.headers["Cookie"] = "hacc=" + token             # a new key ends the sessions of the old one
+        assert h._authorized(None, {}) is False
 
 
 def test_access_key_alone_still_opens_the_dashboard_so_old_deployments_keep_working():
@@ -98,6 +113,10 @@ def test_the_admin_cookie_never_unlocks_the_app():
     """A dashboard session must not become a way past the app-wide gate."""
     with mock.patch.dict(os.environ, {"ACCESS_KEY": "priv"}, clear=True):
         assert _H(cookie="uadm=priv")._authorized(None, {}) is False
+        h = _H()
+        token = h.state.admin.create("Chrome · Windows", "abcd1234", kp=adminauth.key_print("priv"))
+        h.headers["Cookie"] = "hsess=" + token             # a real dashboard session, still not the app's lock
+        assert h._authorized(None, {}) is False
         assert _H(cookie="hsess=whatever")._authorized(None, {}) is False
 
 

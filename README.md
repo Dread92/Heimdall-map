@@ -174,14 +174,18 @@ flag, a flood of push requests, hundreds of live lines from one address — is l
 | `GET /api/stream?sync=mk,st,fd` | The live line (server-sent events): `hello`, then `sync` messages carrying what changed in the marks, the alerts and the feed, plus the events `start`, `end`, `threat`, `update`, `feed`, `eradar`, `tr`. How a page applies them: [docs/TECHNICAL.md §5.4](docs/TECHNICAL.md#54-the-live-line-129). |
 | `GET /api/places?oblast=all` | Gazetteer of places with coordinates. |
 | `GET /healthz` | Liveness. |
-| `POST /api/push/{subscribe,unsubscribe,test}` | Web Push subscriptions. |
+| `POST /api/push/{subscribe,unsubscribe,test}` | Web Push subscriptions (a browser's subscription only: https, a known push service, keys of the right size — else 400). |
+
+A parameter that is not what a route takes is a 400 (`{"error": "bad parameter: days"}`), never a 500. Every answer
+carries the usual headers (1.58.35): a content-security policy on the pages, HSTS, `nosniff`, a referrer policy, a
+permissions policy.
 
 ## The two keys
 
 | | what it protects | who can read the map |
 |---|---|---|
 | `ADMIN_KEY` | `/admin` (usage, online now, the team's message, sources, summaries) and its APIs | **everyone** — this is what a public deployment wants |
-| `ACCESS_KEY` | **the entire app**, behind a login form | only people with the key — a private deployment |
+| `ACCESS_KEY` | **the entire app**, behind a sign-in page (1.58.35: a 180-day session on the phone, the key never in the address) | only people with the key — a private deployment |
 
 On a public instance, setting `ACCESS_KEY` is an outage: every reader gets a password box instead of an
 air-raid map. Use `ADMIN_KEY`.

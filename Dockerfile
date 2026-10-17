@@ -18,10 +18,14 @@ COPY data ./data
 ENV PORT=8080 \
     DB_PATH=/data/alerts.sqlite \
     PYTHONUNBUFFERED=1
-RUN mkdir -p /data
+# 1.58.35 (the audit): the service runs as its own user, not root. The volume is mounted root-owned, so the entry
+# script hands /data to that user first, then drops privileges (docker-entry.sh, at the root: .dockerignore leaves scripts/ out).
+RUN mkdir -p /data && useradd --system --uid 10001 --user-group --shell /usr/sbin/nologin heimdall
+COPY docker-entry.sh ./docker-entry.sh
+RUN chmod 0755 ./docker-entry.sh
 
 EXPOSE 8080
 HEALTHCHECK --interval=60s --timeout=5s --start-period=20s \
   CMD python -c "import urllib.request,os;urllib.request.urlopen('http://127.0.0.1:'+os.environ.get('PORT','8080')+'/api/version',timeout=4)"
 
-CMD ["python", "app/server.py"]
+CMD ["./docker-entry.sh"]

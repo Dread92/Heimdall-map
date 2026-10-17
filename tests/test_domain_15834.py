@@ -52,7 +52,7 @@ def test_the_scripts_check_the_new_address_and_keep_an_override():
 
 def test_the_docs_tell_it():
     doc, dep, log = _read("docs", "TECHNICAL.md"), _read("docs", "DEPLOY.md"), _read("CHANGELOG.md")
-    assert "last updated 2026-10-18 (1.58.34)" in doc[:400]
+    assert "1.58.34" in doc[:4000] and "heimdall.com.ua" in doc[:4000]
     for s in (f"https://{HOST}", "chanpost.public_url", "1.58.34 — done", "two doors"):
         assert s in doc, s
     assert "Done, 18 October 2026 (1.58.34)" in dep and "Extend nameservers" in dep

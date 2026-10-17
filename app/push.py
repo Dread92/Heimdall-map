@@ -10,6 +10,7 @@ import struct
 import threading
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from urllib.parse import urlparse
@@ -97,6 +98,51 @@ def send(subscription, payload, priv_b64, pub_b64, subject=SUBJECT, ttl=300, urg
 
 
 
+# 1.58.35, the audit: a subscription is kept only when it is one — until then any string was stored as an endpoint, and
+# every notification then waited on it (a connect timeout each), while the same field let the server be pointed at any
+# host. A real subscription comes from one of the browsers' push services, over https, with a 65-byte P-256 point and a
+# 16-byte auth secret; that, and nothing else, is what gets stored (never the client's whole object).
+PUSH_HOSTS = ("fcm.googleapis.com", "android.googleapis.com", "updates.push.services.mozilla.com", "notify.windows.com",
+              "push.apple.com", "web.push.apple.com", "push.services.mozilla.com")
+ENDPOINT_MAX = 1024
+
+
+def _b64u_len(v):
+    try:
+        v = str(v or "")
+        return len(base64.urlsafe_b64decode(v + "=" * (-len(v) % 4)))
+    except (ValueError, TypeError):
+        return -1
+
+
+def push_host_ok(host):
+    host = (host or "").lower().rstrip(".")
+    return any(host == h or host.endswith("." + h) for h in PUSH_HOSTS)
+
+
+def clean_subscription(sub):
+    """{endpoint, keys:{p256dh, auth}} when `sub` is a browser's push subscription, else None."""
+    if not isinstance(sub, dict):
+        return None
+    ep = sub.get("endpoint")
+    if not isinstance(ep, str) or not (20 <= len(ep) <= ENDPOINT_MAX) or any(c.isspace() for c in ep):
+        return None
+    try:
+        u = urllib.parse.urlsplit(ep)
+    except ValueError:
+        return None
+    if u.scheme != "https" or not u.hostname or u.username or u.password or not push_host_ok(u.hostname) or not u.path:
+        return None
+    keys = sub.get("keys") if isinstance(sub.get("keys"), dict) else {}
+    p, a = keys.get("p256dh"), keys.get("auth")
+    if _b64u_len(p) != 65 or _b64u_len(a) != 16:
+        return None
+    out = {"endpoint": ep, "keys": {"p256dh": str(p), "auth": str(a)}}
+    if isinstance(sub.get("expirationTime"), (int, float)):
+        out["expirationTime"] = sub["expirationTime"]
+    return out
+
+
 class Sender:
     """One notification to many phones at once (1.29).
 
@@ -134,6 +180,9 @@ class Sender:
             conns = self.local.conns = {}
         c = conns.get((scheme, host))
         if c is None:
+            # 1.58.35: a push service is always https; plain http only to this machine itself (the tests' fake service)
+            if scheme != "https" and host.split(":")[0].strip("[]") not in ("127.0.0.1", "localhost", "::1"):
+                raise ValueError("push endpoint must be https")
             c = (http.client.HTTPSConnection(host, timeout=self.timeout, context=self._ctx) if scheme == "https"
                  else http.client.HTTPConnection(host, timeout=self.timeout))
             conns[(scheme, host)] = c

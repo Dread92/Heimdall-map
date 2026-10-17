@@ -2,6 +2,35 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.35 — 2026-10-18
+
+### Security
+- **The audit of 18 October, fixed** — the owner: "a cybersecurity audit of the site, the network requests above all",
+  then "do what is best in terms of good practice". Ten findings (TECHNICAL §11.1), the two serious ones first:
+  - a crafted link (`#carry=`, the move to a new address) could plant HTML in a reader's page, for good — and with it a
+    script with the four pins within reach. Every carried setting now has one shape, an oblast is a known uid or
+    nothing, the band's names are escaped, and a content-security policy (`connect-src 'self'`) keeps any script that
+    might still get in from sending anything anywhere;
+  - a push subscription is kept only when it is a browser's (https, a known push service, keys of the right size,
+    1 KB at most) and only `{endpoint, keys}` is stored; a send with no answer or a refusal is a strike, the third
+    removes the row; a test push goes to a stored endpoint only; stored rows that are not a browser's are removed at
+    start. Until then any string was an endpoint — every notification waited on it, and the server could be pointed at
+    any host, Fly's private network included.
+  - Every page and answer carries the security headers (CSP on HTML, HSTS, `nosniff`, referrer and permissions
+    policies, `X-Frame-Options`); the dashboard had them since 1.58.21, the map and the API had none.
+  - The whole-app lock (`ACCESS_KEY`, a private deployment) is done like the dashboard's: a sign-in page, a constant-time
+    comparison, 5 tries then one every two minutes, a 180-day session cookie scripts cannot read; the key in the address
+    is refused, the old cookie that held the key itself is erased.
+  - The address a reader is counted and budgeted by is Fly's (`Fly-Client-IP`), no longer `X-Forwarded-For`, which a
+    client writes itself (a fresh satellite-tile allowance per value made up).
+  - A request that sends its body a byte a minute no longer holds a thread for ever (`timeout = 20`); a bad parameter
+    is a 400, not a 500 with Python's words; the dashboard's pages are served from `/admin` only; the static path check
+    is a real one.
+  - The point sent for push is the ~10 km cell, snapped on the phone; the request itself cannot say where the phone is.
+  - The container runs as its own user (`docker-entry.sh`), and `deploy-fly.bat` gives its keys to Fly on stdin.
+  - Kept on purpose: the per-address push allowance (a carrier's NAT subscribes thousands of phones in a raid), the
+    pages' inline scripts (single files by design).
+
 ## 1.58.34 — 2026-10-18
 
 ### Changed

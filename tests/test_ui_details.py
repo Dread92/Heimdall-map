@@ -165,7 +165,7 @@ def test_a_move_to_a_new_address_carries_settings_but_never_a_watched_place():
         send = page[page.index("const CARRY=["):page.index("];", page.index("const CARRY=["))]
         for place_key in ("'slots'", "'slot_active'", "'home'", "'geo'"):
             assert place_key not in carry_in and place_key not in send, place_key
-        assert "ok.indexOf(k)>=0" in carry_in and "history.replaceState" in carry_in
+        assert "function shape(k,v)" in carry_in and "history.replaceState" in carry_in   # 1.58.35: shaped, not listed
         assert "location.host===c" in page
     assert 'os.environ.get("CANONICAL_HOST")' in SRC and '"canonical": canonical_host(self.cfg)' in SRC
 

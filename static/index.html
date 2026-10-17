@@ -271,8 +271,8 @@ function render(){
   $('thrcount').textContent = gl.length?`${gl.length} type(s)`:'';
   $('threats').innerHTML = gl.length ? gl.map(g=>`<div class="row ${g.level}">
       <div class="ico">${THREAT[g.type]?.ico||'❔'}</div>
-      <div><div class="title">${THREAT[g.type]?.en||g.type} <span class="chip ${g.level}" style="padding:1px 6px;font-size:11px">${g.level}</span></div>
-        <div class="meta">${[...g.regions.values()].sort().join(', ')}</div>
+      <div><div class="title">${THREAT[g.type]?.en||esc(g.type)} <span class="chip ${esc(g.level)}" style="padding:1px 6px;font-size:11px">${esc(g.level)}</span></div>
+        <div class="meta">${[...g.regions.values()].sort().map(esc).join(', ')}</div>
         ${g.msgs.size?`<div class="meta" style="color:var(--text);opacity:.85">${[...g.msgs].map(esc).join(' · ')}</div>`:''}</div>
       <div class="dur">${dur(g.first)}</div></div>`).join('')
     : `<div class="empty">${S.config.has_token||S.config.demo?'No threat details reported right now.':'Threat details need an alerts.in.ua token (see config.json).'}</div>`;
