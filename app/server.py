@@ -3960,19 +3960,26 @@ class State:
                 if not evidence:
                     out.append(dict(m, id=f"{p['post_id']}#{i}", ts=p["ts"], channel=p["channel"]))
                     continue
-                if ev and _tr:
+                if ev:
                     ck = (p["post_id"], i, m.get("type"))     # 1.58.31: the type can change with what was reported since
                     cached = self._ev_cache.get(ck)
                     if cached is None:
-                        # evidence fragments use the fast offline glossary (no network per request)
-                        ev = dict(ev, segment_en=_tr.translate_offline(ev.get("segment") or ""))
-                        for k in ("type", "position", "heading", "count"):
-                            v = ev.get(k)
-                            if v:
-                                v = dict(v, method=_tr.translate_offline(v.get("method") or ""))
-                                if isinstance(v.get("matched"), str):
-                                    v["matched_en"] = _tr.translate_offline(v["matched"])
-                                ev[k] = v
+                        ev = dict(ev)
+                        # 1.58.39, the owner: "for the drone we placed at Hnidyn, ONLY the Hnidyn part, not the whole
+                        # post" — the lines it was read from, as written, with their heading (geo.post_part)
+                        pp = geo.post_part(p["text"], ev.get("segment")) if geo else None
+                        if pp:
+                            ev.update(part=pp["part"], lines=pp["lines"])
+                        if _tr:
+                            # evidence fragments use the fast offline glossary (no network per request)
+                            ev["segment_en"] = _tr.translate_offline(ev.get("segment") or "")
+                            for k in ("type", "position", "heading", "count"):
+                                v = ev.get(k)
+                                if v:
+                                    v = dict(v, method=_tr.translate_offline(v.get("method") or ""))
+                                    if isinstance(v.get("matched"), str):
+                                        v["matched_en"] = _tr.translate_offline(v["matched"])
+                                    ev[k] = v
                         self._ev_cache[ck] = ev
                     else:
                         ev = cached

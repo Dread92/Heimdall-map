@@ -297,6 +297,15 @@ body.lite .imp.dmg .ig{fill:#fff}
 .mapfoot{display:none}
 .tip{position:absolute;z-index:6;max-width:300px;background:rgba(18,21,27,.98);border:1px solid var(--line);border-left:3px solid var(--orange);padding:8px 10px;font-size:12.5px;pointer-events:none}
 .tip b{display:block;font:700 15px/1.1 var(--cond);text-transform:uppercase;letter-spacing:.03em;margin-bottom:3px}.tip .m{color:var(--ink2);font-family:var(--mono);font-size:11px}.tip .q{margin-top:5px;padding-top:5px;border-top:1px solid var(--line);white-space:pre-wrap}
+/* 1.58.39, the owner: "the direction is interesting and important data — it should stand out more": the course, on a
+   line of its own, with an arrow turned to it — where the post said it was heading, and the town it named */
+.crs{display:flex;align-items:center;gap:8px;margin:6px 0 4px;font:700 14.5px/1.25 var(--sans);color:#ffd166;text-transform:none;letter-spacing:0}
+.crs .crsa{display:inline-flex;align-items:center;justify-content:center;flex:none;width:24px;height:24px;border-radius:50%;
+  background:rgba(255,209,102,.14);border:1px solid rgba(255,209,102,.55);font:700 15px/1 var(--sans)}
+.crs .crsd{color:var(--muted);font-weight:500;font-size:12px}.crs .crst{color:#fff}.crs .crsn{color:var(--muted);font-weight:500;font-size:11.5px}
+.crs.inb{color:#ffb3b5}.crs.inb .crsa{background:rgba(255,59,63,.16);border-color:rgba(255,59,63,.6)}
+.crs.none{font:500 11px var(--mono);color:var(--ink2);margin:2px 0}
+#sheet .crs{font-size:16px;margin:8px 0 2px}#sheet .crs .crsa{width:28px;height:28px;font-size:17px}
 /* ---------- drawer ---------- */
 #drawer{position:fixed;left:0;right:0;bottom:0;z-index:15;background:var(--panel);border-top:1px solid var(--line);height:var(--peek);transition:height .3s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column;padding-bottom:var(--sab)}
 #drawer.half{height:52%}#drawer.open{height:84%}
@@ -673,7 +682,10 @@ body.lite .mk.unknown .halo{stroke:#fff}
 @keyframes spawn{0%{transform:scale(.2);opacity:1}100%{transform:scale(3);opacity:0}}
 .mk .lbl{font:700 calc(var(--k,1)*11px) var(--mono);fill:#fff;paint-order:stroke;stroke:#080b10;stroke-width:calc(var(--k,1)*3px)}
 .mk .lbl2{font:600 calc(var(--k,1)*10px) system-ui;fill:#ffd6b8;paint-order:stroke;stroke:#080b10;stroke-width:calc(var(--k,1)*3px)}
-svg.far .mk:not(.inbound):not(.tohome):not(.desc) .lbl2{display:none}
+/* 1.58.39, the owner: "it must not take so much space when zoomed out — ideally the destination appears only when you click the
+   drone": zoomed out, a target's second line ("→ Oster / Desna … from the N · 06:23") is not written, heading for Kyiv
+   or not — its course is in its card. Heading for the reader's own place, or descending, it still is. */
+svg.far .mk:not(.tohome):not(.desc) .lbl2{display:none}
 .mk:not(.inbound):not(.tohome):not(.ended):not(.st):not(.stale):not(.desc):not(.appr) .lbl2{display:none}svg.far .mk.stale .lbl2{display:none}
 svg.veryfar .mk .lbl{display:none}svg:not(.close) .mk:not(.inbound):not(.tohome):not(.st):not(.desc):not(.appr) .lbl{display:none}
 .mk.inbound .lbl2{fill:#ffb3b5}
@@ -912,6 +924,7 @@ body.m-night .town.big{fill:#8fa3b8}
 body.m-day .tip,body.m-day .homerow,body.m-day .rt,body.m-day .livebar .chip,body.m-day .mapctl,
 body.m-day #toast,body.m-day .menu,body.m-day .mbox{background:#fff;color:#12161c;border-color:#7d858f}body.m-day .mapctl button{color:#12161c;border-color:#c3c8d0}
 body.m-day .tip{border-left-color:#b8480a}
+body.m-day .crs{color:#8a4b00}body.m-day .crs .crst{color:#111}body.m-day .crs .crsa{background:rgba(138,75,0,.1);border-color:rgba(138,75,0,.45)}body.m-day .crs.inb{color:#b0002a}
 body.m-day .menu .mi,body.m-day .menu .mi2,body.m-day .menu .ml{color:#12161c}
 body.m-day .menu .mi2{background:#eceef2;border-color:#8d95a1}
 body.m-day .menu .mi2.on{background:#12161c;color:#fff;border-color:#12161c}
@@ -2463,7 +2476,7 @@ function oblEventSheet(uid){
        return Object.keys(by).map(k=>{ const N=Math.max(by[k],(OBLPLACED[uid]||{})[k]||0);
          return N>1?`<div class="kv1" style="margin-bottom:8px">${esc(t('obl_est',N,t(k==='t:jet'?'k_jet':'k_shahed')))}</div>`:''; }).join(''); })()
     +evs.map(m=>`<div class="card plain"><div class="title">${esc(m.status?statusName(m.status):kindOf(m))}${m.count>1?' ×'+m.count:''} · ${fmtT(m.ts)}${!m.status&&(m.evidence||{}).position&&(m.evidence.position.quad||m.evidence.position.rel!=null||m.evidence.position.bank)?' · '+esc(oblWhere(m)):''}</div>`
-      +`<div class="q" style="margin-top:4px">${esc(ptxt(m).slice(0,220))}</div>`
+      +`<div class="q" style="margin-top:4px">${esc((m._txt||postPart(m,showUA(),LANG)).slice(0,220))}</div>`
       +`</div>`).join('');
   $('tip').hidden=true; $('sheet').classList.add('show');
 }
@@ -2852,6 +2865,14 @@ function phaseLadder(m){ const L=m.phase_ladder; if(!m.phase||!L||!L.length) ret
   const rungs=L.map(k=>{const lb=t('ph_'+k); const on=k===m.phase;
     return `<span style="${on?'color:var(--fg);font-weight:600':'color:var(--muted);opacity:.55'}">${on?(PH_ICO[k]||'')+' ':''}${esc(lb==='ph_'+k?k:lb)}</span>`;}).join('<span style="color:var(--muted);opacity:.4"> › </span>');
   return `<div class="kv1 muted" style="font-size:11.5px;margin-top:4px">${t('ph_label')}: ${rungs}<div style="opacity:.7;margin-top:2px">${esc(t('ph_src'))}</div></div>`; }
+// 1.58.39: the course a target's report gave — the compass and its degrees, the town a post said it is heading for — on a
+// line of its own; none said: "heading not reported", quietly. An approach mark's heading is its way into that town.
+function courseHtml(m,inb){ if(m.status||m.endedBy) return '';
+  const to=m.target?tgtName(m):(m.approach?apprTo(m):'');
+  if(m.heading==null&&!to) return `<div class="crs none">${esc(t('tp_heading'))} ${esc(t('tp_nr'))}</div>`;
+  const arr=m.heading!=null?`<span class="crsa" aria-hidden="true"><span style="display:inline-block;transform:rotate(${Math.round(m.heading)}deg)">↑</span></span>`:'<span class="crsa" aria-hidden="true">→</span>';
+  const dir=m.heading!=null?`${esc(dirName(m.heading))} <span class="crsd">${Math.round(m.heading)}°</span>`:'';
+  return `<div class="crs${inb?' inb':''}">${arr}<span>${dir}${to?`${dir?' → ':esc(t('tp_heading'))+' → '}<span class="crst">${esc(to)}</span>`:''}${inb?` <span class="crsn">· ${esc(t('tp_tokyiv'))}</span>`:''}</span></div>`; }
 function showTip(m,e){
   const cur=MK.find(x=>x.id===m.id)||m; const [x,y]=posOf(cur,Date.now()); const info=inboundInfo(cur,x,y);
   const th=THREAT[cur.type]||THREAT.unknown;
@@ -2862,13 +2883,13 @@ function showTip(m,e){
   // read as two jets seen over Kyiv. Where it is now was not given, and the card says so.
   const appr=!!cur.approach&&!cur.status&&!cur.endedBy;
   $('tip').innerHTML=`<b>${title}</b><div class="m">${appr?esc(t('sh_appr',apprTo(cur))):`${cur.status?t('tp_reported'):t('tp_spotted')} ${t('tp_near')} <b style="display:inline">${esc(where)}</b>`} · ${fmtT(cur.ts)} (${t('tp_ago',Math.round(agoMin(cur.ts)))})</div>
-    ${cur.status?'':`<div class="m">${t('tp_heading')} ${cur.heading==null?t('tp_nr'):dirName(cur.heading)+' ('+cur.heading+'°)'}${cur.target?' → '+esc(tgtName(cur)):''}${info.inbound?` · <span style="color:#ffb3b5">${t('tp_tokyiv')}</span>`:''}</div>`}
+    ${courseHtml(cur,info.inbound&&!cur.stale)}
     ${phaseTxt(cur)?`<div class="m">${t('ph_label')}: <b style="display:inline">${esc(phaseTxt(cur))}</b></div>`:''}
     ${cur.endedBy?`<div class="m" style="color:#a8f0cf">${statusName(cur.endedBy.status)} ${t('tp_near')} ${esc(pn(cur.endedBy.place))} ${t('tp_at')} ${fmtT(cur.endedBy.ts)}</div>`:''}
     ${cur.history&&cur.history.length?`<div class="m">${t('tp_reports',cur.history.length+1)}: ${(()=>{ const st=trackSteps([...cur.history.map(h=>({pl:h.place,ts:h.ts})),{pl:cur.place,ts:cur.ts}]); st.pop();
       return st.map(s=>esc(stepTxt(s,p=>pn(p||'?'),fmtT))+' → ').join(''); })()}${esc(where)}</div>`:''}
     ${ev.position?`<div class="m">${t('tp_pos')}: ${esc(ev.position.method)} · ${cf(ev.position.confidence)} ${t('tp_conf')}${accTxt('pos',ev.position,cur)?' · '+esc(accTxt('pos',ev.position,cur)):''}</div>`:''}
-    <div class="q">${esc(ptxt(cur).slice(0,260))}</div><div class="m" style="margin-top:4px">${t('tp_click')}</div>`;
+    <div class="q">${esc((cur._txt||postPart(cur,showUA(),LANG)).slice(0,260))}</div><div class="m" style="margin-top:4px">${t('tp_click')}</div>`;
   $('tip').hidden=false; moveTip(e);
 }
 function moveTip(e){const w=$('mapwrap').getBoundingClientRect(); const tip=$('tip');
@@ -2904,7 +2925,8 @@ function openSheet(id){
   // one-line situation
   // 1.42.1: "Балістика курсом на Київ" names where it is going, not where it is: the sheet said "Kyiv · 0 km from Kyiv"
   // and "near zone, up to 10 km" — read as "it is over Kyiv". It says "heading for Kyiv — position not given" now.
-  const where=appr?`<b>${esc(t('sh_appr',apprTo(m)))}</b>`:[esc(placeEn), m.status?'':(m.heading==null?t('sh_hnr'):`→ ${dirName(m.heading)}${m.target?' '+t('sh_towards')+' '+esc(tgtName(m)):''}`), `${t('sh_fromkyiv',Math.round(info.dist))}${info.inbound&&!m.stale&&!closer?` · <b style="color:#ffb3b5">${t('tp_tokyiv')}</b>`:''}`].filter(Boolean).join(' · ');
+  // 1.58.39: the course has a line of its own (courseHtml), above
+  const where=appr?`<b>${esc(t('sh_appr',apprTo(m)))}</b>`:[esc(placeEn), `${t('sh_fromkyiv',Math.round(info.dist))}`].filter(Boolean).join(' · ');
   const state=closer?`<div class="kv1 green">✕ ${statusName(closer.status)} ${t('tp_near')} ${esc(pn(closer.place))} ${t('tp_at')} ${fmtT(closer.ts)}</div>`
     :m.stale&&!m.status?`<div class="kv1 yellow">${t('sh_stale',m.stale,esc(placeEn),fmtT(m.ts))}</div>`
     :closed?`<div class="kv1 green">${t('sh_closes',closed.type==='drones'?(closed.jet?t('k_jet_l'):t('k_shahed')):THREAT[closed.type]?.[1],esc(pn(closed.place)),fmtT(closed.ts))}</div>`:'';
@@ -2916,6 +2938,7 @@ function openSheet(id){
   const ALTL={descending:t('alt_desc_l'),climbing:t('alt_climb'),low:t('alt_low'),high:t('alt_high')};
   const altChip=!altF?'':alt&&alt.state==='descending'?` <span class="chip desc">↓ ${esc(t('alt_desc'))}</span>`:alt&&alt.m?` <span class="chip alt">~${alt.m} ${t('m_unit')}</span>`:alt&&alt.state?` <span class="chip">${esc(ALTL[alt.state]||alt.state)}</span>`:'';
   $('sheetbody').innerHTML=`<div class="type">${kind}${m.count?` <span class="chip">×${m.count}</span>`:''}${altChip}${m.status?'':phaseChip(m)}${info.inbound&&!m.stale&&!closer?` <span class="chip red">${t('lb_tokyiv')}</span>`:''}<span class="chip ${CONF[overall][0]}" style="margin-left:auto">${cf(overall)}</span></div>
+    ${courseHtml(m,info.inbound&&!m.stale&&!closer)}
     <div class="kv1 muted">${src}</div>
     ${tagLine(m)}
     <div class="kv1">${where}</div>${state}<div class="sec">${merged}${track}<div id="shtrail"></div></div>
@@ -2933,11 +2956,11 @@ function openSheet(id){
     ${mk?`<div class="kv1 muted sec" style="font-size:12px">${esc(m.type==='ballistic_missiles'?t('msl_bal'):m.type==='banderol_missiles'?t('msl_band'):t('msl_cru'))}</div>`:''}
     ${m._gone?`<div class="kv1 yellow"><b>${esc(t('msl_gone'))}</b> — ${esc(t('msl_seen',placeEn,fmtT(m.ts)))}</div>`:''}
     ${(m._reach>0)?`<div class="kv1 yellow"><b>${esc(t('msl_reach',Math.round(m._reach)))}</b> — ${esc(t('msl_seen',placeEn,fmtT(m.ts)))}<div style="color:var(--muted);font-size:11.5px;margin-top:3px">${esc(t('msl_note',mk.v))}</div></div>`:''}
-    <div class="txt" style="border-left-color:var(--orange);margin-top:8px">${esc(showUA()?(ev.segment||m.text):(ev.segment_en||ev.segment||m.text_en||m.text))}</div>
+    <div class="txt" style="border-left-color:var(--orange);margin-top:8px">${esc(ev.part?postPart(m,showUA(),LANG):(ev.segment&&ev.segment.trim().length<(m.text||'').trim().length-8)?(showUA()?ev.segment:(ev.segment_en||ev.segment)):ptxt(m))}</div>
     <button class="shmore" type="button" id="shmore">${esc(t('sh_more'))}</button>
     <div class="kv1 muted sec" style="font-size:11.5px">${conf}</div>
     <details class="sec" style="margin-top:6px"><summary style="font:12px var(--mono);color:var(--muted);cursor:pointer">${t('sh_details')}</summary>
-      ${(ev.segment&&ev.segment.trim().length<(m.text||'').trim().length-8)?`<div class="txt" style="margin-top:6px">${esc(ptxt(m))}</div>`:''}
+      ${(ev.part||(ev.segment&&ev.segment.trim().length<(m.text||'').trim().length-8))?`<div class="txt" style="margin-top:6px">${esc(ptxt(m))}</div>`:''}
       ${m.status?'':phaseLadder(m)}
       <div class="kv" style="margin-top:6px">${evRow(t('ev_type'),ev.type)}${evRow(t('ev_pos'),ev.position,null,accTxt('pos',ev.position,m))}${m.status?'':evRow(t('ev_hdg'),ev.heading,t('tp_nr'),accTxt('hdg',ev.heading,m))}${evRow(t('ev_count'),ev.count,t('ev_count_fb'))}
       ${cor.length?`<span>${t('ev_others')}</span><b style="font-weight:500">${cor.map(o=>fmtT(o.ts)).join(', ')} ${t('ev_within')}</b>`:''}</div>
@@ -3891,7 +3914,7 @@ function markerText(m){
   const L=[`Heimdall · ${kind}${n} — ${place} · ${fmtT(m.ts)}`];
   if(m.alt&&m.alt.state==='descending') L.push('↓ '+t('alt_desc'));
   if(m.alt&&m.alt.m) L.push(`~${m.alt.m} ${t('m_unit')}`);
-  if(m.heading!=null&&!m.status) L.push(`${t('tp_heading')}: ${dirName(m.heading)}`);
+  if(!m.status&&(m.heading!=null||m.target)) L.push(`${t('tp_heading')}: ${[m.heading!=null?dirName(m.heading):'',m.target?'→ '+tgtName(m):''].filter(Boolean).join(' ')}`);   // 1.58.39: and the town
   // 1.54.9, the owner: "when we share a post through the app, the location of our pin must NOT be shared — it can be
   // sensitive". The text said "19 km — Вишеньки": how far the target was from the reader's own pin, and the pin's
   // place. A shared text says what the post said, and nothing about who shares it.

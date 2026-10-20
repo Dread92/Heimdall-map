@@ -2,6 +2,29 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.39 — 2026-10-20
+
+The Tactical page's targets — the words they were read from, their course, less text zoomed out — and the bot's
+language.
+
+- **Only the part of the post about this target.** The owner, of a jet drone at Viitivtsi whose card quoted a whole
+  Air Force post (five oblasts): "when the post tied to a drone names several places, it must absolutely be trimmed to
+  where the drone is — the drone we placed at Hnidyn gets ONLY the Hnidyn part". The marks carry the lines they were read
+  from, as written, with their heading ("Хмельниччина:\n2х реактивних БпЛА курсом на Віїтівці": `evidence.part`,
+  `geo.post_part`); the hover card, the sheet, an oblast's events and Light quote them (in English and French, the same
+  lines of the translation). The sheet's details keep the whole post.
+- **The course stands out.** The owner: "the direction is interesting and important data — it should stand out more".
+  The card and the sheet give it a line of its own: an arrow turned to it, the compass and the degrees, the town a post
+  said it is heading for. A shared text names that town too.
+- **Zoomed out, no second line.** The owner, of "→ Oster / Desna (Chernihivskyi raion) from the N · 06:23" across the
+  whole-country view: "it must not take so much space when zoomed out — ideally the destination appears only when you
+  click the drone". With the map more than 90 km wide a target's second line is no longer written (heading for Kyiv
+  included); its course is in its card. Heading for the reader's own place, or descending, it still is.
+- **The bot asks the language first, Ukrainian or English.** The owner: "the bot must be in Ukrainian and English — it
+  can ask the preferred language as its first question". A new user's first message gets the choice (two buttons);
+  nothing is kept before the answer, and a place written before it is answered right after. French is gone; `/lang`
+  switches between the two.
+
 ## 1.58.38 — 2026-10-20
 
 The Telegram bot, rethought: one to one, about each user's own places. The app itself does not change.

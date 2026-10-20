@@ -604,7 +604,7 @@ function paint(){
     else if(A&&A.m!=null) bits.push(`<b class="alt">${esc(t('lt_alt_at',fmtAlt(A.m)))}</b>`);
     else if(A&&A.state) bits.push(`<b class="alt">${esc(ALTL[A.state]||A.state)}</b>`);
     bits.push(m.stale?`${esc(t('lt_lost'))} · ${esc(t('tp_ago',m.stale))}`:esc(t('tp_ago',agoMin(m.ts))));
-    const said=LANG==='uk'?m.text:((LANG==='fr'&&m.text_fr)||m.text_en||m.text);
+    const said=postPart(m,LANG==='uk',LANG);          // 1.58.39: the lines it was read from, not every place of the post
     const track=trackSteps((m.history||[]).filter(h=>h.place).map(h=>({pl:h.place,ts:h.ts}))).slice(-4).map(s=>esc(stepTxt(s,pn,fmtT)));
     const alt=m.alt?[m.alt.state?(ALTL[m.alt.state]||m.alt.state):'',m.alt.m!=null?fmtAlt(m.alt.m):''].filter(Boolean).join(' · '):'';
     const open=force||OPEN.has(m.id);
@@ -612,7 +612,7 @@ function paint(){
       +`<div class="l1"><b>${no?`<span class="no">${no}</span>`:''}${esc(label(m))}${n}</b><span class="d">${Math.round(d)} ${esc(t('lt_km'))}</span></div>`
       +`<div class="l2">${bits.map(x=>x.startsWith('<')?x:esc(x)).join(' · ')}</div>`
       +(eta?`<div class="l3"><b>${esc(t('eta_band',eta[0],eta[1]))}</b> <span>${esc(t('eta_if'))}</span></div>`:'')
-      +`<div class="more">${said?`<q>«${esc(said)}»</q>`:''}${LANG!=='uk'&&m.text&&said!==m.text?`<span class="orig">${esc(m.text)}</span>`:''}`
+      +`<div class="more">${said?`<q>«${esc(said)}»</q>`:''}${LANG!=='uk'&&m.text&&said!==m.text?`<span class="orig">${esc((m.evidence&&m.evidence.part)||m.text)}</span>`:''}`
       +(track.length?`<div>${esc(t('lt_track'))}: ${track.join(' → ')} → <b>${esc(pn(m.place||'?'))} ${fmtT(m.ts)}</b></div>`:'')
       +(alt||tr?`<div>${esc(t('lt_alt'))}: ${esc(tr?tr.text:alt)}${tr&&alt?' · '+esc(alt):''} <span>(${esc(t('alt_src'))})</span></div>`:'')
       +`<div>${fmtT(m.ts)}</div></div>`

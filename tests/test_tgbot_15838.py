@@ -110,10 +110,18 @@ def bot(shot=None, logs=None):
     return b, st, api, kv, clock
 
 
-def say(b, chat, text, lang="uk"):
+def raw(b, chat, text, lang="uk"):
     b.handle({"update_id": 1, "message": {"chat": {"id": chat, "type": "private"}, "from": {"language_code": lang},
                                           "text": text}})
     b.flush()
+
+
+def say(b, chat, text, lang="uk"):
+    """A user's message — a new user first answers the bot's first question, the language (1.58.39)."""
+    if not b.store.chat(chat) and not text.startswith("/stop"):
+        raw(b, chat, "/start", lang)
+        press(b, chat, "l:" + lang)
+    raw(b, chat, text, lang)
 
 
 def press(b, chat, data, mid=50):
@@ -152,6 +160,9 @@ def test_what_is_not_a_place_to_live_is_not_offered():
 
 def test_a_shared_location_lists_the_nearest_places_and_is_never_kept():
     b, st, api, kv, clock = bot()
+    raw(b, A, "/start")
+    press(b, A, "l:uk")
+    api.calls.clear()
     b.handle({"update_id": 3, "message": {"chat": {"id": A, "type": "private"}, "from": {"language_code": "uk"},
                                           "location": {"latitude": 50.3291, "longitude": 30.7049}}})
     b.flush()
@@ -165,16 +176,22 @@ def test_a_shared_location_lists_the_nearest_places_and_is_never_kept():
 
 
 # ---- the conversation ---------------------------------------------------------------------------------------------------
-def test_start_explains_and_says_what_is_kept():
+def test_the_first_question_is_the_language_then_it_explains_and_says_what_is_kept():
     b, st, api, kv, clock = bot()
-    say(b, A, "/start")
-    t = api.texts(A)[0]
+    raw(b, A, "/start")
+    (m, f, _), = api.sent(A)
+    assert f["text"] == tgbot.CHOOSE and [x["callback_data"] for x in f["reply_markup"]["inline_keyboard"][0]] == ["l:uk", "l:en"]
+    assert b.store.chat(A) is None                                              # nothing kept before the answer
+    press(b, A, "l:uk")
+    m, f, _ = api.sent(A)[-1]
+    assert m == "editMessageText" and f["message_id"] == 50 and f["reply_markup"] == {"inline_keyboard": []}
+    t = f["text"]
     assert "15 км" in t and "До 4 місць" in t and "не радар" in t and "/stop видаляє все" in t
-    assert "лише номер цього чату, мову й обрані місця" in t
-    say(b, B, "/start", lang="fr")
-    assert "pas un radar" in api.texts(B)[0] and "15 km" in api.texts(B)[0]
-    say(b, 333, "/start", lang="en")
-    assert "not radar" in api.texts(333)[0]
+    assert "лише номер цього чату, мову й обрані місця" in t and b.store.chat(A) == {"lang": "uk"}
+    raw(b, B, "/start", lang="fr")
+    press(b, B, "l:en")
+    assert "not radar" in api.texts(B)[-1] and "15 km" in api.texts(B)[-1] and b.store.chat(B) == {"lang": "en"}
+    assert tgbot.LANGS == ("uk", "en") and "fr" not in tgbot.T and "fr" not in tgbot.LABEL
 
 
 def test_a_name_adds_the_place_and_namesakes_are_offered_to_choose():
@@ -245,13 +262,21 @@ def test_groups_and_channels_are_not_its_business_and_a_flood_is_ignored():
     assert len(api.sent(A)) == tgbot.IN_PER_MIN
 
 
-def test_the_language_follows_telegram_and_can_be_chosen():
+def test_a_place_written_before_the_language_waits_for_it_and_the_language_can_be_changed():
     b, st, api, kv, clock = bot()
-    say(b, A, "Hnidyn", lang="fr")
-    assert "Ajouté : Гнідин (Hnidyn)" in api.texts(A)[-1]
+    raw(b, A, "Hnidyn", lang="en")
+    assert api.texts(A) == [tgbot.CHOOSE] and b.store.places(A) == []
     press(b, A, "l:en")
-    assert b.store.chat(A)["lang"] == "en" and api.texts(A)[-1] == "Language: English."
-    assert tgbot.lang_of("ru") == "uk" and tgbot.lang_of("de") == "en" and tgbot.lang_of(None) == "uk"
+    assert "This is the Heimdall bot" in api.texts(A)[-2] and "Added: Гнідин (Hnidyn)" in api.texts(A)[-1]
+    raw(b, A, "/lang")
+    assert api.sent(A)[-1][1]["reply_markup"]["inline_keyboard"] == tgbot.LANG_KB
+    press(b, A, "l:uk")
+    assert b.store.chat(A)["lang"] == "uk" and api.texts(A)[-1] == "Мова: українська."
+    b.handle({"update_id": 7, "message": {"chat": {"id": B, "type": "private"}, "from": {"language_code": "uk"},
+                                          "location": {"latitude": 50.33, "longitude": 30.70}}})
+    b.flush()
+    assert b.pending[B][1] is None                                              # a location is never kept waiting
+    assert tgbot.lang_of("ru") == "uk" and tgbot.lang_of("fr") == "en" and tgbot.lang_of(None) == "uk"
 
 
 def test_the_offset_is_kept_and_another_reader_is_waited_for():
@@ -315,7 +340,7 @@ def test_no_distance_from_a_place_no_post_gave():
                 mark(place="Бориспіль", lon=30.95, lat=50.35, tag="#10")]                    # 17.5 km: beyond 15
     b.tick()
     b.flush()
-    assert [t for t in api.texts(A) if "км від" in t or "Допис" in t] == []
+    assert [t for t in api.texts(A) if ("км від" in t or "Допис" in t) and "Це бот Heimdall" not in t] == []
 
 
 def test_a_ballistic_missile_is_said_for_the_region_with_no_distance():

@@ -3222,6 +3222,80 @@ if __name__ == "__main__":
         print(s, "\n   ->", parse_post(s))
 
 
+
+# 1.58.39, the owner: "when the post tied to a drone names several places, it must absolutely be trimmed to where the
+# drone is — if a post with several places mentions Hnidyn, the drone we placed at Hnidyn gets ONLY the Hnidyn part,
+# not the whole post". A mark's `segment` is what it was read from, but lowercased by the parser; this finds it in the
+# post as written and gives the post's own lines (with the heading they come under, "Хмельниччина:") and their
+# numbers — so a page can take the same lines of the translation.
+_PART_HDR_MAX = 48
+
+
+def _alnum(s):
+    keep, idx = [], []
+    for i, ch in enumerate(s):
+        c = ch.lower()
+        if c.isalnum():
+            keep.append("е" if c == "ё" else c)
+            idx.append(i)
+    return "".join(keep), idx
+
+
+def _part_header(line):
+    """A line that heads the ones under it: "Хмельниччина:", "‼️ Київщина" — not a report of its own."""
+    s = line.strip()
+    if not s or len(s) > _PART_HDR_MAX:
+        return False
+    if s.endswith(":"):
+        return True
+    n = _norm(s)
+    return bool(_find_oblast(n)) and not AIR_TARGET_RX.search(n) and not re.search(r"\d", n)
+
+
+def post_part(text, segment):
+    """{"part": the post's own words a mark was read from, "lines": their line numbers (None for a part of one line)} —
+    or None when the reading was the whole post (or nearly), or the words cannot be found in it as written."""
+    if not text or not segment:
+        return None
+    nt, it = _alnum(text)
+    ns, _ = _alnum(segment)
+    if len(ns) < 4 or len(ns) >= len(nt) - 3:
+        return None
+    k = nt.find(ns)
+    if k < 0:
+        return None
+    a, b = it[k], it[k + len(ns) - 1] + 1
+    lines = text.split("\n")
+    starts, pos = [], 0
+    for ln in lines:
+        starts.append(pos)
+        pos += len(ln) + 1
+    la = max(i for i, s in enumerate(starts) if s <= a)
+    lb = max(i for i, s in enumerate(starts) if s < b)
+    if sum(1 for ln in lines if ln.strip()) <= 1:
+        part = text[a:b].strip()                       # one line: the words themselves
+        return {"part": part, "lines": None} if part and len(part) < len(text.strip()) - 3 else None
+    idx = list(range(la, lb + 1))
+    if all(_part_header(lines[i]) or not lines[i].strip() for i in idx):
+        return None                                    # a heading alone ("Київ:") says nothing: the whole post
+    hdr = None
+    if not _part_header(lines[la]):
+        j = la - 1
+        while j >= 0 and not lines[j].strip():
+            j -= 1
+        if j < la - 1:                                 # blank lines above: only a heading right above them
+            hdr = j if j >= 0 and _part_header(lines[j]) else None
+        else:                                          # else up its block, past its other reports, to its heading
+            while j >= 0 and lines[j].strip() and not _part_header(lines[j]):
+                j -= 1
+            hdr = j if j >= 0 and lines[j].strip() else None
+    if hdr is not None:
+        idx = [hdr] + idx
+    part = "\n".join(lines[i] for i in idx).strip()
+    if not part or len(part) >= len(text.strip()) - 3:
+        return None
+    return {"part": part, "lines": idx}
+
 # 1.52: the villages of Kyiv oblast, for the AI reader alone (data/extra_places.json, scripts/build_extra_places.py).
 # The rules never read them: they are offered to the AI as CANDIDATES when a post's words match one ("На Сомкова
 # Долина", "на Фарбоване"); a key resolves to its coordinates through ai_reader.place_of, never through PLACES.

@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-20 (1.58.38)
+**Documented version: 1.58** · last updated 2026-10-20 (1.58.39)
 
 The repository is **Dread92/Heimdall-map**. The app's address is **https://heimdall.com.ua** (1.58.34, 18 October
 2026); the Fly app keeps its first name, `kyiv-air-watch-gb`, and its first address keeps working (§15 has the move).
@@ -697,6 +697,15 @@ in the masculine is always a drone (a Shahed); «остання» in the feminin
 
 `parse_for_channel(channel, text)` picks the channel's parser; each returns candidates with an **evidence**
 block for every value:
+
+- **The words it was read from** — `segment` (lowercased by the parser). 1.58.39, the owner: "when the post tied to a
+  drone names several places, it must absolutely be trimmed to where the drone is — the drone we placed at Hnidyn gets
+  ONLY the Hnidyn part, not the whole post": `geo.post_part(text, segment)` finds them in the post as written and gives
+  `part` — the post's own lines, with the heading they come under ("Хмельниччина:", found up the lines' block, never
+  across a blank line from another block; a heading alone is no part) — and `lines`, their numbers (`None` for words
+  inside a one-line post). A mark read from the whole post (or nearly) gets none. The server adds both to the evidence
+  (`State._marks_from_posts`, cached with its translation in `_ev_cache`); the pages take the same lines of the post's
+  translation when it kept the post's lines, else the glossary's translation of the segment (`postPart`, i18n.js).
 
 - **Type** — `TYPE_RX`: drones (Shahed / Geran / "мопед"), jet drones, cruise, ballistic, supersonic
   (Kh-22/32, before cruise), `banderol_missiles` (Banderol / S-8000 / "реактивні ракети з БпЛА"), KAB, tactical
@@ -1429,6 +1438,16 @@ track's tag — one target, two reports, one number (`twins`: those reports may 
 clear of every mark's height (`.dn`) and compact tag (`.tgc`); and the town names give way to the targets' glyphs and
 heights as well as their labels (`LBLBOX`). (Until 1.54 also of the explosions layer's glyphs and names — §10.1.)
 
+**The part of the post, and the course (1.58.39).** A target's hover card, its sheet, an oblast's events and Light's
+row quote the part of the post it was read from (`postPart`, §7.3) — the sheet's details keep the whole post. The course
+has a line of its own, above (`courseHtml`, `.crs`): an arrow turned to the heading in a ring, the compass and the
+degrees, "→" and the town a post said it is heading for, in the accent colour — red, with "heading towards Kyiv", for an
+inbound one; none said, "heading not reported", quietly. The owner: "the direction is interesting and important data —
+it should stand out more". Zoomed out (`svg.far`, the map more than 90 km wide) a target's second line ("→ Oster /
+Desna … from the N · 06:23") is no longer written, heading for Kyiv or not — the owner: "it must not take so much
+space when zoomed out — ideally the destination appears only when you click the drone"; heading for the reader's own
+place (`tohome`), or descending, it still is. The shared text names the town too.
+
 **A short card (1.53)**: on a phone a target's card opens at most 38 % of the screen high — the kind, height, tag, where
 and the post in three lines; the track, the night's path, the notes and the evidence are `.sec` and come with "More"
 (`#shmore`, `.sheet.more`). **1.54.1, on a computer** (the owner: "the UI isn't that great when we click a threat"): the
@@ -1967,7 +1986,12 @@ names the place**, or **a target is reported within 15 km** of it (`NEAR_KM`); *
 SAFETY.md's "The bot writes about a place because it was given one".
 
 **The conversation** (private chats only; a group or a channel is ignored; at most 20 messages a chat a minute,
-`IN_PER_MIN`). `/start` (and `/help`, or any unknown command) says what it does, the reminder ("from channel posts, not
+`IN_PER_MIN`). **Its first question is the language** (1.58.39, the owner: "the bot must be in Ukrainian and English — it
+can ask the preferred language as its first question"): a new user's first message, whatever it is, gets "🇺🇦 Оберіть мову
+повідомлень / 🇬🇧 Choose the language of the messages" with two buttons (`CHOOSE`, `LANG_KB`); nothing is kept before the
+answer, and a place name or a command written before it waits for it (in memory, 15 min — a shared location never
+does: it is asked again). The answer turns the question into the explanation, then answers what waited. `/start` (and
+`/help`, or any unknown command) says what it does, the reminder ("from channel posts, not
 radar") and what it keeps. A name → `Gazetteer.search`: the gazetteer's places (`geo.PLACES` and `geo.REGIONAL` — the
 villages of the oblasts read regionally and Kyiv oblast's, ~21,000), without the raions and what is not a place to live
 (bridges, roads, squares, plants, reservoirs, airports: `SKIP_RX`); a name in any letters is compared through `canon`
@@ -1975,10 +1999,10 @@ villages of the oblasts read regionally and Kyiv oblast's, ~21,000), without the
 the same name first (all its namesakes), else the names starting so (4 letters or more), else the nearest spellings
 (`difflib`, 0.8). One place: added. Several: buttons with their raion and oblast (`a:<i>`, valid 15 min) and "Cancel".
 A shared location → the 4 nearest places within 12 km as buttons; the point is used for that and dropped (not kept,
-logged or sent on). `/places`: the user's places as buttons, one press removes one. `/lang`: Українська / English /
-Français (the first language is Telegram's: uk, ru and be → Ukrainian, fr → French, else English). `/stop`: everything
+logged or sent on). `/places`: the user's places as buttons, one press removes one. `/lang`: Українська / English
+(1.58.38 had French too). `/stop`: everything
 kept of the chat is deleted. A user who blocks the bot (`my_chat_member` "kicked", or a 403 on a send) is deleted the
-same way. A button's answer edits the message it was on. The menu of commands is set at start (`setMyCommands`, three
+same way. A button's answer edits the message it was on. The menu of commands is set at start (`setMyCommands`, both
 languages); `getMe` gives the bot's @name for the dashboard.
 
 **What it keeps** (`BotStore`, in the server's database): `bot_chats` (`chat_id`, `lang`, `since`, `last`) and `bot_places`

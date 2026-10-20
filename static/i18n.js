@@ -430,6 +430,15 @@ function mslNear(m,marks){ if(!m||m.lon==null) return false; const k=Math.cos(m.
 // 1.56.4: where an approach mark is said to be heading — every place of the post's list, as written ("Київ / Ірпінь /
 // Буча"); the mark itself stands at the one approach_pick chose (geo.py)
 const apprTo=m=>(m.targets&&m.targets.length>1?m.targets:[m.target||m.place||'']).map(pn).join(' / ');
+// 1.58.39, the owner: "when the post tied to a drone names several places, trim it to where the drone is — for the drone
+// placed at Hnidyn, ONLY the Hnidyn part". The server gives the lines a mark was read from, as written, with their
+// heading (evidence.part, .lines — geo.post_part); in English and French the same lines of the post's translation when it
+// kept the post's lines, else the glossary's translation of them. A mark read from the whole post: the whole post.
+function postPart(m,ua,lang){ const ev=(m&&m.evidence)||{}, tr=(lang==='fr'&&m.text_fr)||m.text_en;
+  const whole=ua?m.text:(tr||m.text); if(!ev.part) return whole||'';
+  if(ua) return ev.part;
+  if(tr&&ev.lines&&ev.lines.length){ const L=tr.split('\n'); if(L.length===(m.text||'').split('\n').length){ const s=ev.lines.map(i=>L[i]||'').join('\n').trim(); if(s) return s; } }
+  return ev.segment_en||whole||''; }
 const altFresh=ts=>!!ts&&(Date.now()-Date.parse(ts))/60000<=ALT_MAX_MIN;
 function altNow(m){ return m&&m.alt&&altFresh(m.ts)?m.alt:null; }
 function altTrend(m){ const all=[...(m.history||[]).filter(h=>h.alt_m!=null).map(h=>[h.alt_m,h.ts]), ...(m.alt&&m.alt.m!=null?[[m.alt.m,m.ts]]:[])];

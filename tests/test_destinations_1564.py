@@ -49,5 +49,6 @@ def test_bucha_in_its_cases():
 def test_the_pages_say_the_whole_list():
     i18n, page, light = _read("static/i18n.js"), _read("static/kyiv.html"), _read("static/light.html")
     assert "const apprTo=m=>(m.targets&&m.targets.length>1?m.targets:[m.target||m.place||'']).map(pn).join(' / ');" in i18n
-    assert page.count("apprTo(") == 3 and "t('lt_to',apprTo(m))" in light
+    # 1.58.39: the fourth is the card's course line (courseHtml)
+    assert page.count("apprTo(") == 4 and "t('lt_to',apprTo(m))" in light
     assert "approach_pick" in _read("docs/TECHNICAL.md")

@@ -180,7 +180,7 @@ that is what it was given for. So:
   first message says so, before any place is asked for. `/stop` deletes all of it; blocking the bot does too. A shared
   location is used once, to list the nearest places, and is never kept, logged or sent on. The logs and the dashboard
   carry counts only: no endpoint lists a chat or a place.
-- **What the map shows, and nothing more** — the channel's rules, in three languages: the type and place a post gave,
+- **What the map shows, and nothing more** — the channel's rules, in Ukrainian or English (the user's first answer, 1.58.39): the type and place a post gave,
   a course only when a post stated one, the height a post gave while fresh, "from channel posts, not radar", a link to
   the map; never the channel. A distance only from the place **the post named** to the user's place, as the Near list
   measures it — and none from an oblast, a raion, a part of an oblast, a place a target is only heading for, or a
@@ -192,6 +192,15 @@ that is what it was given for. So:
   never a report more than 5 minutes old; a swarm is one message. Its end is what the map shows: an outcome a post
   reported, in the app's words and **never where**; or "no new reports since". **Telegram never starts or ends an
   alert**: the bot says nothing of alerts or all-clears.
+
+## A target quotes the words it was read from (1.58.39)
+
+A post often names five oblasts and eight towns; a target's card quoted all of it, and a drone at Viitivtsi read as
+if it were also over Slavutych and Kovel. The owner: "when the post tied to a drone names several places, it must
+absolutely be trimmed to where the drone is". The card, the sheet, an oblast's events and Light now quote the lines the
+target was read from — as written, with the heading they come under (`geo.post_part`) — and nothing of the other
+places; the whole post stays one tap away in the sheet's details. A line is never cut in two, a heading is never taken
+from another block, and when the words cannot be found in the post as written, the whole post is shown, as before.
 
 ## Only where it is heading, and no alert there: not on the map (1.58.7)
 

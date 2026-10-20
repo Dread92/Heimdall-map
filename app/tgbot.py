@@ -75,7 +75,7 @@ PICK_TTL_S = 15 * 60
 SEARCH_MAX = 6
 LIST_MAX = 5                      # targets listed in one message
 LOC_KM = 12.0                     # a shared location: the places this close
-LANGS = ("uk", "en", "fr")
+LANGS = ("uk", "en")             # 1.58.39, the owner: "the bot must be in Ukrainian and English"
 TYPES = chanpost.TYPES + ("guided_aerial_bombs",)
 RANK = {"near": 1, "dest": 2, "here": 3, "region": 3}
 # the gazetteer's entries that are not a place to live in: bridges, roads, squares, plants, reservoirs, airports
@@ -88,23 +88,14 @@ LABEL = {
            "supersonic_missiles": "Supersonic missile (Kh-22/32)", "unspecified_missiles": "Missile",
            "banderol_missiles": "Banderol (jet drone)", "unknown_dr": "Probably a drone — type not stated",
            "unknown": "Drone or missile — type not stated", "guided_aerial_bombs": "Guided bomb (KAB)"},
-    "fr": {"drones": "Shahed", "jet": "Drone à réaction", "ballistic_missiles": "Missile balistique",
-           "cruise_missiles": "Missile de croisière", "supersonic_missiles": "Missile supersonique (Kh-22/32)",
-           "unspecified_missiles": "Missile", "banderol_missiles": "Banderol (drone à réaction)",
-           "unknown_dr": "Probablement un drone — type non précisé", "unknown": "Drone ou missile — type non précisé",
-           "guided_aerial_bombs": "Bombe guidée (KAB)"},
 }
 EMOJI = {k: v[0] for k, v in chanpost.LABEL.items()} | {"guided_aerial_bombs": "💣"}
-COMPASS = {"uk": chanpost.COMPASS, "en": ("north", "north-east", "east", "south-east", "south", "south-west", "west", "north-west"),
-           "fr": ("nord", "nord-est", "est", "sud-est", "sud", "sud-ouest", "ouest", "nord-ouest")}
-ALT_STATE = {"uk": chanpost.ALT_STATE, "en": {"low": "low", "high": "high", "descending": "descending", "climbing": "climbing"},
-             "fr": {"low": "bas", "high": "haut", "descending": "en descente", "climbing": "en montée"}}
+COMPASS = {"uk": chanpost.COMPASS, "en": ("north", "north-east", "east", "south-east", "south", "south-west", "west", "north-west")}
+ALT_STATE = {"uk": chanpost.ALT_STATE, "en": {"low": "low", "high": "high", "descending": "descending", "climbing": "climbing"}}
 # what became of a target, in the app's own words (static/i18n.js st_down … st_clear)
 OUTCOME = {"uk": {k: v[1] for k, v in chanpost.OUTCOME.items()},
            "en": {"down": "Confirmed shot down", "impact": "Explosion (impact or interception — not known which)",
-                  "lost": "Lost from tracking", "clear": "Area reported clear"},
-           "fr": {"down": "Abattu confirmé", "impact": "Explosion (impact ou interception — inconnu)",
-                  "lost": "Perdu du suivi", "clear": "Zone signalée dégagée"}}
+                  "lost": "Lost from tracking", "clear": "Area reported clear"}}
 OUT_EMOJI = {k: v[0] for k, v in chanpost.OUTCOME.items()}
 
 T = {
@@ -191,49 +182,12 @@ T = {
         "cmd_start": "How it works", "cmd_places": "My places", "cmd_lang": "Language", "cmd_stop": "Stop and delete everything",
         "obl": "oblast",
     },
-    "fr": {
-        "start": "👋 Voici le bot Heimdall — une carte non officielle des menaces aériennes en Ukraine.\n\nÉcrivez le nom d'une "
-                 "ville ou d'un village (par exemple <b>Hnidyn</b>) ou partagez une position. Je vous écrirai quand un message "
-                 "d'une chaîne nomme ce lieu, ou signale une cible à moins de {km} km. Jusqu'à {n} lieux.\n\n{warn}\n\n🔒 Je ne "
-                 "garde que le numéro de ce chat, sa langue et les lieux choisis — ni nom, ni téléphone, ni vos messages. Une "
-                 "position partagée sert une fois à trouver les localités les plus proches et n'est pas gardée. /stop efface "
-                 "tout.\n\n/places — vos lieux · /lang — langue · /stop — arrêter",
-        "added": "✅ Ajouté : {p}\nJe vous écrirai quand un message le nomme ou qu'une cible est à moins de {km} km. Lieux : {i} sur {n}.",
-        "already": "{p} fait déjà partie de vos lieux.",
-        "full": "Vous avez déjà {n} lieux — retirez-en un dans /places d'abord.",
-        "pick": "J'en ai trouvé plusieurs — lequel ?",
-        "none": "Je n'ai pas trouvé « {q} ». Écrivez le nom comme sur la carte, en ukrainien ou en lettres latines : Hnidyn, Brovary, Obolon…",
-        "places": "Vos lieux ({i} sur {n}). Touchez-en un pour le retirer :",
-        "no_places": "Aucun lieu pour l'instant. Écrivez le nom d'une ville ou d'un village.",
-        "removed": "Retiré : {p}.",
-        "stopped": "C'est fait : vos lieux et votre langue sont effacés, plus aucun message. /start pour recommencer.",
-        "lang": "Langue des messages :",
-        "lang_set": "Langue : français.",
-        "loc_none": "Aucune localité de la carte près de là. Écrivez un nom.",
-        "loc_pick": "Les localités les plus proches (votre position n'a pas été gardée) :",
-        "expired": "Ce choix a expiré — écrivez le nom à nouveau.",
-        "cancel": "Annuler", "cancelled": "Annulé.",
-        "here": "📍 Un message a nommé votre lieu : <b>{p}</b>",
-        "dest": "🎯 Cap sur votre lieu : <b>{p}</b> (d'après le message)",
-        "near": "⚠️ ~{d} km de <b>{p}</b> (depuis le lieu nommé dans le message)",
-        "region": "🚨 <b>{what}</b> — dans votre région ({p}). Mettez-vous à l'abri.",
-        "s_here": "📍 {p}", "s_dest": "🎯 → {p}", "s_near": "~{d} km de {p}", "s_region": "🚨 région de {p}",
-        "many": "⚠️ Nouvelles cibles près de vos lieux : {n}",
-        "more": "…et {n} de plus",
-        "unsaid": "📍 Position actuelle : le message ne la donne pas",
-        "held": "⚪ Pas encore d'alerte officielle là-bas — pas sur la carte tant qu'elle n'est pas déclarée",
-        "to": "Cap sur {t}", "dir": "Cap : {c}",
-        "course": "➡️ {c} (d'après le message)",
-        "alt": "↕️ Altitude : {a}", "alt_m": "~{m} m", "alt_at": " (message de {t})",
-        "at": "🕒 {t}",
-        "said": "d'après un message de {t}",
-        "quiet": "⏹ Plus de nouveaux messages depuis {t}",
-        "map": "Carte Heimdall",
-        "warn": "⚠️ D'après les messages des chaînes, pas un radar. La sirène et l'alerte officielle passent avant.",
-        "cmd_start": "Comment ça marche", "cmd_places": "Mes lieux", "cmd_lang": "Langue", "cmd_stop": "Arrêter et tout effacer",
-        "obl": "oblast",
-    },
 }
+
+
+# 1.58.39, the owner: "the bot must be in Ukrainian and English — it can ask the preferred language as its first question"
+CHOOSE = "🇺🇦 Оберіть мову повідомлень\n🇬🇧 Choose the language of the messages"
+LANG_KB = [[{"text": "🇺🇦 Українська", "callback_data": "l:uk"}, {"text": "🇬🇧 English", "callback_data": "l:en"}]]
 
 
 def tr(lang, k, **kw):
@@ -242,9 +196,9 @@ def tr(lang, k, **kw):
 
 
 def lang_of(code):
-    """A Telegram user's language → the bot's: Ukrainian for uk/ru/be (and unknown), French for fr, else English."""
+    """A Telegram user's language → the bot's, before they chose one: Ukrainian for uk/ru/be (and unknown), else English."""
     c = (code or "").lower()[:2]
-    return "fr" if c == "fr" else "uk" if c in ("uk", "ru", "be", "") else "en"
+    return "uk" if c in ("uk", "ru", "be", "") else "en"
 
 
 def haversine_km(lat1, lon1, lat2, lon2):
@@ -370,7 +324,7 @@ class Gazetteer:
         return " · ".join(parts)
 
     def label(self, e, lang, where=False):
-        """"Гнідин" (uk), "Гнідин (Hnidyn)" (en, fr) — with its raion and oblast when `where`."""
+        """"Гнідин" (uk), "Гнідин (Hnidyn)" (en) — with its raion and oblast when `where`."""
         n = e["base"] if lang == "uk" else f"{e['base']} ({translit(e['base'])})"
         w = self.where(e, lang) if where else ""
         return n + (" — " + w if w else "")
@@ -580,6 +534,7 @@ class TgBot:
         self.chat_last = {}                     # chat → time of its last alert message
         self.inbox = {}                         # chat → [times of its messages, this minute]
         self.pick = {}                          # chat → (time, [keys]) — a list offered to choose from
+        self.pending = {}                       # chat → (time, what a new user wrote before choosing a language)
         self.photos = {}                        # picture key → Telegram's file id (one upload for many chats)
         self.pngs = collections.OrderedDict()   # picture key → the picture drawn (once for every chat told of it)
         self.pause_until = 0.0
@@ -682,6 +637,7 @@ class TgBot:
             for k in [k for k in self.sent if k.startswith(pre)]:
                 del self.sent[k]
         self.pick.pop(chat, None)
+        self.pending.pop(chat, None)
         self.chat_last.pop(chat, None)
         self._save(force=True)
 
@@ -731,6 +687,7 @@ class TgBot:
         now = self.clock()
         if len(self.inbox) > 5000:
             self.inbox = {c: v for c, v in self.inbox.items() if v and now - v[-1] < 60}
+            self.pending = {c: v for c, v in self.pending.items() if now - v[0] <= PICK_TTL_S}
         t = [x for x in self.inbox.get(chat, []) if now - x < 60]
         t.append(now)
         self.inbox[chat] = t
@@ -768,16 +725,22 @@ class TgBot:
         if self._busy(cid):
             return
         lang = self._lang(cid, msg.get("from"))
+        text = (msg.get("text") or "").strip()
+        if not self.store.chat(cid) and not text.lower().startswith(("/stop", "/delete")):
+            # a new user: the language first. What they wrote waits for it (in memory, a place name or a command only —
+            # a shared location is never kept: they are asked to send it again)
+            first = text if text and not text.lower().startswith(("/start", "/help")) else None
+            self.pending[cid] = (self.clock(), first)
+            return self._reply(cid, CHOOSE, LANG_KB)
         if msg.get("location"):
             return self._location(cid, lang, msg["location"])
-        text = (msg.get("text") or "").strip()
-        if not text:
-            return
+        if text:
+            self._text(cid, lang, text)
+
+    def _text(self, cid, lang, text):
         if text.startswith("/"):
             cmd = text.split()[0].split("@")[0].lower()
             if cmd in ("/start", "/help"):
-                if not self.store.chat(cid):
-                    self.store.chat_set(cid, lang)
                 return self._reply(cid, tr(lang, "start", km=int(NEAR_KM), n=MAX_PLACES, warn=tr(lang, "warn")))
             if cmd in ("/places", "/list", "/my"):
                 return self._places(cid, lang)
@@ -785,9 +748,7 @@ class TgBot:
                 self.forget(cid)
                 return self._reply(cid, tr(lang, "stopped"))
             if cmd in ("/lang", "/language"):
-                return self._reply(cid, tr(lang, "lang"), [[{"text": "Українська", "callback_data": "l:uk"},
-                                                             {"text": "English", "callback_data": "l:en"},
-                                                             {"text": "Français", "callback_data": "l:fr"}]])
+                return self._reply(cid, tr(lang, "lang"), LANG_KB)
             return self._reply(cid, tr(lang, "start", km=int(NEAR_KM), n=MAX_PLACES, warn=tr(lang, "warn")))
         if len(text) > 60:
             return self._reply(cid, tr(lang, "none", q=esc(text[:40] + "…")))
@@ -860,8 +821,16 @@ class TgBot:
             self.pick.pop(cid, None)
             return self._reply(cid, tr(lang, "cancelled"), kb=[], edit=mid)
         if data.startswith("l:") and data[2:] in LANGS:
-            self.store.chat_set(cid, data[2:])
-            return self._reply(cid, tr(data[2:], "lang_set"), kb=[], edit=mid)
+            lang, first = data[2:], not self.store.chat(cid)
+            self.store.chat_set(cid, lang)
+            if not first:
+                return self._reply(cid, tr(lang, "lang_set"), kb=[], edit=mid)
+            # the first choice: the question becomes the bot's explanation, then what they wrote before it is answered
+            # (the answers go to the head of the queue: the last one queued leaves first — the explanation)
+            p = self.pending.pop(cid, None)
+            if p and p[1] and self.clock() - p[0] <= PICK_TTL_S:
+                self._text(cid, lang, p[1])
+            return self._reply(cid, tr(lang, "start", km=int(NEAR_KM), n=MAX_PLACES, warn=tr(lang, "warn")), kb=[], edit=mid)
         if data.startswith("a:"):
             p = self.pick.get(cid)
             try:
@@ -1134,7 +1103,7 @@ class TgBot:
 
     # ---- the threads ---------------------------------------------------------------------------------------------
     def setup(self):
-        """Who the bot is (its @name, for the dashboard) and its menu of commands, in the three languages."""
+        """Who the bot is (its @name, for the dashboard) and its menu of commands, in its two languages."""
         try:
             me = self.api.call("getMe", {}) or {}
             self.username = me.get("username")
