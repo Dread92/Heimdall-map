@@ -3,7 +3,7 @@
 The owner: "we need to completely re-think the Telegram bot: instead, the bot will ask the user, one to one, what
 location they want to be alerted on — if they write Hnidyn, the bot sends them a message only when their place is
 mentioned, or a threat is detected nearby". His picks: it replaces the channel; a post naming the place, or a target
-within 15 km; up to 4 places.
+within 15 km; up to 4 places. (1.58.40: 10 km, and the alerts lighter — tests/test_bot_15840.py.)
 """
 import json
 import os
@@ -186,11 +186,11 @@ def test_the_first_question_is_the_language_then_it_explains_and_says_what_is_ke
     m, f, _ = api.sent(A)[-1]
     assert m == "editMessageText" and f["message_id"] == 50 and f["reply_markup"] == {"inline_keyboard": []}
     t = f["text"]
-    assert "15 км" in t and "До 4 місць" in t and "не радар" in t and "/stop видаляє все" in t
+    assert "10 км" in t and "До 4 місць" in t and "не радар" in t and "/stop видаляє все" in t
     assert "лише номер цього чату, мову й обрані місця" in t and b.store.chat(A) == {"lang": "uk"}
     raw(b, B, "/start", lang="fr")
     press(b, B, "l:en")
-    assert "not radar" in api.texts(B)[-1] and "15 km" in api.texts(B)[-1] and b.store.chat(B) == {"lang": "en"}
+    assert "not radar" in api.texts(B)[-1] and "10 km" in api.texts(B)[-1] and b.store.chat(B) == {"lang": "en"}
     assert tgbot.LANGS == ("uk", "en") and "fr" not in tgbot.T and "fr" not in tgbot.LABEL
 
 
@@ -310,7 +310,7 @@ def test_a_post_naming_the_place_is_told_and_a_target_nearby_too_with_its_distan
     b.flush()
     a, = [t for t in api.texts(A) if "Допис" in t]
     assert a.startswith("📍 Допис назвав ваше місце: <b>Вишеньки</b>") and "🛵 <b>Шахед</b> · Вишеньки" in a
-    assert "З дописів каналів, не радар" in a and 'href="https://heimdall.com.ua/m"' in a
+    assert "не радар" not in a and "🕒" not in a and 'href="https://heimdall.com.ua/m"' in a          # 1.58.40
     bb = api.texts(B)[-1]
     assert bb.startswith("⚠️ ~3 км від <b>Гнідин</b> (від місця, яке назвав допис)")
     assert "kyiv_airdef" not in a + bb                         # never the channel
@@ -324,7 +324,7 @@ def test_heading_for_the_place_is_told_as_the_post_said_it():
     b.tick()
     b.flush()
     t = api.texts(A)[-1]
-    assert t.startswith("🎯 Курс на ваше місце: <b>Бровари</b> (так у дописі)") and "➡️ Курс на Бровари (так у дописі)" in t
+    assert t.startswith("🎯 Курс на ваше місце: <b>Бровари</b> (так у дописі)") and "➡️" not in t      # 1.58.40: said once
 
 
 def test_no_distance_from_a_place_no_post_gave():
@@ -337,7 +337,8 @@ def test_no_distance_from_a_place_no_post_gave():
                 mark(place="Щасливе", lon=30.79, lat=50.38, status="down", tag="#7"),        # an outcome
                 mark(place="Щасливе", lon=30.79, lat=50.38, stale=True, tag="#8"),           # faded
                 mark(place="Щасливе", lon=30.79, lat=50.38, t=T0 - 400, tag="#9"),           # too old to tell late
-                mark(place="Бориспіль", lon=30.95, lat=50.35, tag="#10")]                    # 17.5 km: beyond 15
+                mark(place="Бориспіль", lon=30.95, lat=50.35, tag="#10"),                    # 17.5 km
+                mark(place="Гора", lon=30.862, lat=50.374, tag="#11")]                       # 12 km: beyond 10 (1.58.40)
     b.tick()
     b.flush()
     assert [t for t in api.texts(A) if ("км від" in t or "Допис" in t) and "Це бот Heimdall" not in t] == []
@@ -359,27 +360,27 @@ def test_a_target_is_told_once_then_again_only_when_it_comes_to_the_place_or_muc
     b, st, api, kv, clock = bot()
     _users(b, (A, "Гнідин"))
     n0 = len(api.texts(A))
-    st.marks = [mark(place="Гора", lon=30.862, lat=50.374, tag="#30")]                         # 12 km
+    st.marks = [mark(place="Щасливе", lon=30.79, lat=50.38, tag="#30")]                         # 8 km
     b.tick()
     b.flush()
     assert len(api.texts(A)) == n0 + 1
     first_mid = api.mid
     clock.t += 60
-    st.marks = [mark(place="Гора", lon=30.862, lat=50.374, t=clock.t, tag="#30")]
+    st.marks = [mark(place="Щасливе", lon=30.79, lat=50.38, t=clock.t, tag="#30")]
     b.tick()
     b.flush()
     assert len(api.texts(A)) == n0 + 1                          # reported again, no nearer: nothing
     clock.t += 60
-    st.marks = [mark(place="Щасливе", lon=30.79, lat=50.38, t=clock.t, tag="#30")]              # 8 km — but too soon
+    st.marks = [mark(place="Вишеньки", lon=30.72, lat=50.30, t=clock.t, tag="#30")]             # 3 km — but too soon
     b.tick()
     b.flush()
     assert len(api.texts(A)) == n0 + 1
     clock.t += tgbot.UPDATE_GAP_S
-    st.marks = [mark(place="Щасливе", lon=30.79, lat=50.38, t=clock.t, tag="#30")]
+    st.marks = [mark(place="Вишеньки", lon=30.72, lat=50.30, t=clock.t, tag="#30")]
     b.tick()
     b.flush()
     m, f, _ = api.sent(A)[-1]
-    assert f["text"].startswith("⚠️ ~8 км від") and f["reply_parameters"]["message_id"] == first_mid
+    assert f["text"].startswith("⚠️ ~3 км від") and f["reply_parameters"]["message_id"] == first_mid
     clock.t += 30
     st.marks = [mark(place="Гнідин", lon=30.7058, lat=50.3287, t=clock.t, tag="#30")]           # named: at once
     b.tick()
@@ -401,22 +402,23 @@ def test_a_swarm_is_one_message():
 def test_its_end_is_what_the_map_shows_and_never_where():
     b, st, api, kv, clock = bot()
     _users(b, (A, "Гнідин"))
-    st.marks = [mark(place="Щасливе", lon=30.79, lat=50.38, tag="#50"), mark(place="Гора", lon=30.862, lat=50.374, tag="#51")]
+    st.marks = [mark(place="Щасливе", lon=30.79, lat=50.38, tag="#50"), mark(place="Вишеньки", lon=30.72, lat=50.30, tag="#51")]
     b.tick()
     b.flush()
     clock.t += 120
+    n1 = len(api.texts(A))
     st.marks = [mark(place="Щасливе", lon=30.79, lat=50.38, tag="#50", stale=True),
-                {"id": "c1/x#down", "type": "drones", "status": "down", "place": "Проліски", "lon": 30.7796, "lat": 50.3921,
+                {"id": "c1/x#impact", "type": "drones", "status": "impact", "place": "Проліски", "lon": 30.7796, "lat": 50.3921,
                  "oblast_uid": "14", "ts": iso(T0 + 100), "channel": "kyiv_airdef"}]
     b.tick()
     b.flush()
     t = api.texts(A)[-1]
-    assert "⬇️ <b>Збито / Приземлено</b> — так у дописі о" in t and "Проліски" not in t       # what, never where
+    assert len(api.texts(A)) == n1 + 1 and "💥 <b>Вибух" in t and "— так у дописі о" in t and "Проліски" not in t  # what, never where
     clock.t += tgbot.END_AFTER_S + 5
     st.marks = []
     b.tick()
     b.flush()
-    assert api.texts(A)[-1].startswith("⏹ Нових дописів після") and "Гора" in api.texts(A)[-1]
+    assert api.texts(A)[-1].startswith("⏹ Нових дописів після") and "Вишеньки" in api.texts(A)[-1]
     n = len(api.calls)
     clock.t += 600
     b.tick()

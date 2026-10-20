@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-20 (1.58.39)
+**Documented version: 1.58** · last updated 2026-10-20 (1.58.40)
 
 The repository is **Dread92/Heimdall-map**. The app's address is **https://heimdall.com.ua** (1.58.34, 18 October
 2026); the Fly app keeps its first name, `kyiv-air-watch-gb`, and its first address keeps working (§15 has the move).
@@ -131,7 +131,7 @@ Heimdall-map/
 │   ├── translate.py        offline UK→EN glossary; DeepL / Google machine translation with a circuit breaker
 │   ├── ai_reader.py        1.50: the AI reader in shadow mode (OpenRouter) — prompt, schema, checks, comparison (§7.7)
 │   ├── chanpost.py         1.58: the owner's private Telegram channel — a post per report, its outcome, the all-clear (§9c); not started since 1.58.38, its words and picture are the bot's
-│   ├── tgbot.py            1.58.38: the owner's Telegram bot, one to one — each user's places, a post naming one or a target within 15 km (§9d)
+│   ├── tgbot.py            1.58.38: the owner's Telegram bot, one to one — each user's places, a post naming one or a target within 10 km (§9d)
 │   ├── mapshot.py          1.58: its picture — the map around one target, drawn with Pillow in the app's style (§9c)
 │   ├── areas.py            1.58.7: which official alert area a point is in, and is it under alert (`held`, §7.4; §9c)
 │   ├── limits.py           1.58.17: the public API's abuse limits — per client, on what costs the server (§12.1)
@@ -1981,7 +1981,8 @@ Fly's secrets through `fly secrets import`'s input. To stop: `fly secrets unset 
 The owner, 20 October 2026: "we need to completely re-think the Telegram bot: instead, the bot will ask the user, one to
 one, what location they want to be alerted on — if they write Hnidyn, the bot sends them a message only when their
 place is mentioned, or a threat is detected nearby". His picks: it **replaces the channel** (§9c); it writes when **a post
-names the place**, or **a target is reported within 15 km** of it (`NEAR_KM`); **up to 4 places** a user (`MAX_PLACES`).
+names the place**, or **a target is reported within 10 km** of it (`NEAR_KM`; 15 km until 1.58.40, the owner: "10 km
+instead of 15"); **up to 4 places** a user (`MAX_PLACES`).
 `app/tgbot.py`, started by `main()` when `TG_BOT_TOKEN` is set (the channel's bot, the same token); its rules are
 SAFETY.md's "The bot writes about a place because it was given one".
 
@@ -2019,13 +2020,19 @@ tag), each compared with every place (`TgBot.hit`):
 |---|---|---|
 | `here` | the post placed it at the user's place (its key; or its name, within 3 km, `MENTION_KM`) | "📍 Допис назвав ваше місце: **Гнідин**" |
 | `dest` | a post said it is heading for it (`target`, or "→ Гнідин") — its oblast when the name is a namesake's | "🎯 Курс на ваше місце: **Гнідин** (так у дописі)" |
-| `near` | placed at a town a post named, within 15 km — not an oblast, a raion, a part of an oblast, a place it is only heading for, nor a target held off the map | "⚠️ ~8 км від **Гнідин** (від місця, яке назвав допис)" |
+| `near` | placed at a town a post named, within 10 km — not an oblast, a raion, a part of an oblast, a place it is only heading for, nor a target held off the map | "⚠️ ~8 км від **Гнідин** (від місця, яке назвав допис)" |
 | `region` | a ballistic or supersonic missile within `geo.REGION_ALERT_KM` (150 km) — no distance (the push's rule) | "🚨 **Балістична ракета** — у вашому регіоні (Гнідин). Негайно в укриття." |
 
-Then the channel's lines, in the user's language: the type (the app's names) × count · the place a post gave; a course
-only when a post stated one (`chanpost.stated_course`); "where it is now: not said" for a place it is only heading for;
-a held target's line; the height a post gave (fresh, `chanpost.stated_alt`); the time; the reminder; a link to `/m`.
-Never the channel. A target in Kyiv or Kyiv oblast comes with the channel's picture (`mapshot`, §9c), drawn once and
+Then the channel's lines, in the user's language: the type (the app's names) × count · the place a post gave; "where
+it is now: not said" for a place it is only heading for; a held target's line; the height a post gave (fresh,
+`chanpost.stated_alt`, with the time of the post that gave it when that was an earlier one); a link to `/m`. Never the
+channel. **1.58.40, the owner** ("the place must not be cluttered"): no course line (a course is said only as "heading
+for your place", the `dest` line; the picture keeps the stated course), no clock (Telegram shows the time), no reminder
+— "from channel posts, not radar" is in the first message (`/start`) and the bot's profile (`setMyDescription`,
+`setMyShortDescription`, both languages, set at start); a weapon not stated but probably a drone reads "❔ **Probably a
+drone**" ("Ймовірно, дрон"), without "— type not stated" — never "Drone": the post did not say it (SAFETY.md, "A weapon
+nobody named"). The owner's example becomes: "⚠️ ~9 km from **Гнідин (Hnidyn)** (from the place the post named) /
+❔ **Probably a drone** · Prolisky / ↕️ Height: ~2100 m (posted at 00:27) / 🗺 Heimdall map". A target in Kyiv or Kyiv oblast comes with the channel's picture (`mapshot`, §9c), drawn once and
 uploaded once — the other chats get Telegram's file id.
 
 A target is told **once** per place; again, in reply to that message, only when it comes to the place (a better reason:
@@ -2033,8 +2040,9 @@ A target is told **once** per place; again, in reply to that message, only when 
 more than 5 min old (`FRESH_S`). A chat gets one alert message every 20 s at most (`CHAT_GAP_S`; a missile waits not):
 targets that came meanwhile are one message, "⚠️ Нові цілі біля ваших місць: 7" and up to 5 lines (`LIST_MAX`). **Its
 end**, in reply: an outcome a post reported, linked as the Tactical page links it (`chanpost.link_outcomes`), in the app's
-words and without where it happened; or, no longer reported for 10 min (`END_AFTER_S`), "⏹ Нових дописів після HH:MM
-немає". It says nothing of an alert or an all-clear — Telegram never starts or ends one.
+words and without where it happened — except a shot down (1.58.40, the owner: "on va pas mettre les confirmed shot
+down"): the target ends and nothing is said (`TgBot._close`), not even "no new reports" later; or, no longer reported
+for 10 min (`END_AFTER_S`), "⏹ Нових дописів після HH:MM немає". It says nothing of an alert or an all-clear — Telegram never starts or ends one.
 
 **Sending**: one queue (`TgBot.out`), at most 25 calls a second (`RATE_PER_S`); its answers to a user go first; a 429's
 `retry_after` is obeyed; an error leaving `BotAPI` names the method and Telegram's words, never the token. A second

@@ -4,6 +4,9 @@ The owner (20 Oct 2026): "we need to completely re-think the Telegram bot: the b
 location they want to be alerted on — if they write Hnidyn, the bot sends them a message only when their place is
 mentioned, or a threat is detected nearby". His answers to the questions that followed: it replaces the channel; it
 writes when a post names the place, or when a target is reported within 15 km of it; up to 4 places a user.
+1.58.40, the owner: "the place must not be cluttered" — 10 km instead of 15; no course, no clock, no "not radar" line in
+an alert (the reminder is in the first message and the bot's description); "probably a drone" without "— type not
+stated"; a target shot down is not followed by a message.
 
 Its rules (docs/SAFETY.md, "The bot writes about a place because it was given one"):
   - a place is one of the gazetteer's (the towns, villages and Kyiv districts the map knows), found by its name — in
@@ -11,14 +14,16 @@ Its rules (docs/SAFETY.md, "The bot writes about a place because it was given on
     such places and is never kept, logged or sent on. What the server keeps: the chat's number, its language, the
     places chosen. No name, no username, no phone, no message. /stop deletes all of it, and so does blocking the bot;
   - it says what the map shows and nothing more, in the channel's words (chanpost): the type and the place a post gave,
-    a course only when a post stated one, the height a post gave (fresh), "from channel posts, not radar"; a distance
-    only from the place the post named to the user's place, as the app's Near list measures it; never the channel;
+    the height a post gave (fresh) and when, the map's link; "from channel posts, not radar" in the first message and the
+    bot's description (1.58.40: not in every alert); a distance only from the place the post named to the user's place,
+    as the app's Near list measures it; never the channel; a course only as "heading for your place", when a post said it;
   - "nearby" is the app's own push rule (server.proximity_watch): a live target — no outcome, not faded, not superseded,
     not the AI's alone — placed at a town a post named (not an oblast, not a raion, not held off the map), within
     NEAR_KM; a ballistic or supersonic missile is said for the whole region (geo.REGION_ALERT_KM), with no distance;
   - a target is told once per place, and again only when it comes to the place (named there, or heading for it), or
     CLOSER_KM nearer at most every UPDATE_GAP_S; its end is what the map shows: an outcome a post reported, in the
-    app's words and without where it happened, or no new reports for END_AFTER_S. Telegram never starts or ends an
+    app's words and without where it happened (1.58.40: not a shot down — nothing follows it), or no new reports for
+    END_AFTER_S. Telegram never starts or ends an
     alert: the bot says nothing of an alert or an all-clear;
   - the token is the owner's (the Fly secret TG_BOT_TOKEN, the channel's bot): read from the environment, never written
     to the database, a log or an answer. The logs carry counts, never a chat, a text or a place.
@@ -59,7 +64,7 @@ KV_ON = "bot_on"                  # the dashboard's switch ("0" = off: no alert 
 KV_OFFSET = "bot_offset"          # the next update to read (Telegram keeps them 24 h)
 KV_SENT = "bot_sent"              # what each chat was told of each target (a restart does not tell it again)
 MAX_PLACES = 4                    # the owner's pick: "up to 4", as the app's pins
-NEAR_KM = 15.0                    # the owner's pick: "15 km"
+NEAR_KM = 10.0                    # the owner's pick: "15 km"; 1.58.40: "10 km instead of 15"
 MENTION_KM = 3.0                  # a post's place named like the user's and this close to it is the user's place
 FRESH_S = 5 * 60                  # a report older than this is not told late (after a restart, a pause)
 UPDATE_GAP_S = 180                # a target told already: "closer" again at most this often
@@ -83,10 +88,10 @@ SKIP_RX = re.compile(r"водосховищ|АЕС|ГЕС|ТЕЦ|аеропор�
                      r"^Столиця$|берег$|^Рембаза$|^ДВРЗ$|^Політех$", re.I)
 
 LABEL = {
-    "uk": {k: v[1] for k, v in chanpost.LABEL.items()} | {"guided_aerial_bombs": "КАБ"},
+    "uk": {k: v[1] for k, v in chanpost.LABEL.items()} | {"guided_aerial_bombs": "КАБ", "unknown_dr": "Ймовірно, дрон"},
     "en": {"drones": "Shahed", "jet": "Jet drone", "ballistic_missiles": "Ballistic missile", "cruise_missiles": "Cruise missile",
            "supersonic_missiles": "Supersonic missile (Kh-22/32)", "unspecified_missiles": "Missile",
-           "banderol_missiles": "Banderol (jet drone)", "unknown_dr": "Probably a drone — type not stated",
+           "banderol_missiles": "Banderol (jet drone)", "unknown_dr": "Probably a drone",
            "unknown": "Drone or missile — type not stated", "guided_aerial_bombs": "Guided bomb (KAB)"},
 }
 EMOJI = {k: v[0] for k, v in chanpost.LABEL.items()} | {"guided_aerial_bombs": "💣"}
@@ -129,14 +134,14 @@ T = {
         "more": "…і ще {n}",
         "unsaid": "📍 Де саме зараз — у дописі не сказано",
         "held": "⚪ Офіційної тривоги там поки немає — на мапі її не показано, доки тривогу не оголосять",
-        "to": "Курс на {t}", "dir": "Курс: {c}",
-        "course": "➡️ {c} (так у дописі)",
         "alt": "↕️ Висота: {a}", "alt_m": "~{m} м", "alt_at": " (у дописі о {t})",
-        "at": "🕒 {t}",
         "said": "так у дописі о {t}",
         "quiet": "⏹ Нових дописів після {t} немає",
         "map": "Мапа Heimdall",
         "warn": chanpost.WARN,
+        "about": "Heimdall — неофіційна мапа повітряних загроз. Пише вам, коли допис каналу називає ваше місце або повідомляє "
+                 "ціль поруч.",
+        "about_short": "Неофіційна мапа повітряних загроз · з дописів каналів, не радар",
         "cmd_start": "Як це працює", "cmd_places": "Мої місця", "cmd_lang": "Мова", "cmd_stop": "Зупинити й видалити все",
         "obl": "обл.",
     },
@@ -171,14 +176,14 @@ T = {
         "more": "…and {n} more",
         "unsaid": "📍 Where it is now: the post did not say",
         "held": "⚪ No official alert there yet — not on the map until one is declared",
-        "to": "Heading for {t}", "dir": "Heading {c}",
-        "course": "➡️ {c} (as the post said)",
         "alt": "↕️ Height: {a}", "alt_m": "~{m} m", "alt_at": " (posted at {t})",
-        "at": "🕒 {t}",
         "said": "as a post said at {t}",
         "quiet": "⏹ No new reports since {t}",
         "map": "Heimdall map",
         "warn": "⚠️ From channel posts, not radar. The siren and the official alert come first.",
+        "about": "Heimdall — an unofficial air-threat map. It writes to you when a channel post names your place or reports a "
+                 "target near it.",
+        "about_short": "Unofficial air-threat map · from channel posts, not radar",
         "cmd_start": "How it works", "cmd_places": "My places", "cmd_lang": "Language", "cmd_stop": "Stop and delete everything",
         "obl": "oblast",
     },
@@ -429,17 +434,6 @@ def head_line(m, lang):
             f"</b> · {esc(place)}")
 
 
-def course_text(m, lang):
-    """The course a post stated (chanpost.stated_course decides whether there is one), in the reader's language."""
-    c = chanpost.stated_course(m)
-    if not c:
-        return None
-    if c.startswith("Курс на "):
-        t = c[len("Курс на "):]
-        return tr(lang, "to", t=t if lang == "uk" else f"{t} ({translit(t)})")
-    return tr(lang, "dir", c=COMPASS[lang][int(((m["heading"] % 360) + 22.5) // 45) % 8])
-
-
 def alt_text(m, lang):
     alt, at = chanpost.stated_alt(m)
     if not alt:
@@ -449,10 +443,9 @@ def alt_text(m, lang):
 
 
 def body_lines(m, lang):
+    """1.58.40, the owner: no course here ("on va pas préciser la direction") — "heading for your place" is the trigger
+    line, when a post said it; the picture keeps the stated course."""
     lines = [head_line(m, lang)]
-    c = course_text(m, lang)
-    if c:
-        lines.append(tr(lang, "course", c=esc(c)))
     if chanpost.approach(m):
         lines.append(tr(lang, "unsaid"))
     if m.get("held"):
@@ -464,7 +457,9 @@ def body_lines(m, lang):
 
 
 def foot(lang, t, url):
-    return [tr(lang, "at", t=hhmm(t)), tr(lang, "warn"), f'🗺 <a href="{esc(url.rstrip("/"))}/m">{esc(tr(lang, "map"))}</a>']
+    """1.58.40, the owner: "the place must not be cluttered" — no clock (Telegram shows the time) and no reminder (it is
+    in the first message and the bot's description): the map's link only."""
+    return [f'🗺 <a href="{esc(url.rstrip("/"))}/m">{esc(tr(lang, "map"))}</a>']
 
 
 def trigger_line(h, lang, label, short=False):
@@ -1084,9 +1079,11 @@ class TgBot:
                                         "link_preview_options": {"is_disabled": True}}, cb=done)
 
     def _close(self, chat, lang, items):
-        """One message for what ended: in reply to what was told of it when it is one target."""
+        """One message for what ended: in reply to what was told of it when it is one target. 1.58.40, the owner: not for
+        a target shot down ("on va pas mettre les confirmed shot down") — it ends, and nothing is said."""
         with self.lock:
-            ps = [(sk, self.sent[sk], end) for sk, end in items if sk in self.sent]
+            ps = [(sk, self.sent[sk], end) for sk, end in items if sk in self.sent
+                  and not (end.get("k") == "outcome" and end.get("status") == "down")]
         tracks = {}
         for sk, p, end in ps:
             tracks.setdefault(p["track"], (p, end))
@@ -1111,13 +1108,14 @@ class TgBot:
             self.log("bot: getMe —", e.desc[:120])
         for lang in LANGS:
             cmds = [{"command": c, "description": tr(lang, "cmd_" + c)} for c in ("start", "places", "lang", "stop")]
-            f = {"commands": cmds}
-            if lang != "uk":
-                f["language_code"] = lang
-            try:
-                self.api.call("setMyCommands", f)
-            except TgError:
-                pass
+            code = {} if lang == "uk" else {"language_code": lang}
+            for method, f in (("setMyCommands", {"commands": cmds}),
+                              ("setMyDescription", {"description": tr(lang, "about") + "\n\n" + tr(lang, "warn")}),
+                              ("setMyShortDescription", {"short_description": tr(lang, "about_short")})):
+                try:
+                    self.api.call(method, {**f, **code})
+                except TgError:
+                    pass
 
     def _loop(self, name, fn, every, first=None):
         if first:

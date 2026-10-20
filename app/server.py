@@ -9795,7 +9795,7 @@ def main():
     # 1.58.38, the owner: "we need to completely re-think the Telegram bot: the bot will ask the user, one to one, what
     # location they want to be alerted on". The bot (app/tgbot.py) replaces the private channel of 1.58 (app/chanpost.py,
     # no longer started — its words and its picture are the bot's): it answers its private messages and writes to a
-    # user when a post names one of their places or reports a target within 15 km of it. Its token is the channel's
+    # user when a post names one of their places or reports a target within 10 km of it (1.58.40; 15 before). Its token is the channel's
     # bot's (TG_BOT_TOKEN, scripts/set-telegram-channel.bat; TG_CHANNEL_ID is no longer read); never logged.
     state.bot = None
     if tgbot and tgbot.configured():

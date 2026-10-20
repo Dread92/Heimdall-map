@@ -181,8 +181,10 @@ that is what it was given for. So:
   location is used once, to list the nearest places, and is never kept, logged or sent on. The logs and the dashboard
   carry counts only: no endpoint lists a chat or a place.
 - **What the map shows, and nothing more** — the channel's rules, in Ukrainian or English (the user's first answer, 1.58.39): the type and place a post gave,
-  a course only when a post stated one, the height a post gave while fresh, "from channel posts, not radar", a link to
-  the map; never the channel. A distance only from the place **the post named** to the user's place, as the Near list
+  the height a post gave while fresh, a link to the map; never the channel. 1.58.40, the owner ("the place must not be
+  cluttered"): no course line, no clock, and the reminder "from channel posts, not radar" is said in the first message
+  and the bot's profile rather than in every alert. A weapon nobody named stays **"probably a drone"** — shorter, never
+  "a drone": the post did not say it. The radius is **10 km** (15 until 1.58.40). A distance only from the place **the post named** to the user's place, as the Near list
   measures it — and none from an oblast, a raion, a part of an oblast, a place a target is only heading for, or a
   target held off the map. A target only the AI read, a faded one, an outcome: nothing.
 - **"Heading for your place" is said only when a post said it** (a target town, "→ Гнідин"), as "так у дописі".
@@ -190,7 +192,8 @@ that is what it was given for. So:
   faster than a reader can act on being told — the push's rule.
 - **Once per target and place**, then again only when it comes to the place or is 3 km closer (every 3 min at most);
   never a report more than 5 minutes old; a swarm is one message. Its end is what the map shows: an outcome a post
-  reported, in the app's words and **never where**; or "no new reports since". **Telegram never starts or ends an
+  reported, in the app's words and **never where** — but not a shot down (1.58.40: nothing is said, and no "no new
+  reports" follows it); or "no new reports since". **Telegram never starts or ends an
   alert**: the bot says nothing of alerts or all-clears.
 
 ## A target quotes the words it was read from (1.58.39)

@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Heimdall (Kyiv Air Watch) — the full technical documentation, with a map of the system.">
-<meta name="heimdall-version" content="1.58.39">
-<meta name="heimdall-docs" content="3de7a4f9665699cb">
+<meta name="heimdall-version" content="1.58.40">
+<meta name="heimdall-docs" content="9e364e8da05bedd1">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Heimdall Technical Manual</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -237,7 +237,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
 <header class="top">
   <div class="wrap">
     <a class="brand" href="#top"><b>Heimdall</b><span>Technical manual</span></a>
-    <span class="ver">1.58.39</span>
+    <span class="ver">1.58.40</span>
     <nav class="nav" aria-label="Sections">
       <a href="#map">Map</a><a href="#journeys">Journeys</a><a href="#rules">Rules</a><a href="#reference">Reference</a><a href="#safety">Safety</a>
     </nav>
@@ -256,7 +256,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
       <h1 class="title">How Heimdall works</h1>
       <p class="lead">An unofficial air-threat map for Kyiv and the oblasts around it. One Python process reads the official
       alert data and the channels that track drones and missiles, stores every post before it reads it, rebuilds the map
-      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.39, 20 October 2026:
+      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.40, 20 October 2026:
       the map first, then everything in full.</p>
     </div>
     <dl class="facts">
@@ -516,7 +516,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
     <rect class="m-box" x="930" y="432" width="165" height="78" rx="6"/>
     <text class="m-title" x="942" y="452">Telegram bot (1-1)</text>
     <text class="m-sub" x="942" y="470">bot-in · bot-watch · bot-out</text>
-    <text class="m-sub" x="942" y="486">a place named, ≤ 15 km;</text>
+    <text class="m-sub" x="942" y="486">a place named, ≤ 10 km;</text>
     <text class="m-sub" x="942" y="502">tgbot · mapshot</text>
   </g></a>
   <a class="m-link" href="#712-the-direction-patterns-155-the-dashboard-only"><g>
@@ -647,7 +647,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
     <div class="doc" id="doc">
 <section class="part" id="tech" data-label="Reference"><p class="partlabel">Part I · The reference</p>
 <h1 id="heimdall--technical-documentation">Heimdall — technical documentation</h1>
-<p><strong>Documented version: 1.58</strong> · last updated 2026-10-20 (1.58.39)</p>
+<p><strong>Documented version: 1.58</strong> · last updated 2026-10-20 (1.58.40)</p>
 <p>The repository is <strong>Dread92/Heimdall-map</strong>. The app's address is <strong>https://heimdall.com.ua</strong> (1.58.34, 18 October
 2026); the Fly app keeps its first name, <code>kyiv-air-watch-gb</code>, and its first address keeps working (§15 has the move).</p>
 <p>This is the complete technical reference: what runs, where the data comes from, how a Telegram post becomes a
@@ -782,7 +782,7 @@ real post, and a fix to the rules applies to posts already in the database.</p>
 │   ├── translate.py        offline UK→EN glossary; DeepL / Google machine translation with a circuit breaker
 │   ├── ai_reader.py        1.50: the AI reader in shadow mode (OpenRouter) — prompt, schema, checks, comparison (§7.7)
 │   ├── chanpost.py         1.58: the owner's private Telegram channel — a post per report, its outcome, the all-clear (§9c); not started since 1.58.38, its words and picture are the bot's
-│   ├── tgbot.py            1.58.38: the owner's Telegram bot, one to one — each user's places, a post naming one or a target within 15 km (§9d)
+│   ├── tgbot.py            1.58.38: the owner's Telegram bot, one to one — each user's places, a post naming one or a target within 10 km (§9d)
 │   ├── mapshot.py          1.58: its picture — the map around one target, drawn with Pillow in the app's style (§9c)
 │   ├── areas.py            1.58.7: which official alert area a point is in, and is it under alert (`held`, §7.4; §9c)
 │   ├── limits.py           1.58.17: the public API's abuse limits — per client, on what costs the server (§12.1)
@@ -3031,7 +3031,8 @@ Fly's secrets through <code>fly secrets import</code>'s input. To stop: <code>fl
 <p>The owner, 20 October 2026: &quot;we need to completely re-think the Telegram bot: instead, the bot will ask the user, one to
 one, what location they want to be alerted on — if they write Hnidyn, the bot sends them a message only when their
 place is mentioned, or a threat is detected nearby&quot;. His picks: it <strong>replaces the channel</strong> (§9c); it writes when <strong>a post
-names the place</strong>, or <strong>a target is reported within 15 km</strong> of it (<code>NEAR_KM</code>); <strong>up to 4 places</strong> a user (<code>MAX_PLACES</code>).
+names the place</strong>, or <strong>a target is reported within 10 km</strong> of it (<code>NEAR_KM</code>; 15 km until 1.58.40, the owner: &quot;10 km
+instead of 15&quot;); <strong>up to 4 places</strong> a user (<code>MAX_PLACES</code>).
 <code>app/tgbot.py</code>, started by <code>main()</code> when <code>TG_BOT_TOKEN</code> is set (the channel's bot, the same token); its rules are
 SAFETY.md's &quot;The bot writes about a place because it was given one&quot;.</p>
 <p><strong>The conversation</strong> (private chats only; a group or a channel is ignored; at most 20 messages a chat a minute,
@@ -3082,7 +3083,7 @@ tag), each compared with every place (<code>TgBot.hit</code>):</p>
 </tr>
 <tr>
 <td><code>near</code></td>
-<td>placed at a town a post named, within 15 km — not an oblast, a raion, a part of an oblast, a place it is only heading for, nor a target held off the map</td>
+<td>placed at a town a post named, within 10 km — not an oblast, a raion, a part of an oblast, a place it is only heading for, nor a target held off the map</td>
 <td>&quot;⚠️ ~8 км від <strong>Гнідин</strong> (від місця, яке назвав допис)&quot;</td>
 </tr>
 <tr>
@@ -3092,18 +3093,25 @@ tag), each compared with every place (<code>TgBot.hit</code>):</p>
 </tr>
 </tbody>
 </table></div>
-<p>Then the channel's lines, in the user's language: the type (the app's names) × count · the place a post gave; a course
-only when a post stated one (<code>chanpost.stated_course</code>); &quot;where it is now: not said&quot; for a place it is only heading for;
-a held target's line; the height a post gave (fresh, <code>chanpost.stated_alt</code>); the time; the reminder; a link to <code>/m</code>.
-Never the channel. A target in Kyiv or Kyiv oblast comes with the channel's picture (<code>mapshot</code>, §9c), drawn once and
+<p>Then the channel's lines, in the user's language: the type (the app's names) × count · the place a post gave; &quot;where
+it is now: not said&quot; for a place it is only heading for; a held target's line; the height a post gave (fresh,
+<code>chanpost.stated_alt</code>, with the time of the post that gave it when that was an earlier one); a link to <code>/m</code>. Never the
+channel. <strong>1.58.40, the owner</strong> (&quot;the place must not be cluttered&quot;): no course line (a course is said only as &quot;heading
+for your place&quot;, the <code>dest</code> line; the picture keeps the stated course), no clock (Telegram shows the time), no reminder
+— &quot;from channel posts, not radar&quot; is in the first message (<code>/start</code>) and the bot's profile (<code>setMyDescription</code>,
+<code>setMyShortDescription</code>, both languages, set at start); a weapon not stated but probably a drone reads &quot;❔ <strong>Probably a
+drone</strong>&quot; (&quot;Ймовірно, дрон&quot;), without &quot;— type not stated&quot; — never &quot;Drone&quot;: the post did not say it (SAFETY.md, &quot;A weapon
+nobody named&quot;). The owner's example becomes: &quot;⚠️ ~9 km from <strong>Гнідин (Hnidyn)</strong> (from the place the post named) /
+❔ <strong>Probably a drone</strong> · Prolisky / ↕️ Height: ~2100 m (posted at 00:27) / 🗺 Heimdall map&quot;. A target in Kyiv or Kyiv oblast comes with the channel's picture (<code>mapshot</code>, §9c), drawn once and
 uploaded once — the other chats get Telegram's file id.</p>
 <p>A target is told <strong>once</strong> per place; again, in reply to that message, only when it comes to the place (a better reason:
 <code>near</code> → <code>dest</code> → <code>here</code>, at once) or is 3 km closer (<code>CLOSER_KM</code>) at most every 3 min (<code>UPDATE_GAP_S</code>) — never a report
 more than 5 min old (<code>FRESH_S</code>). A chat gets one alert message every 20 s at most (<code>CHAT_GAP_S</code>; a missile waits not):
 targets that came meanwhile are one message, &quot;⚠️ Нові цілі біля ваших місць: 7&quot; and up to 5 lines (<code>LIST_MAX</code>). <strong>Its
 end</strong>, in reply: an outcome a post reported, linked as the Tactical page links it (<code>chanpost.link_outcomes</code>), in the app's
-words and without where it happened; or, no longer reported for 10 min (<code>END_AFTER_S</code>), &quot;⏹ Нових дописів після HH:MM
-немає&quot;. It says nothing of an alert or an all-clear — Telegram never starts or ends one.</p>
+words and without where it happened — except a shot down (1.58.40, the owner: &quot;on va pas mettre les confirmed shot
+down&quot;): the target ends and nothing is said (<code>TgBot._close</code>), not even &quot;no new reports&quot; later; or, no longer reported
+for 10 min (<code>END_AFTER_S</code>), &quot;⏹ Нових дописів після HH:MM немає&quot;. It says nothing of an alert or an all-clear — Telegram never starts or ends one.</p>
 <p><strong>Sending</strong>: one queue (<code>TgBot.out</code>), at most 25 calls a second (<code>RATE_PER_S</code>); its answers to a user go first; a 429's
 <code>retry_after</code> is obeyed; an error leaving <code>BotAPI</code> names the method and Telegram's words, never the token. A second
 program reading the bot's updates (a webhook, another server: 409) is waited for, and the dashboard says so.</p>
@@ -4717,8 +4725,10 @@ first message says so, before any place is asked for. <code>/stop</code> deletes
 location is used once, to list the nearest places, and is never kept, logged or sent on. The logs and the dashboard
 carry counts only: no endpoint lists a chat or a place.</li>
 <li><strong>What the map shows, and nothing more</strong> — the channel's rules, in Ukrainian or English (the user's first answer, 1.58.39): the type and place a post gave,
-a course only when a post stated one, the height a post gave while fresh, &quot;from channel posts, not radar&quot;, a link to
-the map; never the channel. A distance only from the place <strong>the post named</strong> to the user's place, as the Near list
+the height a post gave while fresh, a link to the map; never the channel. 1.58.40, the owner (&quot;the place must not be
+cluttered&quot;): no course line, no clock, and the reminder &quot;from channel posts, not radar&quot; is said in the first message
+and the bot's profile rather than in every alert. A weapon nobody named stays <strong>&quot;probably a drone&quot;</strong> — shorter, never
+&quot;a drone&quot;: the post did not say it. The radius is <strong>10 km</strong> (15 until 1.58.40). A distance only from the place <strong>the post named</strong> to the user's place, as the Near list
 measures it — and none from an oblast, a raion, a part of an oblast, a place a target is only heading for, or a
 target held off the map. A target only the AI read, a faded one, an outcome: nothing.</li>
 <li><strong>&quot;Heading for your place&quot; is said only when a post said it</strong> (a target town, &quot;→ Гнідин&quot;), as &quot;так у дописі&quot;.</li>
@@ -4726,7 +4736,8 @@ target held off the map. A target only the AI read, a faded one, an outcome: not
 faster than a reader can act on being told — the push's rule.</li>
 <li><strong>Once per target and place</strong>, then again only when it comes to the place or is 3 km closer (every 3 min at most);
 never a report more than 5 minutes old; a swarm is one message. Its end is what the map shows: an outcome a post
-reported, in the app's words and <strong>never where</strong>; or &quot;no new reports since&quot;. <strong>Telegram never starts or ends an
+reported, in the app's words and <strong>never where</strong> — but not a shot down (1.58.40: nothing is said, and no &quot;no new
+reports&quot; follows it); or &quot;no new reports since&quot;. <strong>Telegram never starts or ends an
 alert</strong>: the bot says nothing of alerts or all-clears.</li>
 </ul>
 <h2 id="s-a-target-quotes-the-words-it-was-read-from-15839">A target quotes the words it was read from (1.58.39)<a class="anc" href="#s-a-target-quotes-the-words-it-was-read-from-15839" aria-label="Link to this section">#</a></h2>
@@ -5709,7 +5720,7 @@ d'alerte ne sont pas des préférences de style.</p>
 </section>
     </div>
   </div>
-  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.39, 20 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
+  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.40, 20 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
 </main>
 
 <script>

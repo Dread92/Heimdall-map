@@ -2,6 +2,23 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.40 — 2026-10-20
+
+The Telegram bot's alerts, lighter. The app itself does not change.
+
+- **Less in each alert.** The owner, of "⚠️ ~11 km from Вишеньки … / ❔ Probably a drone — type not stated · Prolisky /
+  ➡️ Heading north-west / ↕️ Height … / 🕒 00:30 / ⚠️ From channel posts, not radar …": no course, no clock (it repeats
+  Telegram's), no "from channel posts" line — "the place must not be cluttered". An alert is now its reason, the
+  target, its height when a post gave one, and the map's link. A course is still said as "heading for your place" when a
+  post said it; the picture keeps the stated course.
+- **The reminder moves** to the first message (it was already there) and the bot's profile (its description and short
+  description, in both languages, set at start).
+- **"Probably a drone"**, without "— type not stated" ("Ймовірно, дрон"). The owner asked for "drone" by default; the
+  label stays "probably": the post did not name the weapon, and CLAUDE.md's first rule is never to invent a threat type.
+- **10 km instead of 15** (`NEAR_KM`): the first message, the answers and the dashboard say 10.
+- **No "confirmed shot down".** The owner: "on va pas mettre les confirmed shot down". A target shot down ends without a
+  message (and without "no new reports" later); an explosion, "lost" and "area clear" are still said.
+
 ## 1.58.39 — 2026-10-20
 
 The Tactical page's targets — the words they were read from, their course, less text zoomed out — and the bot's
