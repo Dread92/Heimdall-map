@@ -2,6 +2,32 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.37 — 2026-10-20
+
+The dashboard after the owner's review of 19–20 October. The app itself does not change.
+
+- **The patterns had 2 nights where 12 were kept.** The owner: "we should have thousands of drones by now, yet the number
+  of recorded drones is fairly minimal". A night only got its moves while it was among the last two days, so an hour
+  the builder did not run lost that night for good. Every hour it now also builds every night whose tags are kept and
+  that has no move yet; a night whose tags gave none is remembered. The Patterns tab says how the builder went (nights
+  kept, missing nights caught up, old nights still to read again, an error), and an alert left open for more than 12 h
+  no longer holds the reading of old nights back.
+- **The scale beside the tracks**: the words now say how many targets were tagged on the same nights, how many were
+  followed over 2 places or more, and what the Air Force said was launched and shot down over all of Ukraine on those
+  nights. A followed track is a part of what was launched, never a count of drones.
+- **The AI's report over a period, on the AI tab.** The owner: "it would make sense within the AI tab … we need a wider
+  range of dates, not only one day at a time". The card moved from Analytics to the AI tab and takes from one night to
+  31 (two lists, or last night / 7 / 14 / 31). The period's record adds up each night's own record: a line per night,
+  then the totals by oblast, by hour, the places tags were first reported, outcomes, heights, the Air Force. One night
+  is that night's own report; several are written on demand with their own instructions and kept. The record and every
+  night of the period download as before.
+- **"Not written: empty answer"**: the model thinks before it writes and its thinking counted against the 3,000 tokens
+  the report had — on a busy night none were left for the words. The report gets 10,000 (a period 14,000, paid only as
+  used); an answer cut off before its first word is asked once more with 24,000; any other empty answer says why.
+- **Gone**, the owner: the chart of the channel reports over Kyiv ("mostly useless since it targets only Kyiv"), the
+  carriers' take-offs and launches ("vastly inaccurate"), and the Nights & weeks tab — its summaries are no longer
+  written (the period report does it from the full record); the ones written stay in the database.
+
 ## 1.58.36 — 2026-10-18
 
 ### Changed

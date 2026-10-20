@@ -121,7 +121,7 @@ def test_analytics_add_up_a_date_and_count_only_what_was_said():
     st = _state()
     d1, a = _seed(st)
     A = st.analytics(14)
-    assert (A["days"], len(A["af"]), len(A["kyiv"]), len(A["reports"])) == (14, 14, 14, 14)
+    assert (A["days"], len(A["af"]), len(A["kyiv"]), "reports" in A) == (14, 14, 14, False)      # 1.58.37: no Kyiv reports chart
     row = next(r for r in A["af"] if r["date"] == d1)
     assert sorted(row["periods"]) == ["day", "night"]
     assert row["launched"] == {"drones": 240, "jet": 60, "cruise": 10} and row["down"]["total"] == 220
@@ -132,8 +132,6 @@ def test_analytics_add_up_a_date_and_count_only_what_was_said():
     k = next(r for r in A["kyiv"] if r["date"] == d1)
     assert (k["city_min"], k["oblast_min"], k["city_alerts"]) == (90, 120, 1)     # another oblast never counts
     assert A["starts"][a.weekday()][a.hour] == 1 and len(A["starts"]) == 7 and len(A["starts"][0]) == 24
-    rep = next(r for r in A["reports"] if r.get("drones"))
-    assert rep["drones"] == 1 and rep["jet"] == 1 and rep["banderol_missiles"] == 1 and rep["down"] == 1
     assert sum(A["hours"]) == 3 and A["headings"][2] == 1                          # only a stated course; oblast 5 is out
     json.dumps(A)                                                                  # the dashboard gets it as JSON
 
@@ -141,8 +139,9 @@ def test_analytics_add_up_a_date_and_count_only_what_was_said():
 def test_analytics_are_admin_only_and_banderol_is_drawn_as_a_jet_drone():
     i = SRC.index('if u.path == "/api/analytics":')
     assert "if not self._admin_ok(q):" in SRC[i:i + 200]
-    assert "jet:(r.jet||0)+(r.banderol_missiles||0)" in ADMIN                     # never with the missiles
-    assert "(r.banderol_missiles||0)" not in ADMIN.split("missiles:(r.cruise_missiles")[1].split("};")[0]
+    # 1.58.37, the owner: "mostly useless data, since it targets only Kyiv" — the chart of the reports over Kyiv is gone
+    assert "an_c_reports" not in ADMIN and "card('c10'" not in ADMIN and "(r.banderol_missiles||0)" not in ADMIN
+    assert "ty_banderol_missiles:'Banderol (jet drone)'" in ADMIN                     # named as a jet drone, never a missile
 
 
 def test_every_dashboard_string_exists_in_both_languages():
@@ -150,10 +149,10 @@ def test_every_dashboard_string_exists_in_both_languages():
     uk = ADMIN[ADMIN.index(" uk:{"):ADMIN.index("let L='en'")]
     keys = set(re.findall(r"\btr\('([a-z0-9_]+)'(?!\+)", ADMIN)) | set(re.findall(r'data-tr="([a-z0-9_]+)"', ADMIN))
     keys |= {"an_m_" + k for k in ("cruise", "ballistic", "aeroballistic", "antiship", "guided")}
-    keys |= {"an_r_" + k for k in ("drones", "jet", "missiles", "other")}
     missing = sorted(k for k in keys if not re.search(r"[{,\s]" + k + ":", en) or not re.search(r"[{,\s]" + k + ":", uk))
     assert not missing, missing
-    for tab in ("live", "analytics", "nights", "sources", "usage"):
+    assert 'data-tab="nights"' not in ADMIN and 'id="tab-nights"' not in ADMIN      # 1.58.37: the nights and weeks are gone
+    for tab in ("live", "analytics", "sources", "usage"):
         assert f'data-tab="{tab}"' in ADMIN and f'id="tab-{tab}"' in ADMIN
 
 

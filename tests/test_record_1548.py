@@ -152,7 +152,7 @@ def test_the_bulletins_have_room():
     assert "at most 90 words" in p and "at most 220 words" in p
     assert 'Never write "unknown", "unidentified" or "unspecified" for a target' in p and "Never turn \"probably\" into a certainty" in p
     assert "kept for the record, not for the bulletin" in p
-    assert "timeout=BULLETIN_TIMEOUT if (bk or kind == \"text\") else 40" in _read("app/ai_reader.py")
+    assert "timeout=BULLETIN_TIMEOUT * (2 if kind == \"period\" else 1) if (bk or kind in (\"text\", \"period\")) else 40" in _read("app/ai_reader.py")
 
 
 def test_the_docs_tell_it():

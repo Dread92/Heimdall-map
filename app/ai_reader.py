@@ -842,7 +842,12 @@ def check_messages(text, cache=False):
 
 # ---- 1.53: the night's report --------------------------------------------------------------------------------------
 REPORT_VERSION = "2"     # 1.54: no AI checks to read any more
-MAX_OUT_REPORT = 3000
+# 1.58.37, the owner: "some days throw back: Not written: empty answer". The model thinks before it writes and its
+# thinking counts against max_tokens: on a busy night 3,000 went on thinking and nothing was left for the report. Room
+# to think and write (paid only as used); an answer cut off before any word is asked once more with twice the room.
+MAX_OUT_REPORT = 10000
+MAX_OUT_PERIOD = 14000
+MAX_OUT_RETRY = 24000
 REPORT_SYSTEM = """You are the analyst of Heimdall, an unofficial air-threat map of Ukraine built from public Telegram channels and the official alert feed. You are given the complete record of one night (12:00 to 12:00 Kyiv time): the official alerts by oblast, every target Heimdall tagged with the path its reports drew, its heights and where it came from, the reports by hour and oblast, the outcomes reported and the Air Force's figures (a night before 1.54 also has the notes of the AI checks then run every few minutes).
 
 Write the night's report for the owner, in English, plain text with short headed sections:
@@ -853,6 +858,20 @@ Write the night's report for the owner, in English, plain text with short headed
 5. Patterns — what this night shows about how the attack unfolded: timing, routes, mixes of weapons, repeats; only what the record supports.
 
 Only what the record shows: take every figure from it, never invent a number, a place or a weapon; say "reported" (these are channel reports, not a count of drones); no forecast stated as a fact, no advice on sheltering, no names of people. At most 900 words."""
+
+# 1.58.37, the owner: "the main goal is to aggregate as many data as possible to make a report, so we need a wider range
+# of dates, not only one day at a time". The record of several nights at once (State.period_summary / period_text).
+PERIOD_SYSTEM = """You are the analyst of Heimdall, an unofficial air-threat map of Ukraine built from public Telegram channels and the official alert feed. You are given the record of a period of several nights (each night runs from 12:00 to 12:00 Kyiv time): one line per night (the targets Heimdall tagged and followed, the channel reports, the oblasts under alert, the minutes Kyiv city spent under alert, the Air Force's own figures for the night, the outcomes reported), then the totals over the period — the official alerts by oblast, the reports by oblast and by hour, where tagged targets were first reported, the outcomes, the heights.
+
+Write the period's report for the owner, in English, plain text with short headed sections:
+1. The period in brief — the heaviest and the quietest nights, the oblasts most concerned, the few figures that matter.
+2. Night by night — how the nights compare: their size, their timing, their mix of weapons; streaks and breaks.
+3. Routes and places — where targets were first reported most often, the oblasts and places that recur, Kyiv city and oblast in particular.
+4. Timing — the hours the reports cluster in, and whether that moved over the period.
+5. Against the Air Force — its launched and shot-down figures beside what the channels reported, night by night where both exist; say plainly that the channels follow only part of what is launched.
+6. Patterns — what repeats across the nights: days, hours, routes, mixes; only what the record supports, with the nights it rests on.
+
+Only what the record shows: take every figure from it, never invent a number, a place or a weapon; say "reported" (these are channel reports, not a count of drones); a pattern seen on two or three nights is a hint, not a rule — say how many nights it rests on; no forecast stated as a fact, no advice on sheltering, no names of people. At most 1,400 words."""
 
 
 # ---- 1.54: the bulletins ------------------------------------------------------------------------------------------
@@ -1138,12 +1157,20 @@ class AIReader:
         self._save_check(row)
         return "ok"
 
-    def ask_text(self, system, text):
-        """1.53: one request for words (the night's report): {"out": text, …} or {"error": …}. Within the budget."""
+    def ask_text(self, system, text, kind="text"):
+        """1.53: one request for words (the night's report): {"out": text, …} or {"error": …}. Within the budget.
+        1.58.37: `kind` "period" for several nights (more room); an answer cut off before its first word is asked once
+        more with MAX_OUT_RETRY, and what both cost is counted."""
         why = self._allowed(0)
         if why:
             return {"error": why}
-        return self._request([{"role": "system", "content": system}, {"role": "user", "content": text}], 1, "text")
+        msgs = [{"role": "system", "content": system}, {"role": "user", "content": text}]
+        res = self._request(msgs, 1, kind)
+        if res.get("cut"):
+            res2 = self._request(msgs, 1, kind, max_out=MAX_OUT_RETRY)
+            res2["cost"] = (res2.get("cost") or 0) + (res.get("cost") or 0)
+            return res2
+        return res
 
     def ask_bulletin(self, kind, text, span=""):
         """1.54: one bulletin — {"out": {"uk", "en", "fr"}, "cost", "tok_in", "tok_out", "model"} or {"error": …}. The
@@ -1244,15 +1271,16 @@ class AIReader:
             self.down_until = time.time() + 600
         return res
 
-    def _request(self, msgs, way, kind="post"):
+    def _request(self, msgs, way, kind="post", max_out=None):
         # 1.50.1: only parameters every model that takes a JSON schema accepts. With require_parameters, one the model
         # does not take (claude-haiku-5.5 takes no `temperature`) leaves no provider at all: "HTTP 404: No endpoints".
         # `kind`: "post", "check" (1.50–1.53), "text" (the night's report), "bulletin:1h" / "bulletin:24h" (1.54)
         bk = kind.split(":", 1)[1] if kind.startswith("bulletin:") else None
-        mx = MAX_OUT_BULLETIN[bk] if bk else {"check": MAX_OUT_CHECK, "text": MAX_OUT_REPORT}.get(kind, MAX_OUT)
+        mx = MAX_OUT_BULLETIN[bk] if bk else {"check": MAX_OUT_CHECK, "text": MAX_OUT_REPORT, "period": MAX_OUT_PERIOD}.get(kind, MAX_OUT)
+        mx = max_out or mx
         body = {"model": self.model(), "max_tokens": mx, "messages": msgs,
                 "provider": {"require_parameters": True}, "usage": {"include": True}}
-        if way == 0 and kind != "text":
+        if way == 0 and kind not in ("text", "period"):
             body["response_format"] = {"type": "json_schema", "json_schema": (
                 {"name": "heimdall_bulletin", "strict": True, "schema": BULLETIN_SCHEMA} if bk
                 else {"name": "heimdall_check", "strict": True, "schema": CHECK_SCHEMA} if kind == "check"
@@ -1261,7 +1289,8 @@ class AIReader:
             "Authorization": "Bearer " + self.key(), "Content-Type": "application/json", "X-Title": "Heimdall"})
         try:
             ctx = getattr(self, "ssl_ctx", None)
-            with urllib.request.urlopen(req, timeout=BULLETIN_TIMEOUT if (bk or kind == "text") else 40, context=ctx) as r:
+            with urllib.request.urlopen(req, timeout=BULLETIN_TIMEOUT * (2 if kind == "period" else 1) if (bk or kind in ("text", "period")) else 40,
+                                        context=ctx) as r:
                 data = json.loads(r.read().decode("utf-8"))
         except urllib.error.HTTPError as e:
             why = _why(e)
@@ -1285,12 +1314,22 @@ class AIReader:
                 self.store.kv_set(f"ai_usd:{self.month}", f"{self.spent:.6f}")
             except Exception:
                 pass
-        if kind == "text":                               # 1.53: the night's report — words, not JSON
-            text = ((data.get("choices") or [{}])[0].get("message") or {}).get("content")
+        if kind in ("text", "period"):                   # 1.53: the night's report — words, not JSON (1.58.37: a period's too)
+            ch = (data.get("choices") or [{}])[0]
+            text = (ch.get("message") or {}).get("content")
+            if isinstance(text, list):                   # a provider that answers in parts
+                text = "".join(p.get("text") or "" for p in text if isinstance(p, dict))
             text = text.strip() if isinstance(text, str) else ""
             if not text:
-                self.last_error = "empty answer"
-                return {"error": "empty answer", "cost": cost}
+                # 1.58.37: say why — the thinking ran out the room (cut, asked again with more by ask_text), or the
+                # provider stopped for its own reason
+                out_n = usage.get("completion_tokens") or 0
+                why = ch.get("native_finish_reason") or ch.get("finish_reason")
+                cut = ch.get("finish_reason") == "length" or out_n >= mx
+                err = (f"empty answer: the model used its {mx} tokens thinking and wrote nothing" if cut
+                       else "empty answer" + (f" (the model stopped: {why}, {out_n} tokens out)" if why or out_n else ""))
+                self.last_error = err
+                return {"error": err, "cost": cost, "cut": cut, "tok_in": usage.get("prompt_tokens"), "tok_out": out_n}
             return {"out": text, "cost": cost, "tok_in": usage.get("prompt_tokens"), "tok_out": usage.get("completion_tokens"),
                     "model": data.get("model") or self.model(), "way": way}
         try:

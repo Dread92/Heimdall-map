@@ -261,7 +261,6 @@ table.ptt tr[data-cell]{cursor:pointer}table.ptt tr[data-cell]:hover td{backgrou
   <button data-tab="live" role="tab" data-tr="tab_live">Live</button>
   <button data-tab="analytics" role="tab" data-tr="tab_an">Analytics</button>
   <button data-tab="patterns" role="tab" data-tr="tab_pat">Patterns</button>
-  <button data-tab="nights" role="tab" data-tr="tab_nights">Nights &amp; weeks</button>
   <button data-tab="sources" role="tab" data-tr="tab_sources">Sources</button>
   <button data-tab="ai" role="tab" data-tr="tab_ai">AI reader</button>
   <button data-tab="usage" role="tab" data-tr="tab_usage">Usage</button>
@@ -337,7 +336,6 @@ table.ptt tr[data-cell]{cursor:pointer}table.ptt tr[data-cell]:hover td{backgrou
     <span class="angen" id="pt_gen"></span></div>
   <div id="pt"></div>
 </section>
-<section class="tabsec" id="tab-nights" hidden><div id="digests"></div></section>
 <section class="tabsec" id="tab-sources" hidden><div id="health"></div></section>
 <section class="tabsec" id="tab-ai" hidden><div id="aiv"></div></section>
 <section class="tabsec" id="tab-usage" hidden><div id="out"></div><div class="foot" id="foot"></div></section>
@@ -353,7 +351,11 @@ const T={
  en:{title:'Heimdall — dashboard',
   tab_pat:'Patterns',pt_all:'All',pt_kind_drones:'All drones',pt_kind_drone:'Propeller',pt_kind_jet:'Jet',pt_kind_unst:'Not stated',
   pt_note:'Where the drones go, area by area — from the channels’ reports of each tagged target, in order: not radar. A move is one report to the next; a % is a share of those moves, with its 95% range — over a few moves the range is wide, so trust a % only when its range is narrow. The dashboard only: the app shows none of it.',
-  pt_n_tracks:'tracks followed',pt_n_moves:'moves',pt_n_nights:'nights',pt_n_stated:'courses stated',pt_n_cells:'areas',pt_built:'moves built {0}',
+  pt_n_tracks:'tracks followed',pt_n_moves:'moves',pt_n_nights:'nights',pt_n_stated:'courses stated',pt_n_cells:'areas',pt_built:'moves built {0}',pt_kept:'{0} nights of tags kept',pt_gaps:'{0} missing nights caught up',pt_left:'{0} older nights still to read again from their posts',pt_berr:'the builder failed: {0}',
+  per_h:'The AI’s report on a period',per_src:'Everything recorded over the nights chosen (each from 12:00 to 12:00 Kyiv time) — one line per night, then the totals: alerts by oblast, tags and where they were first reported, reports by oblast and hour, outcomes, heights, the Air Force. One night is that night’s own report, written by itself after {0}:00; a period of up to {1} nights is written when you ask.',
+  per_from:'From the night of',per_to:'to the night of',per_q1:'Last night',per_qn:'Last {0} nights',per_all:'Every night of the period, in full:',per_all_h:'Each night’s complete record — every tag with its path — and the AI’s report on it, in one file. JSON Lines: a header line, then one night a line.',
+  per_stats:'{0} nights · {1} tags ({2} followed over 2 places or more) · {3} reports',per_af:'Air Force: {0} drones launched over all Ukraine ({1} nights summed up)',
+  per_none:'No report on these nights yet — write it with the button (about a minute).',per_prev:'Written before:',
   pt_nodata:'No moves in this period yet. They are built every hour from the tagged targets’ points (the first build takes the last {0} days).',
   pt_map:'Flow map',pt_map_sub:'Each square is an area of about {0} km: its shade, the moves out of it; the arrow, their mean direction — longer when more of them go the same way. Click an area.',
   pt_lg_lo:'fewer moves',pt_lg_hi:'more',pt_lg_arrow:'mean direction',pt_lg_next:'where the next report put it, from the chosen area',
@@ -364,7 +366,7 @@ const T={
   pt_stay:'still in the area: {0}',pt_cells:'All areas',pt_cells_sub:'Areas with at least {0} moves out of them or {0} stated courses. Click a row to see it.',
   pt_csv_moves:'All moves (CSV)',pt_compass:'N,NE,E,SE,S,SW,W,NW',pt_err:'Could not load the patterns: {0}',pt_kyiv:'Kyiv',pt_none:'—',pt_plain:'In plain words',pt_plain_none:'Nothing clear enough to say yet: no area has enough reports whose main course or next place stands out. It fills in as the nights add up.',pt_km:'km',
   pt_o:'belarus:Belarus,russia:Russia,sea:the sea,crimea:Crimea,occupied:the occupied areas,n:the north,nw:the north-west,ne:the north-east,e:the east,se:the south-east,s:the south,sw:the south-west,w:the west',
-  tab_live:'Live',tab_an:'Analytics',tab_nights:'Nights & weeks',tab_sources:'Sources',tab_usage:'Usage',
+  tab_live:'Live',tab_an:'Analytics',tab_sources:'Sources',tab_usage:'Usage',
   nt_prevh:'Message from the system admin',nt_prev0:'The message shows here in the colour readers will see: green for information, red for urgent.',
   nk_h:'Nuclear event — danger zone',
   nk_desc:'Covers the map on every page with the radiation symbol, pulsing, and the text below — until you end it. For a nuclear or radiological emergency only, confirmed by the authorities or by certain evidence. It cannot be fired by one click: arm first (the server gives a one-time code, valid 2 minutes, one attempt), type the code and the phrase, then hold the button for 3 seconds.',
@@ -382,11 +384,8 @@ const T={
   an_min:'min',
   an_br_time:'Reported',an_c_br:'Kyiv bridges: targets reported on or near them',an_src_br:'Each time a bridge went to “near” (3.5 km; 6 km for a jet drone or a missile) or “at” (the post named the bridge or its ends), per 24 h from 18:00. From channel posts, not radar.',
   an_br_at:'at the bridge',an_br_near:'near',an_br_bridge:'Bridge',an_br_lvl:'Level',an_br_place:'Place named',an_br_ch:'Channel',
-  an_c_places:'Where drones were reported most',an_src_places:'The places the posts named for drones and unidentified targets, number of posts (shoot-downs and hits left out) — the Tactical map’s heat layer.',an_air_mig31k:'MiG-31K',an_air_strategic:'Tu-95 / Tu-160',an_air_tu22:'Tu-22M3',an_air_kalibr:'Kalibr (ships)',
-  an_air_n:'{0} take-offs on record',an_air_salvos:'{0} salvos reported',an_air_launched:'a launch reported after {0} of {1}',
-  an_air_delay:'take-off → launch: median {0} (half between {1} and {2}; {3} with both reported)',an_air_upfor:'called off after {0} (median)',
-  an_air_kind:'Carrier',an_air_up_at:'Take-off reported',an_air_launch_at:'Launch reported',an_air_after:'After',an_air_end_at:'Called off',an_air_reports:'Posts',
-  an_c_air:'Carriers: take-offs and launches',an_src_air:'Read from the channels on the map: “зліт / у повітрі”, “пуски”, “відбій”. The time is the first post that said it, not the event itself; a launch expected or threatened is not counted.',
+  an_c_places:'Where drones were reported most',an_src_places:'The places the posts named for drones and unidentified targets, number of posts (shoot-downs and hits left out) — the Tactical map’s heat layer.',
+  
   an_c_wx:'Weather at the launch sites and drones launched',an_src_wx:'Each dot is a night: the mean over Orel, Kursk, Bryansk, Shatalovo, Millerovo and Primorsko-Akhtarsk, 18:00–06:00 (Open-Meteo), against the drones the Air Force says were launched that night.',
   an_wx_wind:'Wind',an_wx_cloud:'Cloud cover',an_wx_rain:'Rain',an_wx_drones:'Drones launched',an_wx_r:'r = {0} over {1} nights — {2}',
   an_wx_none:'no link',an_wx_weak:'weak link',an_wx_mod:'moderate link',an_wx_strong:'strong link',
@@ -399,7 +398,7 @@ const T={
   an_m_cruise:'Cruise',an_m_ballistic:'Ballistic',an_m_aeroballistic:'Aeroballistic (Kinzhal)',an_m_antiship:'Anti-ship',an_m_guided:'Guided air missiles',
   an_launched:'launched',an_usednum:'used, no number given',
   an_s_rate:'Drones shot down / suppressed',an_s_jetshare:'Jet drones — share of all drones',an_s_hits:'Locations hit',an_s_debris:'Locations with falling debris',
-  an_s_city:'Kyiv city',an_s_obl:'Kyiv oblast (any raion)',an_r_drones:'Drones',an_r_jet:'Jet drones (incl. Banderol)',an_r_missiles:'Missiles',an_r_other:'Other',
+  an_s_city:'Kyiv city',an_s_obl:'Kyiv oblast (any raion)',
   an_dirs:'N,NE,E,SE,S,SW,W,NW',an_s_reports:'Reports',
   an_note:'All Ukraine: the Air Force’s own summaries (@kpszsu), one per night and one per day, read weapon by weapon. Kyiv: the official alerts, and the marks the channels put over the city and the oblast. Everything is counted as the source said it — a weapon the Air Force names without a number is marked “used”, never counted as 0.',
   an_c_drones:'Drones launched per date — all Ukraine',an_src_af:'Air Force summaries (@kpszsu). A date adds up the night that ends that morning and that day.',
@@ -411,7 +410,6 @@ const T={
   an_c_starts:'When alerts start in Kyiv city — weekday × hour',an_src_starts:'Starts of official air-raid alerts, Kyiv time.',
   an_c_tags:'Targets tagged per night',an_src_tags:'Heimdall’s tags (#07…), the night starting at 12:00 on that date; where they came from is no longer shown (too often wrong) — it stays in the CSV, as the posts said it. A tag is one target or one group as the channels reported it — not a count of drones.',
   an_tg_N:'N — north / Belarus',an_tg_E:'E — east / Russia',an_tg_S:'S — south / sea / Crimea',an_tg_W:'W — west',an_tg_q:'? — not said',an_tg_ai:'letter read by the AI',an_tg_none:'No target tagged in this period yet (tags start with 1.51).',
-  an_c_reports:'Channel reports over Kyiv city and oblast',an_src_reports:'Marks placed from channel posts, per 24 h from 18:00 (named by the morning date).',
   an_c_hours:'Reports by hour (Kyiv time)',an_src_hours:'Marks placed from channel posts over Kyiv city and oblast.',an_c_heads:'Courses stated for drones',an_src_heads:'Only the courses a post stated — none is guessed.',
   c_today:'devices today',c_7:'device-days · 7 d',c_30:'device-days · 30 d',c_push:'push subscribers',
   c_opens:'app opens · 30 d',c_pwa:'opened as an app',
@@ -420,13 +418,7 @@ const T={
   t_day:'Day',t_dev:'Devices',t_opens:'Opens',t_pings:'Pings',t_app:'As app',t_black:'Light',
   foot:'<b>What is counted, and what is not.</b><br>A device is counted once a day through a one-way hash of its address and browser, salted with a random value that is thrown away and regenerated every midnight — so the same person cannot be followed from one day to the next, and no hash can be turned back into an address. No IP is stored. No location, no path through the app, no per-person history, nothing that identifies anybody. Only the daily totals on this page are kept.<br><br>This page needs <code>ADMIN_KEY</code> and is not served at all unless it is set. <code>ADMIN_KEY</code> protects this dashboard only — the map stays public. (<code>ACCESS_KEY</code> is the other one: it puts a password box in front of the whole map, for a private deployment.)',
   c_light:'Light opens · 30 d',
-  h_dg:'Nights and weeks — written summaries',dg_night:'Night',dg_week:'Week',
-  dg_run_n:'Write up last night now',dg_run_w:'Write up last week now',dg_asked:'asked — it appears here within a minute',
-  dg_noai:'Written summaries are off: set the ANTHROPIC_API_KEY secret (fly secrets set ANTHROPIC_API_KEY=…). The figures are kept either way.',
-  dg_ai_note:'Written by an AI model from the figures below (counts and place names only are sent to it) — check them before quoting.',
-  dg_figs_only:'Figures only',dg_raw:'All the figures (JSON)',dg_none:'Nothing yet: last night is written up after 09:00 Kyiv time.',
-  dg_city:'Kyiv city: minutes under alert',dg_waves:'Alert waves (Kyiv + oblast)',dg_reports:'Channel reports',
-  dg_down:'Shoot-downs reported',dg_impact:'Explosions reported',dg_af:'Air Force, all Ukraine (drones / missiles / shot down)',
+  
   h_lead:'Early warning — Kyiv and Kyiv oblast, 30 days',
   ld_txt:'{0} alert waves. The map already showed a threat in the hour before {1} of them — median <b>{2} min</b> ahead of the official alert (half of them between {3} and {4} min).',
   ld_none:'No alert wave in this period had a mark on the map in the hour before it.',ld_empty:'No official alert over Kyiv or the oblast in this period.',
@@ -461,11 +453,10 @@ const T={
   h_checks:'The checks',h_ai_posts:'Post by post',ai_ck_none:'No check yet — the first comes at the next {0}-minute mark with posts waiting.',ai_ck_posts:'{0} posts',ai_ck_find:'{0} findings',
   ai_ck_err:'failed: {0}',ai_ck_unsure:'unsure: {0}',ai_chk:'check {0}',ai_checks_m:'Checks this month',ai_per_check:'{0} per check',
   f_missed:'missed by the rules',f_place:'misplaced by the rules',f_weapon:'wrong weapon',f_outcome:'outcome',f_not_sky:'not about the sky',f_facts:'adds facts',f_returned:'findings given',
-  an_c_night:'The night — the AI’s report',an_src_night:'Everything recorded over one night (12:00 to 12:00 Kyiv time): the alerts by oblast, every tag with its path, heights, origins, the reports by hour and oblast, outcomes, the Air Force, the AI’s checks and their notes. The record downloads in full, as JSON or text, for any AI to read; the AI’s own report on it is written after {0}:00.',
-  an_n_pick:'Night of',an_n_write:'Write the report now',an_n_rewrite:'Write it again',an_n_json:'Record (JSON)',an_n_txt:'Record (text)',an_n_all:'Every night, 90 days:',an_n_all_j:'JSON Lines',an_n_all_t:'text',an_n_all_h:'Every night that recorded something, the last 90 days, in one file — its record and the AI’s report on it. JSON Lines: a header line, then one night a line.',
+  an_n_write:'Write the report now',an_n_rewrite:'Write it again',an_n_json:'Record (JSON)',an_n_txt:'Record (text)',an_n_all_j:'JSON Lines',an_n_all_t:'text',
   an_n_none:'No report on this night yet — it is written after {0}:00 Kyiv time, or now with the button.',an_n_writing:'Being written…',
   an_n_asked:'Asked — the report appears here within a minute or two.',an_n_err:'Not written: {0}',an_n_meta:'written {0} · {1} · ${2}',
-  an_n_stats:'{0} tags · {1} reports · {2} oblasts under alert · {3} AI checks (${4})',an_n_loading:'Loading the night…',
+  an_n_loading:'Loading the night…',
   an_c_ai:'The AI’s checks per night — what they found',an_src_ai:'Every 10 minutes one call reads the new posts against what the rules drew. A finding is a post where the rules missed or misread something — the list of what to fix in them.',
   an_ai_none:'No check in this range yet.',an_ai_checks:'checks',an_ai_posts:'posts read',an_ai_cost:'cost',an_tg_paths:'followed over 2 places or more',an_tg_single:'reported at one place',an_tg_total:'tags',
   ai_fmt_schema:'answers in a strict JSON schema',ai_fmt_prompt:'answers by the prompt alone (the provider refused the schema)',
@@ -495,7 +486,11 @@ const T={
  uk:{title:'Heimdall — панель',
   tab_pat:'Закономірності',pt_all:'Усе',pt_kind_drones:'Усі дрони',pt_kind_drone:'Гвинтові',pt_kind_jet:'Реактивні',pt_kind_unst:'Тип не вказано',
   pt_note:'Куди летять дрони, район за районом — за повідомленнями каналів про кожну позначену ціль, по черзі: не радар. Переміщення — від одного повідомлення до наступного; % — частка цих переміщень із 95% діапазоном. Для кількох переміщень діапазон широкий: довіряйте % лише тоді, коли діапазон вузький. Лише для панелі: у застосунку цього немає.',
-  pt_n_tracks:'цілей простежено',pt_n_moves:'переміщень',pt_n_nights:'ночей',pt_n_stated:'вказаних курсів',pt_n_cells:'районів',pt_built:'переміщення оновлено {0}',
+  pt_n_tracks:'цілей простежено',pt_n_moves:'переміщень',pt_n_nights:'ночей',pt_n_stated:'вказаних курсів',pt_n_cells:'районів',pt_built:'переміщення оновлено {0}',pt_kept:'ночей із мітками збережено: {0}',pt_gaps:'пропущених ночей добудовано: {0}',pt_left:'старіших ночей ще перечитати з дописів: {0}',pt_berr:'побудова не вдалася: {0}',
+  per_h:'Звіт ШІ за період',per_src:'Усе, що записано за вибрані ночі (кожна — з 12:00 до 12:00 за Києвом): рядок на ніч, потім підсумки — тривоги за областями, мітки й де їх уперше повідомили, повідомлення за областями й годинами, наслідки, висоти, Повітряні сили. Одна ніч — це її власний звіт, який пишеться сам після {0}:00; період до {1} ночі пишеться на запит.',
+  per_from:'Від ночі',per_to:'до ночі',per_q1:'Минула ніч',per_qn:'Останні ночі: {0}',per_all:'Кожна ніч періоду повністю:',per_all_h:'Повний запис кожної ночі — кожна мітка з її шляхом — і звіт ШІ про неї, в одному файлі. JSON Lines: рядок-заголовок, далі по ночі на рядок.',
+  per_stats:'Ночей: {0} · міток: {1} (простежено через 2+ місця: {2}) · повідомлень: {3}',per_af:'Повітряні сили: {0} запущених дронів по всій Україні (підсумків: {1})',
+  per_none:'Звіту за ці ночі ще немає — напишіть його кнопкою (близько хвилини).',per_prev:'Написані раніше:',
   pt_nodata:'За цей період переміщень ще немає. Вони будуються щогодини з точок позначених цілей (перший раз — за останні {0} днів).',
   pt_map:'Мапа потоків',pt_map_sub:'Кожен квадрат — район близько {0} км: відтінок — переміщення з нього; стрілка — їхній середній напрямок, довша, коли більше їх летить в один бік. Натисніть на район.',
   pt_lg_lo:'менше переміщень',pt_lg_hi:'більше',pt_lg_arrow:'середній напрямок',pt_lg_next:'куди поставило наступне повідомлення, з обраного району',
@@ -506,7 +501,7 @@ const T={
   pt_stay:'ще в районі: {0}',pt_cells:'Усі райони',pt_cells_sub:'Райони щонайменше з {0} переміщеннями або {0} вказаними курсами. Натисніть рядок, щоб переглянути.',
   pt_csv_moves:'Усі переміщення (CSV)',pt_compass:'Пн,ПнСх,Сх,ПдСх,Пд,ПдЗх,Зх,ПнЗх',pt_err:'Не вдалося завантажити закономірності: {0}',pt_kyiv:'Київ',pt_none:'—',pt_plain:'Простими словами',pt_plain_none:'Поки нічого достатньо чіткого: жоден район не має досить повідомлень, у яких виділяється головний курс чи наступне місце. Це наповнюватиметься з кожною ніччю.',pt_km:'км',
   pt_o:'belarus:Білорусь,russia:Росія,sea:море,crimea:Крим,occupied:окуповані території,n:північ,nw:північний захід,ne:північний схід,e:схід,se:південний схід,s:південь,sw:південний захід,w:захід',
-  tab_live:'Наживо',tab_an:'Аналітика',tab_nights:'Ночі й тижні',tab_sources:'Джерела',tab_usage:'Використання',
+  tab_live:'Наживо',tab_an:'Аналітика',tab_sources:'Джерела',tab_usage:'Використання',
   nt_prevh:'Повідомлення від системного адміністратора',nt_prev0:'Тут повідомлення показано кольором, який бачитимуть читачі: зелений — інформація, червоний — терміново.',
   nk_h:'Ядерна подія — небезпечна зона',
   nk_desc:'Накриває мапу на кожній сторінці знаком радіації, що пульсує, і текстом нижче — доки ви її не завершите. Лише для ядерної чи радіаційної надзвичайної ситуації, підтвердженої владою або безсумнівними даними. Одним натиском її не ввімкнути: спершу зніміть запобіжник (сервер дає одноразовий код на 2 хвилини, одна спроба), введіть код і фразу, потім утримуйте кнопку 3 секунди.',
@@ -524,11 +519,8 @@ const T={
   an_min:'хв',
   an_br_time:'Повідомлено',an_c_br:'Мости Києва: цілі на них або поруч',an_src_br:'Кожного разу, коли міст переходив у «поруч» (3,5 км; 6 км для реактивного БпЛА чи ракети) або «біля мосту» (допис назвав міст чи його кінці), за 24 год від 18:00. З дописів каналів, не радар.',
   an_br_at:'біля мосту',an_br_near:'поруч',an_br_bridge:'Міст',an_br_lvl:'Рівень',an_br_place:'Назване місце',an_br_ch:'Канал',
-  an_c_places:'Де найчастіше повідомляли про дрони',an_src_places:'Місця, які дописи називали для БпЛА й невідомих цілей, кількість дописів (без збиттів і влучань) — дані теплової карти на «Тактичній».',an_air_mig31k:'МіГ-31К',an_air_strategic:'Ту-95 / Ту-160',an_air_tu22:'Ту-22М3',an_air_kalibr:'Калібр (кораблі)',
-  an_air_n:'зльотів зафіксовано: {0}',an_air_salvos:'залпів зафіксовано: {0}',an_air_launched:'пуск повідомлено після {0} з {1}',
-  an_air_delay:'зліт → пуск: медіана {0} (половина — від {1} до {2}; повідомлено обидва: {3})',an_air_upfor:'відбій через {0} (медіана)',
-  an_air_kind:'Носій',an_air_up_at:'Зліт повідомлено',an_air_launch_at:'Пуск повідомлено',an_air_after:'Через',an_air_end_at:'Відбій',an_air_reports:'Дописів',
-  an_c_air:'Носії: зльоти й пуски',an_src_air:'З каналів на мапі: «зліт / у повітрі», «пуски», «відбій». Час — перший допис, що це сказав, а не сама подія; очікуваний чи можливий пуск не рахується.',
+  an_c_places:'Де найчастіше повідомляли про дрони',an_src_places:'Місця, які дописи називали для БпЛА й невідомих цілей, кількість дописів (без збиттів і влучань) — дані теплової карти на «Тактичній».',
+  
   an_c_wx:'Погода в районах запуску й запущені БпЛА',an_src_wx:'Кожна точка — ніч: середнє по Орлу, Курську, Брянську, Шаталову, Міллерову й Приморсько-Ахтарську, 18:00–06:00 (Open-Meteo), проти кількості БпЛА, запущених тієї ночі за даними Повітряних сил.',
   an_wx_wind:'Вітер',an_wx_cloud:'Хмарність',an_wx_rain:'Опади',an_wx_drones:'Запущено БпЛА',an_wx_r:'r = {0} за {1} ночей — {2}',
   an_wx_none:'зв’язку немає',an_wx_weak:'слабкий зв’язок',an_wx_mod:'помірний зв’язок',an_wx_strong:'сильний зв’язок',
@@ -541,7 +533,7 @@ const T={
   an_m_cruise:'Крилаті',an_m_ballistic:'Балістичні',an_m_aeroballistic:'Аеробалістичні (Кинджал)',an_m_antiship:'Протикорабельні',an_m_guided:'Керовані авіаційні',
   an_launched:'запущено',an_usednum:'застосовано, без числа',
   an_s_rate:'БпЛА збито / подавлено',an_s_jetshare:'Реактивні — частка всіх БпЛА',an_s_hits:'Локацій із влучаннями',an_s_debris:'Локацій із падінням уламків',
-  an_s_city:'Київ',an_s_obl:'Київська обл. (будь-який район)',an_r_drones:'БпЛА',an_r_jet:'Реактивні БпЛА (з Бандероллю)',an_r_missiles:'Ракети',an_r_other:'Інше',
+  an_s_city:'Київ',an_s_obl:'Київська обл. (будь-який район)',
   an_dirs:'Пн,ПнСх,Сх,ПдСх,Пд,ПдЗх,Зх,ПнЗх',an_s_reports:'Повідомлень',
   an_note:'Вся Україна: власні зведення Повітряних сил (@kpszsu), одне за ніч і одне за день, прочитані за кожним видом зброї. Київ: офіційні тривоги й позначки, які канали ставлять над містом і областю. Усе рахується так, як сказало джерело — зброя, яку Повітряні сили називають без числа, позначається «застосовано» і ніколи не рахується як 0.',
   an_c_drones:'Запущено БпЛА за датою — вся Україна',an_src_af:'Зведення Повітряних сил (@kpszsu). Дата — це ніч, що закінчується того ранку, плюс той день.',
@@ -553,7 +545,6 @@ const T={
   an_c_starts:'Коли починаються тривоги в Києві — день тижня × година',an_src_starts:'Початки офіційних повітряних тривог, час київський.',
   an_c_tags:'Цілі з номером за ніч',an_src_tags:'Номери Heimdall (#07…); звідки летіли, більше не показано (надто часто неправильно) — це лишається в CSV, як сказано в дописах, ніч, що починається о 12:00 цієї дати. Номер — це одна ціль чи одна група, як про неї повідомили канали, а не кількість дронів.',
   an_tg_N:'N — північ / Білорусь',an_tg_E:'E — схід / Росія',an_tg_S:'S — південь / море / Крим',an_tg_W:'W — захід',an_tg_q:'? — не сказано',an_tg_ai:'літеру прочитав ШІ',an_tg_none:'За цей період ще немає цілей з номером (номери — з версії 1.51).',
-  an_c_reports:'Повідомлення каналів над Києвом і областю',an_src_reports:'Позначки з дописів каналів, за 24 год від 18:00 (названо датою ранку).',
   an_c_hours:'Повідомлення за годинами (за Києвом)',an_src_hours:'Позначки з дописів каналів над Києвом і областю.',an_c_heads:'Курси БпЛА, зазначені в дописах',an_src_heads:'Лише курси, які зазначив допис — жоден не вигадано.',
   c_today:'пристроїв сьогодні',c_7:'пристроє-днів · 7 д',c_30:'пристроє-днів · 30 д',c_push:'підписок на сповіщення',
   c_opens:'відкриттів · 30 д',c_pwa:'відкрито як застосунок',
@@ -562,13 +553,7 @@ const T={
   t_day:'День',t_dev:'Пристроїв',t_opens:'Відкриттів',t_pings:'Пінгів',t_app:'Як застосунок',t_black:'Light',
   foot:'<b>Що рахується, а що ні.</b><br>Пристрій рахується раз на день через односторонній хеш адреси та браузера, посолений випадковим значенням, яке щопівночі відкидається й генерується заново — тож ту саму людину не можна відстежити з дня на день, і жоден хеш не можна перетворити назад на адресу. IP не зберігається. Ні місця, ні шляху застосунком, ні історії по людині, нічого, що когось ідентифікує. Зберігаються лише денні підсумки на цій сторінці.<br><br>Ця сторінка потребує <code>ADMIN_KEY</code> і взагалі не віддається, якщо його не задано. <code>ADMIN_KEY</code> захищає лише цю панель — карта лишається публічною. (<code>ACCESS_KEY</code> — це інше: він ставить форму пароля перед усією картою, для приватного розгортання.)',
   c_light:'відкриттів Light · 30 д',
-  h_dg:'Ночі й тижні — підсумки',dg_night:'Ніч',dg_week:'Тиждень',
-  dg_run_n:'Підсумувати минулу ніч зараз',dg_run_w:'Підсумувати минулий тиждень зараз',dg_asked:'запит надіслано — з’явиться тут за хвилину',
-  dg_noai:'Текстові підсумки вимкнено: задайте секрет ANTHROPIC_API_KEY (fly secrets set ANTHROPIC_API_KEY=…). Цифри зберігаються в будь-якому разі.',
-  dg_ai_note:'Написано моделлю ШІ за цифрами нижче (їй передаються лише числа й назви місць) — перевіряйте, перш ніж цитувати.',
-  dg_figs_only:'Лише цифри',dg_raw:'Усі цифри (JSON)',dg_none:'Поки нічого: минулу ніч підсумовують після 09:00 за Києвом.',
-  dg_city:'Київ: хвилин під тривогою',dg_waves:'Хвиль тривог (Київ + область)',dg_reports:'Повідомлень каналів',
-  dg_down:'Повідомлень про збиття',dg_impact:'Повідомлень про вибухи',dg_af:'Повітряні сили, вся Україна (БпЛА / ракети / збито)',
+  
   h_lead:'Раннє попередження — Київ і Київська область, 30 днів',
   ld_txt:'Хвиль тривог: {0}. Перед {1} з них мапа вже показувала загрозу впродовж години — медіана <b>{2} хв</b> до офіційної тривоги (половина — від {3} до {4} хв).',
   ld_none:'Перед жодною хвилею тривог за цей період на мапі не було позначки впродовж години.',ld_empty:'За цей період не було офіційних тривог у Києві чи області.',
@@ -603,11 +588,10 @@ const T={
   h_checks:'Перевірки',h_ai_posts:'Допис за дописом',ai_ck_none:'Перевірок ще немає — перша буде на найближчій {0}-хвилинній позначці, якщо є дописи.',ai_ck_posts:'дописів: {0}',ai_ck_find:'знахідок: {0}',
   ai_ck_err:'не вдалася: {0}',ai_ck_unsure:'сумнів: {0}',ai_chk:'перевірка {0}',ai_checks_m:'Перевірок за місяць',ai_per_check:'{0} за перевірку',
   f_missed:'правила пропустили',f_place:'правила поставили не там',f_weapon:'інша зброя',f_outcome:'результат',f_not_sky:'не про небо',f_facts:'додає факти',f_returned:'знахідок дано',
-  an_c_night:'Ніч — звіт ШІ',an_src_night:'Усе, що записано за одну ніч (з 12:00 до 12:00 за Києвом): тривоги за областями, кожен номер із його шляхом, висоти, звідки летіли, повідомлення за годинами й областями, результати, Повітряні сили, перевірки ШІ та їхні нотатки. Увесь запис можна завантажити — JSON або текст — для будь-якого ШІ; власний звіт ШІ пишеться після {0}:00.',
-  an_n_pick:'Ніч',an_n_write:'Написати звіт зараз',an_n_rewrite:'Написати знову',an_n_json:'Запис (JSON)',an_n_txt:'Запис (текст)',an_n_all:'Усі ночі, 90 днів:',an_n_all_j:'JSON Lines',an_n_all_t:'текст',an_n_all_h:'Кожна ніч, у якій щось записано, за останні 90 днів, одним файлом — її запис і звіт ШІ про неї. JSON Lines: рядок-заголовок, далі одна ніч на рядок.',
+  an_n_write:'Написати звіт зараз',an_n_rewrite:'Написати знову',an_n_json:'Запис (JSON)',an_n_txt:'Запис (текст)',an_n_all_j:'JSON Lines',an_n_all_t:'текст',
   an_n_none:'Звіту за цю ніч ще немає — він пишеться після {0}:00 за Києвом або зараз кнопкою.',an_n_writing:'Пишеться…',
   an_n_asked:'Запит надіслано — звіт з’явиться тут за хвилину-дві.',an_n_err:'Не написано: {0}',an_n_meta:'написано {0} · {1} · ${2}',
-  an_n_stats:'номерів: {0} · повідомлень: {1} · областей під тривогою: {2} · перевірок ШІ: {3} (${4})',an_n_loading:'Завантаження ночі…',
+  an_n_loading:'Завантаження ночі…',
   an_c_ai:'Перевірки ШІ за ніч — що вони знайшли',an_src_ai:'Раз на 10 хвилин один запит читає нові дописи поруч із тим, що намалювали правила. Знахідка — допис, де правила щось пропустили або прочитали не так: список того, що в них виправити.',
   an_ai_none:'У цьому діапазоні перевірок ще немає.',an_ai_checks:'перевірок',an_ai_posts:'прочитано дописів',an_ai_cost:'вартість',an_tg_paths:'відстежено щонайменше у 2 місцях',an_tg_single:'повідомлено в одному місці',an_tg_total:'номерів',
   ai_fmt_schema:'відповідає за суворою JSON-схемою',ai_fmt_prompt:'відповідає лише за промптом (провайдер не прийняв схему)',
@@ -682,38 +666,6 @@ function drawAll(){
     <table><tr><th>${tr('t_day')}</th><th style="text-align:right">${tr('t_dev')}</th><th style="text-align:right">${tr('t_opens')}</th><th style="text-align:right">${tr('t_pings')}</th><th style="text-align:right">${tr('t_app')}</th><th style="text-align:right">${tr('t_black')}</th></tr>
       ${days.slice().reverse().map(x=>`<tr><td>${x.day}</td><td class="n">${fmt(x.devices)}</td><td class="n">${fmt(x.loads)}</td><td class="n">${fmt(x.pings)}</td><td class="n">${fmt(x.pwa)}</td><td class="n">${fmt(x.lite)}</td></tr>`).join('')}
     </table>`;
-}
-
-// Each night and each week: the figures the app recorded, and — with an AI key — the same in words.
-let DG=null, DG_ERR='';
-function drawDigests(){
-  const box=$('digests'); if(!box) return;
-  if(DG_ERR){ box.innerHTML=`<h2>${tr('h_dg')}</h2><div class="err">${esc(DG_ERR)}</div>`; return; }
-  if(!DG){ box.innerHTML=''; return; }
-  const title=d=>{ const f=(d.facts||{}).period||{}; return (d.kind==='week'?tr('dg_week'):tr('dg_night'))+' · '+esc(f.from||'')+' → '+esc(f.to||''); };
-  const fig=d=>{ const f=d.facts||{}, oa=f.official_alerts||{}, cr=f.channel_reports||{}, oc=(f.outcomes_reported||{}).by_kind||{}, af=f.air_force_all_ukraine;
-    const rows=[[tr('dg_city'),oa.kyiv_city_minutes_under_alert],[tr('dg_waves'),oa.alert_waves_kyiv_and_oblast],[tr('dg_reports'),cr.reports],
-      [tr('dg_down'),oc.down||0],[tr('dg_impact'),oc.impact||0],[tr('dg_af'),af?Object.entries(af).map(([k,v])=>`${k}: ${v.drones} / ${v.missiles} / ${v.down}`).join('; '):'—']];
-    return rows.map(([k,v])=>`<tr><td>${k}</td><td class="n">${esc(v==null?'—':v)}</td></tr>`).join(''); };
-  const text=d=>L==='uk'?(d.summary_uk||d.summary_en):(d.summary_en||d.summary_uk);
-  const list=DG.digests||[];
-  box.innerHTML=`<h2>${tr('h_dg')}</h2>
-    ${DG.ai?'':`<div class="note" style="margin:0 0 10px">${tr('dg_noai')}</div>`}
-    <div style="display:flex;gap:8px;margin:0 0 12px;flex-wrap:wrap"><button class="dgb" data-k="night">${tr('dg_run_n')}</button><button class="dgb" data-k="week">${tr('dg_run_w')}</button><span id="dgmsg" style="color:var(--ink3);font:12px var(--mono);align-self:center"></span></div>
-    ${list.length?list.map(d=>`<div class="dg"><div class="dgh">${title(d)}<span>${esc(d.model||'')}</span></div>
-      ${text(d)?`<div class="dgt">${esc(text(d))}</div><div class="dgai">${tr('dg_ai_note')}</div>`:`<div class="dgt muted">${tr('dg_figs_only')}${d.error?' — '+esc(d.error):''}</div>`}
-      <table class="dgf">${fig(d)}</table>
-      <details><summary>${tr('dg_raw')}</summary><pre>${esc(JSON.stringify(d.facts,null,1))}</pre></details></div>`).join('')
-    :`<div style="color:var(--ink3)">${tr('dg_none')}</div>`}`;
-  box.querySelectorAll('.dgb').forEach(b=>b.onclick=async()=>{ b.disabled=true; $('dgmsg').textContent=tr('dg_asked');
-    try{ await fetch('/api/digest/run'+(KEYQ?'?'+KEYQ.slice(1):''),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:b.dataset.k})}); }catch(e){}
-    setTimeout(loadDigests,20000); setTimeout(loadDigests,60000); });
-}
-async function loadDigests(){
-  try{ const r=await fetch('/api/digests'+(KEYQ?'?'+KEYQ.slice(1):'')); const d=await r.json();
-       if(d.error) throw new Error(d.error); DG=d; DG_ERR=''; }
-  catch(e){ DG_ERR=String(e.message||e); }
-  drawDigests();
 }
 
 const ago=ts=>{ const t=Date.parse(ts||''); if(!t) return tr('never'); const m=Math.max(0,Math.round((Date.now()-t)/60000));
@@ -1060,7 +1012,8 @@ function drawAI(){
   const hist=`<details class="aihist"${AI_HIST?' open':''}><summary class="aih3">${esc(tr('ai_hist'))}</summary>${sk.length?`<div class="aist mut">${esc(sk.join(' · '))}</div>`:''}${cards}${n?vt:''}${ckList}<h3 class="aih3">${esc(tr('h_ai_posts'))}</h3>
     <div class="anbar"><div class="seg" id="aif"><button data-a="0" class="${AI_ALL?'':'on'}">${tr('ai_f_diff')}</button><button data-a="1" class="${AI_ALL?'on':''}">${tr('ai_f_all')}</button></div><button class="dgb" id="aire">${tr('ai_reload')}</button></div>
     <div class="note" style="margin:0 0 14px">${tr('ai_legend')}</div>${list}</details>`;
-  box.innerHTML=`<h2>${tr('h_ai')}</h2>`+bul+hist;
+  box.innerHTML=`<h2>${tr('h_ai')}</h2><div id="perslot"></div>`+bul+hist;
+  perPlace();
   const hd=box.querySelector('.aihist'); if(hd) hd.ontoggle=()=>{ AI_HIST=hd.open; };
   $('aif').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; AI_ALL=b.dataset.a==='1'; try{localStorage.setItem('aiall',AI_ALL?'1':'0');}catch(err){} loadAI(); };
   $('aire').onclick=()=>loadAI();
@@ -1085,14 +1038,15 @@ function badges(){ const bad=!!H&&((H.official||[]).some(x=>!x.ok)||(H.channels|
 
 // ---- tabs (1.32) --------------------------------------------------------------------------------------------
 let TAB='live'; try{ const v=localStorage.getItem('admintab'); if(v) TAB=v; }catch(e){}
-function showTab(t){ TAB=t; try{localStorage.setItem('admintab',t);}catch(e){}
+function showTab(t){ if(!$('tab-'+t)) t='live';          // 1.58.37: a tab kept from before that is gone
+  TAB=t; try{localStorage.setItem('admintab',t);}catch(e){}
   document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
   const nv=$('tabs'), on=nv.querySelector('button.on');      // 1.50: six tabs overflow a phone — keep the open one in view
   if(on&&(on.offsetLeft<nv.scrollLeft||on.offsetLeft+on.offsetWidth>nv.scrollLeft+nv.clientWidth)) nv.scrollLeft=on.offsetLeft-12;
   document.querySelectorAll('.tabsec').forEach(s=>s.hidden=s.id!=='tab-'+t);
   if(t==='analytics'&&!AN) loadAnalytics();
   if(t==='patterns'&&!PT) loadPatterns();
-  if(t==='ai') loadAI(); }
+  if(t==='ai'){ loadAI(); loadPer(); } }
 $('tabs').addEventListener('click',e=>{ const b=e.target.closest('button[data-tab]'); if(b) showTab(b.dataset.tab); });
 
 // ---- analytics (1.32): the Air Force's series, Kyiv's alerts, the reports over Kyiv ---------------------------
@@ -1172,45 +1126,66 @@ function afRow(r){ const la=r.launched||{}, dn=r.down||{};
   return {la,dn,mis,dl:ok?dl:0,dd:ok?dd:0,rate:ok&&dl?Math.round(dd/dl*100):null,
           jet:(la.drones&&la.jet!=null)?Math.round(la.jet/la.drones*100):null}; }
 let CHW=860;
-// ---- 1.53: one night in full — the record any AI can read, and the AI's own report on it ----------------------------
-let NIGHT=null, NIGHT_SEL=null, NIGHT_ERR='';
-const nextDay=n=>{ const d=new Date(n+'T12:00:00Z'); d.setUTCDate(d.getUTCDate()+1); return d.toISOString().slice(0,10); };
-function nightList(A){ const s=new Set(); (A.targets||[]).forEach(r=>{ if(r.total) s.add(r.date); }); (A.ai||[]).forEach(r=>{ if(r.checks) s.add(r.date); });
-  ((NIGHT&&NIGHT.reports)||[]).forEach(n=>{ if(n>=A.from) s.add(n); }); if(A.to) s.add(A.to); return [...s].sort().reverse(); }
-function nightCard(A){ const hr=(NIGHT&&NIGHT.report_hour)||9, ns=nightList(A); if(!NIGHT_SEL||!ns.includes(NIGHT_SEL)) NIGHT_SEL=ns[0];
-  return card('c0',tr('an_c_night'),tr('an_src_night',hr),`<div class="nbar"><label>${escA(tr('an_n_pick'))}<select id="nsel">${ns.map(n=>`<option value="${n}"${n===NIGHT_SEL?' selected':''}>${escA(dshort(n))} → ${escA(dshort(nextDay(n)))}</option>`).join('')}</select></label><span class="sp"></span>`
-    +`<button class="dgb" id="nwrite">${escA(tr('an_n_write'))}</button><button class="csvb" id="njson">${escA(tr('an_n_json'))}</button><button class="csvb" id="ntxt">${escA(tr('an_n_txt'))}</button></div>`
-    // 1.58.27: every night in one file, for an analysis of patterns (the session cookie goes with the link)
-    +`<div class="nbar" title="${escA(tr('an_n_all_h'))}"><span class="ans">${escA(tr('an_n_all'))}</span><a class="csvb" id="nallj" href="/api/admin/nights_export?format=jsonl" download>${escA(tr('an_n_all_j'))}</a><a class="csvb" id="nallt" href="/api/admin/nights_export?format=md" download>${escA(tr('an_n_all_t'))}</a></div>`
-    +`<div id="nightbox"><div class="ans">${escA(tr('an_n_loading'))}</div></div>`); }
-async function loadNight(){ const n=NIGHT_SEL; if(!n) return;
-  try{ const r=await fetch('/api/admin/night?night='+n+(KEYQ?'&'+KEYQ.slice(1):'')); const d=await r.json(); if(d.error) throw new Error(d.error);
-       if(n!==NIGHT_SEL) return; NIGHT=d; NIGHT_ERR=''; }
-  catch(e){ NIGHT=null; NIGHT_ERR=String(e.message||e); }
-  drawNight(); }
-function drawNight(){ const box=$('nightbox'); if(!box) return;
-  if(NIGHT_ERR){ box.innerHTML=`<div class="err">${escA(NIGHT_ERR)}</div>`; return; }
-  if(!NIGHT) return;
-  const d=NIGHT, S=d.summary||{}, rp=d.report, hr=d.report_hour||9, ai=S.ai||{};
-  const stat=tr('an_n_stats',(S.targets||{}).tags||0,(S.reports||{}).total||0,(S.official_alerts||[]).length,ai.checks||0,(ai.cost_usd||0).toFixed(3));
+// ---- 1.53 → 1.58.37: the AI's report — on one night or a period of nights (the owner: "it makes sense within the AI
+// tab … the main goal is to aggregate as many data as possible to make a report, so a wider range of dates"). The
+// record of the nights (State.period_summary) downloads as JSON or text; the AI writes its report on it on demand, a
+// night's own every morning after the report hour.
+let PER=null, PER_ERR='', PER_FROM=null, PER_TO=null, PER_BOX=null, PER_POLL=0;
+const kyivNow=()=>new Date().toLocaleString('sv-SE',{timeZone:'Europe/Kyiv'});       // "YYYY-MM-DD HH:MM:SS"
+const addDays=(n,k)=>{ const d=new Date(n+'T12:00:00Z'); d.setUTCDate(d.getUTCDate()+k); return d.toISOString().slice(0,10); };
+const nextDay=n=>addDays(n,1);
+function lastNight(){ const s=kyivNow(); return addDays(s.slice(0,10),+s.slice(11,13)>=12?-1:-2); }   // the last night that has ended
+function perNights(){ const l=addDays(lastNight(),1), out=[]; for(let i=0;i<120;i++) out.push(addDays(l,-i)); return out; }
+function perDefaults(){ if(PER_TO) return; let v=null; try{ v=JSON.parse(localStorage.getItem('perrange')||'null'); }catch(e){}
+  const l=lastNight(); PER_TO=l; PER_FROM=addDays(l,-6);
+  if(v&&typeof v.n==='number'&&v.n>=1&&v.n<=31) PER_FROM=addDays(l,-(v.n-1)); }
+function perPlace(){ const slot=$('perslot'); if(!slot) return; if(!PER_BOX){ PER_BOX=document.createElement('div'); PER_BOX.id='perwrap'; drawPer(); }
+  slot.replaceWith(PER_BOX); }
+function perOpts(sel){ return perNights().map(n=>`<option value="${n}"${n===sel?' selected':''}>${escA(dshort(n))} → ${escA(dshort(nextDay(n)))}</option>`).join(''); }
+function drawPer(){ if(!PER_BOX) return; perDefaults();
+  const hr=(PER&&PER.report_hour)||9, mx=(PER&&PER.max)||31, n=Math.round((Date.parse(PER_TO)-Date.parse(PER_FROM))/864e5)+1;
+  const q=`from=${PER_FROM}&to=${PER_TO}`+(KEYQ?'&'+KEYQ.slice(1):'');
+  PER_BOX.innerHTML=card('c0',tr('per_h'),tr('per_src',hr,mx),
+    `<div class="nbar"><label>${escA(tr('per_from'))}<select id="perf">${perOpts(PER_FROM)}</select></label><label>${escA(tr('per_to'))}<select id="pert">${perOpts(PER_TO)}</select></label>`
+    +`<div class="seg" id="perq">${[1,7,14,31].map(k=>`<button data-n="${k}" class="${n===k&&PER_TO===lastNight()?'on':''}">${escA(tr(k===1?'per_q1':'per_qn',k))}</button>`).join('')}</div></div>`
+    +`<div class="nbar"><span class="sp"></span><button class="dgb" id="pwrite">${escA(tr('an_n_write'))}</button><button class="csvb" id="pjson">${escA(tr('an_n_json'))}</button><button class="csvb" id="ptxt">${escA(tr('an_n_txt'))}</button>`
+    +`<span class="ans" title="${escA(tr('per_all_h'))}">${escA(tr('per_all'))}</span><a class="csvb" href="/api/admin/nights_export?format=jsonl&${q}" download>${escA(tr('an_n_all_j'))}</a><a class="csvb" href="/api/admin/nights_export?format=md&${q}" download>${escA(tr('an_n_all_t'))}</a></div>`
+    +`<div id="perbox">${perBody()}</div>`); }
+function perBody(){ if(PER_ERR) return `<div class="err">${escA(PER_ERR)}</div>`;
+  if(!PER||PER.from!==PER_FROM||PER.to!==PER_TO) return `<div class="ans">${escA(tr('an_n_loading'))}</div>`;
+  const S=PER.summary||{}, T=S.totals||{}, af=T.air_force||{}, la=af.launched||{}, rp=PER.report, hr=PER.report_hour||9, one=PER.from===PER.to;
+  const afd=la.drones!=null?(la.drones||0)+(la.banderol||0):null;
+  const stat=tr('per_stats',S.nights||0,fmt(T.tags||0),fmt(T.followed||0),fmt(T.reports||0))+(afd!=null?' · '+tr('per_af',fmt(afd),af.nights||0):'');
   const when=x=>x?new Date(x).toLocaleString(L==='uk'?'uk-UA':'en-GB',{timeZone:'Europe/Kyiv',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';
-  const body=d.writing===d.night?`<div class="ans">${escA(tr('an_n_writing'))}</div>`
+  const key=one?PER.from:PER.from+'..'+PER.to;
+  const body=PER.writing===key?`<div class="ans">${escA(tr('an_n_writing'))}</div>`
     :rp&&rp.text?`<div class="nrep">${escA(rp.text)}</div><div class="ans">${escA(tr('an_n_meta',when(rp.at),rp.model||'—',(rp.cost||0).toFixed(4)))}</div>`
-    :rp&&rp.error?`<div class="err">${escA(tr('an_n_err',rp.error))}</div>`:`<div class="ans">${escA(tr('an_n_none',hr))}</div>`;
-  box.innerHTML=`<div class="nstat">${escA(stat)}</div>${body}`;
-  const sel=$('nsel'); if(sel&&AN){ const ns=nightList(AN); if(ns.length!==sel.options.length)
-    sel.innerHTML=ns.map(n=>`<option value="${n}"${n===NIGHT_SEL?' selected':''}>${escA(dshort(n))} → ${escA(dshort(nextDay(n)))}</option>`).join(''); }
-  const w=$('nwrite'); if(w) w.textContent=tr(rp&&rp.text?'an_n_rewrite':'an_n_write'); }
+    :rp&&rp.error?`<div class="err">${escA(tr('an_n_err',rp.error))}</div>`:`<div class="ans">${escA(one?tr('an_n_none',hr):tr('per_none'))}</div>`;
+  const prev=(PER.periods||[]).filter(p=>p.written).slice(0,8);
+  return `<div class="nstat">${escA(stat)}</div>${body}`+(prev.length?`<div class="ans">${escA(tr('per_prev'))} ${prev.map(p=>`<a href="#" data-pf="${p.from}" data-pt="${p.to}">${escA(dshort(p.from))} → ${escA(dshort(p.to))}</a>`).join(' · ')}</div>`:''); }
+async function loadPer(){ perDefaults(); const f=PER_FROM, to=PER_TO;
+  try{ const r=await fetch(`/api/admin/period?from=${f}&to=${to}`+(KEYQ?'&'+KEYQ.slice(1):'')); const d=await r.json(); if(d.error) throw new Error(d.error);
+       if(f!==PER_FROM||to!==PER_TO) return; PER=d; PER_ERR=''; }
+  catch(e){ PER=null; PER_ERR=String(e.message||e); }
+  const b=$('perbox'); if(b) b.innerHTML=perBody(); else drawPer();
+  const w=$('pwrite'); if(w) w.textContent=tr(PER&&PER.report&&PER.report.text?'an_n_rewrite':'an_n_write');
+  clearTimeout(PER_POLL); if(PER&&PER.writing) PER_POLL=setTimeout(loadPer,15000); }
+function perSet(f,to){ if(f>to) [f,to]=[to,f]; if((Date.parse(to)-Date.parse(f))/864e5>30) f=addDays(to,-30);
+  PER_FROM=f; PER_TO=to; PER=null; try{ localStorage.setItem('perrange',JSON.stringify({n:Math.round((Date.parse(to)-Date.parse(f))/864e5)+1})); }catch(e){}
+  drawPer(); loadPer(); }
 function fileDownload(name,text,type){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([text],{type})); a.download=name;
   document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500); }
-document.addEventListener('change',e=>{ if(e.target.id!=='nsel') return; NIGHT_SEL=e.target.value; NIGHT=null; const b=$('nightbox'); if(b) b.innerHTML=`<div class="ans">${escA(tr('an_n_loading'))}</div>`; loadNight(); });
+document.addEventListener('change',e=>{ const id=e.target.id; if(id==='perf') perSet(e.target.value,PER_TO); if(id==='pert') perSet(PER_FROM,e.target.value); });
 document.addEventListener('click',async e=>{ const id=e.target&&e.target.id;
-  if(id==='njson'&&NIGHT) fileDownload(`heimdall-night-${NIGHT.night}.json`,JSON.stringify(NIGHT.summary,null,1),'application/json');
-  if(id==='ntxt'&&NIGHT) fileDownload(`heimdall-night-${NIGHT.night}.txt`,NIGHT.text||'','text/plain;charset=utf-8');
-  if(id==='nwrite'&&NIGHT_SEL){ const b=e.target; b.disabled=true;
-    try{ await fetch('/api/admin/ai_report'+(KEYQ?'?'+KEYQ.slice(1):''),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({night:NIGHT_SEL})}); }catch(err){}
-    const box=$('nightbox'); if(box) box.insertAdjacentHTML('afterbegin',`<div class="ans">${escA(tr('an_n_asked'))}</div>`);
-    setTimeout(loadNight,30000); setTimeout(()=>{ loadNight(); b.disabled=false; },90000); } });
+  const qb=e.target.closest&&e.target.closest('#perq button'); if(qb){ const l=lastNight(); perSet(addDays(l,-(+qb.dataset.n-1)),l); return; }
+  const pa=e.target.closest&&e.target.closest('a[data-pf]'); if(pa){ e.preventDefault(); perSet(pa.dataset.pf,pa.dataset.pt); return; }
+  const tag=PER?(PER.from===PER.to?PER.from:PER.from+'_'+PER.to):'';
+  if(id==='pjson'&&PER) fileDownload(`heimdall-nights-${tag}.json`,JSON.stringify(PER.summary,null,1),'application/json');
+  if(id==='ptxt'&&PER) fileDownload(`heimdall-nights-${tag}.txt`,PER.text||'','text/plain;charset=utf-8');
+  if(id==='pwrite'&&PER_FROM&&PER_TO){ const b=e.target; b.disabled=true;
+    try{ await fetch('/api/admin/ai_report'+(KEYQ?'?'+KEYQ.slice(1):''),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({from:PER_FROM,to:PER_TO})}); }catch(err){}
+    const box=$('perbox'); if(box) box.insertAdjacentHTML('afterbegin',`<div class="ans">${escA(tr('an_n_asked'))}</div>`);
+    setTimeout(()=>{ loadPer(); b.disabled=false; },8000); } });
 function drawAnalytics(){
   const box=$('an'); CHW=Math.round(Math.min(860,Math.max(300,(box.clientWidth||860)-30))); document.querySelectorAll('#anr button').forEach(b=>b.classList.toggle('on',+b.dataset.d===AN_DAYS));
   if(AN_ERR){ box.innerHTML=`<div class="err">${escA(AN_ERR)}</div>`; return; }
@@ -1240,10 +1215,6 @@ function drawAnalytics(){
   const rateChart=lineChart(dates,[{n:tr('an_s_rate'),c:C[2],v:R.map(x=>x.rate)},{n:tr('an_s_jetshare'),c:C[1],v:R.map(x=>x.jet)}],{pct:true,max:100,note:nosum});
   const hitsChart=bars(dates,[{n:tr('an_s_hits'),c:C[0],v:A.af.map(x=>x.periods.length?x.impacts:null)},{n:tr('an_s_debris'),c:C[1],v:A.af.map(x=>x.periods.length?x.debris:null)}],{h:170,note:nosum});
   const kyivChart=lineChart(dates,[{n:tr('an_s_city'),c:C[0],v:A.kyiv.map(x=>Math.round(x.city_min/6)/10)},{n:tr('an_s_obl'),c:C[1],v:A.kyiv.map(x=>Math.round(x.oblast_min/6)/10)}]);
-  const REP=[['drones',C[0]],['jet',C[1]],['missiles',C[2]],['other',C[3]]];
-  const repRows=A.reports.map(r=>{ const o={drones:r.drones||0,jet:(r.jet||0)+(r.banderol_missiles||0),missiles:(r.cruise_missiles||0)+(r.ballistic_missiles||0)+(r.unspecified_missiles||0)};
-    o.other=Object.entries(r).filter(([k])=>!['date','drones','jet','cruise_missiles','ballistic_missiles','unspecified_missiles','banderol_missiles','down','impact'].includes(k)).reduce((s,[,v])=>s+v,0); return o; });
-  const repChart=bars(dates,REP.map(([k,c])=>({n:tr('an_r_'+k),c,v:repRows.map(o=>o[k])})),{h:170});
   // 1.51: the targets tagged each night, by the letter of where a post said they came from (fixed order, never by rank)
   // 1.53.2: no letters (where they came from is no longer shown) — the tags, and those followed over 2 places or more
   const TGS=[['paths',C[0]],['single',C[1]]], TG=A.targets||[];
@@ -1256,7 +1227,6 @@ function drawAnalytics(){
     return [`${escA(tr('an_ai_checks'))}: <b>${r.checks||0}</b>`,`${escA(tr('an_ai_posts'))}: <b>${r.posts||0}</b>`,`${escA(tr('an_ai_cost'))}: <b>$${(r.cost||0).toFixed(3)}</b>`]; }})
     :`<div class="ans">${escA(tr('an_ai_none'))}</div>`;
   box.innerHTML=`<div class="annote">${escA(tr('an_note'))}</div>${kp}
-    ${nightCard(A)}
     ${card('c1',tr('an_c_drones'),tr('an_src_af'),legend([[tr('an_s_piston'),C[0]],[tr('an_s_jet'),C[1]],[tr('an_s_banderol'),C[3]],[tr('an_s_down'),C[2],'ln']])+dronesChart,'af')}
     ${card('c2',tr('an_c_missiles'),tr('an_src_mis'),legend(MT.map((k,i)=>[tr('an_m_'+k),C[i]]))+misChart+(misNights.length?`<div class="ans">${escA(tr('an_misnights'))}: ${misNights.map(([k,v])=>`${escA(k)} ${v}`).join(' · ')}</div>`:''),'af')}
     ${card('c3',tr('an_c_rate'),tr('an_src_rate'),legend([[tr('an_s_rate'),C[2],'ln'],[tr('an_s_jetshare'),C[1],'ln']])+rateChart,'af')}
@@ -1265,12 +1235,10 @@ function drawAnalytics(){
     ${A.af_models.length?card('c7',tr('an_c_models'),tr('an_src_af'),hbars(A.af_models,C[4])):''}
     ${card('c8',tr('an_c_kyiv'),tr('an_src_kyiv'),legend([[tr('an_s_city'),C[0],'ln'],[tr('an_s_obl'),C[1],'ln']])+kyivChart,'kyiv')}
     ${card('c9',tr('an_c_starts'),tr('an_src_starts'),heat(A.starts))}
-    ${card('c10',tr('an_c_reports'),tr('an_src_reports'),legend(REP.map(([k,c])=>[tr('an_r_'+k),c]))+repChart,'reports')}
     ${card('c13',tr('an_c_tags'),tr('an_src_tags'),legend(TGS.map(([k,c])=>[tr('an_tg_'+k),c]))+tgChart,'targets')}
     ${card('c14',tr('an_c_ai'),tr('an_src_ai'),legend(FK.map((k,i)=>[tr('f_'+k),C[i]]))+aiChart,'ai')}
     <div class="an2">${card('c11',tr('an_c_hours'),tr('an_src_hours'),hoursChart)}${card('c12',tr('an_c_heads'),tr('an_src_heads'),hbars(dirs.map((d,i)=>[d,A.headings[i]]),C[0]))}</div>
     ${drawMore(A)}`;
-  if(NIGHT&&NIGHT.night===NIGHT_SEL) drawNight(); else loadNight();
 }
 // redrawn only when the width changes: a phone fires "resize" when its address bar hides on scroll
 let AN_RS=0; addEventListener('resize',()=>{ clearTimeout(AN_RS); AN_RS=setTimeout(()=>{ if(!AN||TAB!=='analytics') return;
@@ -1311,17 +1279,6 @@ function scatter(p,xl,unit,color){ const W=CHW>700?276:CHW,H=200,pl=40,pr=10,pt=
   return `<svg viewBox="0 0 ${W} ${H}" class="ch" role="img">${g}</svg><div class="ans">${r==null?'':escA(tr('an_wx_r',r.toFixed(2),p.length,tr(Math.abs(r)<.2?'an_wx_none':Math.abs(r)<.4?'an_wx_weak':Math.abs(r)<.6?'an_wx_mod':'an_wx_strong')))}</div>`; }
 function drawMore(A){
   const out=[];
-  // the carriers
-  const X=A.air;
-  if(X){ const per=X.per_date, st=X.stats||{};
-    const chart=bars(per.map(r=>r.date),AK.map((k,i)=>({n:tr('an_air_'+k),c:C[i],v:per.map(r=>r[k]||null)})),{h:160});
-    const tiles=AK.map((k,i)=>{ const s=st[k]||{}; const L2=[tr(k==='kalibr'?'an_air_salvos':'an_air_n',s.sorties||0)];
-      if(k!=='kalibr'){ L2.push(tr('an_air_launched',s.launched||0,s.sorties||0)); if(s.delays) L2.push(tr('an_air_delay',fmtm(s.delay_median),fmtm(s.delay_p25),fmtm(s.delay_p75),s.delays)); }
-      if(k==='mig31k'&&s.up_median!=null) L2.push(tr('an_air_upfor',fmtm(s.up_median)));
-      return `<div class="airt"><div class="airh"><i style="background:${C[i]}"></i>${escA(tr('an_air_'+k))}</div>${L2.map(l=>`<div>${escA(l)}</div>`).join('')}</div>`; }).join('');
-    const rows=(X.sorties||[]).slice(0,25).map(s=>`<tr><td><i class="dot" style="background:${C[AK.indexOf(s.kind)]}"></i>${escA(tr('an_air_'+s.kind))}</td><td>${kt(s.start,1)}</td><td>${s.launch?kt(s.launch,!s.start):'—'}</td><td class="n">${s.delay_min!=null?fmtm(s.delay_min):'—'}</td><td>${s.end?kt(s.end):'—'}</td><td class="n">${s.reports}</td></tr>`).join('');
-    out.push(card('c13',tr('an_c_air'),tr('an_src_air'),legend(AK.map((k,i)=>[tr('an_air_'+k),C[i]]))+chart+`<div class="airg">${tiles}</div>`
-      +(rows?`<div class="tscroll"><table class="airtab"><tr><th>${tr('an_air_kind')}</th><th>${tr('an_air_up_at')}</th><th>${tr('an_air_launch_at')}</th><th style="text-align:right">${tr('an_air_after')}</th><th>${tr('an_air_end_at')}</th><th style="text-align:right">${tr('an_air_reports')}</th></tr>${rows}</table></div>`:''),'air')); }
   // the weather at the launch sites against the drones of that night
   const WX=(A.weather||[]); const byD={}; A.af.forEach(r=>{ if(r.night_drones!=null) byD[r.date]=r.night_drones; });
   const pts=f=>WX.filter(w=>w.launch&&w.launch[f]!=null&&byD[w.date]!=null).map(w=>({x:w.launch[f],y:byD[w.date],d:w.date}));
@@ -1352,8 +1309,6 @@ function drawMore(A){
 function csvMore(k,A,tag){
   if(k==='bridges') csvDownload(`heimdall-bridges-${tag}.csv`,[['time_utc','bridge','level','km','type','jet','place','channel','how'],...(A.bridges.recent||[]).slice().reverse().map(e=>[e.ts,e.bridge,e.lvl,e.km,e.type,e.jet,e.place,e.channel,e.how])]);
   if(k==='places') csvDownload(`heimdall-drone-places-${tag}.csv`,[['place','oblast_uid','lon','lat','reports'],...A.places.map(p=>[p[3],p[4],p[0],p[1],p[2]])]);
-  if(k==='air') csvDownload(`heimdall-carriers-${tag}.csv`,[['kind','takeoff_utc','launch_utc','stood_down_utc','minutes_takeoff_to_launch','minutes_takeoff_to_stand_down','reports','channels'],
-    ...(A.air.sorties||[]).slice().reverse().map(s=>[s.kind,s.start,s.launch,s.end,s.delay_min,s.up_min,s.reports,(s.channels||[]).join(' ')])]);
   if(k==='weather'){ const byD={}; A.af.forEach(r=>byD[r.date]=r.night_drones); const F=['wind','gust','cloud','precip','tmin'];
     csvDownload(`heimdall-weather-${tag}.csv`,[['night_ending','drones_launched_night',...F.map(f=>'launch_sites_'+f),...F.map(f=>'kyiv_'+f)],
       ...A.weather.map(w=>[w.date,byD[w.date],...F.map(f=>(w.launch||{})[f]),...F.map(f=>(w.kyiv||{})[f])])]); }
@@ -1372,7 +1327,7 @@ document.addEventListener('click',e=>{ const b=e.target.closest('.csvb'); if(!b|
   if(k==='ai') csvDownload(`heimdall-ai-checks-${tag}.csv`,[['night','checks','posts_read','cost_usd','errors','missed','misplaced','weapon','outcome','not_sky','facts'],
     ...(A.ai||[]).map(r=>[r.date,r.checks,r.posts,r.cost,r.errors,r.missed,r.place,r.weapon,r.outcome,r.not_sky,r.facts])]);
   if(k==='targets') csvDownload(`heimdall-target-tags-${tag}.csv`,[['night','N','E','S','W','not_said','origin_read_by_ai','total','followed_2_places'],...(A.targets||[]).map(r=>[r.date,r.N,r.E,r.S,r.W,r['?'],r.ai,r.total,r.paths])]);
-  if(k==='reports'){ const keys=[...new Set(A.reports.flatMap(r=>Object.keys(r)).filter(x=>x!=='date'))].sort(); csvDownload(`heimdall-kyiv-reports-${tag}.csv`,[['date',...keys],...A.reports.map(r=>[r.date,...keys.map(x=>r[x]||0)])]); } });
+});
 
 // ---- 1.55: the direction patterns — where the drones go, area by area (the dashboard only) -------------------------
 // The owner: "the pattern of direction of the drones depending on its location — foundations to calculate the % of
@@ -1456,7 +1411,10 @@ function ptCell(c){ if(!c) return '';
 function drawPatterns(){ ptSegs(); const box=$('pt');
   if(PT_ERR){ box.innerHTML=`<div class="err">${escA(tr('pt_err',PT_ERR))}</div>`; return; }
   if(!PT) return; const P=PT, V=P.coverage||{};
-  $('pt_gen').textContent=V.built?tr('pt_built',new Date(V.built).toLocaleString(L==='uk'?'uk-UA':'en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})):'';
+  const BL=V.builder||{};      // 1.58.37: the builder's last hour — nights built, the missing ones caught up, the nights read again still to do, an error
+  $('pt_gen').textContent=(V.built?tr('pt_built',new Date(V.built).toLocaleString(L==='uk'?'uk-UA':'en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})):'')
+    +(V.tag_nights_kept!=null?' · '+tr('pt_kept',V.tag_nights_kept):'')+(BL.gaps?' · '+tr('pt_gaps',BL.gaps):'')+(BL.replay_left?' · '+tr('pt_left',BL.replay_left):'')
+    +(BL.error?' · '+tr('pt_berr',BL.error):'');
   let h=`<div class="annote">${escA(tr('pt_note'))}</div><div class="kpis">`
     +[[V.tracks,'pt_n_tracks'],[V.moves,'pt_n_moves'],[V.nights,'pt_n_nights'],[V.stated,'pt_n_stated'],[V.cells,'pt_n_cells']].map(([v,l])=>`<div class="kpi"><div class="kv">${fmt(v)}</div><div class="kl">${escA(tr(l))}</div></div>`).join('')+'</div>';
   if(!P.cells.length){ box.innerHTML=h+`<div class="nodata">${escA(tr('pt_nodata',58))}</div>`; return; }
@@ -1494,14 +1452,13 @@ $('tab-patterns').addEventListener('click',async e=>{
 $('langsw').addEventListener('click',e=>{
   const b=e.target.closest('button'); if(!b) return;
   L=b.dataset.l; try{localStorage.setItem('adminlang',L);}catch(err){}
-  drawAll(); drawOps(); drawSec(); drawHealth(); drawDigests(); if(AN) drawAnalytics(); drawAI(); if(PT||PT_ERR) drawPatterns();
+  drawAll(); drawOps(); drawSec(); drawHealth(); if(AN) drawAnalytics(); drawAI(); drawPer(); if(PT||PT_ERR) drawPatterns();
 });
 
 (async()=>{
   drawAll(); drawOps(); showTab(TAB);           // header, tabs and footer in the chosen language before anything loads
   loadOnline(); setInterval(loadOnline,10000); loadSec(); setInterval(loadSec,30000);
   loadHealth(); setInterval(loadHealth,60000);  // the health view is worth leaving open on a live night
-  loadDigests();
   setInterval(()=>{ if(TAB==='analytics'&&!document.hidden) loadAnalytics(true); },300000);
   setInterval(()=>{ if(TAB==='ai'&&!document.hidden) loadAI(); },60000);
   try{ const r=await fetch('/api/usage?days=30'+KEYQ);

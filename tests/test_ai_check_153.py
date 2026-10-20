@@ -236,10 +236,11 @@ def test_the_report_is_written_after_the_hour_once_and_on_demand():
 
 
 def test_the_dashboard_and_the_docs():
-    for k in ("v_facts:", "ai_mode_check:", "sw_q_mode_post:", "h_checks:", "f_not_sky:", "an_c_night:", "an_n_json:", "an_c_ai:",
+    for k in ("v_facts:", "ai_mode_check:", "sw_q_mode_post:", "h_checks:", "f_not_sky:", "per_h:", "an_n_json:", "an_c_ai:",
               "an_tg_paths:"):
         assert ADMIN.count(k) == 2, k
-    assert "${nightCard(A)}" in ADMIN and "card('c14',tr('an_c_ai')" in ADMIN and "fileDownload(`heimdall-night-${NIGHT.night}.json`" in ADMIN
+    # 1.58.37: the night's report is the AI tab's, over one night or a period
+    assert "card('c0',tr('per_h')" in ADMIN and "card('c14',tr('an_c_ai')" in ADMIN and "fileDownload(`heimdall-nights-${tag}.json`" in ADMIN
     assert 'u.path == "/api/admin/night"' in SRC and 'u.path == "/api/admin/ai_report"' in SRC
     assert "### 7.10 The 10-minute check (1.53; stopped in 1.54) and the night's report" in DOC and "### 7.11 The bulletins (1.54)" in DOC
     assert "## The AI reads every 10 minutes and writes up the night (1.53)" in SAFETY

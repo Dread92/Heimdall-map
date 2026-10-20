@@ -92,7 +92,8 @@ def test_the_dashboards_alone_downloaded_as_a_file():
 
 
 def test_on_the_dashboard_and_in_the_docs():
-    for key in ("an_n_all:", "an_n_all_j:", "an_n_all_t:", "an_n_all_h:"):
+    for key in ("per_all:", "an_n_all_j:", "an_n_all_t:", "per_all_h:"):
         assert ADMIN.count(key) == 2, key                                          # English and Ukrainian
-    assert 'href="/api/admin/nights_export?format=jsonl" download' in ADMIN and 'href="/api/admin/nights_export?format=md" download' in ADMIN
+    # 1.58.37: the nights of the period chosen on the AI tab
+    assert 'href="/api/admin/nights_export?format=jsonl&${q}" download' in ADMIN and 'href="/api/admin/nights_export?format=md&${q}" download' in ADMIN
     assert "/api/admin/nights_export" in DOC and "heimdall-nights/1" in DOC

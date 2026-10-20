@@ -411,7 +411,7 @@ def test_the_key_is_set_by_the_owner_through_fly_secrets():
 def test_the_dashboard_tab():
     assert '<button data-tab="ai" role="tab" data-tr="tab_ai">AI reader</button>' in ADMIN
     assert '<section class="tabsec" id="tab-ai" hidden><div id="aiv"></div></section>' in ADMIN
-    assert "fetch('/api/ai_reads?limit=100&all='+(AI_ALL?1:0)+KEYQ)" in ADMIN and "if(t==='ai') loadAI();" in ADMIN
+    assert "fetch('/api/ai_reads?limit=100&all='+(AI_ALL?1:0)+KEYQ)" in ADMIN and "if(t==='ai'){ loadAI(); loadPer(); }" in ADMIN
     # 1.52 drew a target only it found; 1.53: never pushed
     for s in ("<b>It never moves or removes a target, never touches the alerts, and never sends a push.</b>",
               "<b>Вона ніколи не переміщує й не прибирає ціль, не впливає на тривоги й не надсилає сповіщень.</b>"):

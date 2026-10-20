@@ -1306,6 +1306,10 @@ class Store:
         c.execute("""CREATE TABLE IF NOT EXISTS ai_reports(
             night TEXT PRIMARY KEY, at TEXT, until TEXT, model TEXT, tok_in INTEGER, tok_out INTEGER, cost REAL, text TEXT,
             error TEXT)""")
+        # 1.58.37: the AI's report on a period of several nights (State.period_summary), one per [first, last]
+        c.execute("""CREATE TABLE IF NOT EXISTS ai_period_reports(
+            first TEXT, last TEXT, at TEXT, nights INTEGER, model TEXT, tok_in INTEGER, tok_out INTEGER, cost REAL, text TEXT,
+            error TEXT, PRIMARY KEY(first, last))""")
         # 1.54: the AI's bulletins — the last hour, the last 24 hours — each in three languages, with what it cost and the
         # record it was written from (`input`); a quiet window's bulletin is written by the server itself (quiet=1)
         c.execute("""CREATE TABLE IF NOT EXISTS ai_bulletins(
@@ -1900,6 +1904,28 @@ class Store:
             r = self.conn.execute("SELECT night,at,until,model,tok_in,tok_out,cost,text,error FROM ai_reports WHERE night=?",
                                   (night,)).fetchone()
         return dict(zip(("night", "at", "until", "model", "tok_in", "tok_out", "cost", "text", "error"), r)) if r else None
+
+    PERIOD_COLS = ("first", "last", "at", "nights", "model", "tok_in", "tok_out", "cost", "text", "error")
+
+    def ai_period_save(self, r):
+        """1.58.37: the AI's report on the nights [first, last] (or the attempt that failed: `error`)."""
+        with self.lock:
+            self.conn.execute(f"INSERT OR REPLACE INTO ai_period_reports({','.join(self.PERIOD_COLS)}) VALUES({','.join('?' * len(self.PERIOD_COLS))})",
+                              tuple(r.get(k) for k in self.PERIOD_COLS))
+            self.conn.commit()
+
+    def ai_period(self, first, last):
+        with self.lock:
+            r = self.conn.execute(f"SELECT {','.join(self.PERIOD_COLS)} FROM ai_period_reports WHERE first=? AND last=?",
+                                  (first, last)).fetchone()
+        return dict(zip(self.PERIOD_COLS, r)) if r else None
+
+    def ai_periods(self, n=20):
+        """The latest period reports written: [first, last, at, error?] — the dashboard's list to open one again."""
+        with self.lock:
+            rows = self.conn.execute("SELECT first, last, at, text IS NOT NULL FROM ai_period_reports ORDER BY at DESC LIMIT ?",
+                                     (n,)).fetchall()
+        return [{"from": a, "to": b, "at": c, "written": bool(w)} for a, b, c, w in rows]
 
     BUL_COLS = ("id", "kind", "at", "since", "until", "quiet", "sig", "uk", "en", "fr", "model", "tok_in", "tok_out", "cost",
                 "error", "input")
@@ -2537,6 +2563,7 @@ class Patterns(threading.Thread):
     REPLAY_N = 100000                         # a replayed track's number: 100000 + its order in the night (tags are < it)
     REPLAY_PAUSE_S = 10                       # between two nights read again: the live map comes first
     REPLAY_PER_TICK = 6                       # at most this many nights an hour, and none while Kyiv is under alert
+    BUSY_MAX_H = 12                           # 1.58.37: an alert older than this is a missed end (`busy`)
 
     def __init__(self, store, state=None):
         super().__init__(daemon=True, name="patterns")
@@ -2605,14 +2632,16 @@ class Patterns(threading.Thread):
         return len(rows)
 
     def busy(self):
-        """Kyiv or its oblast under an air-raid alert, or a missile threat: reading old nights again can wait."""
+        """Kyiv or its oblast under an air-raid alert, or a missile threat: reading old nights again can wait.
+        1.58.37: an alert open for more than BUSY_MAX_H is one whose end was missed, not a reason to wait for ever."""
         state = self.state
         try:
             if state.missile_active():
                 return True
+            cut = datetime.now(timezone.utc) - timedelta(hours=self.BUSY_MAX_H)
             with state.lock:
                 return any((a.get("oblast_uid") in ("31", "14")) and a.get("alert_type", "air_raid") == "air_raid"
-                           for a in state.active.values())
+                           and (parse_iso(a.get("started_at")) or datetime.now(timezone.utc)) > cut for a in state.active.values())
         except Exception:
             return False
 
@@ -2662,6 +2691,20 @@ class Patterns(threading.Thread):
             st.conn.commit()
         return len(rows)
 
+    def gaps(self):
+        """1.58.37, the owner: "we should have thousands of drones by now, yet the number recorded is fairly minimal". The
+        nights whose tags are kept but whose moves were never built — an hour the thread did not run, a deploy, a night
+        left out by a full build that failed — less the ones built already that gave no move (kv `moves_empty`)."""
+        st = self.store
+        with st.lock:
+            kept = {r[0] for r in st.conn.execute("SELECT DISTINCT night FROM target_points")}
+            built = {r[0] for r in st.conn.execute("SELECT DISTINCT night FROM track_moves WHERE COALESCE(src,'tag')='tag'")}
+        try:
+            empty = set(json.loads(st.kv_get("moves_empty") or "[]"))
+        except ValueError:
+            empty = set()
+        return sorted(kept - built - empty)
+
     def tick(self, now=None, replay=True):
         now = now or datetime.now(timezone.utc)
         st = self.store
@@ -2669,10 +2712,21 @@ class Patterns(threading.Thread):
         since = (now - timedelta(days=self.BACKFILL_DAYS if full else 2)).isoformat()
         with st.lock:
             nights = [r[0] for r in st.conn.execute("SELECT DISTINCT night FROM target_points WHERE ts>=?", (since,))]
-        n = self.build(nights)
+        gap = [x for x in self.gaps() if x not in nights]          # 1.58.37: every night kept, not the last two days only
+        n = self.build(nights + gap)
+        if gap:
+            with st.lock:
+                got = {r[0] for r in st.conn.execute(f"SELECT DISTINCT night FROM track_moves WHERE night IN ({','.join('?' * len(gap))})", gap)}
+            try:
+                empty = set(json.loads(st.kv_get("moves_empty") or "[]"))
+            except ValueError:
+                empty = set()
+            st.kv_set("moves_empty", json.dumps(sorted((empty | {x for x in gap if x not in got}))[-120:]))
+            log(f"patterns: {len(gap)} night(s) whose moves were missing built ({len(gap) - len(set(gap) - got)} with moves)")
         st.kv_set("moves_v", MOVES_VERSION)
         st.kv_set("moves_at", now.isoformat())
-        self.last = {"at": now.isoformat(), "nights": len(nights), "moves": n, "full": full}
+        self.last = {"at": now.isoformat(), "nights": len(nights) + len(gap), "gaps": len(gap), "moves": n, "full": full, "error": None}
+        st.kv_set("moves_last", json.dumps(self.last))
         if full:
             log(f"patterns: {n} moves built from {len(nights)} night(s) (version {MOVES_VERSION})")
         if replay and self.state is not None and not self.busy():
@@ -2686,6 +2740,10 @@ class Patterns(threading.Thread):
             if todo:
                 log(f"patterns: {r} moves from {len(todo)} night(s) read again from their posts")
             self.last["replayed"] = len(todo)
+        elif replay and self.state is not None:
+            self.last["replay_waits"] = "Kyiv or its oblast under alert"
+        self.last["replay_left"] = len(self.replay_nights(now)) if self.state is not None else None
+        st.kv_set("moves_last", json.dumps(self.last))
         return n
 
     def run(self):
@@ -2695,6 +2753,10 @@ class Patterns(threading.Thread):
                 self.tick()
             except Exception as e:
                 log("patterns: not built:", e)
+                try:               # 1.58.37: the dashboard says it, not only the log
+                    self.store.kv_set("moves_last", json.dumps({"at": now_iso(), "error": f"{type(e).__name__}: {e}"[:300]}))
+                except Exception:
+                    pass
             time.sleep(self.EVERY_S)
 
     @staticmethod
@@ -2811,11 +2873,37 @@ class Patterns(threading.Thread):
                           "speed_kmh": None if sp is None else round(sp), "gap_min": None if gp is None else round(gp)})
         cells.sort(key=lambda x: (-x["moves"], -x["stated_n"], x["cell"]))
         nts = sorted({k[0] for k in tracks})
+        # 1.58.37: what the tracks are a part of — the targets tagged on the same nights, followed over 2 places or
+        # more or not, and what the Air Force said was launched and shot down over all Ukraine those nights (its morning
+        # summary, dated the morning after); and how the builder went
+        scale = {"tagged": 0, "followed": 0, "af_nights": 0, "af_drones": 0, "af_drones_down": 0}
+        if nts:
+            q = ",".join("?" * len(nts))
+            with store.lock:
+                tg = store.conn.execute(f"SELECT t.night, t.n, COUNT(p.ts) FROM targets t LEFT JOIN target_points p ON p.night=t.night AND p.n=t.n "
+                                        f"WHERE t.night IN ({q}) GROUP BY t.night, t.n", nts).fetchall()
+                kept_n = store.conn.execute("SELECT COUNT(DISTINCT night) FROM target_points").fetchone()[0]
+            scale["tagged"], scale["followed"] = len(tg), sum(1 for x in tg if x[2] >= 2)
+            mornings = {(datetime.fromisoformat(x) + timedelta(days=1)).date().isoformat() for x in nts}
+            for r in store.af_reports(min(mornings)):
+                la, dn = r.get("launched") or {}, r.get("down") or {}
+                if r.get("period") == "night" and r.get("date") in mornings and la.get("drones") is not None:
+                    scale["af_nights"] += 1
+                    scale["af_drones"] += (la.get("drones") or 0) + (la.get("banderol") or 0)
+                    scale["af_drones_down"] += (dn.get("drones") or 0) + (dn.get("banderol") or 0)
+        else:
+            with store.lock:
+                kept_n = store.conn.execute("SELECT COUNT(DISTINCT night) FROM target_points").fetchone()[0]
+        try:
+            builder = json.loads(store.kv_get("moves_last") or "null")
+        except ValueError:
+            builder = None
         out = {"generated": now_iso(), "days": days, "kind": kind, "kinds": list(kinds), "res": res, "min": min_n,
                "cell_deg": [round(cw, 4), round(chh, 4)], "cell_km": round(chh * 111.2),
                "coverage": {"moves": len(mv), "tracks": len(tracks), "nights": len(nts), "first": nts[0] if nts else None,
                             "last": nts[-1] if nts else None, "stated": stated, "cells": len(cells), "by_kind": all_k,
-                            "by_src": by_src, "stated_first": st_first, "built": built, "version": MOVES_VERSION},
+                            "by_src": by_src, "stated_first": st_first, "built": built, "version": MOVES_VERSION,
+                            "scale": scale, "tag_nights_kept": kept_n, "builder": builder},
                "cells": cells[:400]}
         out["plain"] = Patterns.plain(out)
         if raw:
@@ -2877,6 +2965,17 @@ class Patterns(threading.Thread):
                    f"{bs.get('tag', 0)} переміщень із живих міток, {bs.get('replay', 0)} — з ночей, перечитаних із дописів) і {V['stated']} "
                    f"курсів, вказаних у дописах від {sf or '—'}. Це повідомлення каналів, не радар: ціль, про яку повідомили знову, "
                    "рахується знову.")
+        sc = V.get("scale") or {}
+        if sc.get("tagged"):           # 1.58.37: the scale — a followed track is a part of what was tagged, and of what was launched
+            head_en += (f" On those nights the channels' reports were tagged as {sc['tagged']} targets, {sc['followed']} of them followed over "
+                        f"2 places or more" + (f"; the Air Force reported {sc['af_drones']} drones launched over all of Ukraine "
+                                               f"({sc['af_drones_down']} shot down or lost, {sc['af_nights']} of those nights summed up)"
+                                               if sc.get("af_nights") else "") + ". A tag is a target or a group as the posts followed it.")
+            head_uk += (f" У ці ночі за повідомленнями каналів позначено цілей: {sc['tagged']}, із них простежено через 2 місця й більше: "
+                        f"{sc['followed']}" + (f"; запущених дронів по всій Україні, за Повітряними силами: {sc['af_drones']} (збито або "
+                                               f"локаційно втрачено: {sc['af_drones_down']}; ночей із підсумком: {sc['af_nights']})"
+                                               if sc.get("af_nights") else "")
+                        + ". Мітка — це ціль або група, як їх простежили дописи.")
         return {"en": [head_en] + [f[2] for f in found[:top]], "uk": [head_uk] + [f[3] for f in found[:top]], "found": len(found)}
 
 # 1.56.3, the owner: "in the Chernihiv region, by default the drones must always face into Ukraine when no direction is
@@ -4281,12 +4380,11 @@ class State:
                 row[key] = _union_minutes([(max(a, lo), min(b, hi)) for a, b in spans[uid] if a < hi and b > lo])
             row["city_alerts"] = len({a for a, _ in spans["31"] if lo <= a < hi})
             kyiv.append(row)
-        # 3. the marks placed over Kyiv city + oblast: reports by type per 24 h (18:00 → 18:00, named by the morning
-        #    date, like the Air Force's nights), by hour of day, and the courses the posts stated
+        # 3. the marks placed over Kyiv city + oblast: by hour of day, and the courses the posts stated (1.58.37: the
+        #    reports per 24 h are no longer drawn — the owner: "mostly useless, since it targets only Kyiv")
         with self.store.lock:
             ml = self.store.conn.execute("SELECT ts, type, status, heading, jet FROM marker_log WHERE ts>=? AND oblast_uid IN ('31','14')",
                                          (t0.isoformat(),)).fetchall()
-        rep = {d: {"date": d} for d in dates}
         hours = [0] * 24
         heads = [0] * 8
         for ts, typ, status, heading, jet in ml:
@@ -4294,12 +4392,6 @@ class State:
             if not k:
                 continue
             k = k.astimezone(tz)
-            d = (k + timedelta(hours=6)).date().isoformat()
-            row = rep.get(d)
-            if row is None:
-                continue
-            key = status if status in ("down", "impact") else ("jet" if (typ == "drones" and jet) else (typ or "unknown"))
-            row[key] = row.get(key, 0) + 1
             if not status:
                 hours[k.hour] += 1
                 if typ == "drones" and heading is not None:
@@ -4307,9 +4399,9 @@ class State:
         return {"days": days, "from": dates[0], "to": dates[-1], "generated": now_iso(),
                 "af": [af[d] for d in dates], "af_areas": areas.most_common(15), "af_directions": dirs.most_common(12),
                 "af_models": models.most_common(12), "kyiv": kyiv, "starts": starts,
-                "reports": [rep[d] for d in dates], "hours": hours, "headings": heads,
+                "hours": hours, "headings": heads,
                 "weather": self._an_weather(dates), "approach": self._an_approach(t0, dates),
-                "air": self._an_air(t0, dates), "obl": self._an_oblasts(t0, dates),
+                "obl": self._an_oblasts(t0, dates),        # 1.58.37: no carriers — the owner: "vastly inaccurate"
                 "places": self.drone_heat(days)["points"][:25], "bridges": self._an_bridges(t0, dates),
                 "weather_status": getattr(self, "weather_status", None), "targets": self._an_targets(dates),
                 "ai": self._an_ai(dates)}
@@ -4431,38 +4523,6 @@ class State:
             seen.add((pid, sec))
             by[d][sec] += 1
         return [{"date": d, "s": by[d]} for d in dates]
-
-    def _an_air(self, t0, dates):
-        tz = kyiv_tz()
-        sorties = air_sorties(self.store.air_reports((t0 - timedelta(hours=14)).isoformat()))
-        keep, per = [], {d: {k: 0 for k in AIR_KINDS} for d in dates}
-        for so in sorties:
-            first = parse_iso(so["start"] or so["launch"])
-            if not first or first < t0:
-                continue
-            d = (first.astimezone(tz) + timedelta(hours=6)).date().isoformat()
-            if d in per:
-                per[d][so["kind"]] += 1
-            keep.append(so)
-
-        def q(v, f):                                    # a quantile, interpolated (the median of 3 and 50 is 26)
-            v = sorted(v)
-            if not v:
-                return None
-            i = f * (len(v) - 1)
-            lo = int(i)
-            hi = min(lo + 1, len(v) - 1)
-            return round(v[lo] + (v[hi] - v[lo]) * (i - lo))
-        stats = {}
-        for k in AIR_KINDS:
-            ss = [x for x in keep if x["kind"] == k]
-            dl = [x["delay_min"] for x in ss if x["delay_min"] is not None]
-            up = [x["up_min"] for x in ss if x["up_min"] is not None]
-            stats[k] = {"sorties": len(ss), "with_takeoff": sum(1 for x in ss if x["start"]),
-                        "launched": sum(1 for x in ss if x["launch"]), "stood_down": sum(1 for x in ss if x["end"] and not x["launch"]),
-                        "delay_median": q(dl, .5), "delay_p25": q(dl, .25), "delay_p75": q(dl, .75), "delays": len(dl),
-                        "up_median": q(up, .5)}
-        return {"per_date": [dict(per[d], date=d) for d in dates], "stats": stats, "sorties": keep[-60:][::-1]}
 
     def _alert_spans(self, t0):
         """Air-raid alert time per oblast since t0 — in any part of it (the oblast's own alert, a raion's, a
@@ -4909,6 +4969,106 @@ class State:
                                    "ai_report": {k: r.get(k) for k in ("at", "model", "text", "error", "cost")} if r else None},
                                   ensure_ascii=False))
         return "\n".join(out) + "\n"
+
+    # 1.58.37, the owner: "the main goal is to aggregate as many data as possible to make a report, so we need a wider
+    # range of dates, not only one day at a time". The nights of [first, last] in one record: a line per night, then the
+    # totals. Built from each night's own record (night_summary), so the figures are the same ones.
+    PERIOD_MAX = 31
+    MISSILE_AF = ("missiles", "cruise", "ballistic", "aeroballistic", "antiship", "guided")
+
+    def period_nights(self, first, last):
+        a, b = datetime.fromisoformat(first).date(), datetime.fromisoformat(last).date()
+        return [(a + timedelta(days=i)).isoformat() for i in range((b - a).days + 1)][-self.PERIOD_MAX:]
+
+    def period_summary(self, first, last):
+        """Every night of [first, last] (the last PERIOD_MAX of them) summed up from its record: per night the tags, the
+        followed ones, the reports and their kinds, the oblasts under alert and Kyiv city's minutes, the Air Force's night
+        summary, the outcomes and the oblasts most reported; then the totals — the alerts by oblast, the reports by
+        oblast and by hour, the places tagged targets were first reported, the outcomes, the heights, the Air Force.
+        Counts, places and times as recorded — never a post's text, a channel, a reader."""
+        nights = self.period_nights(first, last)
+        per = []
+        alerts = collections.defaultdict(lambda: {"minutes": 0, "alerts": 0, "nights": 0})
+        rep_obl, outs = collections.defaultdict(collections.Counter), collections.defaultdict(collections.Counter)
+        hours, kinds, entry = collections.Counter(), collections.Counter(), collections.Counter()
+        af_la, af_dn, heights = collections.Counter(), collections.Counter(), []
+        for n in nights:
+            s = self.night_summary(n)
+            tl = s["targets"]["list"]
+            nk = collections.Counter()
+            for h, v in s["reports"]["by_hour"].items():
+                nk.update(v)
+                hours[h] += sum(v.values())
+            kinds.update(nk)
+            for o, v in s["reports"]["by_oblast"].items():
+                rep_obl[o].update(v)
+            for o, v in s["outcomes"]["by_oblast"].items():
+                outs[o].update(v)
+            for a in s["official_alerts"]:
+                A = alerts[a["oblast"]]
+                A["minutes"] += a["minutes"] or 0
+                A["alerts"] += a["alerts"] or 0
+                A["nights"] += 1 if a["minutes"] else 0
+            entry.update(x["path"][0]["place"] for x in tl if x["path"] and x["path"][0].get("place"))
+            heights += [h for x in tl for h in x["heights_m"]]
+            afn = [a for a in s["air_force"] if a["period"] == "night"]
+            af = afn[-1] if afn else None
+            if af:
+                af_la.update({k: v for k, v in af["launched"].items() if isinstance(v, (int, float))})
+                af_dn.update({k: v for k, v in af["down"].items() if isinstance(v, (int, float))})
+            top = sorted(s["reports"]["by_oblast"].items(), key=lambda kv: -sum(kv[1].values()))[:3]
+            per.append({"night": n, "tags": s["targets"]["tags"], "followed": sum(1 for x in tl if len(x["path"]) >= 2),
+                        "reports": s["reports"]["total"], "kinds": dict(nk),
+                        "oblasts_under_alert": sum(1 for a in s["official_alerts"] if a["minutes"]),
+                        "kyiv_city_min": next((a["minutes"] for a in s["official_alerts"] if a["uid"] == "31"), 0),
+                        "air_force": {"launched": af["launched"], "down": af["down"]} if af else None,
+                        "outcomes": sum(sum(v.values()) for v in s["outcomes"]["by_oblast"].values()),
+                        "top_oblasts": [(o, sum(v.values())) for o, v in top]})
+        hs = sorted(heights)
+        bands = {State.band(lo, hi): sum(1 for h in heights if lo <= h < hi) for lo, hi in self.NIGHT_ALT_BANDS}
+        return {
+            "from": nights[0] if nights else first, "to": nights[-1] if nights else last, "nights": len(nights),
+            "timezone": "Kyiv", "generated": now_iso(), "app": APP_VERSION, "note": self.EXPORT_NOTE,
+            "per_night": per,
+            "totals": {"tags": sum(p["tags"] for p in per), "followed": sum(p["followed"] for p in per),
+                       "reports": sum(p["reports"] for p in per), "kinds": dict(kinds.most_common()),
+                       "outcomes": sum(p["outcomes"] for p in per),
+                       "air_force": {"nights": sum(1 for p in per if p["air_force"]), "launched": dict(af_la), "down": dict(af_dn)}},
+            "alerts_by_oblast": sorted(({"oblast": o, **v} for o, v in alerts.items()), key=lambda x: -x["minutes"]),
+            "reports_by_oblast": {o: dict(v) for o, v in sorted(rep_obl.items(), key=lambda kv: -sum(kv[1].values()))},
+            "reports_by_hour": {h: hours[h] for h in sorted(hours)},
+            "entry_places": dict(entry.most_common(30)),
+            "outcomes_by_oblast": {o: dict(v) for o, v in outs.items()},
+            "heights": {"reports_with_height": len(hs), "median_m": hs[len(hs) // 2] if hs else None, "bands": bands},
+        }
+
+    @staticmethod
+    def period_text(d):
+        """The period as plain text, for the AI's report or any reader."""
+        fmt = lambda x: ", ".join(f"{k} {v}" for k, v in x.items()) if x else "—"      # noqa: E731
+        L = [f"HEIMDALL — THE NIGHTS {d['from']} → {d['to']} ({d['nights']} nights, each from 12:00 to 12:00 Kyiv time)", d["note"], "",
+             "NIGHT BY NIGHT: tags (followed over 2+ places) · reports (by kind) · oblasts under alert · Kyiv city minutes under alert "
+             "· Air Force night summary (launched / down) · outcomes reported · oblasts most reported"]
+        for p in d["per_night"]:
+            af = p["air_force"]
+            L.append(f"- {p['night']}: {p['tags']} tags ({p['followed']} followed) · {p['reports']} reports ({fmt(p['kinds'])}) · "
+                     f"{p['oblasts_under_alert']} oblasts · Kyiv {p['kyiv_city_min']} min · "
+                     + (f"AF launched {fmt(af['launched'])} / down {fmt(af['down'])}" if af else "AF: no night summary")
+                     + f" · {p['outcomes']} outcomes · " + (", ".join(f"{o} {n}" for o, n in p["top_oblasts"]) or "—"))
+        T = d["totals"]
+        L += ["", f"TOTALS: {T['tags']} tags, {T['followed']} followed · {T['reports']} reports ({fmt(T['kinds'])}) · {T['outcomes']} outcomes",
+              f"AIR FORCE over the {T['air_force']['nights']} nights it summed up (all Ukraine): launched {fmt(T['air_force']['launched'])}; "
+              f"down {fmt(T['air_force']['down'])}",
+              "", "OFFICIAL ALERTS (air raid) by oblast: minutes under alert · alerts · nights with an alert"]
+        L += [f"- {a['oblast']}: {a['minutes']} min · {a['alerts']} · {a['nights']}" for a in d["alerts_by_oblast"]] or ["- none"]
+        L += ["", "REPORTS BY OBLAST (by kind):"]
+        L += [f"- {o}: {sum(v.values())} ({fmt(v)})" for o, v in d["reports_by_oblast"].items()] or ["- none"]
+        L += ["", "REPORTS BY HOUR (Kyiv time): " + ("; ".join(f"{h} {v}" for h, v in d["reports_by_hour"].items()) or "—"),
+              "", "WHERE TAGGED TARGETS WERE FIRST REPORTED: " + ("; ".join(f"{k} {v}" for k, v in d["entry_places"].items()) or "—"),
+              "", "OUTCOMES REPORTED by oblast: " + ("; ".join(f"{o} ({fmt(v)})" for o, v in d["outcomes_by_oblast"].items()) or "none"),
+              "", f"HEIGHTS: {d['heights']['reports_with_height']} reports with a height, median {d['heights']['median_m']} m, "
+              f"bands {d['heights']['bands']}"]
+        return "\n".join(L)
 
     @staticmethod
     def night_text(d, compact=False):
@@ -7227,6 +7387,10 @@ class NightReports(threading.Thread):
                 self.asked.append(night)
             self.cond.notify()
 
+    def ask_period(self, first, last):
+        """1.58.37: the report on the nights [first, last] — one night is that night's own report."""
+        self.ask(first if first == last else f"{first}..{last}")
+
     def due(self, now=None):
         """The night whose report is due and not written yet, or None."""
         local = (now or datetime.now(timezone.utc)).astimezone(kyiv_tz())
@@ -7258,6 +7422,26 @@ class NightReports(threading.Thread):
         finally:
             self.busy = None
 
+    def write_period(self, first, last):
+        """1.58.37: the AI's report on several nights, from their record (State.period_summary)."""
+        self.busy = f"{first}..{last}"
+        try:
+            d = self.state.period_summary(first, last)
+            text = State.period_text(d)[:self.MAX_TEXT]
+            ai = getattr(self.state, "ai", None)
+            row = {"first": first, "last": last, "at": now_iso(), "nights": d["nights"]}
+            if not ai or not ai.enabled():
+                row["error"] = "the AI reader is off (no key, or switched off)"
+            else:
+                res = ai.ask_text(ai_reader.PERIOD_SYSTEM, text, kind="period")
+                row.update(model=res.get("model") or ai.model(), tok_in=res.get("tok_in"), tok_out=res.get("tok_out"),
+                           cost=res.get("cost") or 0, text=res.get("out") if not res.get("error") else None, error=res.get("error"))
+            self.state.store.ai_period_save(row)
+            log(f"period report {first}..{last}: " + ("written" if row.get("text") else f"not written ({row.get('error')})"))
+            return row
+        finally:
+            self.busy = None
+
     def run(self):
         time.sleep(30)
         while True:
@@ -7265,7 +7449,10 @@ class NightReports(threading.Thread):
                 asked, self.asked = self.asked, []
             for night in asked + ([n] if (n := self.due()) and n not in asked else []):
                 try:
-                    self.write(night)
+                    if ".." in night:
+                        self.write_period(*night.split("..", 1))
+                    else:
+                        self.write(night)
                 except Exception as e:
                     log(f"night report {night} error:", type(e).__name__, e)
             with self.cond:
@@ -8941,6 +9128,21 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json({"night": night, "summary": d, "text": State.night_text(d), "report": st.store.ai_report(night),
                                    "reports": st.store.ai_report_nights(), "writing": rp.busy if rp else None,
                                    "report_hour": st.cfg.get("ai_report_hour", 9)})
+            # 1.58.37: the record of a period of nights and the AI's report on it (one night: that night's own report)
+            if u.path == "/api/admin/period":
+                if not self._admin_ok(q):
+                    return self._json({"error": "set ADMIN_KEY to read the nights"}, 403)
+                last = q.get("to", [""])[0] or tag_night((datetime.now(timezone.utc) - timedelta(hours=24)).isoformat())
+                first = q.get("from", [""])[0] or last
+                if not all(re.fullmatch(r"\d{4}-\d{2}-\d{2}", x) for x in (first, last)) or first > last:
+                    return self._json({"error": "from=YYYY-MM-DD&to=YYYY-MM-DD, from before to"}, 400)
+                d = st.period_summary(first, last)        # the owner's alone, on demand: no cache
+                first, last = d["from"], d["to"]           # at most PERIOD_MAX nights: the latest of them
+                rp = getattr(st, "reports", None)
+                return self._json({"from": first, "to": last, "summary": d, "text": State.period_text(d),
+                                   "report": st.store.ai_report(first) if first == last else st.store.ai_period(first, last),
+                                   "periods": st.store.ai_periods(), "writing": rp.busy if rp else None, "max": State.PERIOD_MAX,
+                                   "report_hour": st.cfg.get("ai_report_hour", 9)})
             # 1.58.27: every night of a window in one file (State.nights_export) — JSON Lines or text, downloaded
             if u.path == "/api/admin/nights_export":
                 if not self._admin_ok(q):
@@ -9071,12 +9273,15 @@ class Handler(BaseHTTPRequestHandler):
                 # 1.53: "write this night's report now" — only asks the NightReports thread
                 if not self._admin_ok(q):
                     return self._json({"error": "unauthorized"}, 401)
-                night = str(data.get("night") or "")
                 rp = getattr(st, "reports", None)
-                if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", night) or not rp:
-                    return self._json({"error": "night=YYYY-MM-DD" if rp else "reports are not running"}, 400 if rp else 503)
-                rp.ask(night)
-                return self._json({"ok": True, "asked": night})
+                first = str(data.get("from") or data.get("night") or "")
+                last = str(data.get("to") or first)
+                ok = all(re.fullmatch(r"\d{4}-\d{2}-\d{2}", x) for x in (first, last)) and first <= last
+                if not ok or not rp:
+                    return self._json({"error": "from / to (or night) = YYYY-MM-DD" if rp else "reports are not running"}, 400 if rp else 503)
+                ns = st.period_nights(first, last)          # 1.58.37: several nights — the latest PERIOD_MAX
+                rp.ask_period(ns[0], ns[-1])
+                return self._json({"ok": True, "asked": ns[0] if len(ns) == 1 else f"{ns[0]}..{ns[-1]}"})
             if u.path == "/api/digest/run":
                 # "write last night / last week up now": only asks the Digests thread — the model is never called here
                 if not self._admin_ok(q):
@@ -9536,8 +9741,9 @@ def main():
     state.tr = Translations(state)
     state.tr.start()
     Watchdog(state).start()
-    state.digests = Digests(state, cfg)
-    state.digests.start()
+    # 1.58.37, the owner: "the nights and weeks tab can go away" — the digests are no longer written (the AI's report on
+    # a period of nights, on the dashboard's AI tab, does it from the full record); the ones written stay in the database
+    state.digests = None
     state.reports = NightReports(state, cfg)      # 1.53: the AI's report on each night
     state.reports.start()
     # The AI (§7.7): 1.54 — it writes the bulletins of the last hour and the last 24 hours, and the night's report; it

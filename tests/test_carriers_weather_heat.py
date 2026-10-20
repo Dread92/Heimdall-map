@@ -125,7 +125,7 @@ def test_analytics_weather_approach_carriers_and_oblasts():
     ap = {r["date"]: r["s"] for r in A["approach"]}
     day = (a.astimezone(tz) + timedelta(hours=6)).date().isoformat()
     assert ap[day][2] == 1 and ap[day][4] == 1 and sum(ap[day]) == 2           # E once (one post), S once; city and "low" out
-    assert A["air"]["stats"]["strategic"]["delay_median"] == 120 and A["air"]["stats"]["strategic"]["launched"] == 1
+    assert "air" not in A                                                      # 1.58.37: the carriers are no longer charted
     kh = next(r for r in A["obl"]["rows"] if r["uid"] == "22")
     assert kh["total_h"] == 3.0 and A["obl"]["by"] == "day" and len(A["obl"]["cols"]) == 7
     assert all(r["uid"] != "20" for r in A["obl"]["rows"])                     # the stale open row counts nothing
@@ -133,4 +133,4 @@ def test_analytics_weather_approach_carriers_and_oblasts():
 
 
 def test_the_analytics_cards_and_their_csv():
-    assert "csvMore(k,A,tag)" in ADMIN and "an_c_obl" in ADMIN and "an_c_air" in ADMIN
+    assert "csvMore(k,A,tag)" in ADMIN and "an_c_obl" in ADMIN and "an_c_air" not in ADMIN and "heimdall-carriers-" not in ADMIN

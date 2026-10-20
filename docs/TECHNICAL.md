@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-18 (1.58.36)
+**Documented version: 1.58** · last updated 2026-10-20 (1.58.37)
 
 The repository is **Dread92/Heimdall-map**. The app's address is **https://heimdall.com.ua** (1.58.34, 18 October
 2026); the Fly app keeps its first name, `kyiv-air-watch-gb`, and its first address keeps working (§15 has the move).
@@ -213,10 +213,10 @@ Heimdall-map/
 | `TelegramAPI` | reads `telegram_api_channels` (chyste_nebo) through the Telegram client API — polls the channel, **never subscribes to updates** | last 20 posts every 15 s (8 s in a missile threat) |
 | `Vitals` | 1.41: the process's own CPU, the CPU the host took away (steal — on a shared Fly vCPU, throttling), memory, how late its own clock woke it; every request over 2 s (path and time only); every start with its build (`kv.boots`, last 100). On the dashboard's Live tab (`/api/online` → `process`) | 10 s 1.58.3: each start says how the run before it ended — a stop signal (`last-exit.json` beside the database, written by the SIGINT/SIGTERM handler: a deploy, a secret set, Fly moving the machine), the watchdog, or nothing written (a crash, an out-of-memory kill); the server panel counts the week's starts by cause (`restarts_7d`) |
 | `Watchdog` | the database and alert-state locks must be free within 15 s; a held lock logs every thread's stack, five in a row (~2 min) → exit, Fly restarts it; a starved process is only logged (load, not a deadlock) | 20 s |
-| `Digests` | each night (18:00–08:00 Kyiv) after `digest_hour`, and each Monday for the week: the figures (`State.digest_facts`), and with `ANTHROPIC_API_KEY` a written summary in EN + UK; stored in `digests` | 5 min check |
+| `Digests` | not started since 1.58.37 (the owner: "the nights and weeks tab can go away"; §8b) — the AI's report on a period of nights (§7.10) does it from the full record; the ones written stay in `digests` | — |
 | `Translations` | machine-translates feed posts into a language somebody reads | on demand, ~3 calls/s max |
 | `bulletins` | 1.54, with `OPENROUTER_API_KEY`: the AI's bulletins (§7.11) — on the clock, the last hour and the last 24 hours once an hour at :00 (1.56.1; the last hour was every 20 minutes), only while there is activity, one call each in three languages → `ai_bulletins`; or one the dashboard asks for. (Until 1.53 an `ai-reader` thread read the posts — §7.7; retired) | 20 s; ≤ `ai_reader_monthly_usd` a month |
-| `night-reports` | 1.53: after `ai_report_hour` (Kyiv), the AI's report on the night before (§7.10) → `ai_reports`; or a night the dashboard asks for | 5 min |
+| `night-reports` | 1.53: after `ai_report_hour` (Kyiv), the AI's report on the night before (§7.10) → `ai_reports`; or a night the dashboard asks for; 1.58.37: a period of up to 31 nights the dashboard asks for → `ai_period_reports` | 5 min |
 | `Pusher` | sends Web Push: one notification at a time, each to all its phones at once through `push.Sender` (32 workers, one kept-open HTTPS connection per push service per worker, VAPID signed once an hour per service) | queue |
 | `streams` | **every open page's live line** (`StreamHub`, §5.4): one thread, non-blocking sockets (epoll), the data sent as changes | events + every 15 / 5 / 2 s |
 | `proximity` | per-subscriber distance checks → push | continuous |
@@ -225,7 +225,7 @@ Heimdall-map/
 | `AlertsInUa.backfill` | a month of history for the favourite regions | once at start |
 | `AFBackfill` | the Air Force summaries of the last 14 days that `af_reports` lacks: first from the stored feed, then from `t.me/s/kpszsu?before=…` pages (at most 240, stops once nothing is missing); since 1.33 also the carriers (`parse_air_report`) in every stored post, once per parser version (`kv.air_parsed`) | 60 s after start, then daily |
 | `bridges` | every 5 s: a Kyiv bridge whose state rose (nothing → near → at, §9b) is written to `bridge_events` and pushed to the phones that asked for the bridges (topic `bridges`, in their language), at most once per bridge every 10 min — a "near" turning "at" excepted | 5 s |
-| `patterns` | 1.55 (§7.12): each tagged target's moves, from one reported position to the next (`target_points` → `track_moves`, kept for good): the last two days' nights again every hour, and once per `MOVES_VERSION` every night whose points are all still kept | 90 s after start, then hourly |
+| `patterns` | 1.55 (§7.12): each tagged target's moves, from one reported position to the next (`target_points` → `track_moves`, kept for good): the last two days' nights again every hour, 1.58.37 every night kept whose moves were never built (`Patterns.gaps`), and once per `MOVES_VERSION` every night whose points are all still kept | 90 s after start, then hourly |
 | `Weather` | the last nights' weather at the launch areas and Kyiv from Open-Meteo (`WEATHER_POINTS`; 92 nights the first time, then 10) into `weather` | 90 s after start, then every 6 h (1 h after a failure) |
 
 **One computation for everybody** (`State.cached`): `/api/markers`, `/api/state`, `/api/feed`, `/api/stats`,
@@ -1393,8 +1393,30 @@ places the posts named — no reader, no watched place. `State.night_text` is th
 to its ends, 40 partings). The `night-reports` thread gives the compact text, after `ai_report_hour` (9), to the reader's
 model with `REPORT_SYSTEM` (sections: the night in brief, routes, heights and speeds, against the Air Force, patterns,
 Heimdall itself — only what the record shows, "reported", no forecast as a fact, ≤ 900 words) and keeps the answer
-(`ai_reports`). Dashboard → Analytics: the night card (pick a night, the report, "write it now / again", the record as
-JSON or text to download for any AI), and "the AI's checks per night" (findings by kind, checks, posts, cost; CSV).
+(`ai_reports`). Dashboard → Analytics: "the AI's checks per night" (findings by kind, checks, posts, cost; CSV).
+
+**A period of nights (1.58.37)**, the owner: "it would make sense that it is included within the AI tab … the main goal
+is to aggregate as many data as possible to make a report, so we need a wider range of dates, not only one day at a
+time". The report card moved to the dashboard's **AI tab** and takes a period: from one night to `State.PERIOD_MAX`
+(31, the latest of a longer choice), picked with two lists or "last night / last 7 / 14 / 31 nights" (remembered,
+`localStorage.perrange`). `State.period_summary(first, last)` adds up each night's own record (`night_summary`, so the
+figures are the same ones): a line per night — tags, those followed over 2 places or more, reports and their kinds,
+oblasts under alert, Kyiv city's minutes under alert, the Air Force's night summary (launched / down), outcomes, the
+3 oblasts most reported — then the totals: the alerts by oblast (minutes, alerts, nights), the reports by oblast and by
+hour, where tagged targets were first reported (30), the outcomes by oblast, the heights, the Air Force over the
+nights it summed up. `State.period_text` is the same as text. `GET /api/admin/period` gives the record and the report;
+"write the report" (`POST /api/admin/ai_report` with `{from, to}`) asks the `night-reports` thread: one night is that
+night's own report (`ai_reports`), several are written with `ai_reader.PERIOD_SYSTEM` (the period in brief, night by
+night, routes and places, timing, against the Air Force, patterns — "a pattern seen on two or three nights is a hint,
+not a rule: say how many nights it rests on"; ≤ 1,400 words) into `ai_period_reports` (`first`, `last`, `at`,
+`nights`, model, tokens, cost, `text`, `error`). The card also downloads the period's record (JSON, text) and every
+night of it in full (`/api/admin/nights_export` with the period's `from` / `to`), and lists the periods written before.
+
+**"Not written: empty answer" (1.58.37)**: the model thinks before it writes and its thinking counts against
+`max_tokens` — on a busy night the 3,000 of `MAX_OUT_REPORT` went on thinking and no word was left. `MAX_OUT_REPORT` is
+10,000, `MAX_OUT_PERIOD` 14,000 (paid only as used); an answer cut off before its first word (`finish_reason` length,
+or every token used) is asked once more with `MAX_OUT_RETRY` (24,000), both costs counted; any other empty answer says
+why (`the model stopped: <reason>, <n> tokens out`); an answer in parts is joined.
 
 **Tags that hold (1.53)**, the owner: "the ID number changes during the course — it is probably the same drone".
 `TargetTags.assign` gives a track the tag its **latest shown** report had (`shown`, kept by `show` for every mark drawn),
@@ -1548,6 +1570,17 @@ app, but on the admin dashboard." Nothing of it reaches the app: no page asks fo
   nights of the last two days every hour (a night still going gets its new moves: its rows are replaced), and once
   per `MOVES_VERSION` (`kv` `moves_v`; `moves_at`, the last build) every night whose points are all still kept
   (`BACKFILL_DAYS`, 58). A night older than that keeps the moves its version built.
+- **No night left out (1.58.37)**, the owner: "we should have thousands of drones by now, yet the number recorded is
+  fairly minimal". The dashboard showed 2 nights of moves where 12 nights of tags were kept: a night only got its moves
+  while it was among the last two days, so an hour the thread did not run (a deploy, a restart, an error) lost that
+  night for good. Every hour `Patterns.gaps()` now also builds every night whose points are kept and that has no tag
+  move yet; one whose tags gave no move (each reported at one place) is remembered (`kv` `moves_empty`) instead of
+  being built again. How the last hour went is kept (`kv` `moves_last`: nights, gaps caught up, moves, the nights still
+  to read again from their posts, an error) and shown beside "moves built" on the Patterns tab. `busy()` no longer
+  waits on an alert of Kyiv or its oblast open for more than `BUSY_MAX_H` (12 h) — an end the feed missed would have
+  held the reading of old nights back for ever. The words now say the scale: on the nights of the tracks, the targets
+  tagged and those followed over 2 places or more, and what the Air Force said was launched and shot down over all
+  Ukraine (its night summaries, dated the morning after) — `coverage.scale`, `tag_nights_kept`, `builder`.
 - **The reading** (`Patterns.report`): over the last `days` (0: all), for a kind (`PATTERN_KINDS`: `drones` — all four
   drone kinds —, `drone`, `jet` with the Banderol, `unstated`), on a grid of `MOVE_CELL` (0.2° × 0.125°, about
   14 × 14 km) × `res` (1, 2, 4: ~14, 28, 56 km). For each area with `min` moves out of it or `min` stated courses in
@@ -1612,7 +1645,12 @@ The feed is Ukrainian; EN and FR readers get a translation.
 - **Circuit breaker**: a backend that refuses (401/403/429/456) rests 30 min, any other failure 5 min.
 - French has no offline stand-in: without a machine translator, FR shows the English.
 
-## 8b. Nights and weeks (the dashboard's record)
+## 8b. Nights and weeks (the dashboard's record) — not written since 1.58.37
+
+1.58.37, the owner: "the nights and weeks tab can also go away". The tab is gone and the `Digests` thread is no longer
+started: the AI's report on a period of nights (§7.10, the AI tab) does the same from the full record of every oblast.
+The digests written before stay in `digests`; `GET /api/digests` still lists them, `POST /api/digest/run` answers 503.
+What follows is how they were made.
 
 A record that builds up from now on (no import of older data). After each night (18:00–08:00 Kyiv time; written up
 after `digest_hour`, 09:00, once the Air Force morning summary is out) and each Monday for the week before,
@@ -1634,12 +1672,12 @@ can be checked. Without a key the figures are still stored and shown. The model 
 
 ## 8c. The dashboard (1.32: tabs and Analytics)
 
-`/admin` has seven tabs (the last one opened is remembered, `localStorage.admintab`): **Live** (online now, the
+`/admin` has six tabs (the last one opened is remembered, `localStorage.admintab`; one that no longer exists opens
+Live): **Live** (online now, the
 admin's message with a preview in the readers' colours, the nuclear event — §9), **Analytics**, **Patterns** (1.55,
-§7.12: where the drones go, area by area, and since 1.56.1 in plain words — the dashboard only), **Nights & weeks**
-(§8b), **Sources** (lead time, official sources, the channels and their controls, translation; a red dot on the
+§7.12: where the drones go, area by area, and since 1.56.1 in plain words — the dashboard only), **Sources** (lead time, official sources, the channels and their controls, translation; a red dot on the
 tab when a source or a channel on the map fails), **AI reader** (1.50, §7.7: the shadow reader's readings beside
-the rules') and **Usage** (the anonymous counters). Each tab loads its own data; only Live, Sources and AI reader
+the rules'; 1.58.37: first, the AI's report on a period of nights — §7.10) and **Usage** (the anonymous counters). Each tab loads its own data; only Live, Sources and AI reader
 refresh on their own (10 s, 60 s, 60 s while open).
 
 **Analytics** (`GET /api/analytics?days=7|30|90|365`, `State.analytics`, cached 5 min) — the trends, for the
@@ -1652,12 +1690,11 @@ owner and his partners, "Excel-like":
   would read higher than it was); hit and debris locations; launch areas, main directions and models named;
 - Kyiv, from the app's own records: hours under official air-raid alert per day for the city (oblast 31) and the
   oblast (any raion of 14); when alerts start in the city (weekday × hour); the marks placed over the city and the
-  oblast per 24 h from 18:00 by type (Banderol with the jet drones), by hour, and the drone courses **stated** in
-  posts (8 sectors; none guessed);
+  oblast by hour, and the drone courses **stated** in posts (8 sectors; none guessed). 1.58.37: the marks per 24 h by
+  type are no longer drawn (the owner: "mostly useless data, since it targets only Kyiv");
 - the KPIs compare the last 7 days with the 7 before; a date without a summary says so instead of showing zeros;
-- (1.33) **the carriers** (§7.6): sorties per date by kind, and per kind the number on record, how many a launch
-  report followed, the median (and middle half) from take-off to launch, the MiG-31K's median time to the stand-down,
-  the last 25 in a table;
+- (1.33 – 1.58.36) **the carriers** (§7.6) are no longer charted (the owner: "vastly inaccurate, it can go"); the posts
+  are still read for the bulletins' record (§7.11);
 - (1.33) **the weather**: one dot per night — the mean wind, cloud cover and rain over the launch areas (Orel,
   Kursk, Bryansk, Shatalovo, Millerovo, Primorsko-Akhtarsk; 18:00–06:00) against the drones the Air Force says were
   launched that night; Pearson's r, the number of nights and a least-squares line from 8 nights, with the reminder
@@ -2760,8 +2797,9 @@ All JSON unless stated. Public unless marked 🔒 (`ADMIN_KEY`).
 | 🔒 `POST /api/admin/ai` | `{reader: bool}` — the AI at all (every call stops); 1.54 (§7.11): `{bulletin_public: bool}` — the bulletins in the app; `{bulletin_now: "1h"\|"24h"}` — asks the `bulletins` thread to write one now. (`live`, `mode`, `check_now` went with the AI's reading in 1.54) |
 | 🔒 `GET /api/admin/night?night=YYYY-MM-DD` | 1.53: one night in full (§7.10): `summary` (`State.night_summary`), `text` (`State.night_text`), `report` (the AI's, or null), `reports` (the nights that have one), `writing`, `report_hour` |
 | 🔒 `GET /api/admin/nights_export?format=jsonl\|md&from=&to=` | 1.58.27: every night of a window that recorded something (a target tag or the AI's report; the last 90 days by default, 180 nights at most) in one file to save (`State.nights_export`, §7.10): JSON Lines (`heimdall-nights/1`: a header line, then `{night, summary, ai_report}` a line) or text (`State.night_text` and the report, night by night); gzipped when the browser takes it |
-| 🔒 `GET /api/admin/patterns?days=&kind=&res=&min=&raw=` | 1.55: the direction patterns (§7.12) — `days` 0–3650 (0: all; 90), `kind` `drones`\|`drone`\|`jet`\|`unstated`, `res` 1\|2\|4 (×14 km), `min` (3): `coverage` (`moves`, `tracks`, `nights`, `first`, `last`, `stated`, `cells`, `by_kind`, 1.56.1 `by_src`, `stated_first`, `built`, `version`), 1.56.1 `plain` (`en`, `uk`: the sentences, the first on what they are built from; `found`), `cell_deg`, `cell_km`, `cells` (≤ 400, busiest first: `cell`, `lon`, `lat`, `name`, `names`, `moves`, `tracks`, `nights`, `dir`, `dir_p`, `mean_bearing`, `consistency`, `stay`, `next`, `next_places`, `through`, `final`, `final_places`, `origins`, `stated`, `stated_n`, `said`, `speed_kmh`, `gap_min`; each share `{n, p, lo, hi}` in %, Wilson 95%); `raw=1` adds `moves` (≤ 50,000, not cached). Cached 5 min |
-| 🔒 `POST /api/admin/ai_report` | 1.53: `{night}` — asks the `night-reports` thread to write (again) that night's report |
+| 🔒 `GET /api/admin/patterns?days=&kind=&res=&min=&raw=` | 1.55: the direction patterns (§7.12) — `days` 0–3650 (0: all; 90), `kind` `drones`\|`drone`\|`jet`\|`unstated`, `res` 1\|2\|4 (×14 km), `min` (3): `coverage` (`moves`, `tracks`, `nights`, `first`, `last`, `stated`, `cells`, `by_kind`, 1.56.1 `by_src`, `stated_first`, `built`, `version`; 1.58.37 `scale` {`tagged`, `followed`, `af_nights`, `af_drones`, `af_drones_down`}, `tag_nights_kept`, `builder`), 1.56.1 `plain` (`en`, `uk`: the sentences, the first on what they are built from; `found`), `cell_deg`, `cell_km`, `cells` (≤ 400, busiest first: `cell`, `lon`, `lat`, `name`, `names`, `moves`, `tracks`, `nights`, `dir`, `dir_p`, `mean_bearing`, `consistency`, `stay`, `next`, `next_places`, `through`, `final`, `final_places`, `origins`, `stated`, `stated_n`, `said`, `speed_kmh`, `gap_min`; each share `{n, p, lo, hi}` in %, Wilson 95%); `raw=1` adds `moves` (≤ 50,000, not cached). Cached 5 min |
+| 🔒 `GET /api/admin/period?from=&to=` | 1.58.37: a period of nights (§7.10; at most `PERIOD_MAX`, 31, the latest; by default the last night that has ended): `from`, `to`, `summary` (`State.period_summary`), `text` (`State.period_text`), `report` (one night: that night's `ai_reports` row; several: the `ai_period_reports` row; or null), `periods` (the latest 20 written), `writing`, `max`, `report_hour` |
+| 🔒 `POST /api/admin/ai_report` | 1.53: `{night}` — asks the `night-reports` thread to write (again) that night's report; 1.58.37: `{from, to}` — a period (one night is that night's report) |
 | 🔒 `POST /api/admin/channel_switch` | 1.58.3 (§9c): `{on: bool}` — the private Telegram channel's kill switch (`kv` `chan_on`); answers `{channel: {configured, running, on, health}}`, also on `/api/online` |
 | 🔒 `POST /api/admin/region` | `{id, on}` — an oblast on or off as a whole (1.43, §7.1): its place on the map and its channels; `31` is always on |
 | 🔒 `POST /api/admin/notice` | `{text: {uk, en, fr}, level: info|warn|alert, hours: 0–168 (0 = until removed), push: bool}` or `{clear: true}` — the team's message (§9) |
@@ -2867,6 +2905,7 @@ SQLite in WAL mode (`DB_PATH`; on Fly, the volume). Tables:
 | `ai_reads` | 1.50: the AI reader's reading of each post it read (§7.7) — when, the post, whether the rules stored it, model, prompt version, ms, tokens, cost, verdict, the rules' reading and its own (JSON), facts dropped, error. Kept 90 days; the month's spend is `kv` `ai_usd:YYYY-MM`. 1.53: `chk`, the check that read it (its `ai` then holds the findings: `targets` with `f`, `findings`) |
 | `ai_checks` | 1.53: each 10-minute check (§7.10) — `id` (its UTC time), the posts' first and last time, how many, the oblasts, model, prompt version, ms, tokens, cost, `findings` (by kind), `notes` (per oblast), `uncertain`, `error` |
 | `ai_reports` | 1.53: the AI's report on each night (§7.10) — `night`, when, up to when, model, tokens, cost, `text`, `error` |
+| `ai_period_reports` | 1.58.37: the AI's report on a period of nights (§7.10) — `first`, `last` (the key), `at`, `nights`, model, tokens, cost, `text`, `error` |
 | `ai_bulletins` | 1.54: each bulletin (§7.11) — `kind` ("1h" / "24h"), when, the window (`since`, `until`), `quiet`, `sig` (a hash of the record), `uk`, `en`, `fr`, model, tokens, cost, `error`, and `input` (the record it was written from). 1.54.8: all of them 90 days, then one an hour and one a day for good (`kept`, `bulletin_prune`); `kv` `ai_bulletin_public` (the app's switch) and `bul_checked:<kind>` (when the latest was last found still true) |
 | `usage`, `usage_seen` | anonymous usage counters |
 
