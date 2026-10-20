@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-20 (1.58.37)
+**Documented version: 1.58** · last updated 2026-10-20 (1.58.38)
 
 The repository is **Dread92/Heimdall-map**. The app's address is **https://heimdall.com.ua** (1.58.34, 18 October
 2026); the Fly app keeps its first name, `kyiv-air-watch-gb`, and its first address keeps working (§15 has the move).
@@ -27,7 +27,7 @@ regression corpus: [CORPUS.md](CORPUS.md). French quick start: [DEMARRAGE-FR.md]
 6. [Official alert data](#6-official-alert-data)
 7. [The Telegram feed and the map marks](#7-the-telegram-feed-and-the-map-marks)
 8. [Translation](#8-translation)
-9. [Notifications](#9-notifications) — and [9c. The owner's private Telegram channel](#9c-the-owners-private-telegram-channel-158)
+9. [Notifications](#9-notifications) — and [9c. The owner's private Telegram channel](#9c-the-owners-private-telegram-channel-158), [9d. The owner's Telegram bot, one to one](#9d-the-owners-telegram-bot-one-to-one-15838)
 10. [The two pages: Tactical and Light](#10-the-two-pages-tactical-and-light)
 11. [Privacy and security](#11-privacy-and-security)
 12. [HTTP API](#12-http-api)
@@ -130,7 +130,8 @@ Heimdall-map/
 │   ├── geo.py              Ukrainian parsing: gazetteer, declensions, types, headings, counts, phases, altitude
 │   ├── translate.py        offline UK→EN glossary; DeepL / Google machine translation with a circuit breaker
 │   ├── ai_reader.py        1.50: the AI reader in shadow mode (OpenRouter) — prompt, schema, checks, comparison (§7.7)
-│   ├── chanpost.py         1.58: the owner's private Telegram channel — a post per report, its outcome, the all-clear (§9c)
+│   ├── chanpost.py         1.58: the owner's private Telegram channel — a post per report, its outcome, the all-clear (§9c); not started since 1.58.38, its words and picture are the bot's
+│   ├── tgbot.py            1.58.38: the owner's Telegram bot, one to one — each user's places, a post naming one or a target within 15 km (§9d)
 │   ├── mapshot.py          1.58: its picture — the map around one target, drawn with Pillow in the app's style (§9c)
 │   ├── areas.py            1.58.7: which official alert area a point is in, and is it under alert (`held`, §7.4; §9c)
 │   ├── limits.py           1.58.17: the public API's abuse limits — per client, on what costs the server (§12.1)
@@ -221,7 +222,7 @@ Heimdall-map/
 | `streams` | **every open page's live line** (`StreamHub`, §5.4): one thread, non-blocking sockets (epoll), the data sent as changes | events + every 15 / 5 / 2 s |
 | `proximity` | per-subscriber distance checks → push | continuous |
 | `warm` | 1.58.3: 45 s after a start, `/api/stats`'s 14 days once in the background — the first ask after a start parsed four days of posts for the explosions while a reader waited (16.6 s after the 1.58 deploy) | once |
-| `channel` | 1.58, with `TG_BOT_TOKEN` and `TG_CHANNEL_ID`: the owner's private Telegram channel (§9c) — a post per target over Kyiv and its oblast with the map around it (`mapshot.py`); 1.58.7: a new post for each new report, in reply to the last, then what became of it (an outcome, the official all-clear, no new reports); at most 18 calls a minute | 5 s |
+| `bot-in` · `bot-watch` · `bot-out` | 1.58.38, with `TG_BOT_TOKEN`: the owner's Telegram bot, one to one (§9d) — `bot-in` reads its private messages (`getUpdates`, a 25 s long poll) and answers them; `bot-watch` compares the marks with every user's places; `bot-out` sends, at most 25 a second. (1.58–1.58.37: the thread `channel`, the private channel of §9c, no longer started) | long poll · 5 s · 50 ms |
 | `AlertsInUa.backfill` | a month of history for the favourite regions | once at start |
 | `AFBackfill` | the Air Force summaries of the last 14 days that `af_reports` lacks: first from the stored feed, then from `t.me/s/kpszsu?before=…` pages (at most 240, stops once nothing is missing); since 1.33 also the carriers (`parse_air_report`) in every stored post, once per parser version (`kv.air_parsed`) | 60 s after start, then daily |
 | `bridges` | every 5 s: a Kyiv bridge whose state rose (nothing → near → at, §9b) is written to `bridge_events` and pushed to the phones that asked for the bridges (topic `bridges`, in their language), at most once per bridge every 10 min — a "near" turning "at" excepted | 5 s |
@@ -355,8 +356,8 @@ Environment variables win over `config.json`. On Fly they are set as **secrets**
 | `TG_API_HASH` | Telegram API app hash. |
 | `CANONICAL_HOST` | The app's own address (`heimdall.com.ua` since 1.58.34). Pages opened elsewhere show the move banner (§9); the channel's posts link there (§9c). Set by `scripts/set-domain.bat`. |
 | `TG_SESSION` | The signed-in Telegram session (a key to that account). Set only by `scripts/telegram-login.bat`, via `fly secrets import`. |
-| `TG_BOT_TOKEN` | 1.58: the owner's bot (@BotFather) that posts in his private channel (§9c). Set only by `scripts/set-telegram-channel.bat`, via `fly secrets import`; never logged. |
-| `TG_CHANNEL_ID` | 1.58: that channel's id (`-100…`), found by the same script. The channel runs only when both are set. |
+| `TG_BOT_TOKEN` | 1.58: the owner's bot (@BotFather) that posted in his private channel (§9c); 1.58.38: the bot that writes to its users one to one (§9d). Set only by `scripts/set-telegram-channel.bat`, via `fly secrets import`; never logged. |
+| `TG_CHANNEL_ID` | 1.58: that channel's id (`-100…`), found by the same script. 1.58.38: no longer read (the channel is not started); `fly secrets unset TG_CHANNEL_ID` removes it. |
 | `PUBLIC_URL` | 1.58: the address the channel's posts link to (`/m`). 1.58.34: unset, it is `https://` + `CANONICAL_HOST`, else `https://heimdall.com.ua` (`chanpost.public_url`). |
 
 Secrets live only in `config.json` (git-ignored) or in Fly secrets. They are never committed, never printed
@@ -1832,6 +1833,11 @@ reported", never "safe".
 
 ## 9c. The owner's private Telegram channel (1.58)
 
+**Not started since 1.58.38**: the bot of §9d replaced it (the owner: "we need to completely re-think the Telegram bot";
+his pick: "replace the channel"). `app/chanpost.py` stays — its words (the labels, the course a post stated, the height,
+the outcomes, `link_outcomes`), its Bot API client and the picture's setup are the bot's — and so does the setup script
+(the token). What follows is how the channel worked.
+
 The owner: "a small private Telegram channel that posts alerts like the channels we read, with a 'screenshot' of the
 app where the drone is (Kyiv and Kyiv oblast only)" — a post per target, with a picture in the app's style drawn on the
 server. Off unless `TG_BOT_TOKEN` and `TG_CHANNEL_ID` are set; then `main()` starts `ChannelPoster` (`app/chanpost.py`,
@@ -1950,6 +1956,70 @@ the channel's id typed in (Telegram Desktop's "Show Peer IDs in Profile", or the
 with or without -100) and checked with `getChat`; what Telegram answered is shown in its own words, the token masked —,
 the bot's rights checked (`getChatMember`), a test message, then `TG_BOT_TOKEN` and `TG_CHANNEL_ID` into
 Fly's secrets through `fly secrets import`'s input. To stop: `fly secrets unset TG_BOT_TOKEN TG_CHANNEL_ID`.
+
+## 9d. The owner's Telegram bot, one to one (1.58.38)
+
+The owner, 20 October 2026: "we need to completely re-think the Telegram bot: instead, the bot will ask the user, one to
+one, what location they want to be alerted on — if they write Hnidyn, the bot sends them a message only when their
+place is mentioned, or a threat is detected nearby". His picks: it **replaces the channel** (§9c); it writes when **a post
+names the place**, or **a target is reported within 15 km** of it (`NEAR_KM`); **up to 4 places** a user (`MAX_PLACES`).
+`app/tgbot.py`, started by `main()` when `TG_BOT_TOKEN` is set (the channel's bot, the same token); its rules are
+SAFETY.md's "The bot writes about a place because it was given one".
+
+**The conversation** (private chats only; a group or a channel is ignored; at most 20 messages a chat a minute,
+`IN_PER_MIN`). `/start` (and `/help`, or any unknown command) says what it does, the reminder ("from channel posts, not
+radar") and what it keeps. A name → `Gazetteer.search`: the gazetteer's places (`geo.PLACES` and `geo.REGIONAL` — the
+villages of the oblasts read regionally and Kyiv oblast's, ~21,000), without the raions and what is not a place to live
+(bridges, roads, squares, plants, reservoirs, airports: `SKIP_RX`); a name in any letters is compared through `canon`
+(transliterated, the letters people write differently made one: "Гнідин", "Гнидин", "Hnidyn", "Hnydin" are the same);
+the same name first (all its namesakes), else the names starting so (4 letters or more), else the nearest spellings
+(`difflib`, 0.8). One place: added. Several: buttons with their raion and oblast (`a:<i>`, valid 15 min) and "Cancel".
+A shared location → the 4 nearest places within 12 km as buttons; the point is used for that and dropped (not kept,
+logged or sent on). `/places`: the user's places as buttons, one press removes one. `/lang`: Українська / English /
+Français (the first language is Telegram's: uk, ru and be → Ukrainian, fr → French, else English). `/stop`: everything
+kept of the chat is deleted. A user who blocks the bot (`my_chat_member` "kicked", or a 403 on a send) is deleted the
+same way. A button's answer edits the message it was on. The menu of commands is set at start (`setMyCommands`, three
+languages); `getMe` gives the bot's @name for the dashboard.
+
+**What it keeps** (`BotStore`, in the server's database): `bot_chats` (`chat_id`, `lang`, `since`, `last`) and `bot_places`
+(`chat_id`, `key` — the gazetteer's key —, `added`). No name, no username, no phone, no message text. `kv` `bot_offset`
+(the next update to read: a restart answers nothing twice) and `bot_sent` (what each chat was told of each target, 6 h:
+a restart does not tell it again). The logs carry counts only.
+
+**When it writes.** Every 5 s, the marks as the pages see them (`State.markers_now()`), the targets as the push's
+proximity watch takes them (`TgBot.live`: a flying type — the drones, the missiles, Banderol, a KAB, a weapon not
+stated —, no outcome, not faded, not superseded, not the AI's alone, not waiting for its context), one per track (the
+tag), each compared with every place (`TgBot.hit`):
+
+| Why | When | The first line |
+|---|---|---|
+| `here` | the post placed it at the user's place (its key; or its name, within 3 km, `MENTION_KM`) | "📍 Допис назвав ваше місце: **Гнідин**" |
+| `dest` | a post said it is heading for it (`target`, or "→ Гнідин") — its oblast when the name is a namesake's | "🎯 Курс на ваше місце: **Гнідин** (так у дописі)" |
+| `near` | placed at a town a post named, within 15 km — not an oblast, a raion, a part of an oblast, a place it is only heading for, nor a target held off the map | "⚠️ ~8 км від **Гнідин** (від місця, яке назвав допис)" |
+| `region` | a ballistic or supersonic missile within `geo.REGION_ALERT_KM` (150 km) — no distance (the push's rule) | "🚨 **Балістична ракета** — у вашому регіоні (Гнідин). Негайно в укриття." |
+
+Then the channel's lines, in the user's language: the type (the app's names) × count · the place a post gave; a course
+only when a post stated one (`chanpost.stated_course`); "where it is now: not said" for a place it is only heading for;
+a held target's line; the height a post gave (fresh, `chanpost.stated_alt`); the time; the reminder; a link to `/m`.
+Never the channel. A target in Kyiv or Kyiv oblast comes with the channel's picture (`mapshot`, §9c), drawn once and
+uploaded once — the other chats get Telegram's file id.
+
+A target is told **once** per place; again, in reply to that message, only when it comes to the place (a better reason:
+`near` → `dest` → `here`, at once) or is 3 km closer (`CLOSER_KM`) at most every 3 min (`UPDATE_GAP_S`) — never a report
+more than 5 min old (`FRESH_S`). A chat gets one alert message every 20 s at most (`CHAT_GAP_S`; a missile waits not):
+targets that came meanwhile are one message, "⚠️ Нові цілі біля ваших місць: 7" and up to 5 lines (`LIST_MAX`). **Its
+end**, in reply: an outcome a post reported, linked as the Tactical page links it (`chanpost.link_outcomes`), in the app's
+words and without where it happened; or, no longer reported for 10 min (`END_AFTER_S`), "⏹ Нових дописів після HH:MM
+немає". It says nothing of an alert or an all-clear — Telegram never starts or ends one.
+
+**Sending**: one queue (`TgBot.out`), at most 25 calls a second (`RATE_PER_S`); its answers to a user go first; a 429's
+`retry_after` is obeyed; an error leaving `BotAPI` names the method and Telegram's words, never the token. A second
+program reading the bot's updates (a webhook, another server: 409) is waited for, and the dashboard says so.
+
+**Dashboard**: Live → "Telegram bot — ON / OFF" (`POST /api/admin/bot_switch` 🔒, `kv` `bot_on`): off, no alert goes
+out from its next pass; it still answers its commands, so `/stop` always works. The block shows its address
+(t.me/@name), how many users and places, the alerts sent; the official sources list "telegram bot (private messages)".
+Counts only — no endpoint lists a chat or a place.
 
 ## 10. The two pages: Tactical and Light
 
@@ -2800,7 +2870,7 @@ All JSON unless stated. Public unless marked 🔒 (`ADMIN_KEY`).
 | 🔒 `GET /api/admin/patterns?days=&kind=&res=&min=&raw=` | 1.55: the direction patterns (§7.12) — `days` 0–3650 (0: all; 90), `kind` `drones`\|`drone`\|`jet`\|`unstated`, `res` 1\|2\|4 (×14 km), `min` (3): `coverage` (`moves`, `tracks`, `nights`, `first`, `last`, `stated`, `cells`, `by_kind`, 1.56.1 `by_src`, `stated_first`, `built`, `version`; 1.58.37 `scale` {`tagged`, `followed`, `af_nights`, `af_drones`, `af_drones_down`}, `tag_nights_kept`, `builder`), 1.56.1 `plain` (`en`, `uk`: the sentences, the first on what they are built from; `found`), `cell_deg`, `cell_km`, `cells` (≤ 400, busiest first: `cell`, `lon`, `lat`, `name`, `names`, `moves`, `tracks`, `nights`, `dir`, `dir_p`, `mean_bearing`, `consistency`, `stay`, `next`, `next_places`, `through`, `final`, `final_places`, `origins`, `stated`, `stated_n`, `said`, `speed_kmh`, `gap_min`; each share `{n, p, lo, hi}` in %, Wilson 95%); `raw=1` adds `moves` (≤ 50,000, not cached). Cached 5 min |
 | 🔒 `GET /api/admin/period?from=&to=` | 1.58.37: a period of nights (§7.10; at most `PERIOD_MAX`, 31, the latest; by default the last night that has ended): `from`, `to`, `summary` (`State.period_summary`), `text` (`State.period_text`), `report` (one night: that night's `ai_reports` row; several: the `ai_period_reports` row; or null), `periods` (the latest 20 written), `writing`, `max`, `report_hour` |
 | 🔒 `POST /api/admin/ai_report` | 1.53: `{night}` — asks the `night-reports` thread to write (again) that night's report; 1.58.37: `{from, to}` — a period (one night is that night's report) |
-| 🔒 `POST /api/admin/channel_switch` | 1.58.3 (§9c): `{on: bool}` — the private Telegram channel's kill switch (`kv` `chan_on`); answers `{channel: {configured, running, on, health}}`, also on `/api/online` |
+| 🔒 `POST /api/admin/bot_switch` | 1.58.38 (§9d; 1.58.3–1.58.37 `channel_switch`, the channel's): `{on: bool}` — the Telegram bot's kill switch (`kv` `bot_on`); answers `{bot: {configured, running, on, health, status}}` (`status`: its @name and counts), also on `/api/online` |
 | 🔒 `POST /api/admin/region` | `{id, on}` — an oblast on or off as a whole (1.43, §7.1): its place on the map and its channels; `31` is always on |
 | 🔒 `POST /api/admin/notice` | `{text: {uk, en, fr}, level: info|warn|alert, hours: 0–168 (0 = until removed), push: bool}` or `{clear: true}` — the team's message (§9) |
 | 🔒 `GET /api/ai_reads?limit=&all=` | the dashboard's AI tab: `stats` (`key`, `enabled`, `model`, `prompt_v`, `mode` "bulletins", `usd_month`, `cap_usd`, `paused`, `last_error`, 1.54 `bulletins_month`, `usd_bulletins_month`, `bulletin_errors_month`; and of the readings before 1.54 `reads_month`, `by_verdict`, `ms_median`), 1.54 `bulletins` (the last 30, with the record each was written from; 1.58.30 `facts`, what it held — `State.record_facts`) and `bulletin` (`public`, `every_min`, `writing`, `why`), `checks`, and `reads` (newest first, ≤ 300; only the disagreements and errors unless `all=1`): post, channel, `stored`, `verdict`, `rules`, `ai` (`targets`, `uncertain`), `dropped`, `cost`, `ms`, `model`, `error` |
@@ -2886,7 +2956,7 @@ SQLite in WAL mode (`DB_PATH`; on Fly, the volume). Tables:
 | `alerts` | every alert seen (active and finished) — the normalised shape. One row per region and alert type (key `ua:<region>:<type>`): a region's next alert rewrites the row — since 1.58.4 its start too (before, the start stayed the region's first). **Not a history**: what happened over time is read from `events` (`State.alert_rows`, below) |
 | `events` | start / end / threat / update events — the alert history the replay rebuilds intervals from (§10.3c) |
 | `feed` | posts: `post_id, channel, ts, text, tags, text_en, text_fr, en_mt` |
-| `kv` | small settings: the VAPID key pair, the usage counter's daily salt, the channels (`channels`), the key of the channels' public tokens (`pub_salt`, 1.58.36), the admin's message (`notice`), the nuclear event (`nuke`), the AI's switches (`ai_reader_on`, 1.54 `ai_bulletin_public`), 1.58 the private channel's posts of the last 24 h (`chan_posts`: per target, the message id, when first and last reported, what was drawn — never the token), and similar |
+| `kv` | small settings: the VAPID key pair, the usage counter's daily salt, the channels (`channels`), the key of the channels' public tokens (`pub_salt`, 1.58.36), the admin's message (`notice`), the nuclear event (`nuke`), the AI's switches (`ai_reader_on`, 1.54 `ai_bulletin_public`), 1.58 the private channel's posts of the last 24 h (`chan_posts`: per target, the message id, when first and last reported, what was drawn — never the token), 1.58.38 the bot's switch, next update and what it told whom (`bot_on`, `bot_offset`, `bot_sent`: per chat, place and target, 6 h — never the token), and similar |
 | `push_subs` | push subscriptions (`{endpoint, keys}` only, 1.58.35) with a ~10 km cell, the topics asked for (`bridges`), the language, `last_ok` and the strikes (`fails`) |
 | `marker_log` | every mark as computed, with its evidence; 1.54.8: and what it stated — `alt_m`, `alt_state`, `speed_kmh`, `origin`, `target`, `likely`, `tag` (night#n), `approach` (`MLOG_EXTRA`). Kept for good so far: `Store.prune_log(days)` exists but nothing calls it — the volume's size is the limit |
 | `outcomes` | shoot-downs, impacts, losses |
@@ -2905,6 +2975,7 @@ SQLite in WAL mode (`DB_PATH`; on Fly, the volume). Tables:
 | `ai_reads` | 1.50: the AI reader's reading of each post it read (§7.7) — when, the post, whether the rules stored it, model, prompt version, ms, tokens, cost, verdict, the rules' reading and its own (JSON), facts dropped, error. Kept 90 days; the month's spend is `kv` `ai_usd:YYYY-MM`. 1.53: `chk`, the check that read it (its `ai` then holds the findings: `targets` with `f`, `findings`) |
 | `ai_checks` | 1.53: each 10-minute check (§7.10) — `id` (its UTC time), the posts' first and last time, how many, the oblasts, model, prompt version, ms, tokens, cost, `findings` (by kind), `notes` (per oblast), `uncertain`, `error` |
 | `ai_reports` | 1.53: the AI's report on each night (§7.10) — `night`, when, up to when, model, tokens, cost, `text`, `error` |
+| `bot_chats` · `bot_places` | 1.58.38: the bot's users (§9d) — a chat's number, language, since / last; its places (the gazetteer's key, when added). Deleted by `/stop` or by blocking the bot |
 | `ai_period_reports` | 1.58.37: the AI's report on a period of nights (§7.10) — `first`, `last` (the key), `at`, `nights`, model, tokens, cost, `text`, `error` |
 | `ai_bulletins` | 1.54: each bulletin (§7.11) — `kind` ("1h" / "24h"), when, the window (`since`, `until`), `quiet`, `sig` (a hash of the record), `uk`, `en`, `fr`, model, tokens, cost, `error`, and `input` (the record it was written from). 1.54.8: all of them 90 days, then one an hour and one a day for good (`kept`, `bulletin_prune`); `kv` `ai_bulletin_public` (the app's switch) and `bul_checked:<kind>` (when the latest was last found still true) |
 | `usage`, `usage_seen` | anonymous usage counters |

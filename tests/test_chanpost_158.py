@@ -364,9 +364,10 @@ def test_it_runs_only_when_the_owner_has_set_both_secrets():
     assert not chanpost.configured({}) and not chanpost.configured({"TG_BOT_TOKEN": "x"})
     assert chanpost.configured({"TG_BOT_TOKEN": "x", "TG_CHANNEL_ID": "-100"})
     assert chanpost.start(object(), env={}) is None
-    assert "if chanpost and chanpost.configured():" in SRV and "official.append(self.channel.health())" in SRV
+    # 1.58.38: the channel is no longer started — the bot (app/tgbot.py) replaced it, with the same token
+    assert "chanpost.start(" not in SRV and "if tgbot and tgbot.configured():" in SRV and "official.append(self.bot.health())" in SRV
     assert "TG_BOT_TOKEN" not in re.sub(r"#.*", "", SRV.split("def main():")[1]).replace(
-        '"channel: off — TG_BOT_TOKEN / TG_CHANNEL_ID not set (scripts/set-telegram-channel.bat)"', "")
+        '"bot: off — TG_BOT_TOKEN not set (scripts/set-telegram-channel.bat)"', "")
     docker = open(os.path.join(ROOT, "Dockerfile"), encoding="utf-8").read()
     assert "fonts-dejavu-core" in docker
     assert re.search(r"^Pillow>=", open(os.path.join(ROOT, "requirements.txt"), encoding="utf-8").read(), re.M)

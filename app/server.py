@@ -62,6 +62,10 @@ try:
 except Exception:  # pragma: no cover
     chanpost = None
 try:
+    import tgbot  # 1.58.38: the bot, one to one — it replaces the channel
+except Exception:  # pragma: no cover
+    tgbot = None
+try:
     import areas
 except Exception:  # pragma: no cover
     areas = None
@@ -453,7 +457,7 @@ BUILD_FILES = ("static/kyiv.html", "static/light.html", "static/light-map.json",
                "static/nuke.js", "static/sw.js", "static/shelters.js", "app/server.py", "app/geo.py", "app/push.py",
                "static/light-map-x.json", "data/regional_places.json", "static/map-ua.json",
                # 1.58.7: the service's other modules — a change there is a new version too (the server panel's restarts)
-               "app/chanpost.py", "app/mapshot.py", "app/areas.py", "app/ai_reader.py", "app/translate.py",
+               "app/chanpost.py", "app/tgbot.py", "app/mapshot.py", "app/areas.py", "app/ai_reader.py", "app/translate.py",
                "static/hromadas.js", "static/replay.js",   # 1.58.16
                "app/limits.py",                            # 1.58.17
                "app/adminauth.py", "static/admin.html", "static/admin-login.html")   # 1.58.21
@@ -4630,8 +4634,8 @@ class State:
                              "read_via": reg.get(ch.lower(), {}).get("via"), "added": reg.get(ch.lower(), {}).get("added"),
                              "home": reg.get(ch.lower(), {}).get("home", "") if ch.lower() in reg else None})
         official = [{"name": k, **v} for k, v in sorted(sources.items()) if not k.startswith(("tg:", "tga:"))]
-        if getattr(self, "channel", None):                 # 1.58: the owner's private channel, when it is set up
-            official.append(self.channel.health())
+        if getattr(self, "bot", None):                     # 1.58.38: the owner's bot (it replaced the channel of 1.58)
+            official.append(self.bot.health())
         tr = {"available": [], "paused": {}}
         if _tr:
             try:
@@ -4646,11 +4650,13 @@ class State:
         self._health_res = (time.time(), out)
         return out
 
-    def channel_status(self):
-        """1.58.3: the private channel for the dashboard — set up or not (the two secrets), its switch, what it did."""
-        ch = getattr(self, "channel", None)
-        return {"configured": bool(chanpost and chanpost.configured()), "running": ch is not None,
-                "on": self.store.kv_get("chan_on") != "0", "health": ch.health() if ch else None}
+    def bot_status(self):
+        """1.58.38: the bot for the dashboard — set up or not (its token), its switch, its @name, how many use it, what it
+        did. Counts only: never a chat or a place."""
+        b = getattr(self, "bot", None)
+        return {"configured": bool(tgbot and tgbot.configured()), "running": b is not None,
+                "on": self.store.kv_get("bot_on") != "0", "health": b.health() if b else None,
+                "status": b.status() if b else None}
 
     def lead_times(self, days=30):
         """How long before each official air-raid alert over Kyiv or Kyiv oblast the map already showed a threat
@@ -9040,7 +9046,7 @@ class Handler(BaseHTTPRequestHandler):
                 vt = getattr(st, "vitals", None)
                 return self._json({"online": hub.online() if hub else None, "notice": st.notice_now(), "nuke": st.nuke,
                                    "push_last": getattr(pu, "last_fanout", None), "now": now_iso(),
-                                   "process": vt.report() if vt else None, "channel": st.channel_status(),
+                                   "process": vt.report() if vt else None, "bot": st.bot_status(),
                                    "limits": st.limits.report()})
             if u.path == "/.well-known/assetlinks.json":
                 return self._json(android_asset_links())
@@ -9327,17 +9333,17 @@ class Handler(BaseHTTPRequestHandler):
                 ai = getattr(st, "ai", None)
                 return self._json({"ok": True, "stats": ai.stats() if ai else None,
                                    "bulletin_public": st.store.kv_get("ai_bulletin_public") == "1"})
-            if u.path == "/api/admin/channel_switch":
-                # 1.58.3: the private Telegram channel's kill switch (dashboard → Live). Off: the poster makes no call
-                # at all from its next pass (≤ 5 s); on: it carries on — a target first reported more than 5 min ago is
-                # not posted late, and the posts of targets gone meanwhile are closed. The secrets stay where they are.
+            if u.path == "/api/admin/bot_switch":
+                # 1.58.38 (1.58.3 for the channel): the bot's kill switch (dashboard → Live). Off: no alert goes out from
+                # its next pass (≤ 5 s) — it still answers its commands, so a user can always /stop; on: it carries on, and
+                # a target first reported more than 5 min ago is not told late. The token stays where it is.
                 if not self._admin_ok(q):
                     return self._json({"error": "unauthorized"}, 401)
                 if "on" in data:
-                    st.store.kv_set("chan_on", "1" if data.get("on") else "0")
+                    st.store.kv_set("bot_on", "1" if data.get("on") else "0")
                     st._health_res = None
-                    log(f"channel: switched {'on' if data.get('on') else 'OFF'} from the dashboard")
-                return self._json({"ok": True, "channel": st.channel_status()})
+                    log(f"bot: switched {'on' if data.get('on') else 'OFF'} from the dashboard")
+                return self._json({"ok": True, "bot": st.bot_status()})
             if u.path == "/api/admin/region":
                 # 1.43: an oblast on or off as a whole — its channels and its place on the map
                 if not self._admin_ok(q):
@@ -9779,16 +9785,19 @@ def main():
         except Exception as e:
             log("warm-up:", type(e).__name__, e)
     threading.Thread(target=warm, daemon=True, name="warm").start()
-    # 1.58: the owner's private Telegram channel — one post per target over Kyiv and its oblast, with the map around
-    # it (app/chanpost.py). Only when both secrets are set (scripts/set-telegram-channel.bat); the token is never logged.
-    state.channel = None
-    if chanpost and chanpost.configured():
+    # 1.58.38, the owner: "we need to completely re-think the Telegram bot: the bot will ask the user, one to one, what
+    # location they want to be alerted on". The bot (app/tgbot.py) replaces the private channel of 1.58 (app/chanpost.py,
+    # no longer started — its words and its picture are the bot's): it answers its private messages and writes to a
+    # user when a post names one of their places or reports a target within 15 km of it. Its token is the channel's
+    # bot's (TG_BOT_TOKEN, scripts/set-telegram-channel.bat; TG_CHANNEL_ID is no longer read); never logged.
+    state.bot = None
+    if tgbot and tgbot.configured():
         try:
-            state.channel = chanpost.start(state, log=log, ssl_ctx=_SSL_CTX, sat=SAT)     # 1.58.2: the satellite view
+            state.bot = tgbot.start(state, log=log, ssl_ctx=_SSL_CTX, sat=SAT, oblasts=NAME_BY_UID)
         except Exception as e:
-            log("channel: not started —", type(e).__name__)
-    elif chanpost:
-        log("channel: off — TG_BOT_TOKEN / TG_CHANNEL_ID not set (scripts/set-telegram-channel.bat)")
+            log("bot: not started —", type(e).__name__)
+    elif tgbot:
+        log("bot: off — TG_BOT_TOKEN not set (scripts/set-telegram-channel.bat)")
     srv = Server((bind, int(cfg["port"])), Handler)
     log(f"dashboard → http://localhost:{cfg['port']}   mobile → http://localhost:{cfg['port']}/m")
     if bind == "0.0.0.0":

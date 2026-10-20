@@ -2,6 +2,25 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.38 — 2026-10-20
+
+The Telegram bot, rethought: one to one, about each user's own places. The app itself does not change.
+
+- **A bot that asks where.** The owner: "the bot will ask the user, one to one, what location they want to be alerted
+  on — if they write Hnidyn, the bot sends them a message only when their place is mentioned, or a threat is detected
+  nearby". His picks: it replaces the private channel, it writes when a post names the place or a target is reported
+  within 15 km of it, up to 4 places. `app/tgbot.py`, with the channel's token: a name in any letters ("Гнідин",
+  "Гнидин", "Hnidyn", "Hnydin") or a shared location finds the place among the map's ~21,000; namesakes are buttons with
+  their raion and oblast; `/places` removes one, `/lang` picks Ukrainian, English or French, `/stop` deletes everything.
+- **What it writes**: why (the place named, heading for it as a post said, ~N km from it, or a ballistic missile in the
+  region), then the channel's lines in the user's language, the channel's picture for Kyiv and its oblast (drawn and
+  uploaded once for everyone), and later, in reply, what became of the target (an outcome, never where; or no new
+  reports). Once per target and place, again only when it comes to the place or 3 km closer; a swarm is one message.
+- **What it keeps**: the chat's number, its language, its places — said in its first message; nothing else, and nothing
+  of it in the logs or on the dashboard (counts only). A shared location is used once and dropped.
+- **The dashboard**: the Live tab's switch is now the bot's (`/api/admin/bot_switch`), with its address and its counts;
+  off, no alert goes out but `/stop` still works. `TG_CHANNEL_ID` is no longer read.
+
 ## 1.58.37 — 2026-10-20
 
 The dashboard after the owner's review of 19–20 October. The app itself does not change.

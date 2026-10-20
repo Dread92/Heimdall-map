@@ -113,7 +113,7 @@ def test_the_credits_follow_the_picture():
 
 
 def test_the_server_gives_the_channel_its_satellite_file():
-    assert "chanpost.start(state, log=log, ssl_ctx=_SSL_CTX, sat=SAT)" in SRV
+    assert "tgbot.start(state, log=log, ssl_ctx=_SSL_CTX, sat=SAT, oblasts=NAME_BY_UID)" in SRV      # 1.58.38: the bot's picture
     sat = FakeSat()
     p = chanpost.ChannelPoster(object(), "x", "-1", "https://h", api=object(), log=lambda *a: None, kv=False, sat=sat)
     assert p.shot.sat is sat

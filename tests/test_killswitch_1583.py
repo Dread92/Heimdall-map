@@ -72,17 +72,17 @@ def test_the_dashboard_route_needs_the_key_and_sets_the_switch():
     try:
         with mock.patch.dict(os.environ, {"ADMIN_KEY": "adm-test"}):
             try:
-                post("/api/admin/channel_switch", {"on": False})
+                post("/api/admin/bot_switch", {"on": False})              # 1.58.38: the bot's (the channel's before)
                 raise AssertionError("switched without the key")
             except urllib.error.HTTPError as e:
                 assert e.code in (401, 403)
-            assert st.store.kv_get("chan_on") is None
-            d = post("/api/admin/channel_switch", {"on": False}, k=True)
-            assert st.store.kv_get("chan_on") == "0" and d["channel"]["on"] is False
-            d = post("/api/admin/channel_switch", {"on": True}, k=True)
-            assert st.store.kv_get("chan_on") == "1" and d["channel"]["on"] is True
+            assert st.store.kv_get("bot_on") is None
+            d = post("/api/admin/bot_switch", {"on": False}, k=True)
+            assert st.store.kv_get("bot_on") == "0" and d["bot"]["on"] is False
+            d = post("/api/admin/bot_switch", {"on": True}, k=True)
+            assert st.store.kv_get("bot_on") == "1" and d["bot"]["on"] is True
             on = json.loads(urllib.request.urlopen(urllib.request.Request(base + "/api/online", headers=ADM), timeout=10).read())
-            assert set(on["channel"]) == {"configured", "running", "on", "health"}
+            assert set(on["bot"]) == {"configured", "running", "on", "health", "status"}
     finally:
         srv.shutdown()
         server.Handler.state = old
@@ -91,8 +91,8 @@ def test_the_dashboard_route_needs_the_key_and_sets_the_switch():
 def test_the_switch_is_on_the_live_tab_in_both_languages():
     assert '<div class="aisws chsw" id="chsw" hidden></div>' in ADMIN
     assert ADMIN.index('id="chsw"') < ADMIN.index('<details class="nk" id="nk">')        # above the danger zone
-    assert "fetch('/api/admin/channel_switch'" in ADMIN and "confirm(tr(want?'cs_q_on':'cs_q_off'))" in ADMIN
-    for k in ("cs_h:", "cs_none:", "cs_setup:", "cs_note_on:", "cs_note_off:", "cs_q_off:", "cs_q_on:", "sv_starts2:", "sv_unknown:"):
+    assert "fetch('/api/admin/bot_switch'" in ADMIN and "confirm(tr(want?'bs_q_on':'bs_q_off'))" in ADMIN
+    for k in ("bs_h:", "bs_none:", "bs_setup:", "bs_note_on:", "bs_note_off:", "bs_q_off:", "bs_q_on:", "sv_starts2:", "sv_unknown:"):
         assert ADMIN.count(k) == 2, k
 
 

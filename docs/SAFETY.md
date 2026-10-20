@@ -129,6 +129,8 @@ their owner, and the name stays on the phone with them.
 
 ## The private channel says what the map says — and, since 1.58.7, what the map shows became of a target (1.58)
 
+*Not started since 1.58.38: the bot below replaced it, and keeps its words.*
+
 The owner's private Telegram channel (TECHNICAL.md §9c) posts the targets over Kyiv and Kyiv oblast with a picture of
 the map around them. A post in a channel is forwarded, screenshotted and read without the app around it, so:
 
@@ -165,6 +167,31 @@ the map around them. A post in a channel is forwarded, screenshotted and read wi
 - **Nobody's place.** The channel knows no pin, no subscriber, no reader: what it posts is the same for everyone.
 - **The token is the owner's**: created by him, stored by his script straight into Fly's secrets, never written to a
   file, the database, a log or the dashboard.
+
+## The bot writes about a place because it was given one (1.58.38)
+
+The owner: "the bot will ask the user, one to one, what location they want to be alerted on — if they write Hnidyn, the
+bot sends them a message only when their place is mentioned, or a threat is detected nearby" (`app/tgbot.py`,
+TECHNICAL.md §9d). Unlike the app's pins, which never leave the phone, a place given to the bot is kept by the server —
+that is what it was given for. So:
+
+- **What is kept, and said first.** The chat's number, its language and its places (up to four, the gazetteer's
+  towns, villages and Kyiv districts — never a street, never a point). No name, no username, no phone, no message. The
+  first message says so, before any place is asked for. `/stop` deletes all of it; blocking the bot does too. A shared
+  location is used once, to list the nearest places, and is never kept, logged or sent on. The logs and the dashboard
+  carry counts only: no endpoint lists a chat or a place.
+- **What the map shows, and nothing more** — the channel's rules, in three languages: the type and place a post gave,
+  a course only when a post stated one, the height a post gave while fresh, "from channel posts, not radar", a link to
+  the map; never the channel. A distance only from the place **the post named** to the user's place, as the Near list
+  measures it — and none from an oblast, a raion, a part of an oblast, a place a target is only heading for, or a
+  target held off the map. A target only the AI read, a faded one, an outcome: nothing.
+- **"Heading for your place" is said only when a post said it** (a target town, "→ Гнідин"), as "так у дописі".
+- **A ballistic or supersonic missile** is said for the whole region (150 km), with no distance: it crosses any radius
+  faster than a reader can act on being told — the push's rule.
+- **Once per target and place**, then again only when it comes to the place or is 3 km closer (every 3 min at most);
+  never a report more than 5 minutes old; a swarm is one message. Its end is what the map shows: an outcome a post
+  reported, in the app's words and **never where**; or "no new reports since". **Telegram never starts or ends an
+  alert**: the bot says nothing of alerts or all-clears.
 
 ## Only where it is heading, and no alert there: not on the map (1.58.7)
 
