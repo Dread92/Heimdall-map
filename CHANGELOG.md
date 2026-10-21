@@ -2,6 +2,24 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.43 — 2026-10-21
+
+The three channels the owner added, read as they write; a shared Heimdall link shows the logo.
+
+- **@tlknewsua (Kharkiv, Russian).** "РСЗО на Проходы/Липцы" — rocket artillery — was a target in the sky at Lyptsi: not
+  any more (`ARTY_RX`: РСЗО, артиллерия, миномёт). Its "Упал" and "Не фиксируется" are read (`RU_CHANNELS`): after a
+  KAB at a place, an impact (1.44's rule); after one only heading somewhere, nothing.
+- **@rocket_danger_lviv (Lviv).** The towns of Ternopil oblast it names (Теребовля, Збараж, Монастириська …, from
+  OpenStreetMap — a name villages elsewhere share is "X (Тернопільщина)"), its spelling "Монастирська" and "Франик"
+  (Ivano-Frankivsk). The owner's one exception to 1.58.42: on this channel 🚀 is a missile — while one is reported.
+- **@vseok450 (Kyiv).** "1 мінус / 1 до Узина / 1 в Чорнобильську" was one target shot down at Uzyn. Its lists are
+  read line by line (`parse_vseok450`): the places and "до X"; a count in an oblast or in the zone names no place; an
+  outcome with no place in a list is no mark.
+- **A shared link shows the logo** (the owner: "and for the Heimdall link as well"): `og:` tags on the Tactical page,
+  Light and the guide — the emblem, "Heimdall — мапа повітряних загроз", "з дописів каналів, не радар".
+- The channels stay where the owner put them on the dashboard: on trial (feed only) until switched to the map, read
+  against the home oblast chosen there.
+
 ## 1.58.42 — 2026-10-21
 
 No emoji says what a threat is; a missile with no course is drawn with no nose.

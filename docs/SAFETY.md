@@ -224,6 +224,14 @@ and the loudest one. Now only the words say what a target is (`TYPE_RX`, `MSL_WE
 reader: no emoji). A sign still says that a target is reported (`WEAPON_SIGN_RX`) — the same posts make marks — of no
 stated type: "probably a drone", or "drone or missile" while a missile or a carrier is reported (the next section).
 
+1.58.43, the owner's one exception: @rocket_danger_lviv writes 🚀 for the cruise missiles over the west ("🚀 Теребовля /
+🚀 Збараж"), never for a drone. On that channel (`ROCKET_IS_MISSILE`) a 🚀 report is a missile — and still only while a
+missile, a launch or a carrier is reported (1.58.31): else, a probable drone like any other.
+
+The same patch, for the channels the owner added: rocket artillery ("РСЗО на Проходы/Липцы", @tlknewsua) is not the sky
+this map watches, in Russian as in Ukrainian; and in a list of @vseok450's, an outcome with no place ("1 мінус / 1 до
+Узина / …") is no mark — read whole, it was a target shot down at Uzyn, a place nobody said it fell at.
+
 ## A weapon nobody named is "probably a drone" — never "unknown", never "a drone" (1.54.8)
 
 A post that says where and not what ("Кулажинці", "лук'янівка") was shown as an unspecified threat. On a night of drones

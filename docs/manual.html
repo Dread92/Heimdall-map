@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Heimdall (Kyiv Air Watch) — the full technical documentation, with a map of the system.">
-<meta name="heimdall-version" content="1.58.42">
-<meta name="heimdall-docs" content="c673161cb6141fae">
+<meta name="heimdall-version" content="1.58.43">
+<meta name="heimdall-docs" content="7a6cede93564b41d">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Heimdall Technical Manual</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -237,7 +237,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
 <header class="top">
   <div class="wrap">
     <a class="brand" href="#top"><b>Heimdall</b><span>Technical manual</span></a>
-    <span class="ver">1.58.42</span>
+    <span class="ver">1.58.43</span>
     <nav class="nav" aria-label="Sections">
       <a href="#map">Map</a><a href="#journeys">Journeys</a><a href="#rules">Rules</a><a href="#reference">Reference</a><a href="#safety">Safety</a>
     </nav>
@@ -256,7 +256,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
       <h1 class="title">How Heimdall works</h1>
       <p class="lead">An unofficial air-threat map for Kyiv and the oblasts around it. One Python process reads the official
       alert data and the channels that track drones and missiles, stores every post before it reads it, rebuilds the map
-      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.42, 21 October 2026:
+      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.43, 21 October 2026:
       the map first, then everything in full.</p>
     </div>
     <dl class="facts">
@@ -647,7 +647,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
     <div class="doc" id="doc">
 <section class="part" id="tech" data-label="Reference"><p class="partlabel">Part I · The reference</p>
 <h1 id="heimdall--technical-documentation">Heimdall — technical documentation</h1>
-<p><strong>Documented version: 1.58</strong> · last updated 2026-10-21 (1.58.42)</p>
+<p><strong>Documented version: 1.58</strong> · last updated 2026-10-21 (1.58.43)</p>
 <p>The repository is <strong>Dread92/Heimdall-map</strong>. The app's address is <strong>https://heimdall.com.ua</strong> (1.58.34, 18 October
 2026); the Fly app keeps its first name, <code>kyiv-air-watch-gb</code>, and its first address keeps working (§15 has the move).</p>
 <p>This is the complete technical reference: what runs, where the data comes from, how a Telegram post becomes a
@@ -1682,9 +1682,19 @@ event of a Trial post carries <code>tags: [&quot;trial&quot;]</code> only. Both 
 <td><code>_parse_live(·, &quot;8&quot;)</code></td>
 </tr>
 <tr>
+<td><code>rocket_danger_lviv</code>, <code>tlknewsua</code></td>
+<td>1.58.43: added by the owner from the dashboard (on trial until he puts them on the map; their home oblast, Lviv <code>27</code> / Kharkiv <code>22</code>, set there — not in code). @rocket_danger_lviv, &quot;РАКЕТНА неБЕЗПЕКА&quot;: missiles over the west, &quot;🚀 Теребовля / 🚀 Збараж&quot;, &quot;Львів 3 хв&quot;</td>
+<td><code>_parse_live(·, &quot;27&quot;)</code>; <strong>its 🚀 is a missile</strong> (<code>geo.ROCKET_IS_MISSILE</code>, the owner's one exception to 1.58.42): an unstated target of a 🚀 post is <code>unspecified_missiles</code> with <code>msl_weak</code> — a missile while one is reported (1.58.31), else a probable drone; the towns of Ternopil oblast it names are in the gazetteer (1.58.43; a name villages elsewhere share is &quot;X (Тернопільщина)&quot;); &quot;Франик&quot; is Ivano-Frankivsk</td>
+</tr>
+<tr>
+<td></td>
+<td>@tlknewsua, &quot;TLk News&quot;, Kharkiv, in Russian: &quot;КАБ на Приколотное/Бурлук&quot;, &quot;БПЛА … курсом на Липцы&quot;, &quot;Упал&quot;, &quot;Не фиксируется&quot;</td>
+<td><code>_parse_live(·, &quot;22&quot;)</code>, <code>RU_CHANNELS</code> (&quot;Упал&quot; = впав, after a KAB at a place an impact — 1.44; after one only heading somewhere, nothing); &quot;РСЗО&quot; — rocket artillery — is not the sky (<code>ARTY_RX</code>)</td>
+</tr>
+<tr>
 <td><code>vseok450</code></td>
 <td>&quot;4.5.0&quot;, live tracker of Kyiv and its oblast, 12K readers (1.57.3, the owner's choice) — <strong>on trial by default</strong> (<code>CHANNEL_MODE_DEFAULT</code>): its posts in the feed, flagged, nothing on the map, until the owner puts it on the map from the dashboard</td>
-<td><code>parse_kyiv_airdef</code>; its posts are short lists of places and counts (&quot;Яготин / Богуслав / 3 Чернігівська&quot;, &quot;1-й до Чабанів&quot;, &quot;Обухів/Українка 2 з півдня&quot;), no weapon named (read as &quot;probably a drone&quot;), &quot;Відбій&quot; (never ends an alert), &quot;Цього нема.&quot; (the previous one is gone). On 11 Oct the rules read the places of a bare list and &quot;до X&quot; but not yet the counts, &quot;з півдня&quot; after a pair of places, or a list under a sentence — to be taught from its posts on trial</td>
+<td><code>parse_kyiv_airdef</code>; its posts are short lists of places and counts (&quot;Яготин / Богуслав / 3 Чернігівська&quot;, &quot;1-й до Чабанів&quot;, &quot;Обухів/Українка 2 з півдня&quot;), no weapon named (read as &quot;probably a drone&quot;), &quot;Відбій&quot; (never ends an alert), &quot;Цього нема.&quot; (the previous one is gone). On 11 Oct the rules read the places of a bare list and &quot;до X&quot; but not yet the counts, &quot;з півдня&quot; after a pair of places, or a list under a sentence — to be taught from its posts on trial. <strong>1.58.43, <code>parse_vseok450</code></strong>: &quot;1 мінус / 1 до Узина / 1 в Чорнобильську&quot; was read whole — one target shot down at Uzyn. A list with one of its own shapes is read line by line: a place line as the Kyiv trackers'; a count in an oblast or in the Chornobyl zone (&quot;3 Чернігівська&quot;, &quot;В Чернігівській 1+1&quot;, &quot;Чорнобильська 2&quot;, <code>_VS_AREA_RX</code>) names no place — no mark, as before; an outcome with no place in a list is no mark (which target, the post does not say); &quot;Ці в Житомирську&quot; — those already reported — none. Any other post is read as before</td>
 </tr>
 </tbody>
 </table></div>
@@ -1794,7 +1804,9 @@ drone (<code>_PLANE_RX</code>, gone). <code>WEAPON_SIGN_RX</code> (🚀 💣 �
 one still reports a target (<code>_parse_live</code>'s untyped-target test, its height-line and empty-line tests, the Nikopol
 channel's own posts), of no stated type — the same posts make marks as before. The AI reader too (prompt 5, check
 6): a weapon is quoted in words (<code>validate</code>), <code>EMOJI_KIND</code> is gone. A tracker's sign-only report is now a bare
-name like any other: it continues its own channel's drone track (1.58.29) but not another channel's.</p>
+name like any other: it continues its own channel's drone track (1.58.29) but not another channel's. 1.58.43, the
+owner's one exception: on @rocket_danger_lviv (<code>ROCKET_IS_MISSILE</code>) 🚀 is a missile — <code>msl_weak</code>, so one only while
+a missile is reported.</p>
 </li>
 <li>
 <p><strong>Position</strong> — the gazetteer with declension-aware stems (hyphen lookbehind: <code>Коцюбинське</code> ≠
@@ -1948,7 +1960,9 @@ Chernihiv oblast).</li>
 centre); a word declined like an adjective matches its town (&quot;Кропивницького&quot;); GeoNames' Soviet-era names are
 never the displayed one (<code>build_places.py</code>, <code>SOVIET</code>); &quot;маякну&quot; and other verb forms are not villages
 (<code>_VERB_TAILS</code>); &quot;велика / мала / стара / верхня …&quot; alone are never a village (<code>REGIONAL_STOP</code>). Artillery and
-mortar fire is not in the sky (<code>ARTY_RX</code>), and a report of the injured (&quot;47-річний … поранення&quot;) is news.</li>
+mortar fire is not in the sky (<code>ARTY_RX</code>), and a report of the injured (&quot;47-річний … поранення&quot;) is news. 1.58.43:
+in Russian too — &quot;РСЗО&quot;, &quot;артиллерия&quot;, &quot;миномёт&quot; (@tlknewsua's &quot;РСЗО на Проходы/Липцы&quot; was a target at Lyptsi).
+And the plausibility test (<code>_plausible</code>) reads a name without what tells it apart (&quot;Збараж (Тернопільщина)&quot;).</li>
 </ul>
 <p><strong>Posts in Russian.</strong> The Kharkiv and Odesa trackers write in Russian. <code>geo.prepare(text, channel)</code> turns a post
 from <code>RU_CHANNELS</code>, or one that <code>looks_russian()</code> (ы, э, ё, ъ, or a Russian-only word), into the Ukrainian words the
@@ -4511,6 +4525,10 @@ safe circle), <code>heimdall-64.png</code> (transparent — the favicon), <code>
 <code>logo-hd-badge.png</code> (96 px, white on transparent: Android draws the notification badge from its alpha alone). The
 manifests' <code>id</code> stays <code>/m</code>, so a new icon reaches an installed app as an update. The 07300 and Black Flame logos
 (<code>logo*.png</code>, <code>bf-logo*.png</code>) stay as they are.</p>
+<p><strong>A shared link</strong> (1.58.43, the owner: &quot;for Black Flame the link preview shows the logo … and for the Heimdall link as
+well&quot;): the Tactical page, Light and the guide carry the <code>og:</code> tags Messenger, Telegram and Viber read — <code>og:title</code>
+(&quot;Heimdall — мапа повітряних загроз&quot;), <code>og:description</code> (unofficial, from channel posts, not radar; the official alert
+first), <code>og:image</code> = <code>https://heimdall.com.ua/static/heimdall-512.png</code> (512 × 512), <code>twitter:card</code> <code>summary</code>.</p>
 <p><strong>Official data by key instead of the proxy</strong>: request a key at <a href="https://api.ukrainealarm.com/" target="_blank" rel="noopener">https://api.ukrainealarm.com/</a>, then
 <code>fly secrets set UKRAINEALARM_KEY=…</code> — the same code reads the API directly.</p>
 <h2 id="17-known-limitations-and-open-items">17. Known limitations and open items<a class="anc" href="#17-known-limitations-and-open-items" aria-label="Link to this section">#</a></h2>
@@ -4799,6 +4817,12 @@ for the rocket / cruise missile emoji to be used for jet drones&quot;. A jet dro
 and the loudest one. Now only the words say what a target is (<code>TYPE_RX</code>, <code>MSL_WEAK_RX</code>, the arrows channel, the AI
 reader: no emoji). A sign still says that a target is reported (<code>WEAPON_SIGN_RX</code>) — the same posts make marks — of no
 stated type: &quot;probably a drone&quot;, or &quot;drone or missile&quot; while a missile or a carrier is reported (the next section).</p>
+<p>1.58.43, the owner's one exception: @rocket_danger_lviv writes 🚀 for the cruise missiles over the west (&quot;🚀 Теребовля /
+🚀 Збараж&quot;), never for a drone. On that channel (<code>ROCKET_IS_MISSILE</code>) a 🚀 report is a missile — and still only while a
+missile, a launch or a carrier is reported (1.58.31): else, a probable drone like any other.</p>
+<p>The same patch, for the channels the owner added: rocket artillery (&quot;РСЗО на Проходы/Липцы&quot;, @tlknewsua) is not the sky
+this map watches, in Russian as in Ukrainian; and in a list of @vseok450's, an outcome with no place (&quot;1 мінус / 1 до
+Узина / …&quot;) is no mark — read whole, it was a target shot down at Uzyn, a place nobody said it fell at.</p>
 <h2 id="s-a-weapon-nobody-named-is-probably-a-drone--never-unknown-never-a-drone-1548">A weapon nobody named is &quot;probably a drone&quot; — never &quot;unknown&quot;, never &quot;a drone&quot; (1.54.8)<a class="anc" href="#s-a-weapon-nobody-named-is-probably-a-drone--never-unknown-never-a-drone-1548" aria-label="Link to this section">#</a></h2>
 <p>A post that says where and not what (&quot;Кулажинці&quot;, &quot;лук'янівка&quot;) was shown as an unspecified threat. On a night of drones
 that word told people less than they knew: the owner, &quot;it's most likely a drone (a jet Shahed); the only exception is
@@ -5787,7 +5811,7 @@ d'alerte ne sont pas des préférences de style.</p>
 </section>
     </div>
   </div>
-  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.42, 21 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
+  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.43, 21 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
 </main>
 
 <script>

@@ -230,6 +230,17 @@ PLACES = _Gazetteer({
     "Самбір": (23.20, 49.52, "27"), "Яворів": (23.39, 49.94, "27"), "Калуш": (24.37, 49.02, "13"),
     "Коломия": (25.04, 48.53, "13"), "Бурштин": (24.63, 49.26, "13"), "Долина": (23.9790, 48.9782, "13"),
     "Чортків": (25.80, 49.02, "21"), "Кременець": (25.73, 50.10, "21"), "Бережани": (24.94, 49.45, "21"),
+    # 1.58.43: the towns of Ternopil oblast (OpenStreetMap, static/streets/21.json) — @rocket_danger_lviv lists the missiles
+    # over them ("🚀 Теребовля / 🚀 Збараж"), and only four were known. A name villages elsewhere share is "(Тернопільщина)":
+    # that oblast's own channel keeps its village; Борщів is left out — the Kyiv trackers' village of that name came first
+    "Теребовля": (25.6925, 49.2961, "21"), "Збараж (Тернопільщина)": (25.7768, 49.6607, "21"), "Монастириська": (25.1718, 49.0908, "21"),
+    "Підгайці (Тернопільщина)": (25.1362, 49.268, "21"), "Бучач": (25.39, 49.0631, "21"),
+    "Заліщики": (25.7311, 48.6536, "21"), "Почаїв": (25.5111, 50.0018, "21"), "Скалат": (25.9775, 49.4248, "21"),
+    "Зборів (Тернопільщина)": (25.1386, 49.6645, "21"), "Козова": (25.1485, 49.4333, "21"), "Копичинці": (25.9085, 49.1069, "21"),
+    "Гусятин (Тернопільщина)": (26.1996, 49.0708, "21"), "Хоростків": (25.9169, 49.2122, "21"), "Ланівці": (26.078, 49.8734, "21"),
+    "Шумськ": (26.1186, 50.1184, "21"), "Вишнівець": (25.7511, 49.9019, "21"), "Підволочиськ": (26.1441, 49.5314, "21"),
+    "Мельниця-Подільська": (26.1643, 48.6063, "21"), "Скала-Подільська": (26.2016, 48.8466, "21"), "Гримайлів": (26.0098, 49.332, "21"),
+    "Микулинці (Тернопільщина)": (25.6026, 49.3997, "21"), "Залізці": (25.3837, 49.8023, "21"),
     "Мукачево": (22.72, 48.44, "11"), "Хотин": (26.49, 48.51, "26"), "Хмельницька АЕС": (26.64, 50.30, "3"),
     # Crimea / sea
     "Джанкой": (34.39, 45.71, "29"), "Євпаторія": (33.37, 45.20, "29"), "Феодосія": (35.38, 45.03, "29"),
@@ -311,6 +322,9 @@ TYPE_RX = [
 # 1.58.42: the signs that were types — 🚀 💣 🛸 🛵 🏍 🚁 🅿. A post that carries one still reports a target (the same posts
 # make marks as before), of a type only its words can say; with none, of no stated type ("probably a drone", 1.54.8).
 WEAPON_SIGN_RX = re.compile("[\U0001f680\U0001f4a3\U0001f6f8\U0001f6f5\U0001f3cd\U0001f681\U0001f17f]")
+# 1.58.43, the owner's one exception: the channels whose 🚀 is a missile ("🚀 Теребовля / 🚀 Збараж" are cruise missiles over
+# Ternopil oblast) — a missile while one is reported (parse_for_channel: msl_weak), never a type on its own
+ROCKET_IS_MISSILE = frozenset({"rocket_danger_lviv"})
 # 1.58.31, the owner (15 Oct 2026, 08:58 — a "missile" over Troieshchyna under the state's yellow, drone-threat level):
 # "even propeller drones, jet drones or super high-speed UAVs are still DRONES, not missiles … if the parser hasn't found
 # any messages in the channels about missile launches, ballistics, or MiG-31K takeoffs, the system shouldn't have the
@@ -399,7 +413,8 @@ ALT = {"Північний міст": [r"\bпівнічн\w{0,3}\s+м[іо]ст\
        # owner: "Jet UAV to Kyiv/Irpin/Bucha", drawn in the middle of Kyiv). Their cases, written out ("Мена": not
        # "мені", which is "to me"; "Гора": not "гору", a mountain)
        "Буча": [r"\bбуч(?:у|і|ею|и|е)\b"], "Ічня": [r"\bічн(?:ю|і|ею)\b"], "Кілія": [r"\bкілі(?:ю|ї|єю)\b"], "Мена": [r"\bмену\b"],
-       "Івано-Франківськ": ["івано-франківськ"], "Луцьк": ["луцьк"], "Керч": ["керч"], "Ізюм": ["ізюм"], "Бар": ["\bбар[іау]?\b"],
+       "Івано-Франківськ": ["івано-франківськ", r"\bфран[иі]к\w{0,2}\b"],   # 1.58.43: "Франик", its nickname
+       "Монастириська": [r"\bмонастирськ(?:а|ій|у|ої)\b"],       # 1.58.43: as @rocket_danger_lviv spells it "Луцьк": ["луцьк"], "Керч": ["керч"], "Ізюм": ["ізюм"], "Бар": ["\bбар[іау]?\b"],
        "Кременчуцьке водосховище": ["кременчуцьк[а-яіїє]* водосховищ[а-яіїє]*\\b", "кременчуцьк"], "Каховське водосховище": ["каховськ[а-яіїє]* водосховищ[а-яіїє]*\\b", "каховськ"],
        "Канівське водосховище": ["канівськ[а-яіїє]* водосховищ[а-яіїє]*\\b", "канівськ"],
        "Київське водосховище": ["київськ[а-яіїє]* водосховищ[а-яіїє]*\\b"], "Дністровське водосховище": ["дністровськ[а-яіїє]* водосховищ[а-яіїє]*\\b", "дністровськ"],
@@ -504,7 +519,7 @@ def _plausible(token, name, base):
         return True
     if token[len(base):] in _VERB_TAILS:
         return False                     # 1.45: "якщо що маякну" (I'll let you know) is not Маяки
-    n = _norm(name)
+    n = _norm(name).split(" (")[0]       # 1.58.43: "Збараж (Тернопільщина)" — the name, not what tells it apart
     if not n.startswith(base):
         return True                      # an alternation or an explicit alias: trusted as written
     if len(base) >= len(n) - 1:
@@ -1284,7 +1299,9 @@ FRIENDLY_ALL_RX = re.compile(r"(?:^|[\s.!,;—–-])(?:то|це|это)\s+(?:н
 _FR_SPLIT_RX = re.compile(r"(?<=[.!?\n])")
 
 
-ARTY_RX = re.compile(r"артобстріл|артилері\w*|мінометн\w*|міномет\w*|рсзв|реактивн\w*\s+систем\w*\s+залпов|"
+# 1.58.43: and in Russian — "РСЗО на Проходы/Липцы" (@tlknewsua, Kharkiv), rocket artillery, was a target at Lyptsi
+ARTY_RX = re.compile(r"артобстріл|артилері\w*|артиллери\w*|мінометн\w*|міномет\w*|миномет\w*|рсзв|рсзо|"
+                     r"реактивн\w*\s+систем\w*\s+залпов|"
                      r"\bград\w*\b|танков\w*\s+обстріл|обстріл\w*\s+з\s+(?:тот|лівого\s+берега|артилер)", re.I)
 
 
@@ -1685,7 +1702,7 @@ def phase_progress(mtype, phase):
 # words those rules know — the weapons, the outcomes, the prepositions, the courses, the oblasts — and read like any
 # other. Place names are not translated: the regional gazetteer holds each village's Russian name too. The text the
 # reader sees is never changed; only what the parser reads.
-RU_CHANNELS = {"radar_kharkov", "monitoringodesa"}
+RU_CHANNELS = {"radar_kharkov", "monitoringodesa", "tlknewsua"}     # 1.58.43: @tlknewsua (Kharkiv) — "Упал", "Не фиксируется"
 _RU_LETTERS = re.compile(r"[ыэъё]", re.I)
 _RU_WORDS = re.compile(r"(?<![а-яіїєґыэъ'])(?:что|это|ещ[её]|снова|возле|около|мимо|сейчас|летит|летят|сторону|направлении|"
                        r"сбит\w*|сбил\w*|взрыв\w*|движется|двигается|предварительно|внимательно|области|районе|района|"
@@ -2228,6 +2245,40 @@ def parse_kyiv_airdef(text):
     return _parse_live(text, "31")
 
 
+# 1.58.43: @vseok450 ("4.5.0", Kyiv and its oblast, on trial since 1.57.3) posts lists, a line a target or a group: a place
+# ("Яготин"), a count and where it goes ("1 до Узина"), a count in an oblast ("3 Чернігівська", "В Чернігівській 1+1"),
+# the Chornobyl zone ("Чорнобильська 2", "1 в Чорнобильську"), an outcome with no place ("1 мінус"). Read whole,
+# "1 мінус / 1 до Узина / 1 в Чорнобильську" was one target shot down at Uzyn. Line by line: a place line as the Kyiv
+# trackers' (parse_kyiv_airdef); a count in an oblast or in the zone names no place — no mark, as in 1.57.3; an outcome
+# with no place in a list is no mark (which target it was, the post does not say); "Ці в Житомирську" — those already
+# reported, leaving — no new target.
+_VS_OBL = ("чернігівськ", "житомирськ", "черкаськ", "полтавськ", "сумськ", "київськ",
+           "чернігівщ", "житомирщ", "черкащ", "полтавщ", "сумщ", "київщ")
+# its adjective ("Чернігівська"), or the -щина the reader already made of "В Чернігівській" (_fix_readings)
+_VS_AREA = r"(?:" + "|".join(_VS_OBL) + r")(?:а|ій|у|ої|ина|ині|ину|ини)(?![а-яіїєґ'])|чорнобильськ\w*|зон\w*\s+(?:чаес|відчужен\w*)"
+_VS_N = r"(?:\d+\s*\+\s*)*\d+"
+_VS_AREA_RX = re.compile(r"^(?:" + _VS_N + r"\s+)?(?:(?:в|у|на|до)\s+)?(?:" + _VS_AREA + r")(?:\s+(?:обл\w*\.?|зон\w*))?"
+                         r"(?:\s+" + _VS_N + ")?$", re.I)
+_VS_THESE_RX = re.compile(r"^(?:ці|вони|оці|ті)\b", re.I)
+
+
+def parse_vseok450(text):
+    lines = [ln.strip() for ln in (text or "").split("\n") if ln.strip()]
+    if any(_VS_AREA_RX.match(_norm(ln).strip(" .!")) for ln in lines) and len(lines) == 1:
+        return []                               # a count in an oblast, or in the zone: no place
+    tt = [_norm(ln).strip(" .!") for ln in lines]
+    own = [t for t in tt if _VS_THESE_RX.match(t) or _VS_AREA_RX.match(t)
+           or (_status_of(t) and not _find_places(t, "31") and len(t.split()) <= 3)]
+    if len(lines) < 2 or not own or any(len(t.split()) > 6 for t in tt):
+        return parse_kyiv_airdef(text)          # one line, sentences, or a list the Kyiv trackers' reader knows: as before
+    out = []
+    for t, ln in zip(tt, lines):
+        if t in own:
+            continue                            # those already reported; a count with no place; an outcome: which one?
+        out += [m for m in parse_kyiv_airdef(ln) if m.get("lon") is not None]    # a line with no place adds nothing
+    return out
+
+
 _HYPH_RX = re.compile(r"([а-яіїєґ']+)\s+[-–]\s+([а-яіїєґ']+)")
 _ROUTE_RX = re.compile(r"^\W*([а-яіїєґ' ]+?)\s+[-–→]\s+([а-яіїєґ' ]+?)(?=\s|$|[.,!])")
 
@@ -2671,7 +2722,7 @@ def parse_nikalert(text):
 
 # kievinfo_kyiv and chyste_nebo post the same way kyiv_airdef does: a place, sometimes a route, an outcome word.
 CHANNEL_PARSER = {"povitryanatrivogaaa": parse_arrows, "kyiv_airdef": parse_kyiv_airdef, "eRadarrua": parse_eradar,
-                  "kievinfo_kyiv": parse_kyiv_airdef, "chyste_nebo": parse_kyiv_airdef, "vseok450": parse_kyiv_airdef,
+                  "kievinfo_kyiv": parse_kyiv_airdef, "chyste_nebo": parse_kyiv_airdef, "vseok450": parse_vseok450,
                   "cherkasy_monitor": lambda t: _parse_live(t, "24"), "sumy_alerts": lambda t: _parse_live(t, "20"),
                   "xydessa_live": lambda t: _parse_live(t, "18"), "nikalert": parse_nikalert}
 
@@ -2797,6 +2848,14 @@ def parse_for_channel(channel, text, near=None):
         for m in ms:
             if m.get("type") in MISSILE_KINDS:
                 m["msl_weak"] = True                # 1.58.31: a missile only while one was reported (server)
+    if ms and channel in ROCKET_IS_MISSILE and "\U0001f680" in text:
+        # 1.58.43, the owner's exception to 1.58.42: on this channel 🚀 is a missile — still one only while a missile is
+        # reported (1.58.31's rule, the server's State._msl_context), else a probable drone like any other
+        for m in ms:
+            if m.get("type") == "unknown" and not m.get("status"):
+                ev = dict(m.get("evidence") or {})
+                ev["type"] = {"matched": "🚀", "method": f"🚀 — on @{channel} a missile (the owner, 1.58.43)", "confidence": "medium"}
+                m.update(type="unspecified_missiles", likely=None, msl_weak=True, evidence=ev)
     if ms and REGULAR_RX.search(_norm(text)) and not JET_RX.search(_norm(text)):
         for m in ms:
             if m.get("type") in ("drones", "unknown") and not m.get("status"):

@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-21 (1.58.42)
+**Documented version: 1.58** · last updated 2026-10-21 (1.58.43)
 
 The repository is **Dread92/Heimdall-map**. The app's address is **https://heimdall.com.ua** (1.58.34, 18 October
 2026); the Fly app keeps its first name, `kyiv-air-watch-gb`, and its first address keeps working (§15 has the move).
@@ -606,7 +606,9 @@ event of a Trial post carries `tags: ["trial"]` only. Both readers take the list
 | `rivne_radar` | live tracker of Rivne oblast; follows its targets into the next oblast (1.45) | `_parse_live(·, "5")`, with `near` (§7.3b); its raion alert notices ("Тривога — Вараський район") are not marks |
 | `ppoualviv` | live tracker of Lviv oblast (1.45) | `_parse_live(·, "27")` |
 | `lutsk_radar` | live tracker of Volyn oblast (1.45) | `_parse_live(·, "8")` |
-| `vseok450` | "4.5.0", live tracker of Kyiv and its oblast, 12K readers (1.57.3, the owner's choice) — **on trial by default** (`CHANNEL_MODE_DEFAULT`): its posts in the feed, flagged, nothing on the map, until the owner puts it on the map from the dashboard | `parse_kyiv_airdef`; its posts are short lists of places and counts ("Яготин / Богуслав / 3 Чернігівська", "1-й до Чабанів", "Обухів/Українка 2 з півдня"), no weapon named (read as "probably a drone"), "Відбій" (never ends an alert), "Цього нема." (the previous one is gone). On 11 Oct the rules read the places of a bare list and "до X" but not yet the counts, "з півдня" after a pair of places, or a list under a sentence — to be taught from its posts on trial |
+| `rocket_danger_lviv`, `tlknewsua` | 1.58.43: added by the owner from the dashboard (on trial until he puts them on the map; their home oblast, Lviv `27` / Kharkiv `22`, set there — not in code). @rocket_danger_lviv, "РАКЕТНА неБЕЗПЕКА": missiles over the west, "🚀 Теребовля / 🚀 Збараж", "Львів 3 хв" | `_parse_live(·, "27")`; **its 🚀 is a missile** (`geo.ROCKET_IS_MISSILE`, the owner's one exception to 1.58.42): an unstated target of a 🚀 post is `unspecified_missiles` with `msl_weak` — a missile while one is reported (1.58.31), else a probable drone; the towns of Ternopil oblast it names are in the gazetteer (1.58.43; a name villages elsewhere share is "X (Тернопільщина)"); "Франик" is Ivano-Frankivsk |
+| | @tlknewsua, "TLk News", Kharkiv, in Russian: "КАБ на Приколотное/Бурлук", "БПЛА … курсом на Липцы", "Упал", "Не фиксируется" | `_parse_live(·, "22")`, `RU_CHANNELS` ("Упал" = впав, after a KAB at a place an impact — 1.44; after one only heading somewhere, nothing); "РСЗО" — rocket artillery — is not the sky (`ARTY_RX`) |
+| `vseok450` | "4.5.0", live tracker of Kyiv and its oblast, 12K readers (1.57.3, the owner's choice) — **on trial by default** (`CHANNEL_MODE_DEFAULT`): its posts in the feed, flagged, nothing on the map, until the owner puts it on the map from the dashboard | `parse_kyiv_airdef`; its posts are short lists of places and counts ("Яготин / Богуслав / 3 Чернігівська", "1-й до Чабанів", "Обухів/Українка 2 з півдня"), no weapon named (read as "probably a drone"), "Відбій" (never ends an alert), "Цього нема." (the previous one is gone). On 11 Oct the rules read the places of a bare list and "до X" but not yet the counts, "з півдня" after a pair of places, or a list under a sentence — to be taught from its posts on trial. **1.58.43, `parse_vseok450`**: "1 мінус / 1 до Узина / 1 в Чорнобильську" was read whole — one target shot down at Uzyn. A list with one of its own shapes is read line by line: a place line as the Kyiv trackers'; a count in an oblast or in the Chornobyl zone ("3 Чернігівська", "В Чернігівській 1+1", "Чорнобильська 2", `_VS_AREA_RX`) names no place — no mark, as before; an outcome with no place in a list is no mark (which target, the post does not say); "Ці в Житомирську" — those already reported — none. Any other post is read as before |
 
 **A channel's mode until the dashboard sets one** (1.57.3): `map`, or `CHANNEL_MODE_DEFAULT` — a new tracker starts on
 trial; the dashboard's choice, once made, is kept (`kv.channels`).
@@ -719,7 +721,9 @@ block for every value:
   one still reports a target (`_parse_live`'s untyped-target test, its height-line and empty-line tests, the Nikopol
   channel's own posts), of no stated type — the same posts make marks as before. The AI reader too (prompt 5, check
   6): a weapon is quoted in words (`validate`), `EMOJI_KIND` is gone. A tracker's sign-only report is now a bare
-  name like any other: it continues its own channel's drone track (1.58.29) but not another channel's.
+  name like any other: it continues its own channel's drone track (1.58.29) but not another channel's. 1.58.43, the
+  owner's one exception: on @rocket_danger_lviv (`ROCKET_IS_MISSILE`) 🚀 is a missile — `msl_weak`, so one only while
+  a missile is reported.
 - **Position** — the gazetteer with declension-aware stems (hyphen lookbehind: `Коцюбинське` ≠
   `Михайло-Коцюбинське`); aliases like "Велика Димерка" ← "димерк"; a stated part of an oblast is not its centre.
   1.56.3: the core gazetteer's coordinates (`geo.PLACES`, written by hand) checked against OpenStreetMap's settlements
@@ -859,7 +863,9 @@ apostrophe — `_ru_variants`). Kharkiv city's districts are named by hand in th
   centre); a word declined like an adjective matches its town ("Кропивницького"); GeoNames' Soviet-era names are
   never the displayed one (`build_places.py`, `SOVIET`); "маякну" and other verb forms are not villages
   (`_VERB_TAILS`); "велика / мала / стара / верхня …" alone are never a village (`REGIONAL_STOP`). Artillery and
-  mortar fire is not in the sky (`ARTY_RX`), and a report of the injured ("47-річний … поранення") is news.
+  mortar fire is not in the sky (`ARTY_RX`), and a report of the injured ("47-річний … поранення") is news. 1.58.43:
+  in Russian too — "РСЗО", "артиллерия", "миномёт" (@tlknewsua's "РСЗО на Проходы/Липцы" was a target at Lyptsi).
+  And the plausibility test (`_plausible`) reads a name without what tells it apart ("Збараж (Тернопільщина)").
 
 **Posts in Russian.** The Kharkiv and Odesa trackers write in Russian. `geo.prepare(text, channel)` turns a post
 from `RU_CHANNELS`, or one that `looks_russian()` (ы, э, ё, ъ, or a Russian-only word), into the Ukrainian words the
@@ -3189,6 +3195,11 @@ safe circle), `heimdall-64.png` (transparent — the favicon), `heimdall-mark.pn
 `logo-hd-badge.png` (96 px, white on transparent: Android draws the notification badge from its alpha alone). The
 manifests' `id` stays `/m`, so a new icon reaches an installed app as an update. The 07300 and Black Flame logos
 (`logo*.png`, `bf-logo*.png`) stay as they are.
+
+**A shared link** (1.58.43, the owner: "for Black Flame the link preview shows the logo … and for the Heimdall link as
+well"): the Tactical page, Light and the guide carry the `og:` tags Messenger, Telegram and Viber read — `og:title`
+("Heimdall — мапа повітряних загроз"), `og:description` (unofficial, from channel posts, not radar; the official alert
+first), `og:image` = `https://heimdall.com.ua/static/heimdall-512.png` (512 × 512), `twitter:card` `summary`.
 
 **Official data by key instead of the proxy**: request a key at <https://api.ukrainealarm.com/>, then
 `fly secrets set UKRAINEALARM_KEY=…` — the same code reads the API directly.
