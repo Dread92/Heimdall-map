@@ -57,6 +57,15 @@ G.bomber='<path class="glyph" d="M0-12 L1.9-7.2 L1.9-1.2 L12.4 4.4 L12.4 6.6 L1.
 G.fighter='<path class="glyph" d="M0-12.8 L1.5-8.4 L1.5-2.6 L9.6 4.2 L9.6 6 L1.5 2.6 L1.5 7.4 L4.2 11.6 L4.2 12.8 L-4.2 12.8 L-4.2 11.6 L-1.5 7.4 L-1.5 2.6 L-9.6 6 L-9.6 4.2 L-1.5-2.6 L-1.5-8.4 Z"/>'
   +'<rect class="glyph" x="-5.4" y="8.2" width="1.5" height="4.2" rx="0.4"/><rect class="glyph" x="3.9" y="8.2" width="1.5" height="4.2" rx="0.4"/>';
 
+// 1.58.42, the owner, of a ballistic missile "в напрямку Києва" drawn nose-up on Kyiv: "how to rotate the missile like a
+// direction it takes usually?" — picked: no direction drawn at all. Upright is not a direction for a drone among drones,
+// but a lone missile's nose reads as "heading north". So a missile, a Banderol or a guided bomb whose post gave no course
+// — and that has no track of its own to face along (`face`) — is a disc with a "?", in its weapon's colour; the label
+// still says what it is. It takes its silhouette, turned, as soon as a post gives a course.
+const NOFRONT=new Set(['ballistic','missile','supersonic','banderol','bomb']);
+const noFront=(gk,m,stated)=>NOFRONT.has(gk)&&!m.status&&!m.endedBy&&!stated&&m.face==null;
+G.nofront='<circle class="glyph nf" cx="0" cy="0" r="8.4"/><text class="nfq" x="0" y="4.6" text-anchor="middle">?</text>';
+
 // one weapon, one symbol — and the same symbol whether or not a course was reported
 // One picture per weapon. A type that falls through to a neighbour's shape is a type the reader cannot tell
 // apart from it — which is the whole job of a silhouette.

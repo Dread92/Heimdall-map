@@ -80,7 +80,8 @@ def test_a_live_destination_keeps_the_target_where_the_channel_last_saw_it():
 
 
 def test_a_later_heading_for_post_turns_the_track_instead_of_moving_it():
-    st = _state([("kyiv_airdef", 4, "✈️Глеваха"),
+    # 1.58.42: "✈️Глеваха" is a target of no stated type now (no emoji is a type) — the words say a drone
+    st = _state([("kyiv_airdef", 4, "✈️ БпЛА Глеваха"),
                  ("kpszsu", 2, "🏍 Київщина: реактивний БпЛА на Васильків з північного заходу.")])
     live = [m for m in st.markers() if not m.get("status")]
     assert [m["place"] for m in live] == ["Глеваха"]               # still where it was seen, not on Vasylkiv

@@ -3676,7 +3676,7 @@ class State:
     # "even propeller drones, jet drones or super high-speed UAVs are still DRONES, not missiles … if the parser hasn't found
     # any messages in the channels about missile launches, ballistics, or MiG-31K takeoffs, the system shouldn't have the
     # right to put up a «Missile» marker at all … any disputed or high-speed target should default to a drone". A mark the
-    # post only suggested is a missile (geo.MSL_WEAK_RX: 🚀, "швидкісна ціль", "остання") is one while a missile was
+    # post only suggested is a missile (geo.MSL_WEAK_RX: "швидкісна ціль", "остання"; 1.58.42: no 🚀) is one while a missile was
     # reported within MSL_CTX_POST_MIN before it (or MSL_CTX_AFTER_MIN after), a carrier was airborne or launched within
     # MSL_CTX_AIR_MIN, or the official alert says missiles; else a probable drone. A post that names a missile is one.
     MSL_CTX_POST_MIN, MSL_CTX_AIR_MIN, MSL_CTX_AFTER_MIN = 90, 180, 3
@@ -3734,12 +3734,12 @@ class State:
         ev = dict(m.get("evidence") or {})
         ty = dict(ev.get("type") or {})
         if hit:
-            ty.update(method=f"the post only suggested a missile (🚀, «швидкісна ціль» or «остання»); {hit}", confidence="medium")
+            ty.update(method=f"the post only suggested a missile («швидкісна ціль» or «остання»); {hit}", confidence="medium")
         else:
             m.update(type="unknown", likely="drones")
-            ty.update(method="the post only suggested a missile (🚀, «швидкісна ціль» or «остання») and no missile was reported — "
+            ty.update(method="the post only suggested a missile («швидкісна ціль» or «остання») and no missile was reported — "
                              "no launch, no ballistic threat, no MiG-31K, no carrier in the air: a drone, probably (jet drones "
-                             "fly high and fast; the trackers put 🚀 on them too)", confidence="low")
+                             "fly high and fast)", confidence="low")
         ev["type"] = ty
         m["evidence"] = ev
         return m

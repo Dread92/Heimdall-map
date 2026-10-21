@@ -197,10 +197,10 @@ def test_banderol_is_its_own_weapon():
     assert kinds("Бандероль 🚀 →Конотоп/р-н (Сумщина)") == ["banderol_missiles"]
 
 
-def test_a_bare_rocket_emoji_is_a_missile_not_a_ballistic_one():
-    """🚀 alone means "a missile" on these channels. Read as ballistic it handed the loudest treatment in the
-    app — white spike, one-second refresh — to an emoji."""
-    assert kinds("🚀 на Суми") == ["unspecified_missiles"]
+def test_a_bare_rocket_emoji_is_no_missile_at_all():
+    """🚀 alone was "a missile" (1.0: a ballistic one — the loudest treatment in the app, for an emoji). 1.58.42, the
+    owner: the rocket emoji "is very commonly used for jet drones" — no emoji is a type: a target of no stated type."""
+    assert kinds("🚀 на Суми") == ["unknown"]
 
 
 def test_the_named_missiles_are_untouched():
@@ -310,7 +310,8 @@ def test_two_oblasts_in_one_sentence_are_two_reports_not_a_heading():
 
 
 def test_an_oblast_alone_in_a_post_is_still_the_report():
-    assert places("🛵 Київщина") == [("drones", "область")]
+    assert places("🛵 Київщина") == [("unknown", "область")]         # 1.58.42: the 🛵 says a target, not which
+    assert places("БпЛА на Київщині") == [("drones", "область")]
 
 
 def test_the_morning_tally_is_never_a_live_position():

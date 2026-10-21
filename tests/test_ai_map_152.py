@@ -58,28 +58,30 @@ def _marks(st):
 
 # ---- the prompt, version 4 ------------------------------------------------------------------------------------------
 def test_two_places_the_channels_emoji_bare_names_and_alert_messages():
-    assert A.PROMPT_VERSION == "4"
+    assert A.PROMPT_VERSION == "5"                       # 1.58.42: no emoji is a weapon
     for rule in ("Two places per target: where it is (place_id, with its relation) and where it is going (toward_id)",
                  '"на Житомирщині в напрямку Житомира" = place o10 in_oblast, toward Житомир',
-                 "a tracker's line that is only a place name", '"на Київщині, н.п. Гребінка"', "the emoji is the quote",
-                 '"🛵", "шахед"', '"🏍" = jet_drone', "that is an alert, not a target", '"спускається"'):
+                 "a tracker's line that is only a place name", '"на Київщині, н.п. Гребінка"', "never by an emoji",
+                 "the channels put 🚀 on jet drones", '"шахед", "герань"', "that is an alert, not a target", '"спускається"'):
         assert rule in A.SYSTEM, rule
     assert "toward_id" in A.TARGET["required"] and "missile" in A.KINDS
+    assert '"🛵"' not in A.SYSTEM and '"🏍" = jet_drone' not in A.SYSTEM and not hasattr(A, "EMOJI_KIND")
 
 
-def test_an_emoji_is_a_quote_and_toward_is_checked_like_a_place():
+def test_an_emoji_is_no_weapon_and_toward_is_checked_like_a_place():
+    # 1.58.42, the owner: "stop using the emojis to determine the nature of the threat" (1.52 took 🏍 for a quote)
     cands = [("c1", "Коростень", "Коростень | Житомирська область"), ("c2", "Житомир", "Житомир | Житомирська область"),
              ("o10", "o10", "Житомирська область")]
     post = "🏍 Повз околиці Коростеня на Житомир"
     out = {"targets": [A._t(kind="jet_drone", kind_quote="🏍", place_id="c1", place_quote="Повз околиці Коростеня",
                             relation="near", toward_id="c2", toward_quote="на Житомир")]}
     (t,), d = A.validate(out, post, cands)
-    assert d == 0 and t["kind"] == "jet_drone" and t["place"] == "Коростень" and t["toward"] == "Житомир"
+    assert d == 1 and t["kind"] == "unknown" and t["place"] == "Коростень" and t["toward"] == "Житомир"
     # only where it is going: that is the place, heading to it
     out = {"targets": [A._t(kind="jet_drone", kind_quote="🏍", toward_id="c2", toward_quote="на Житомир")]}
     (t,), _ = A.validate(out, post, cands)
     assert (t["place"], t["relation"], t["toward"]) == ("Житомир", "heading_to", None)
-    # an emoji the post does not hold is no quote
+    # nor an emoji the post does not hold
     out = {"targets": [A._t(kind="shahed", kind_quote="🛵", place_id="c1", place_quote="Повз околиці Коростеня", relation="near")]}
     assert A.validate(out, post, cands)[0][0]["kind"] == "unknown"
 

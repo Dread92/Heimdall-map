@@ -59,10 +59,11 @@ def test_the_masculine_last_one_is_a_drone_the_feminine_only_suggests_a_missile(
 
 
 def test_what_names_a_missile_and_what_only_suggests_one():
-    assert geo.missile_said("🚀🚀Оболонь, Труханів", "kievinfo_kyiv") == "weak"
+    assert geo.missile_said("Остання Оболонь, Труханів", "kievinfo_kyiv") == "weak"
+    assert geo.missile_said("🚀🚀Оболонь, Труханів", "kievinfo_kyiv") is None          # 1.58.42: an emoji suggests nothing
     assert geo.missile_said("швидкісна ціль на Київ", "kyiv_airdef") == "weak"
     assert geo.missile_said("🚀 Швидкісна ціль на Київщині курсом на Київ", "kpszsu") == "named"      # the Air Force's word
-    assert geo.missile_said("🚀КАБи на Харківщину.", "kpszsu") == "weak"                                # its 🚀 is no proof
+    assert geo.missile_said("🚀КАБи на Харківщину.", "kpszsu") is None                                 # its 🚀 is no proof
     for t in ("Ракета на Оболонь", "2 КР на Київ", "Балістика з Брянська", "Калібри з Чорного моря", "Зліт МіГ-31К",
               "Ту-95 у повітрі", "х-101 курсом на Київ", "кинджал"):
         assert geo.missile_said(t) == "named", t
@@ -74,7 +75,7 @@ def test_what_names_a_missile_and_what_only_suggests_one():
 
 # ---- the rule ----------------------------------------------------------------------------------------------------------
 def test_no_missile_reported_no_missile_on_the_map():
-    st, ms = _marks([("kievinfo_kyiv", "1", 3, "🚀🚀Оболонь, Труханів")])
+    st, ms = _marks([("kievinfo_kyiv", "1", 3, "Остання Оболонь, Труханів")])
     m = ms["kievinfo_kyiv/1"]
     assert m["type"] == "unknown" and m["likely"] == "drones"                      # "probably a drone" on the pages
     assert "no missile was reported" in m["evidence"]["type"]["method"] and m["evidence"]["type"]["confidence"] == "low"
@@ -82,19 +83,19 @@ def test_no_missile_reported_no_missile_on_the_map():
     st, ms = _marks([("kyiv_airdef", "1", 3, "швидкісна ціль на Київ")])
     assert ms["kyiv_airdef/1"]["type"] == "unknown" and st.missile_active() == 0   # no ballistic banner for it alone
     # the tag says so too: no missile chip, no missile in the feed's tags
-    assert server.tag_feed_text("🚀🚀Оболонь, Труханів", "kievinfo_kyiv")[:1] == ["msl_weak"]
+    assert server.tag_feed_text("Остання Оболонь, Труханів", "kievinfo_kyiv")[:1] == ["msl_weak"]
 
 
 def test_a_missile_reported_and_it_may_be_one():
     # a launch reported by the Air Force an hour before
-    st, ms = _marks([("kpszsu", "9", 60, "Ракетна небезпека! Пуски крилатих ракет з Каспію"), ("kievinfo_kyiv", "1", 3, "🚀🚀Оболонь, Труханів")])
+    st, ms = _marks([("kpszsu", "9", 60, "Ракетна небезпека! Пуски крилатих ракет з Каспію"), ("kievinfo_kyiv", "1", 3, "Остання Оболонь, Труханів")])
     m = ms["kievinfo_kyiv/1"]
     assert m["type"] == "unspecified_missiles" and "a missile reported at" in m["evidence"]["type"]["method"]
     # ... but not three hours before
-    st, ms = _marks([("kpszsu", "9", 200, "Ракетна небезпека! Пуски крилатих ракет з Каспію"), ("kievinfo_kyiv", "1", 3, "🚀🚀Оболонь, Труханів")])
+    st, ms = _marks([("kpszsu", "9", 200, "Ракетна небезпека! Пуски крилатих ракет з Каспію"), ("kievinfo_kyiv", "1", 3, "Остання Оболонь, Труханів")])
     assert ms["kievinfo_kyiv/1"]["type"] == "unknown"
     # a carrier in the air: a Tu-95 launching two hours ago, a MiG-31K up
-    st, ms = _marks([("kievinfo_kyiv", "1", 3, "🚀🚀Оболонь, Труханів")], air=[("strategic", "launch", 120)])
+    st, ms = _marks([("kievinfo_kyiv", "1", 3, "Остання Оболонь, Труханів")], air=[("strategic", "launch", 120)])
     assert ms["kievinfo_kyiv/1"]["type"] == "unspecified_missiles"
     st, ms = _marks([("kyiv_airdef", "1", 3, "швидкісна ціль на Київ")], air=[("mig31k", "up", 20)])
     assert ms["kyiv_airdef/1"]["type"] == "ballistic_missiles"
@@ -103,7 +104,7 @@ def test_a_missile_reported_and_it_may_be_one():
     assert ms["kyiv_airdef/1"]["type"] == "ballistic_missiles" and st.missile_active() == 2
     # a channel taking it back: what was reported before no longer counts
     st, ms = _marks([("kpszsu", "9", 30, "Балістика на Київ"), ("kyiv_airdef", "8", 20, "балістика — ймовірно лаг системи"),
-                     ("kievinfo_kyiv", "1", 3, "🚀🚀Оболонь, Труханів")])
+                     ("kievinfo_kyiv", "1", 3, "Остання Оболонь, Труханів")])
     assert ms["kievinfo_kyiv/1"]["type"] == "unknown"
     # a post that names a missile is one, reported or not
     st, ms = _marks([("kudy_letyt", "1", 3, "Київ: ракета на Оболонь")])
@@ -164,3 +165,11 @@ def test_the_docs_tell_it():
     for s in ("1.58.31", "missile_said", "MSL_CTX_POST_MIN", "stand_in", "raions_as_of"):
         assert s in DOC, s
     json.dumps(server.State.MSL_OFFICIAL and sorted(server.State.MSL_OFFICIAL))
+
+
+def test_a_rocket_emoji_is_no_missile_even_while_missiles_are_reported():
+    # 1.58.42, the owner: "the rocket / cruise missile emoji is very commonly used for jet drones" — no emoji is a type
+    st, ms = _marks([("kpszsu", "9", 60, "Ракетна небезпека! Пуски крилатих ракет з Каспію"), ("kievinfo_kyiv", "7", 3, "🚀🚀Оболонь, Труханів")])
+    m = ms["kievinfo_kyiv/7"]
+    assert m["type"] == "unknown" and m["likely"] == "drones" and m["place"] == "Оболонь"
+    assert server.tag_feed_text("🚀🚀Оболонь, Труханів", "kievinfo_kyiv")[:1] == ["unknown"]

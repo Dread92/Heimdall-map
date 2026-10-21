@@ -142,6 +142,7 @@ header .up{margin-left:auto;min-width:0;overflow:hidden;text-overflow:ellipsis;w
 #radar .t.gone{opacity:.35}
 /* Tactical's silhouettes (glyphs.js), in the weapon's colour */
 .sil .glyph{fill:var(--c);stroke:#0b0d11;stroke-width:1px;vector-effect:non-scaling-stroke}
+.sil .nfq{font:800 12px monospace;fill:#0b0d11}
 .sil .glyph.tri{fill:var(--c)}
 .sil .jetfx{display:none}.sil.jet .jetfx{display:inline}.sil .flame{fill:#ffb347;stroke:none}.sil .flame2{fill:#fff4d6;stroke:none}
 .sil.bal .glyph{fill:#fff;stroke:#ff1744;stroke-width:1.4px}
@@ -349,12 +350,14 @@ const lMsl=m=>MKS.some(x=>!x.status&&/^(mig31|strat)/.test(x.type))||mslNear(m,M
 // The weapon's own silhouette — the same drawing as on the Tactical map (static/glyphs.js).
 // 1.54.9: unstated, and no missile reported — drawn as a drone (the Tactical map's rule)
 const lDr=m=>m.type==='unknown'&&!m.status&&!lMsl(m);
-const silKey=m=>(m.type==='drones'||lDr(m))?(m.jet?'jetdrone':'drone'):(GLYPH_BY_TYPE[m.type]||'missile');
+const wpnKey=m=>(m.type==='drones'||lDr(m))?(m.jet?'jetdrone':'drone'):(GLYPH_BY_TYPE[m.type]||'missile');
+// 1.58.42: no course, no front (glyphs.js)
+const silKey=m=>noFront(wpnKey(m),m,statedCourse(m))?'nofront':wpnKey(m);
 const silCls=m=>'sil'+((m.type==='drones'&&m.jet)?' jet':'')+(m.type==='ballistic_missiles'?' bal':'')+(m.type==='supersonic_missiles'?' sup':'');
 // It turns only to a course the post reported. No course, or nobody said what it is: upright.
 // no stated course: `face` (its track, or into Ukraine), or north
 const markOrient=m=>(m.type!=='unknown'||lDr(m))?(statedCourse(m)?m.heading:m.face||0):0;
-const icoSvg=(m,c)=>`<svg viewBox="-13 -13 26 26" aria-hidden="true"><g class="${silCls(m)}" style="--c:${c}">${G[silKey(m)]||''}</g></svg>`;
+const icoSvg=(m,c)=>`<svg viewBox="-13 -13 26 26" aria-hidden="true"><g class="${silCls(m)}" style="--c:${c}">${G[wpnKey(m)]||''}</g></svg>`;
 
 // An outcome reported after a track closes it — same family, within 40 min, within 60 km, roughly ahead of
 // it. Otherwise a Shahed already shot down stays on this list as if it were still flying.
@@ -563,9 +566,7 @@ function paint(){
   const CRI=getComputedStyle(document.documentElement).getPropertyValue('--cri').trim(), ORA=getComputedStyle(document.documentElement).getPropertyValue('--ora').trim();
   RT=[];
   for(const r of rows){ const m=r.m, c=r.toHere?CRI:colOf(m), gone=m.stale?' gone':''; let [x,y]=loc(m.lon,m.lat);
-    // 1.58.41: heading for Kyiv from a side the post named — drawn off the city on that side, not on its centre (the
-    // server's off_km: Kyiv's outline + 1.5 km; the owner: "heading to Kyiv, from the north, and yet the icon is placed
-    // right inside the city")
+    // 1.58.41: heading for Kyiv from a stated side — off the city on that side (the server's off_km)
     if(m.approach&&statedCourse(m)&&+m.off_km>0){ const a=m.heading*Math.PI/180; x-=m.off_km*S*Math.sin(a); y+=m.off_km*S*Math.cos(a); }
     // where it was reported before: reported points joined, nothing drawn ahead of it
     if(m.history&&m.history.length){ const pts=[...m.history.filter(h=>h.lon!=null&&h.lat!=null).map(h=>loc(h.lon,h.lat)),[x,y]];
@@ -581,7 +582,7 @@ function paint(){
     if(m.type==='unknown'&&!lDr(m)){
       // unknown type: upright warning sign; a reported course is a small arrow beside it
       if(statedCourse(m)) q+=`<path class="t" transform="rotate(${m.heading}) translate(0 -5.6)" d="M0 -1.8 L1.5 1.2 L0 .5 L-1.5 1.2 Z" fill="${ORA}"/>`;
-    } else if(!statedCourse(m)) q+=`<text class="qm" x="0" y="-4.4">?</text>`;   // upright because no course was reported
+    } else if(!statedCourse(m)&&silKey(m)!=='nofront') q+=`<text class="qm" x="0" y="-4.4">?</text>`;   // upright: no course (1.58.42: the disc says it)
     // its number in the list below, and how many
     q+=`<text class="no" x="3.2" y="-2.2">${r.no}${m.count&&m.count>1?`<tspan fill="${c}"> ×${m.count}</tspan>`:''}</text>`;
     // the stated height under it; ↓ in crimson when a post said it is descending or reported it lower

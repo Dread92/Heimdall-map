@@ -703,6 +703,8 @@ body.lite .mk.st-impact .glyph.x{fill:#fff;filter:none;animation:none}
 .mk.stale{opacity:.8}.mk.stale.s2{opacity:.55}.mk.stale.s3{opacity:.32}.mk.stale.s3 .lbl,.mk.stale.s3 .lbl2{display:none}.mk.stale.s2 .lbl2{display:none}.mk.stale .cone,.mk.stale .ahead,.mk.stale .hdg,.mk.stale .halo,.mk.stale .spawn,.mk.stale .jetfx{display:none}
 .mk.stale .glyph{fill:#7d8797!important;stroke:#080b10}.mk.stale .lbl{fill:#aeb8c8}.mk.stale .lbl2{fill:#9aa5b8}.mk.stale .qm{fill:#c9d1de}
 .mk .cnt circle{fill:#fff;stroke:#080b10;stroke-width:1}.mk .cnt text{font:800 9px var(--mono);fill:#080b10;text-anchor:middle}.mk.inbound .cnt circle,.mk.tohome .cnt circle{fill:#ff4d57}.mk.inbound .cnt text,.mk.tohome .cnt text{fill:#fff}.mk.stale .cnt circle{fill:#9aa5b8}
+/* 1.58.42: a missile with no course stated — a disc with a "?" (glyphs.js G.nofront), in glyph units */
+.mk .nfq,.sil .nfq{font:800 12px var(--mono);fill:#080b10;stroke:none;pointer-events:none}body.m-night .mk .nfq{fill:#ff6b60}
 .mk .qm{display:none;font:700 calc(var(--k,1)*11px) var(--mono);fill:#ffd166;paint-order:stroke;stroke:#080b10;stroke-width:calc(var(--k,1)*3px);text-anchor:middle}.mk.stale .qm{display:block}
 .mk.ended{opacity:.55}.mk.ended .halo{display:none}.mk.ended .glyph{fill:#6f7b90}.mk.ended .lbl2{fill:#a8f0cf}
 .trail.ended{stroke:#3ecf8e;stroke-dasharray:4 4;stroke-opacity:.8}
@@ -2520,7 +2522,11 @@ function buildMarker(m){
   const hist=document.createElementNS('http://www.w3.org/2000/svg','g'); hist.setAttribute('class','trail hist');
   return {g,trail,hist,gk};
 }
+// 1.58.42: a course a post stated (orientOf's test) — without one, and no `face`, a missile has no front (glyphs.js)
+const statedHdg=m=>m.heading!=null&&!!(m.evidence&&m.evidence.heading&&m.evidence.heading.confidence&&m.evidence.heading.confidence!=='none');
+const wpnGlyph=m=>GLYPH_BY_TYPE[m.type]||'missile';
 const glyphKey=m=>m.status?m.status
+  :(!asDrone(m)&&noFront(wpnGlyph(m),m,statedHdg(m)))?'nofront'
   // Night mode: plain arrows, not silhouettes. A detailed shape needs more light to resolve than an arrow
   // does, and in the dark it resolves to a grey blob anyway. The type is still on the label and in the
   // panel; what the arrow has to carry is only "something is there, going that way".
@@ -3397,7 +3403,7 @@ const gIco=(k,col,cls)=>`<svg class="gico" viewBox="-14 -14 28 28" aria-hidden="
 // an official threat type as its silhouette (a type with none — air defence, "Kyiv", "clear" — gets no icon)
 const thrIco=(ty,col)=>{ const g=GLYPH_BY_TYPE[ty]; if(!g) return '';
   return gIco(g,col||(ty==='drones'?'#ff8a3d':/aircraft|mig31k|guided_aerial_bombs/.test(ty)?'#b07cff':'#ff5b52'),ty==='ballistic_missiles'?'bal':ty==='supersonic_missiles'?'sup':''); };
-function silSvg(m,col){ const k=glyphKey(m)==='arrow'?(((m.type==='drones'||asDrone(m))&&m.jet)?'jetdrone':asDrone(m)?'drone':(GLYPH_BY_TYPE[m.type]||'missile')):glyphKey(m);
+function silSvg(m,col){ const k=/^(arrow|nofront)$/.test(glyphKey(m))?(((m.type==='drones'||asDrone(m))&&m.jet)?'jetdrone':asDrone(m)?'drone':(GLYPH_BY_TYPE[m.type]||'missile')):glyphKey(m);
   const cls='sil'+(((m.type==='drones'&&m.jet)||m.type==='banderol_missiles')?' jet':'')+(m.type==='ballistic_missiles'?' bal':'')+(m.type==='supersonic_missiles'?' sup':'');
   return `<svg viewBox="-14 -14 28 28" aria-hidden="true"><g class="${cls}" style="--c:${col||KIND_COL(m)}">${G[k]||''}</g></svg>`; }
 const NEAR_MAX=350;     // km — the Near list: the reader's region, not the country

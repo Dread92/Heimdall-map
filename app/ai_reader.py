@@ -25,7 +25,7 @@ import urllib.request
 from collections import OrderedDict, deque
 from datetime import datetime, timezone
 
-PROMPT_VERSION = "4"     # 1.52: where it is AND where it is going; the channels' emoji; bare names; alerts are not targets
+PROMPT_VERSION = "5"     # 1.52: where it is AND where it is going; bare names; alerts are not targets; 1.58.42: no emoji is a weapon
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 DEFAULT_MODEL = "anthropic/claude-haiku-5.5"
 MAX_CANDIDATES = 30
@@ -45,8 +45,9 @@ KIND_OK = {"shahed": {"drones"}, "jet_drone": {"drones", "banderol_missiles"}, "
            "cruise_missile": {"cruise_missiles"}, "ballistic_missile": {"ballistic_missiles"},
            "missile": {"cruise_missiles", "ballistic_missiles", "unspecified_missiles", "supersonic_missiles", "banderol_missiles"},
            "guided_bomb": {"guided_aerial_bombs"}, "aircraft": {"tactic_aircraft_activity"}}
-# 1.52: the channels' own shorthand for a weapon — an emoji is a quote of its own
-EMOJI_KIND = {"🛵": "shahed", "🏍": "jet_drone", "🏍️": "jet_drone", "🛸": "drone", "🚀": "missile", "💣": "guided_bomb"}
+# 1.52 took the channels' emoji for a weapon (🛵 a Shahed, 🚀 a missile, 💣 a KAB …). 1.58.42, the owner: "stop using the
+# emojis to determine the nature of the threat — the rocket / cruise missile emoji is very commonly used for jet drones".
+# A weapon is quoted in words, or it is unknown.
 # a long run of digits — a card number in a fundraising line — never leaves the server and is never stored here
 _CARD_RX = re.compile(r"(?<!\d)(?:\d[ \-]?){12,18}\d(?!\d)")
 
@@ -69,7 +70,7 @@ Rules:
    - "північніше X", "на півночі від X", "за 20 км на північ від X" = side_of X (side n; distance_km 20 only if written);
    - an oblast only ("на Київщині", "Сумщина", "в Черкаській області") = in_oblast, with the oblast's o-id.
 5. A city named with no place in it ("над Києвом", "околиці Києва", "правий берег Києва") is the city itself (relation at, the city's id). Never pick a district or a street the post does not name.
-6. Weapons, by the post's words or the channel's emoji (the emoji is the quote): "🛵", "шахед", "герань", "мопед", "ударний БпЛА" = shahed; "🏍" = jet_drone; "🛸" = drone; "🚀" or "ракета" of no stated kind = missile; "💣" = guided_bomb; "реактивний", "реактив", "реактивний БпЛА/дрон", "Бандерол" = jet_drone (Banderol is a jet drone, never a cruise missile); "БпЛА", "дрон" of no stated kind = drone; "крилата ракета", "Калібр", "Х-101", "Х-55" = cruise_missile; "балістика", "балістична", "Іскандер", "КН-23" = ballistic_missile; "КАБ", "керовані авіабомби" = guided_bomb; "тактична авіація", "МіГ", "Су-34" = aircraft; nothing said ("ціль", "увага") = unknown.
+6. Weapons, by the post's words only — never by an emoji (the channels put 🚀 on jet drones; 🛵, 🏍, 🛸, 💣 alone are kind unknown): "шахед", "герань", "мопед", "ударний БпЛА" = shahed; "ракета" of no stated kind = missile; "реактивний", "реактив", "реактивний БпЛА/дрон", "Бандерол" = jet_drone (Banderol is a jet drone, never a cruise missile); "БпЛА", "дрон" of no stated kind = drone; "крилата ракета", "Калібр", "Х-101", "Х-55" = cruise_missile; "балістика", "балістична", "Іскандер", "КН-23" = ballistic_missile; "КАБ", "керовані авіабомби" = guided_bomb; "тактична авіація", "МіГ", "Су-34" = aircraft; nothing said ("ціль", "увага") = unknown.
 7. Status only when stated: "збито", "знищено", "мінус", "мінуснули", "приземлили" (of a target) = shot_down; "вибух", "вибухи", "приліт", "влучання" = impact; "втрачено контакт", "зник", "не фіксується" = lost; otherwise in_flight.
 8. One entry per target or group, in the order of the post. A count only if written ("2 шахеди", "група з 5", "×3"; "кілька", "група" alone are not a number).
 9. Origin: where the post says the target comes from, outside the places above — a direction ("з півночі" = n, "з південного сходу" = se) or a country or area ("з Білорусі", "з території РБ" = belarus; "з Росії", "з Брянщини", "з Курщини", "з боку Бєлгорода" = russia; "з моря", "з акваторії Чорного моря" = sea; "з Криму" = crimea; "з окупованих територій", "з ТОТ" = occupied). A Ukrainian oblast or town it comes from is relation from that place, never an origin.
@@ -203,16 +204,16 @@ EXAMPLES = [
      "c1 | Бортничі | м. Київ\no31 | м. Київ", [], ["#07 · Shahed · heading to Бортничі · @kyiv_airdef 22:10"],
      {"targets": [_t(kind="unknown", place_id="c1", place_quote="на Бортничі", relation="heading_to",
                      vertical="descending", vertical_quote="знижується", same_as="#07")], "uncertain": None}),
-    # 1.52: where it is and where it is going, both; the channel's emoji is the weapon
+    # 1.52: where it is and where it is going, both; the weapon is in the words ("Реактивний БпЛА"), never the 🏍
     (channel_block("kpszsu"), [], "🏍 Реактивний БпЛА на Житомирщині в напрямку Коростеня",
      "c1 | Коростень | Житомирська область\no10 | Житомирська область", ["drone · heading to Коростень"], [],
      {"targets": [_t(kind="jet_drone", kind_quote="Реактивний БпЛА", place_id="o10", place_quote="на Житомирщині",
                      relation="in_oblast", toward_id="c1", toward_quote="в напрямку Коростеня")], "uncertain": None}),
     (channel_block("eRadarrua", None, ["Київська область"]), [], "🛵 Наливайківка\n\n🛵 2 повз Бородянку на Ворзель",
      "c1 | Наливайківка | Київська область\nc2 | Бородянка | Київська область\nc3 | Ворзель | Київська область\no14 | Київська область",
-     ["drone · at Наливайківка", "drone ×2 · at Бородянка"], [],
-     {"targets": [_t(kind="shahed", kind_quote="🛵", place_id="c1", place_quote="Наливайківка", relation="at"),
-                  _t(kind="shahed", kind_quote="🛵", count=2, count_quote="2 повз", place_id="c2", place_quote="повз Бородянку",
+     ["unknown · at Наливайківка", "unknown ×2 · at Бородянка"], [],
+     {"targets": [_t(kind="unknown", place_id="c1", place_quote="Наливайківка", relation="at"),
+                  _t(kind="unknown", count=2, count_quote="2 повз", place_id="c2", place_quote="повз Бородянку",
                      relation="near", toward_id="c3", toward_quote="на Ворзель")], "uncertain": None}),
     # an official alert message names a district and a threat: it is an alert, not a target
     (channel_block("trevoga_kartaa_noviny"), [], "🚨Повітряна тривога · жовтий рівень🟡\nБучанський р-н\nДронова загроза",
@@ -403,14 +404,14 @@ def validate(out, text, cands, tags=()):
     nt = _norm(text)
     ids = {c[0]: c for c in cands}
     ok = lambda q: bool(q) and len(_norm(q)) >= 2 and _norm(q) in nt      # noqa: E731
-    emo = lambda q: bool(q) and q.strip() in EMOJI_KIND and q.strip() in text    # noqa: E731  (1.52: 🛵 is a quote)
     dropped, res = 0, []
     for raw in (out or {}).get("targets") or []:
         if not isinstance(raw, dict):
             dropped += 1
             continue
         t = unwire(raw)
-        if t["kind"] not in KINDS or (t["kind"] != "unknown" and not (ok(t["kind_quote"]) or emo(t["kind_quote"]))):
+        # 1.58.42: a quote of words — an emoji is no weapon (ok() needs two characters of the post's words)
+        if t["kind"] not in KINDS or (t["kind"] != "unknown" and not (ok(t["kind_quote"]) and re.search(r"\w{2}", t["kind_quote"] or ""))):
             dropped += t["kind"] != "unknown"
             t["kind"], t["kind_quote"] = "unknown", None
         if t["status"] not in STATUSES or (t["status"] != "in_flight" and not ok(t["status_quote"])):
@@ -657,7 +658,7 @@ def _why(e):
 # the oblast they concern, with what the rules drew from each and what the map shows in each oblast — and answers only
 # where the rules are wrong or incomplete (FINDINGS), with a short NOTE per oblast. The rules stay the reader; the
 # check is the second opinion, ten minutes late at most.
-CHECK_VERSION = "5"
+CHECK_VERSION = "6"     # 1.58.42: no emoji is a weapon
 FINDINGS = ["missed", "place", "weapon", "outcome", "not_sky", "facts"]
 # 1.53.1: 60 posts made answers past 6,000 tokens on a busy night ("cut off at 6000 tokens", 9 Oct): 30 a call, room
 # for 12,000, the notes first, and what came complete of an answer cut off is kept (salvage_check)
@@ -765,7 +766,7 @@ CHECK_EXAMPLE = (
                ["drone · in oblast 14"], ["o14"]),
             _p("p3", "22:14", "kpszsu", "2 шахеди з півночі на Бровари", ["drone ×2 · heading to Бровари · from n"], ["c2", "o14"]),
             _p("p4", "22:15", "eRadarrua", "🛵 Наливайківка\n\n🛵 2 повз Бородянку на Ворзель",
-               ["drone · at Наливайківка", "drone ×2 · at Бородянка"], ["c3", "c4", "c5", "o14"], None, ["Київська область"])]),
+               ["unknown · at Наливайківка", "unknown ×2 · at Бородянка"], ["c3", "c4", "c5", "o14"], None, ["Київська область"])]),
         ("o5", "Рівненська область", ["#04 · drone · heading to Сарни · @rivne_radar 22:05"], [
             _p("p5", "22:17", "rivne_radar", "Тепер на Висоцьк", None, ["c6", "c7"], "Рівненська область", ["Рівненська область"])]),
         ("o10", "Житомирська область", [], [
@@ -781,7 +782,7 @@ CHECK_EXAMPLE = (
                       vertical="descending", vertical_quote="знижується", same_as="#07")},
         {"post": "p2", "finding": "not_sky", "why": "an official alert message, not a target", "target": _t()},
         {"post": "p4", "finding": "facts", "why": "the course to Vorzel", "target": _t(
-            kind="shahed", kind_quote="🛵", count=2, count_quote="2 повз", place_id="c4", place_quote="повз Бородянку",
+            kind="unknown", count=2, count_quote="2 повз", place_id="c4", place_quote="повз Бородянку",
             relation="near", toward_id="c5", toward_quote="на Ворзель")},
         {"post": "p5", "finding": "missed", "why": "the tracker's next point (its own oblast's Vysotsk), set aside by the server",
          "target": _t(kind="unknown", place_id="c6", place_quote="на Висоцьк", relation="heading_to", same_as="#04")},

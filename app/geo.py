@@ -301,14 +301,16 @@ TYPE_RX = [
                           # 1.58.31, the owner: "when they write «останній» in the masculine, it's always a drone (a Shahed);
                           # «остання» in the feminine is a missile" — "останній троя, тец-6🚀 знижує висоту" (@kievinfo_kyiv)
                           r"(?<![а-яіїєґ'])останн(?:ій|ього|ьому)\b(?!\s+(?:раз|час|день|дн|тиж|місяц|рік|рок|момент|відбій|допис|пост|новин|вибух|сигнал))", re.I)),
-    # A bare rocket emoji means "a missile" on these channels, not "a ballistic missile". Reading it as
-    # ballistic gave the loudest treatment in the app — white spike, one-second refresh — to an emoji.
-    # 1.58.31: and the feminine "остання" — the trackers' word for the last missile (ракета) — read like the emoji: a
-    # missile only when one was reported (MSL_WEAK_RX, server State._msl_context)
-    ("unspecified_missiles", re.compile(r"\U0001f680|" + _OSTANNIA, re.I)),                       # 🚀
-    ("guided_aerial_bombs", re.compile(r"\U0001f4a3", re.I)),                                  # 💣
-    ("drones", re.compile(r"[\U0001f6f8\U0001f6f5\U0001f3cd\U0001f6f5\U0001f681]|\U0001f17f", re.I)),   # 🛸 🛵 🏍 🚁 🅿 — the channels' shorthand for a strike drone
+    # 1.58.31: the feminine "остання" — the trackers' word for the last missile (ракета): a missile only when one was
+    # reported (MSL_WEAK_RX, server State._msl_context)
+    ("unspecified_missiles", re.compile(_OSTANNIA, re.I)),
+    # 1.58.42, the owner: "stop using the emojis to determine the nature of the threat — the rocket / cruise missile emoji
+    # is very commonly used for jet drones". No emoji is a weapon any more (🚀 was "a missile", 💣 a KAB, 🛵 🛸 🏍 🚁 🅿 a
+    # drone): the words say what it is, and a sign alone says only that a target is reported (WEAPON_SIGN_RX).
 ]
+# 1.58.42: the signs that were types — 🚀 💣 🛸 🛵 🏍 🚁 🅿. A post that carries one still reports a target (the same posts
+# make marks as before), of a type only its words can say; with none, of no stated type ("probably a drone", 1.54.8).
+WEAPON_SIGN_RX = re.compile("[\U0001f680\U0001f4a3\U0001f6f8\U0001f6f5\U0001f3cd\U0001f681\U0001f17f]")
 # 1.58.31, the owner (15 Oct 2026, 08:58 — a "missile" over Troieshchyna under the state's yellow, drone-threat level):
 # "even propeller drones, jet drones or super high-speed UAVs are still DRONES, not missiles … if the parser hasn't found
 # any messages in the channels about missile launches, ballistics, or MiG-31K takeoffs, the system shouldn't have the
@@ -316,7 +318,7 @@ TYPE_RX = [
 # the Air Force on a KAB), "швидкісна ціль", the feminine "остання" — is a missile only while one was reported (the server's
 # State._msl_context); a word that names one is one: ракета, КР, крилата, балістика, Калібр, Х-101, Іскандер, Кинджал, a
 # MiG-31K, a strategic bomber. A Banderol is a jet drone (its "реактивна ракета" names no missile).
-MSL_WEAK_RX = re.compile(r"\U0001f680|швидкісн\w*\s+ціл|" + _OSTANNIA, re.I)
+MSL_WEAK_RX = re.compile(r"швидкісн\w*\s+ціл|" + _OSTANNIA, re.I)          # 1.58.42: no 🚀 — the trackers put it on jet drones
 MSL_NAMED_RX = re.compile(r"баліст|іскандер|кінжал|к[иі]нджал|х-?47|kn-?23|х-?22|х-?32|надзвуков|крилат|калібр|калиб|х-?101|"
                           r"х-?555|х-?59|х-?69|(?<![а-яіїєґ'])ракет|(?<![\w.])кр(?![\w.])(?!\s*р[іи]г)|м[іи]г\w{0,3}\s?-?\s?31|ту-?95|ту-?160|ту-?22", re.I)
 # the Air Force's own word for a ballistic or aeroballistic missile ("🚀 Швидкісна ціль на Дніпропетровщині") — its jet
@@ -327,8 +329,8 @@ MISSILE_KINDS = frozenset({"ballistic_missiles", "cruise_missiles", "supersonic_
 
 
 def missile_said(text, channel=None):
-    """"named" — the post names a missile (or the Air Force says "швидкісна ціль"); "weak" — it only suggests one (🚀,
-    "швидкісна ціль", "остання"); None — neither."""
+    """"named" — the post names a missile (or the Air Force says "швидкісна ціль"); "weak" — it only suggests one
+    ("швидкісна ціль", "остання"; 1.58.42: never an emoji); None — neither."""
     t = text or ""
     for _n, rx in TYPE_RX:
         if _n == "banderol_missiles":
@@ -1863,7 +1865,7 @@ def parse_post(text, home=None):
             type_ev = {"matched": mm.group(0), "method": "keyword"}
             break
     likely = None
-    if not mtype and (COUNT_RX.search(t) or "🅿" in text or "⚠" in text or "‼" in text or parse_altitude(t)) and not re.search(r"чисто|збит|знищен|мінус", t):
+    if not mtype and (COUNT_RX.search(t) or WEAPON_SIGN_RX.search(text) or "⚠" in text or "‼" in text or parse_altitude(t)) and not re.search(r"чисто|збит|знищен|мінус", t):
         mtype = "unknown"
         # the type is not stated, but a height or a bare count on these channels almost always means a drone:
         # carried as a likelihood, never as the type itself
@@ -1886,7 +1888,7 @@ def parse_post(text, home=None):
     # 3.5 km. The whole post's height is a single target's only (after the loop).
     _alt_below = {}
     for _i, _s in enumerate(segs):
-        if _i and len(_s.split()) <= 5 and not any(rx.search(_s) for _, rx in TYPE_RX):
+        if _i and len(_s.split()) <= 5 and not any(rx.search(_s) for _, rx in TYPE_RX) and not WEAPON_SIGN_RX.search(_s):
             _a = parse_altitude(_s)
             if _a and _a.get("m"):
                 _alt_below[_i - 1] = _a
@@ -1926,7 +1928,7 @@ def parse_post(text, home=None):
             continue
         # 1.45: a line with no place, no oblast and no weapon of its own ("‼️Увага!", "Від нас — всі ліквідовані") is not a
         # report: now that the lines of a post stay apart, it must not become one more mark at the oblast's centre
-        if not places and not seg_obl and not any(rx.search(seg) for _, rx in TYPE_RX):
+        if not places and not seg_obl and not any(rx.search(seg) for _, rx in TYPE_RX) and not WEAPON_SIGN_RX.search(seg):
             continue
         # split at course keyword
         class _M:  # pseudo-match at a position
@@ -2132,7 +2134,14 @@ def parse_post(text, home=None):
     return markers
 
 
-ARROW_TYPE = {"✈": "drones", "🛵": "drones", "🏍": "drones", "🚀": "cruise_missiles", "💣": "guided_aerial_bombs", "🛩": "tactic_aircraft_activity", "🎯": "ballistic_missiles"}
+# 1.58.42: its icons (✈ 🛵 🏍 a drone, 🚀 a cruise missile, 💣 a KAB, 🛩 aviation, 🎯 a ballistic missile) are no type any
+# more — the owner: the rocket is "very commonly used for jet drones". The words of the line, or of its heading, say it.
+def _words_type(s):
+    for n, rx in TYPE_RX:
+        mm = rx.search(s or "")
+        if mm:
+            return n, mm.group(0)
+    return None, None
 
 
 def parse_arrows(text):
@@ -2142,16 +2151,16 @@ def parse_arrows(text):
     if "→" not in t and "➡" not in t:
         return []
     out = []
-    cur_type = "drones"
+    cur_type, cur_word = None, None
     cur_obl = None
     cur_head = ""
     for raw in re.split(r"\n|;", t):
         line = raw.strip(" .")
         if not line:
             continue
-        for ch, ty in ARROW_TYPE.items():
-            if ch in line:
-                cur_type = ty
+        wt, ww = _words_type(line)
+        if wt:
+            cur_type, cur_word = wt, ww
         head = re.sub(r"[→➡].*", "", line)
         o = _find_oblast(head, positional=True)
         if o and line.rstrip().endswith(":") or (o and "→" not in line and "➡" not in line):
@@ -2201,14 +2210,17 @@ def parse_arrows(text):
                 heading = bearing(lon, lat, to[2], to[3])
             elif "р-н" in parts[1] or "район" in parts[1]:
                 tgt = None
-        ev = {"segment": (cur_head + " " + line.strip()).strip(), "type": {"matched": [c for c in ARROW_TYPE if c in line][:1] or ["✈️ default"], "method": "channel icon convention (✈️ = strike UAV)"},
+        ev = {"segment": (cur_head + " " + line.strip()).strip(),
+              "type": ({"matched": cur_word, "method": "keyword"} if cur_type else
+                       {"matched": None, "method": "the post does not say what it is (its icons are no type: 1.58.42)", "confidence": "none"}),
               "position": dict({"matched": parts[0], "place": where,
                                 "method": "town in gazetteer" if pl else "the part of the oblast the channel named (no town given)" if quad else "oblast centre (town not in gazetteer)",
                                 "confidence": "high" if pl else "low"}, **({"quad": quad} if quad else {})),
               "heading": ({"matched": "→ " + parts[1], "method": "bearing from first to second place of the 'A/B' pair", "confidence": "high"} if heading is not None else {"matched": None, "method": "single place, no direction pair", "confidence": "none"}),
               "count": ({"matched": mc.group(0), "method": "number in brackets"} if mc else None)}
-        out.append({"type": cur_type, "lon": round(lon, 3), "lat": round(lat, 3), "heading": None if heading is None else round(heading),
-                    "place": where, "target": tgt, "count": cnt, "jet": False, "evidence": ev, "oblast_uid": (obl[1] if obl else PLACES.get(where, (0, 0, None))[2] if where else None)})
+        out.append({"type": cur_type or "unknown", "lon": round(lon, 3), "lat": round(lat, 3), "heading": None if heading is None else round(heading),
+                    "place": where, "target": tgt, "count": cnt, "jet": bool(cur_word and JET_RX.search(cur_word)), "evidence": ev,
+                    "likely": None if cur_type else "drones", "oblast_uid": (obl[1] if obl else PLACES.get(where, (0, 0, None))[2] if where else None)})
     return out
 
 
@@ -2218,7 +2230,6 @@ def parse_kyiv_airdef(text):
 
 _HYPH_RX = re.compile(r"([а-яіїєґ']+)\s+[-–]\s+([а-яіїєґ']+)")
 _ROUTE_RX = re.compile(r"^\W*([а-яіїєґ' ]+?)\s+[-–→]\s+([а-яіїєґ' ]+?)(?=\s|$|[.,!])")
-_PLANE_RX = re.compile("\u2708")          # ✈
 
 
 def _join_hyphenated(t):
@@ -2341,13 +2352,8 @@ def _parse_live(text, uid):
         if rx.search(t):
             mtype = n
             break
-    # A bare place name on a live-tracking channel says WHERE, not WHAT: shown as an unspecified threat.
-    # Except ✈️: these channels prefix every drone report with it ("✈️Новий БпЛА з Чернігівщини", "БпЛА на
-    # Бориспіль✈️"), so on them it is the type, written as a symbol. Not globally — elsewhere ✈️ also marks
-    # aviation, and "✈️ активність авіації" read as a Shahed would be a type nobody stated.
-    plane = mtype is None and bool(_PLANE_RX.search(text)) and not re.search(r"авіац|літак|борт", t)
-    if plane:
-        mtype = "drones"
+    # A bare place name on a live-tracking channel says WHERE, not WHAT: shown as an unspecified threat. 1.58.42: its ✈️
+    # too — it was these channels' sign for a drone report, read as the type; no emoji is a type any more.
     stated = mtype is not None
     mtype = mtype or "unknown"
     cnt = None
@@ -2393,8 +2399,7 @@ def _parse_live(text, uid):
             blon, blat, _ = PLACES[bname]
             heading = round(bearing(lon, lat, blon, blat))
             hev = {"matched": rm.group(0).strip(), "method": "route written 'A - B' in the post: at A, heading for B", "confidence": "medium"}
-    kind_ev = ("keyword" if (stated and not plane) else
-               "✈️ — this channel's mark for a drone report" if plane else
+    kind_ev = ("keyword" if stated else
                "the post names only a place — this channel tracks strike drones, but it did not say so here")
     return [{"type": mtype, "status": st, "lon": round(lon, 3), "lat": round(lat, 3), "heading": heading,
              "place": ("→ " + name) if dest_only else name, "target": target, "count": cnt,
@@ -2402,7 +2407,7 @@ def _parse_live(text, uid):
              **({"targets": listed} if dest_only and len(listed) > 1 else {}),
              "alt": alt,
              "jet": bool(JET_RX.search(t)), "oblast_uid": uid, "live": True, "likely": (None if stated else "drones"),
-             "evidence": {"segment": t.strip(), "type": {"matched": ("✈️" if plane else "(none)"), "method": kind_ev, "confidence": ("high" if (stated and not plane) else "medium" if plane else "none")},
+             "evidence": {"segment": t.strip(), "type": {"matched": "(none)", "method": kind_ev, "confidence": ("high" if stated else "none")},
                           "position": pos_ev,
                           "heading": hev, "count": None}}]
 
@@ -2495,7 +2500,7 @@ NIK_LIST_MIN = 5       # the list's lines this many minutes older than its newes
 
 
 def _nik_clean(s):
-    """A line as the parser reads it: no time, no pictograms but the channels' signs for a weapon (🛵 🛸 🚀 💣 …), the
+    """A line as the parser reads it: no time, no pictograms but the channels' signs for a target (🛵 🛸 🚀 💣 …), the
     channel's abbreviations spelled out, and no threat it says was lifted ("Загрозу балістики зняли")."""
     for rx, full in NIK_ABBR:
         s = rx.sub(full, s)
@@ -2642,7 +2647,9 @@ def parse_nikalert(text):
             where = _nik_clean(mt.group(4))
             if not where or re.search(r"(?<![а-яіїєґ'])тг\b|громад", _norm(where)):
                 continue
-            got = [m for m in _parse_live(f"{kind} {where}", "9") if m.get("oblast_uid") == "9" and m.get("type") not in (None, "unknown")]
+            # 1.58.42: a sign (🛵) still says a target is reported — of no stated type now
+            got = [m for m in _parse_live(f"{kind} {where}", "9") if m.get("oblast_uid") == "9"
+                   and (m.get("type") not in (None, "unknown") or WEAPON_SIGN_RX.search(kind))]
             if got:
                 ms = got[:1]
                 break
@@ -2658,7 +2665,7 @@ def parse_nikalert(text):
         if nik and not any(m.get("lon") is not None for m in ms):
             # "Нкпл: 🟠 17:42 Увага! Атака ударних БпЛА" — no place of its own: the heading's, Nikopol
             ms = _parse_live("Нікополь: " + own, "9")
-        ms = [m for m in ms if not nik or m.get("type") not in (None, "unknown")]
+        ms = [m for m in ms if not nik or m.get("type") not in (None, "unknown") or WEAPON_SIGN_RX.search(own)]
     return [m for m in _nik_near(ms, anchor) if m.get("oblast_uid") == "9"]
 
 

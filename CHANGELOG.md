@@ -2,6 +2,23 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.42 — 2026-10-21
+
+No emoji says what a threat is; a missile with no course is drawn with no nose.
+
+- **Changed: words only.** The owner: "stop using the emojis to determine the nature of the threat, because it is very
+  common for the rocket / cruise missile emoji to be used for jet drones" (picked: no emoji at all). 🚀 was "a
+  missile" (and a hint of one), 💣 a KAB, 🛵 🛸 🏍 🚁 🅿 a drone, the arrows channel's ✈️ / 🎯 a drone / a ballistic
+  missile, the bare-name channels' ✈️ a drone; the AI reader took them as quotes. Now the words of the post say it
+  (`geo.TYPE_RX`, `MSL_WEAK_RX`, `parse_arrows`, the AI reader's prompt 5). A sign alone still says a target is
+  reported (`WEAPON_SIGN_RX`): the same posts make marks, "probably a drone" (or "drone or missile" while one is
+  reported). A tracker's sign-only report now continues only its own channel's track, like a bare place name.
+- **Changed: no course, no front.** The owner, of a ballistic missile "в напрямку Києва" drawn nose-up on Kyiv: "how to
+  rotate the missile like a direction it takes usually?" — picked: no direction at all (a usual side is a trajectory no
+  post stated). A missile, a Banderol or a guided bomb with no course stated and no track to face along is a disc with
+  a "?" in its weapon's colour (`nofront`, `static/glyphs.js`) on the Tactical map, Light's radar and the channel's
+  picture; the label, the card and the lists keep its silhouette.
+
 ## 1.58.41 — 2026-10-21
 
 A target heading for Kyiv is drawn outside the city, on the side the post named; "from the north" is always a course

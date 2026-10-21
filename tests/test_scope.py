@@ -116,7 +116,7 @@ def test_a_route_written_a_dash_b_gives_the_heading():
 
 
 def test_koncha_zaspa_is_one_place_not_a_route():
-    assert _read("✈️Конча - Заспа") == [("drones", "Конча-Заспа", None)]
+    assert _read("✈️Конча - Заспа") == [("unknown", "Конча-Заспа", None)]     # 1.58.42: ✈️ is no type
 
 
 def test_two_places_on_two_lines_are_two_drones():
@@ -124,8 +124,9 @@ def test_two_places_on_two_lines_are_two_drones():
     assert [g[1] for g in got] == ["Вишневе", "Нові Петрівці"]
 
 
-def test_the_plane_emoji_is_a_drone_only_on_the_live_channels():
-    assert _read("✈️Соломʼянка")[0][0] == "drones"
+def test_the_plane_emoji_is_no_type_any_more():
+    # 1.58.42 (it was these channels' sign for a drone report): the owner, "stop using the emojis" for the type
+    assert _read("✈️Соломʼянка")[0][0] == "unknown"
     assert _read("✈️ Активність авіації на півночі") == [], "aviation activity was read as a Shahed"
 
 

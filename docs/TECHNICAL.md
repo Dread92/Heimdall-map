@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-21 (1.58.41)
+**Documented version: 1.58** · last updated 2026-10-21 (1.58.42)
 
 The repository is **Dread92/Heimdall-map**. The app's address is **https://heimdall.com.ua** (1.58.34, 18 October
 2026); the Fly app keeps its first name, `kyiv-air-watch-gb`, and its first address keeps working (§15 has the move).
@@ -676,10 +676,10 @@ in the masculine is always a drone (a Shahed); «остання» in the feminin
 - **Words.** `geo.missile_said(text, channel)`: `"named"` — the post names a missile (`MSL_NAMED_RX`: ракета, КР,
   крилата, балістика, Калібр, Х-101 / 555 / 59 / 69 / 22 / 32 / 47, Іскандер, Кинджал, надзвукова, a MiG-31K, a Tu-95 /
   Tu-160 / Tu-22M3), or it is the Air Force's "швидкісна ціль" (`MSL_AF_CHANNELS` = kpszsu: its jet drones are "🏍
-  Реактивний БпЛА"); `"weak"` — it only suggests one (`MSL_WEAK_RX`: 🚀 — the Kyiv trackers put it on a Shahed, the Air
-  Force on a KAB — "швидкісна ціль" from anyone else, the feminine "остання"); a Banderol's "реактивна ракета" names no
+  Реактивний БпЛА"); `"weak"` — it only suggests one (`MSL_WEAK_RX`: "швидкісна ціль" from anyone else, the feminine
+  "остання"; 🚀 until 1.58.42 — no emoji suggests anything now); a Banderol's "реактивна ракета" names no
   missile (a jet drone). `TYPE_RX`: "останній / останнього / останньому" is a drone (not "останній раз / день / вибух /
-  відбій …"); "остання" reads like 🚀 (not "остання група / хвиля / інформація …"); "КР" is a cruise missile (not
+  відбій …"); "остання" is a weak missile (not "остання група / хвиля / інформація …"); "КР" is a cruise missile (not
   "Кр.Ріг"), counted ("2 КР"). `parse_for_channel` flags a missile mark of a "weak" post `msl_weak`.
 - **The rule** (`State._msl_context`, `State._msl_gate`, in `_marks_from_posts`, the live map and the replay alike): a
   `msl_weak` mark is a missile while a missile was reported — a "named" post of any channel, any oblast, within
@@ -710,6 +710,16 @@ block for every value:
 - **Type** — `TYPE_RX`: drones (Shahed / Geran / "мопед"), jet drones, cruise, ballistic, supersonic
   (Kh-22/32, before cruise), `banderol_missiles` (Banderol / S-8000 / "реактивні ракети з БпЛА"), KAB, tactical
   and strategic aviation, MiG-31K. No type word → `unknown` (drawn as an upright ⚠, never guessed).
+  **1.58.42: words only.** The owner: "stop using the emojis to determine the nature of the threat, because it is very
+  common for the rocket / cruise missile emoji to be used for jet drones" (picked: no emoji at all). `TYPE_RX` holds no
+  emoji any more (🚀 was `unspecified_missiles`, 💣 a KAB, 🛵 🛸 🏍 🚁 🅿 a drone), nor `MSL_WEAK_RX` (🚀); the arrows
+  channel (`parse_arrows`) reads its lines' words (`_words_type`), not its icons (`ARROW_TYPE`, gone: ✈ 🛵 🏍 a drone,
+  🚀 cruise, 💣 KAB, 🛩 aviation, 🎯 ballistic), else `unknown` with `likely: "drones"`; the bare-name channels' ✈️ is no
+  drone (`_PLANE_RX`, gone). `WEAPON_SIGN_RX` (🚀 💣 🛸 🛵 🏍 🚁 🅿) keeps what the signs did besides: a post that carries
+  one still reports a target (`_parse_live`'s untyped-target test, its height-line and empty-line tests, the Nikopol
+  channel's own posts), of no stated type — the same posts make marks as before. The AI reader too (prompt 5, check
+  6): a weapon is quoted in words (`validate`), `EMOJI_KIND` is gone. A tracker's sign-only report is now a bare
+  name like any other: it continues its own channel's drone track (1.58.29) but not another channel's.
 - **Position** — the gazetteer with declension-aware stems (hyphen lookbehind: `Коцюбинське` ≠
   `Михайло-Коцюбинське`); aliases like "Велика Димерка" ← "димерк"; a stated part of an oblast is not its centre.
   1.56.3: the core gazetteer's coordinates (`geo.PLACES`, written by hand) checked against OpenStreetMap's settlements
@@ -1346,8 +1356,9 @@ its halo and heads its label with "AI", and its card says the AI placed it from 
 What the first 54 real readings showed (dashboard, 9 Oct) and 1.52 changed:
 
 - the prompt (version 4): **two places per target** — where it is (`place_id`) and where it is going (`toward_id`;
-  only the latter → it is the place, `heading_to`); the channels' **emoji** are weapons and quotes (`EMOJI_KIND`:
-  🛵 Shahed, 🏍 jet, 🛸 drone, 🚀 missile, 💣 guided bomb); a tracker's **bare place name** is a target at it; "н.п. X"
+  only the latter → it is the place, `heading_to`); the channels' **emoji** were weapons and quotes (`EMOJI_KIND`:
+  🛵 Shahed, 🏍 jet, 🛸 drone, 🚀 missile, 💣 guided bomb — 1.58.42: no more, prompt 5: words only); a tracker's
+  **bare place name** is a target at it; "н.п. X"
   after an oblast is at X; "повз X" is near X; an **official alert message** is not a target; "спускається" is a
   descent; a `missile` of no stated kind;
 - the candidates: **a looser match** (`fuzzy_places`) among the oblasts in play (Kyiv oblast for the Kyiv channels) —
@@ -2289,6 +2300,14 @@ Main parts:
   and `face_by: "track"`; it comes before the way into Ukraine (`face_of`: `track_face`, else `inward_face`), and never
   points back across the border (`outward`). The glyph only, as above — no ray, no heading, no ETA — and the card says
   why (`face_track`). The replay keeps its own rule: a stated course or upright;
+- **1.58.42, no course, no front** (the owner, of a ballistic missile "в напрямку Києва" drawn nose-up on Kyiv: "how to
+  rotate the missile like a direction it takes usually?" — picked: no direction at all; a usual side would be a
+  trajectory no post stated): a missile, a Banderol or a guided bomb (`NOFRONT` in `static/glyphs.js`: the ballistic,
+  missile, supersonic, Banderol and bomb silhouettes) whose post gave no course and that has no `face` is the glyph
+  **`nofront`** — a disc (r 8.4) in its weapon's colour with a "?" (`.nfq`) — not an upright nose that reads as "heading
+  north" (`noFront(gk, m, stated)`: `glyphKey`, before the night arrows; Light's `silKey`; `mapshot.no_front` and the
+  picture's `_glyph`). Its label, the card, the lists' icons (`silSvg`, Light's `icoSvg` / `wpnKey`) keep the weapon's
+  silhouette, upright. It takes its silhouette, turned, once a post gives a course or its reports move;
 - `tick()` — marks: silhouettes per weapon (`G`, `GLYPH_BY_TYPE` from `static/glyphs.js`), turned only to a stated course (`orientOf`),
   uncertainty ring up to 25 km, 5-minute tail, labels (1.53.3: no off-screen edge indicators any more — the owner: the map has too much on it now; a target off the screen is in the Near list);
 - `threatStrip()` — the banner stack, coloured by `officialLevel()`; `idleLine()` when calm;
@@ -2417,7 +2436,8 @@ One place, what concerns it, nothing else. Built to load and be read on 2G (page
 - **Radar: 30 km** (`R_KM`), rings at 10 / 20 / 30 km, over a local map: raions shaded by alert, oblast borders,
   Kyiv's districts, rivers, main roads, towns, villages and neighbourhoods (from `/api/places`), labels placed
   without overlap. Marks are **the same silhouettes as the Tactical map** (`static/glyphs.js`): turned to a
-  course only when the post reported one (`markOrient`), upright with a "?" otherwise; the ⚠ for unknown
+  course only when the post reported one (`markOrient`), upright with a "?" otherwise (1.58.42: a missile, Banderol
+  or bomb with no course and no `face` is the `nofront` disc); the ⚠ for unknown
   types stays upright with a small orange course arrow; a dotted tail joins earlier reports; each mark
   carries its list number. The list shows the same silhouette beside each row.
 - **List**: number, type, count, distance, zone, "→ here" (stated course within 28° of the place), place,

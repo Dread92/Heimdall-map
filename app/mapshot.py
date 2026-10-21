@@ -123,6 +123,21 @@ def colour_of(m, drone_like=False):
     return (255, 32, 32), (255, 255, 255)               # a warning sign: a target of no stated type near missiles
 
 
+# 1.58.42 (glyphs.js NOFRONT / noFront): a missile, a Banderol or a guided bomb whose post gave no course and that has no
+# track to face along is a disc with a "?" — a lone missile's nose drawn upright reads as "heading north". The types whose
+# silhouette is one of NOFRONT in kyiv.html's GLYPH_BY_TYPE: every type but the drones, the unknown and the aircraft.
+NOFRONT_NOT = ("drones", "unknown", "tactic_aircraft_activity", "strategic_aircraft_activity", "mig31k_departure")
+NOFRONT_R = 8.4
+
+
+def no_front(m, drone_like=False):
+    """glyphs.js noFront: a missile's silhouette, no course a post stated, no `face`, not an outcome."""
+    if m.get("status") or drone_like or m.get("type") in NOFRONT_NOT or m.get("face") is not None:
+        return False
+    ev = (m.get("evidence") or {}).get("heading") or {}
+    return m.get("heading") is None or ev.get("confidence") in (None, "", "none")
+
+
 def orient(m, drone_like=False):
     """kyiv.html's orientOf: the silhouette turns to a course a post reported (any heading whose evidence has a
     confidence); with none, to the server's `face` (along the reported track, or into Ukraine), else north. A warning
@@ -597,6 +612,12 @@ class MapShot:
     def _glyph(self, d, m, here, sc, alpha=255, drone_like=False):
         """The silhouette of `m` at `here`, `sc` pixels a unit, turned as the app turns it."""
         fill, edge = colour_of(m, drone_like)
+        if no_front(m, drone_like):               # 1.58.42: no course stated — a disc with a "?", no front
+            r = NOFRONT_R * sc
+            d.ellipse([here[0] - r, here[1] - r, here[0] + r, here[1] + r], fill=fill + (alpha,), outline=edge, width=2 * SS)
+            fq = self.fb[min(self.fb, key=lambda s_: abs(s_ * SS - 12 * sc))]
+            d.text(here, "?", font=fq, fill=STROKE, anchor="mm")
+            return
         g = glyph_of(m, drone_like)
         rot = math.radians(orient(m, drone_like))
 

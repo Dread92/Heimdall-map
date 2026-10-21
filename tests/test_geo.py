@@ -84,9 +84,11 @@ def test_the_channel_context_is_carried_as_a_likelihood():
     assert m["evidence"]["type"]["confidence"] == "none"
 
 
-def test_the_channels_emoji_shorthand_counts_as_naming_it():
-    assert geo.parse_for_channel("kyiv_airdef", "Козин🛸")[0]["type"] == "drones"
-    assert geo.parse_for_channel("kyiv_airdef", "Козин🛸")[0]["likely"] is None
+def test_the_channels_emoji_shorthand_no_longer_names_it():
+    # 1.58.42, the owner: "stop using the emojis to determine the nature of the threat" — a sign, not a type
+    assert geo.parse_for_channel("kyiv_airdef", "Козин🛸")[0]["type"] == "unknown"
+    assert geo.parse_for_channel("kyiv_airdef", "Козин🛸")[0]["likely"] == "drones"
+    assert geo.parse_for_channel("kyiv_airdef", "БпЛА Козин🛸")[0]["type"] == "drones"
 
 
 def test_no_marker_on_a_place_the_post_declared_clear():

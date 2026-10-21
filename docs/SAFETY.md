@@ -215,6 +215,15 @@ a distance — "position not stated — on the map once that place is under aler
 it. Once the place is under alert it is drawn as before. A missile is never held: its alert follows within a minute or
 two, and a ballistic warning must never wait for it.
 
+## An emoji is not a weapon (1.58.42)
+
+The trackers' 🚀 was read as "a missile", 💣 as a KAB, 🛵 🛸 🏍 🚁 🅿 as a drone, and one channel's ✈️ and 🎯 as a drone and
+a ballistic missile. The owner: "stop using the emojis to determine the nature of the threat, because it is very common
+for the rocket / cruise missile emoji to be used for jet drones". A jet drone drawn as a missile is a wrong threat type,
+and the loudest one. Now only the words say what a target is (`TYPE_RX`, `MSL_WEAK_RX`, the arrows channel, the AI
+reader: no emoji). A sign still says that a target is reported (`WEAPON_SIGN_RX`) — the same posts make marks — of no
+stated type: "probably a drone", or "drone or missile" while a missile or a carrier is reported (the next section).
+
 ## A weapon nobody named is "probably a drone" — never "unknown", never "a drone" (1.54.8)
 
 A post that says where and not what ("Кулажинці", "лук'янівка") was shown as an unspecified threat. On a night of drones
@@ -636,6 +645,14 @@ their mass at the nose, so `rotate(heading)` means what it says.
 
 A target reported with **no course at all** gets a mark with no front. A pointed glyph left at 0° reads as
 "heading north", which is an invented heading — the one thing this app must never publish.
+
+1.58.42: **and a missile with no course is drawn with no nose at all.** The owner, of a ballistic missile "в напрямку
+Києва" drawn nose-up on Kyiv: "how to rotate the missile like a direction it takes usually?" A usual direction is what
+other missiles did on other nights (1.55: the dashboard's, never an arrow on a target) — drawn on this one it is the
+trajectory no post stated, and a missile from Crimea would be drawn coming from Bryansk. Picked: no direction at all.
+A missile, a Banderol or a guided bomb whose post gave no course, and that has no track of its own to face along, is a
+disc with a "?" (`nofront`) in its weapon's colour, on the Tactical map, Light's radar and the channel's picture; its
+label, its card and the lists still say what it is. It turns once a post gives its course.
 
 ## A heading over a list is not a sighting
 
