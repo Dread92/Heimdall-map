@@ -26,7 +26,7 @@ TRUE = {
     "Bila Tserkva airfield": (30.0244, 49.7961),
     "Ozerne airbase": (28.7383, 50.1583),
     "Trypillia TPP": (30.7467, 50.1334),
-    "Kyiv HPP dam": (30.5123, 50.5883),
+    "Kyiv HPP Dam": (30.5123, 50.5883),
     "Kyiv CHP-5": (30.5695, 50.3932),
     "Kyiv CHP-6": (30.6623, 50.5317),
     "Darnytsia TPP": (30.6429, 50.4478),
@@ -66,7 +66,7 @@ def test_a_post_naming_the_plant_marks_the_plant():
     assert km(P["ТЕЦ-6"][:2], TRUE["Kyiv CHP-6"]) < 0.05 and P["ТЕЦ-6"][2] == "31"
     assert km(P["Бориспіль аеропорт"][:2], TRUE["Boryspil airport"]) < 0.05
     assert km(P["Жуляни аеропорт"][:2], TRUE["Zhuliany airport"]) < 0.05
-    assert km(P["Київська ГЕС"][:2], TRUE["Kyiv HPP dam"]) < 0.05
+    assert km(P["Київська ГЕС"][:2], TRUE["Kyiv HPP Dam"]) < 0.05
     # the rules' bare names still find them
     assert [m["place"] for m in geo.parse_for_channel("kyiv_airdef", "ТЕЦ-6")] == ["ТЕЦ-6"]
     assert [m["place"] for m in geo.parse_for_channel("kyiv_airdef", "ТЕЦ-5 уважно")] == ["ТЕЦ-5"]

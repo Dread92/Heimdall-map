@@ -199,7 +199,9 @@ def test_the_switches_are_the_dashboards_alone():
 def test_the_nights_counts_by_letter():
     st, tg = _state()
     tg.ingest("kpszsu", [("kpszsu/1", ago(9), "Шахед з півдня на Обухів"), ("kpszsu/2", ago(8), "2 реактиви з території Білорусі на Житомирщину"),
-                         ("kpszsu/3", ago(7), "Шахед на Бровари")], "tg:kpszsu")
+                         ("kpszsu/3", ago(7), "Шахед на Фастів")], "tg:kpszsu")
+    # 1.58.41: "з півдня на Обухів" is a course NORTH now (it was read as south) — "Шахед на Бровари", ahead of it a
+    # minute later, may be the same target; Fastiv, off to its west, is not
     st.markers()
     night = server.tag_night(NOW)
     rows = st._an_targets([night])
@@ -209,7 +211,8 @@ def test_the_nights_counts_by_letter():
 
 def test_the_replay_shows_the_tags_the_live_map_gave():
     st, tg = _state()
-    tg.ingest("kpszsu", [("kpszsu/1", ago(9), "Шахед з півдня на Обухів"), ("kpszsu/3", ago(7), "Шахед над Броварами")], "tg:kpszsu")
+    # ids of its own (the parse cache is shared): "kpszsu/3" was the test above's "Шахед на Бровари"
+    tg.ingest("kpszsu", [("kpszsu/21", ago(9), "Шахед з півдня на Обухів"), ("kpszsu/23", ago(7), "Шахед над Броварами")], "tg:kpszsu")
     st.markers()
     tracks = st._replay_tracks(NOW - timedelta(hours=1), NOW, [])
     assert sorted(t["tg"] for t in tracks) == ["#01", "#02"]
@@ -229,7 +232,8 @@ def test_the_map_label_carries_the_tag_and_the_bottom_line_the_telemetry():
 def test_an_approach_mark_stands_off_the_town_on_the_side_the_post_named():
     assert "const apOff=!!m.approach&&!m.status&&!m.endedBy&&m.heading!=null;" in PAGE
     # 1.58.18: 30 px at a glyph's full size, less as it shrinks zoomed out (MSK)
-    assert "if(apOff){ const a=m.heading*Math.PI/180, D=Math.min(30*MSK,12); gx=x-D*Math.sin(a); gy=y+D*Math.cos(a); }" in PAGE
+    # 1.58.41: at least off_km — Kyiv's outline on that side (tests/test_approach_edge_15841.py)
+    assert "if(apOff){ const a=m.heading*Math.PI/180, D=Math.max(Math.min(30*MSK,12),+m.off_km||0); gx=x-D*Math.sin(a); gy=y+D*Math.cos(a); }" in PAGE
     assert "b.g.setAttribute('transform',`translate(${gx.toFixed(3)} ${gy.toFixed(3)})`);" in PAGE
     assert "lblPos.push({b,m,sx:gx/KPX,sy:gy/KPX});" in PAGE
 

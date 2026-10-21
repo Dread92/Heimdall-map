@@ -99,7 +99,7 @@ PLACES = _Gazetteer({
     # 1.38: three more crossings — the middle of the railway span, the arch of the Podilskyi crossing over the Dnipro,
     # and the Kyiv HPP at Vyshhorod, whose dam carries the road over the river (OpenStreetMap)
     "Петрівський залізничний міст": (30.5478, 50.4837, "31"), "Подільсько-Воскресенський міст": (30.5430, 50.4715, "31"),
-    "Дамба Київської ГЕС": (30.5123, 50.5883, "14"), "Київська ГЕС": (30.5123, 50.5883, "14"),
+    "Гребля Київської ГЕС": (30.5123, 50.5883, "14"), "Київська ГЕС": (30.5123, 50.5883, "14"),
     # Kyiv micro-districts / landmarks (as used by @kyiv_airdef live tracking)
     # 1.57.7: the two heat plants and the airports at their own coordinates (they were rounded to 0.01°: ТЕЦ-6 sat
     # 4.6 km off, in Troieshchyna's flats; a post naming the plant put its mark there) — tests/test_poi_places_1577.py
@@ -377,7 +377,7 @@ ALT = {"Північний міст": [r"\bпівнічн\w{0,3}\s+м[іо]ст\
        "Подільсько-Воскресенський міст": [r"\bподільсько-воскресенськ\w{0,3}\s+м[іо]ст\w{0,2}",
                                           r"\bподільськ\w{0,3}\s+(?:мостов\w{0,3}\s+перех[оі]д\w{0,2}|м[іо]ст\w{0,2})",
                                           r"\bвоскресенськ\w{0,3}\s+м[іо]ст\w{0,2}", r"\bподольск\w{0,3}\s+мост\w{0,2}"],
-       "Дамба Київської ГЕС": [r"\b(?:дамб|гребл)\w{0,2}\s+(?:київськ\w{0,3}\s+)?гес\b",
+       "Гребля Київської ГЕС": [r"\b(?:дамб|гребл)\w{0,2}\s+(?:київськ\w{0,3}\s+)?гес\b",
                                r"\bм[іо]ст\w{0,2}\s+(?:на\s+|через\s+|біля\s+)?(?:київськ\w{0,3}\s+)?гес\b", r"\bдамб\w{0,2}\s+(?:киевск\w{0,3}\s+)?гэс\b"],
        "Київська ГЕС": [r"\bкиївськ\w{0,3}\s+гес\b", r"\bкиевск\w{0,3}\s+гэс\b"],
        "Південний міст": [r"\bпівденн\w{0,3}\s+м[іо]ст\w{0,2}", r"\bюжн\w{0,3}\s+мост\w{0,2}"],
@@ -1119,7 +1119,8 @@ _LOC_END = re.compile(r"(?:і|ї|ах|ях|ій)$")
 # 1.45: "2х вектор Велика Димерка/Бровари" — the Kyiv channels' "вектор" is a course, like "курсом"
 _DEST_PRE = re.compile(r"(?:\bна|\bв район|\bу район|\bдо|\bв напрямку|\bу напрямку|\bв бік|\bу бік|\bв сторону|\bвектор(?:ом)?|→|➡️?)\s*$")
 _FROM_PRE = re.compile(r"(?:\bвід|\bз|\bзі|\bповз|\bнад|\bбіля|\bпоблизу|\bрайоні|\bр-ні)\s+$")
-_FROM_COMPASS = re.compile(r"\b(?:з|зі|від)\s+((?:півн|півд|сх|зах)[а-яіїє'-]*(?:[\s-]+(?:сх|зах)[а-яіїє'-]*)?)")
+# 1.58.41: "із" too ("курсом на Київ із заходу" was read as a course WEST — the compass word after "курсом")
+_FROM_COMPASS = re.compile(r"\b(?:з|зі|із|від)\s+((?:півн|півд|сх|зах)[а-яіїє'-]*(?:[\s-]+(?:сх|зах)[а-яіїє'-]*)?)")
 
 
 def _place_role(text, p):
@@ -2071,13 +2072,21 @@ def parse_post(text, home=None):
                 if heading is not None:
                     ev["heading"] = {"matched": after.strip()[:40], "method": "compass word after 'course'", "confidence": "medium"}
             if heading is None and not side_stated:   # "на сході Київщини" is where it is, never its course
-                heading = _dir(seg[origin_end:cpos])
-                if heading is not None:
-                    ev["heading"] = {"matched": seg[origin_end:cpos].strip()[:40], "method": "compass word before 'course'", "confidence": "medium"}
+                # 1.58.41: "з півночі курсом на Київ" is FROM the north — it was read as a course north, the target
+                # drawn on the wrong side of the city, pointing away from it. Reversed, as after "курсом" (above).
+                pre = seg[origin_end:cpos]
+                fb = _FROM_COMPASS.search(pre)
+                if fb and _dir(fb.group(1)) is not None:
+                    heading = (_dir(fb.group(1)) + 180) % 360
+                    ev["heading"] = {"matched": fb.group(0), "method": "'from the <compass>' reversed", "confidence": "medium"}
+                else:
+                    heading = _dir(_FROM_COMPASS.sub(" ", pre))
+                    if heading is not None:
+                        ev["heading"] = {"matched": pre.strip()[:40], "method": "compass word before 'course'", "confidence": "medium"}
         if heading is None and from_heading is not None:
             heading = from_heading
         if heading is None:
-            m = re.search(r"\bз\s+([а-яіїє'-]+(?:\s+[а-яіїє'-]+)?)", seg[origin_end:])
+            m = re.search(r"\b(?:з|зі|із)\s+([а-яіїє'-]+(?:\s+[а-яіїє'-]+)?)", seg[origin_end:])
             if m:
                 frm = _dir(m.group(1))
                 if frm is not None:

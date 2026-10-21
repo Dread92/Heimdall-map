@@ -9,6 +9,7 @@ here, it's dangerous" — a target whose post gave only where it is heading is n
 no official alert (server.State.markers → `held`), and the private channel marks the official all-clear of a target's
 area (app/chanpost.py)."""
 import json
+import math
 import os
 
 RAION_STEM = (("бровар", "brovary"), ("бориспіл", "boryspil"), ("бучан", "bucha"), ("вишгород", "vyshhorod"),
@@ -145,6 +146,35 @@ def area_at(lon, lat):
         if x0 <= x <= x1 and y0 <= y <= y1 and sum(_inside(x, y, r) for r in rings) % 2 == 1:
             return (obl, raion or key)
     return None
+
+
+def edge_km(lon, lat, bearing, raion="kyiv-city"):
+    """1.58.41: how far from this point, going toward `bearing` (0 = north), the outline of `raion` ends — the last time
+    the line crosses it, so the point found is outside — in km; None when the point is not inside that outline. The
+    owner, of a jet drone "курсом на Київ з півночі" drawn over Podil: "it says heading to Kyiv, from the north, and yet
+    the icon is placed right inside the city" — an approach to Kyiv stands off the city, not off its centre."""
+    feats = _load()
+    if not feats or _BASE is None or lon is None or lat is None or bearing is None:
+        return None
+    x, y = (lon - _BASE["center"][0]) * _BASE["kx"], -(lat - _BASE["center"][1]) * _BASE["ky"]
+    rings = next((f[3] for f in feats if f[0] == raion), None)
+    if not rings or sum(_inside(x, y, r) for r in rings) % 2 == 0:
+        return None
+    a = math.radians(bearing)
+    dx, dy = math.sin(a), -math.cos(a)              # the map's km run east and south
+    best = None
+    for r in rings:
+        for i in range(len(r)):
+            (ax, ay), (bx, by) = r[i - 1], r[i]
+            ex, ey = bx - ax, by - ay
+            den = dx * ey - dy * ex
+            if abs(den) < 1e-12:
+                continue
+            t = ((ax - x) * ey - (ay - y) * ex) / den
+            u = ((ax - x) * dy - (ay - y) * dx) / den
+            if t > 0 and 0 <= u <= 1 and (best is None or t > best):
+                best = t
+    return best
 
 
 def _edge_km(x, y, ring):

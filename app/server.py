@@ -995,7 +995,7 @@ def air_sorties(reports):
 # North to south. 1.38 adds the Kyiv HPP dam at Vyshhorod (the road on the dam), the Petrivskyi railway bridge and the
 # Podilsko-Voskresenskyi crossing (Podil — Rybalskyi — the arch over the Dnipro — Trukhaniv island — Raiduzhnyi).
 BRIDGES = [
-    {"id": "ges", "uk": "Дамба Київської ГЕС", "en": "Kyiv HPP dam", "fr": "barrage de la centrale de Kyiv",
+    {"id": "ges", "uk": "Гребля Київської ГЕС", "en": "Kyiv HPP Dam", "fr": "barrage de la centrale de Kyiv",
      "pts": ((30.5010, 50.5905), (30.5100, 50.5887), (30.5155, 50.5875), (30.5221, 50.5862), (30.5300, 50.5854))},
     {"id": "pivnichnyi", "uk": "Північний міст", "en": "Northern Bridge", "fr": "pont Nord", "pts": ((30.53082, 50.48923), (30.54096, 50.49218))},
     {"id": "petrivskyi", "uk": "Петрівський залізничний міст", "en": "Petrivskyi Railway Bridge", "fr": "pont ferroviaire Petrivskyi",
@@ -1009,6 +1009,7 @@ BRIDGES = [
     {"id": "pivdennyi", "uk": "Південний міст", "en": "Southern Bridge", "fr": "pont Sud", "pts": ((30.55467, 50.40097), (30.59796, 50.39435))},
 ]
 BRIDGE_BY_PLACE = {b["uk"]: b["id"] for b in BRIDGES}
+BRIDGE_BY_PLACE["Дамба Київської ГЕС"] = "ges"   # 1.58.41: its name before ("гребля" is the dam itself, the owner)
 # "at": the place the post named is the bridge or its ends. "near": a Shahed covers 3.5 km in about a minute; a jet
 # drone or a missile 6 km in well under one, and is drawn 6 km out for that reason.
 BRIDGE_AT_KM, BRIDGE_NEAR_KM, BRIDGE_NEAR_FAST_KM = 1.2, 3.5, 6.0
@@ -3520,6 +3521,31 @@ class State:
             except Exception:
                 pass
 
+    APPROACH_MARGIN_KM = 1.5
+
+    def _approach_edge(self, marks):
+        """1.58.41, the owner, of "Реактивний БпЛА курсом на Київ з півночі" drawn over Podil: "it says heading to Kyiv,
+        from the north, and yet the icon is placed right inside the city". A target drawn at Kyiv because only that is
+        where it is heading, with the side it comes from, stands off the town on that side (1.51, the pages' `apOff`) —
+        but Kyiv is 20-40 km across, and a few pixels off its centre is still inside it. `off_km`: how far out it must
+        stand to be outside the city (its outline on that side, + APPROACH_MARGIN_KM); the Tactical page, Light and the
+        bot's picture draw it at least that far. Its position (`lon`, `lat`) stays the destination: what the alerts, the
+        tracks and the lists use. A Kyiv district it is heading for is inside the city, and stays so."""
+        if not areas:
+            return
+        for m in marks:
+            m.pop("off_km", None)
+            if m.get("status") or m.get("heading") is None or m.get("lon") is None:
+                continue
+            if not (m.get("approach") or m.get("dest_only")) or (m.get("target") != "Київ" and m.get("place") != "→ Київ"):
+                continue
+            try:
+                e = areas.edge_km(m["lon"], m["lat"], (m["heading"] + 180) % 360)
+            except Exception:
+                e = None
+            if e:
+                m["off_km"] = round(e + self.APPROACH_MARGIN_KM, 1)
+
     def markers(self):
         ttl = int(self.cfg.get("marker_ttl_minutes", 45))
         if not geo:
@@ -3543,6 +3569,7 @@ class State:
             m.pop("origin_t", None)
             m.pop("first_uid", None)
         self._hold(out)
+        self._approach_edge(out)
         out.sort(key=lambda m: m["ts"], reverse=True)
         # Keep what the app decided, not just what it was told. INSERT OR IGNORE keyed on the marker id, so
         # recomputing the same window many times a minute writes each marker exactly once.

@@ -1695,7 +1695,7 @@ async function loadMap(){
   // wrong side of the town). Now the plants' own coordinates (Global Energy Monitor, Wikipedia), each checked on the
   // satellite picture: the icon sits on the plant's main building, the dam, the runway (tests/test_poi_places_1577.py).
   const POIS=[['air','Boryspil airport',30.8933,50.3447],['air','Zhuliany airport',30.4517,50.4017],['air','Hostomel airfield',30.1919,50.6036],['air','Vasylkiv airbase',30.3000,50.2333],['air','Bila Tserkva airfield',30.0244,49.7961],['air','Ozerne airbase',28.7383,50.1583],
-    ['pow','Trypillia TPP',30.7467,50.1334],['pow','Kyiv HPP dam',30.5123,50.5883],['pow','Kyiv CHP-5',30.5695,50.3932],['pow','Kyiv CHP-6',30.6623,50.5317],['pow','Darnytsia TPP',30.6429,50.4478],['nuc','Chornobyl NPP',30.0994,51.3892]];
+    ['pow','Trypillia TPP',30.7467,50.1334],['pow','Kyiv HPP Dam',30.5123,50.5883],['pow','Kyiv CHP-5',30.5695,50.3932],['pow','Kyiv CHP-6',30.6623,50.5317],['pow','Darnytsia TPP',30.6429,50.4478],['nuc','Chornobyl NPP',30.0994,51.3892]];
   const rp=pts=>pts.map(p=>proj(p[0],p[1]).map(v=>v.toFixed(1)).join(',')).join(' ');
   $('infra').innerHTML=ROADS.map(([n,pts])=>{const mid=pts[Math.floor(pts.length/2)];const [lx,ly]=proj(mid[0],mid[1]);return `<polyline class="road" points="${rp(pts)}"/><text class="roadlbl minor" x="${(lx+1).toFixed(1)}" y="${(ly-1).toFixed(1)}">${n}</text>`;}).join('')
     +`<polyline class="road ring2" points="${rp(RING)}"/>`
@@ -1872,7 +1872,8 @@ function heatGrid(pts,W,H,rad,q){ const GW=Math.ceil(W/q), GH=Math.ceil(H/q), R=
       const k=(1-d2/R2)*(1-d2/R2), j=y*GW+x; I[j]+=p.n*k; if(k>C[j]) C[j]=k; } }
   let mx=0; for(let j=0;j<I.length;j++) if(I[j]>mx) mx=I[j];
   return {GW,GH,I,C,mx}; }
-const placeLbl=pl=>{ const b=BRG.find(x=>BRIDGE_UK_NAME[x[0]]===pl); return b?t('br_'+b[0]):pn(pl); };
+const placeLbl=pl=>{ if(pl==='Дамба Київської ГЕС') pl=BRIDGE_UK_NAME.ges;   // 1.58.41: its name before, in older records
+  const b=BRG.find(x=>BRIDGE_UK_NAME[x[0]]===pl); return b?t('br_'+b[0]):pn(pl); };
 function drawHeat(){ clearTimeout(HEAT_T); HEAT_T=setTimeout(drawHeatNow,90); }
 async function drawHeatNow(){ const g=$('heatg'), leg=$('heatleg'); if(!g) return;
   const on=LAYERS.heat&&!(typeof LITE!=='undefined'&&LITE)&&MAP;
@@ -1944,7 +1945,7 @@ const BRG=[['ges',[30.50100,50.59050],[30.51000,50.58870],[30.51550,50.58750],[3
   ['podilskyi',[30.52480,50.47490],[30.53000,50.47470],[30.54000,50.47160],[30.54570,50.47150],[30.55550,50.47380],[30.56090,50.47550],[30.57130,50.47950],[30.57540,50.48130]],
   ['metro',[30.55998,50.44132],[30.56888,50.44397]],['paton',[30.57212,50.42440],[30.59198,50.43015]],
   ['darnytskyi',[30.57219,50.41222],[30.59725,50.41850]],['pivdennyi',[30.55467,50.40097],[30.59796,50.39435]]];
-const BRIDGE_UK_NAME={ges:'Дамба Київської ГЕС',pivnichnyi:'Північний міст',petrivskyi:'Петрівський залізничний міст',podilskyi:'Подільсько-Воскресенський міст',
+const BRIDGE_UK_NAME={ges:'Гребля Київської ГЕС',pivnichnyi:'Північний міст',petrivskyi:'Петрівський залізничний міст',podilskyi:'Подільсько-Воскресенський міст',
   metro:'Міст Метро',paton:'Міст Патона',darnytskyi:'Дарницький міст',pivdennyi:'Південний міст'};
 const brgMid=pts=>pts[Math.floor((pts.length-1)/2)].map((v,i)=>(v+pts[Math.ceil((pts.length-1)/2)][i])/2);
 const BRG_RANK={hit:1,near:2,at:3};
@@ -2660,8 +2661,11 @@ function tick(){
     // 1.51: a target drawn at the town it is heading for, from a side the post named, stands off the town on that side —
     // a fixed distance on the SCREEN, not on the ground (nobody said how far it is) — pointing in along its dashed
     // course; the town stays clear. "2 реактиви у бік Києва з півдня" had put two jets on top of Kyiv.
+    // 1.58.41, the owner, of "курсом на Київ з півночі" over Podil: "heading to Kyiv, from the north, and yet the icon is
+    // placed right inside the city" — Kyiv is 20-40 km across: an approach to it stands off the CITY (its outline on that
+    // side, the server's off_km), not off its centre
     let gx=x, gy=y; const apOff=!!m.approach&&!m.status&&!m.endedBy&&m.heading!=null;
-    if(apOff){ const a=m.heading*Math.PI/180, D=Math.min(30*MSK,12); gx=x-D*Math.sin(a); gy=y+D*Math.cos(a); }   // never more than 12 km off
+    if(apOff){ const a=m.heading*Math.PI/180, D=Math.max(Math.min(30*MSK,12),+m.off_km||0); gx=x-D*Math.sin(a); gy=y+D*Math.cos(a); }   // a town: never more than 12 km off
     b.g.dataset.tx=gx.toFixed(3); b.g.dataset.ty=gy.toFixed(3);
     b.g.setAttribute('transform',`translate(${gx.toFixed(3)} ${gy.toFixed(3)})`);
     // a later post can add the course that the first one lacked: swap the blind mark for a pointed one

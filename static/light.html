@@ -562,7 +562,11 @@ function paint(){
     +`<g style="${symAt(0,-60)}"><text class="nn" x="-1.4" y="-2.5">N</text></g><g style="${symAt(0,0)}"><circle class="me" r="1.8"/></g>`;
   const CRI=getComputedStyle(document.documentElement).getPropertyValue('--cri').trim(), ORA=getComputedStyle(document.documentElement).getPropertyValue('--ora').trim();
   RT=[];
-  for(const r of rows){ const m=r.m, [x,y]=loc(m.lon,m.lat), c=r.toHere?CRI:colOf(m), gone=m.stale?' gone':'';
+  for(const r of rows){ const m=r.m, c=r.toHere?CRI:colOf(m), gone=m.stale?' gone':''; let [x,y]=loc(m.lon,m.lat);
+    // 1.58.41: heading for Kyiv from a side the post named — drawn off the city on that side, not on its centre (the
+    // server's off_km: Kyiv's outline + 1.5 km; the owner: "heading to Kyiv, from the north, and yet the icon is placed
+    // right inside the city")
+    if(m.approach&&statedCourse(m)&&+m.off_km>0){ const a=m.heading*Math.PI/180; x-=m.off_km*S*Math.sin(a); y+=m.off_km*S*Math.cos(a); }
     // where it was reported before: reported points joined, nothing drawn ahead of it
     if(m.history&&m.history.length){ const pts=[...m.history.filter(h=>h.lon!=null&&h.lat!=null).map(h=>loc(h.lon,h.lat)),[x,y]];
       if(pts.length>1) g+=`<polyline class="tail${gone}" stroke="${c}" points="${pts.map(q=>q[0].toFixed(1)+','+q[1].toFixed(1)).join(' ')}"/>`; }

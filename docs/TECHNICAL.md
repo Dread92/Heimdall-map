@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-20 (1.58.40)
+**Documented version: 1.58** · last updated 2026-10-21 (1.58.41)
 
 The repository is **Dread92/Heimdall-map**. The app's address is **https://heimdall.com.ua** (1.58.34, 18 October
 2026); the Fly app keeps its first name, `kyiv-air-watch-gb`, and its first address keeps working (§15 has the move).
@@ -717,8 +717,11 @@ block for every value:
   5.8 km east of the village (the owner: "Hnidyn is never reported there"), Березань 11 km, Ольшаниця 12, Мигалки 14,
   Котельва 19; Красилівка and Ясногородка, several of each, are the one near Brovary and the one near Makariv.
 - **Heading** — "курсом на", compass words, "→", "A - B" routes (`bearing()`); a heading is marked *stated*
-  only when the post stated it. A compass word after "з / зі / від" is where it comes **from** ("з півночі" = flying
-  south), also after the destination (`_FROM_COMPASS`).
+  only when the post stated it. A compass word after "з / зі / із / від" is where it comes **from** ("з півночі" =
+  flying south), after the destination and (1.58.41) before "курсом" too (`_FROM_COMPASS`). 1.58.41: "із" was not in
+  it — "курсом на Київ із заходу" was a course **west**; and before "курсом" the compass word was read as the course
+  itself — "з півночі курсом на Київ" was a course **north**, drawn on the wrong side of Kyiv, pointing away from it.
+  A compass word with no "from" before it ("на південь курсом на Обухів") is still the course.
 - **Where it is vs where it is going** (`_place_role`): a place after "на", "в район", "до", "в напрямку", "в бік"
   is the **destination**; after "від", "з", "повз", "над", "біля", "в районі" it is where the target **is**. After
   "на", a place in the locative ("на Позняках", "на Троєщині") is where it is. Only a destination named
@@ -1010,6 +1013,13 @@ is read whole):
    maps do not draw a held mark; the Near list keeps it, without a distance, "position not stated — on the map once
    that place is under alert" (`mc_held`); no "near you" push is sent for it (`proximity_watch`). A missile is never
    held: its alert follows within a minute or two, and a ballistic warning must not wait for it.
+6. 1.58.41, `State._approach_edge`: a mark heading for Kyiv (`approach` or `dest_only`, target "Київ" or place
+   "→ Київ") with a side the post named (`heading`), not an outcome, gets **`off_km`** — `areas.edge_km(lon, lat,
+   heading + 180)`, how far the city's outline (`kyiv-city` in `kyiv-map.json`) is on the side it comes from (the last
+   crossing, so the point is outside), + `APPROACH_MARGIN_KM` = 1.5: about 11.6 km from the north, 15.7 from the south,
+   21.2 from the west, 23.2 from the north-east. It is where the pages and the picture draw the glyph (§10), never its
+   position: `lon`/`lat` stay the destination for the hold, the tracks, the lists and the log. A Kyiv district, another
+   town, a mark with no heading or a point outside the city gets none; a value from an earlier pass is always removed.
 
 **1.45: a target reported for a whole oblast is a region, not a point.** A mark with `place == "область"` ("БпЛА на
 Харківщині", "з Чернігівщини курсом на Київ") still carries the oblast centre as its coordinates, for the server's
@@ -1290,7 +1300,12 @@ the bottom line under the glyph adds the speed ("3500 м · 400 км/год", it
 hover say where it came from, in the post's words and from which channel, with an "AI" chip when the AI read it, and
 what the tag is. **A target drawn at the town it is heading for** (an approach mark with a stated side) stands off
 the town on that side, 30 px on the screen, pointing in along its dashed course: nobody said where it is, and the
-town stays clear.
+town stays clear. **1.58.41: Kyiv is a city, not a point** — 30 px still put "Реактивний БпЛА курсом на Київ з півночі"
+over Podil (the owner: "it says heading to Kyiv, from the north, and yet the icon is placed right inside the city").
+A mark heading for Kyiv carries `off_km` (step 6 of §7.4): the glyph stands at least that far off, just outside the
+city's outline on the stated side (`D = max(min(30·MSK, 12), off_km)` in `tick()`); Light (`paint()`) and the private
+channel's picture (`MapShot._target`: `max(min(60·SS, 12·k), off_km·k)`) do the same. The dashed course still runs
+into the centre; `lon`/`lat` stay the destination.
 
 **1.52 — only when it is sure, and "probably".** A target reported for a whole oblast (`place == "область"`) gets **no
 tag** (the owner's rule: a number only when we are sure which target it is); it gets one when a post places it. Where
@@ -1810,7 +1825,10 @@ Northern bridge on 3 and 4 October, by Shaheds and jet drones, by day, with cars
 the bridge's name ("Південний міст", "🔻Зниження Північний міст", "на міст патона", "Північний міст падає‼️✈️"),
 and until 1.34 those posts were dropped as saying nothing, or drawn at the centre of Kyiv.
 
-- **The eight crossings** (`BRIDGES`, north to south): the Kyiv HPP dam at Vyshhorod (`ges`, the road on the dam),
+- **The eight crossings** (`BRIDGES`, north to south): the Kyiv HPP Dam at Vyshhorod (`ges`, the road on the dam;
+  1.58.41: «Гребля Київської ГЕС», not «Дамба» — the owner: «гребля» is the hydro-dam holding the reservoir back, «дамба»
+  an embankment along the shore; posts saying either are read, and `BRIDGE_BY_PLACE` and the page's `placeLbl` still
+  know the old name in older records),
   Pivnichnyi (Northern), the Petrivskyi railway bridge (`petrivskyi`, "Рибальський залізничний міст" on the map),
   the Podilsko-Voskresenskyi crossing (`podilskyi`: the harbour, Rybalskyi, the arch over the Dnipro, Trukhaniv
   island, Raiduzhnyi — one bridge, named by "Подільський" or "Воскресенський"), Metro, Paton, Darnytskyi (also "the

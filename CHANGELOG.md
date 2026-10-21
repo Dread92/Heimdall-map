@@ -2,6 +2,29 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.41 — 2026-10-21
+
+A target heading for Kyiv is drawn outside the city, on the side the post named; "from the north" is always a course
+south; and the Kyiv HPP Dam is «Гребля».
+
+- **Fixed: an approach to Kyiv drawn inside it.** The owner, of "Реактивний БпЛА курсом на Київ з півночі" over Podil:
+  "it says heading to Kyiv, from the north, and yet the icon is placed right inside the city". 1.51 stood such a mark
+  off its town by 30 px — enough for a town, not for a city 20-40 km across. The server now gives a mark heading for
+  Kyiv with a stated side `off_km` (`State._approach_edge`, `areas.edge_km`): the city's outline on that side + 1.5 km
+  (about 11.6 km from the north, 21 km from the west). The Tactical page, Light and the private channel's picture
+  draw the glyph at least that far off, just outside the city; the dashed course still runs into it.
+- Unchanged: where it is was not said, and the sheet still says so; its position stays Kyiv for the alerts, the hold
+  (1.58.7), the tracks and the lists. A Kyiv district it is heading for stays inside the city; with no side, it is drawn
+  at Kyiv as before.
+- **Fixed: "from the north" read as a course north** (since 1.0), found while checking it. Before "курсом" the
+  compass word was taken as the course: "Реактивний БпЛА з півночі курсом на Київ" was drawn south of Kyiv, pointing
+  away. And "із" was not a "from": "курсом на Київ із заходу" was a course west. A compass word after "з / зі / із /
+  від" is now where it comes from, before and after "курсом" (`geo._FROM_COMPASS`); "на південь курсом на Обухів" is
+  still a course south.
+- **«Гребля Київської ГЕС»**, not «Дамба» (English "Kyiv HPP Dam"). The owner: «гребля» is the hydro-dam holding back
+  the reservoir, «дамба» only an embankment along the shore. The crossing, the landmark and the place a post is read
+  at; posts saying "дамба" or "гребля" are both still read as it, and older records under the old name still find it.
+
 ## 1.58.40 — 2026-10-20
 
 The Telegram bot's alerts, lighter. The app itself does not change.

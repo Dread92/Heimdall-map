@@ -168,7 +168,7 @@ def test_a_drone_said_only_to_be_heading_for_kyiv_is_held_until_kyiv_is_under_al
     assert _held(dict(ap, type="banderol_missiles"), []) is True       # a jet drone
     assert not _held(dict(type="drones", place="Бровари", lon=30.79, lat=50.51, oblast_uid="14"), [])   # where it IS
     assert not _held(dict(ap, status="down"), [])
-    assert "self._hold(out)\n        out.sort(" in SRV
+    assert "self._hold(out)\n        self._approach_edge(out)\n        out.sort(" in SRV        # 1.58.41: then off the city
 
 
 def test_the_pages_keep_it_in_their_lists_and_off_their_maps():

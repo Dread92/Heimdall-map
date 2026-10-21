@@ -589,6 +589,17 @@ dangerous". A target the post placed in a part of the oblast is drawn in that pa
 with the area it is somewhere in. The side is never read as a course. Only a post that says nothing of where the
 target is — "БпЛА на Київ", an oblast written as a header — is drawn at its destination, as an approach.
 
+1.58.41: **outside the city it is heading for, not inside it.** Such an approach, with the side the post named, stands
+off its town on that side (1.51) — by 30 px, which for Kyiv (20-40 km across) still put "Реактивний БпЛА курсом на Київ
+з півночі" over Podil. The owner: "it says heading to Kyiv, from the north, and yet the icon is placed right inside the
+city". A target heading for Kyiv is now drawn just outside the city's outline on the side the post named (`off_km`:
+the outline on that side + 1.5 km — about 11.6 km north of the centre, 21 km west), on the Tactical page, Light and the
+private channel's picture. That distance is the city's, not the target's: where it is was still not said, its sheet
+still says "heading for Kyiv — where it is now was not given", with no distance and no zone, and its position (`lon`,
+`lat`) stays the destination — what the alerts, the hold (1.58.7), the tracks and the lists use, as before. Only where
+the glyph is drawn moves. A Kyiv district it is heading for is inside the city and stays there; without a side, it is
+drawn at Kyiv as before.
+
 ## A side of a town is not the town (1.45.1)
 
 "БпЛА на півночі від Миколаєва" — north of Mykolaiv — was drawn on Mykolaiv itself, "±5 km, high confidence". The
@@ -596,6 +607,14 @@ post named the city as a reference and gave no distance. Now: with a distance ("
 goes that far that way; from an oblast's capital without one, the oblast is marked, as for any report with no town,
 and the card says *north of Mykolaiv*; from any other town, the mark stays at the town with **low** confidence and
 the card says *north-west of Brovary*.
+
+## "From the north" is a course south — wherever the words are (1.58.41)
+
+Found while checking the owner's report of 1.58.41: two ways of writing a side were read backwards, since 1.0 — the side before
+"курсом" ("Реактивний БпЛА з півночі курсом на Київ" — a course **north**, drawn south of the city, pointing away from
+it) and "із" ("курсом на Київ із заходу" — a course **west**). A reversed course is an invented trajectory. Now a
+compass word after "з", "зі", "із" or "від" is where the target comes **from**, before "курсом" and after it, and its
+course is the opposite way; a compass word alone ("на південь курсом на Обухів") is still the course.
 
 ## Where it is, and where it is going, are different facts
 

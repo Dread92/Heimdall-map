@@ -544,7 +544,7 @@ class MapShot:
             alpha = 205
             if m.get("heading") is not None:
                 a = math.radians(m["heading"])
-                dd = min(60 * SS, 12 * k)
+                dd = max(min(60 * SS, 12 * k), float(m.get("off_km") or 0) * k)    # 1.58.41: Kyiv — off the city, not its centre
                 here = (here[0] - dd * math.sin(a), here[1] + dd * math.cos(a))
         # the course ray's colour (.mk.<type> .hdg): a drone's own, red for a missile and for a Banderol
         col = (AMBER if m.get("jet") else ORANGE) if (m.get("type") == "drones" or drone_like) else MSL
