@@ -278,8 +278,11 @@ COMPASS = [
 
 # 1.58.31: "остання" (feminine: ракета) — not "остання група / хвиля / інформація / година"
 _OSTANNIA = r"(?<![а-яіїєґ'])остання\b(?!\s+(?:груп|хвил|інформац|новин|годин|хвилин|ніч|дан|атак|оновлен|зміна|пара|трійка))"
+BR_RX = r"(?<![\w.])бр(?![\w]|\.\s*[а-яіїєґ])"            # "БР", "3х БР.", "БР-ки" — never "бр. Іванова"
 TYPE_RX = [
-    ("ballistic_missiles", re.compile(r"баліст|іскандер|кінжал|к[иі]нджал|х-?47|швидкісн[а-яіїє]*\s+ціл", re.I)),
+    # 1.58.44: "БР" — the Air Force's and the trackers' балістичні ракети ("3х БР на Київ" was a probable drone, "Пуск БР з
+    # Брянщини" nothing at all); a word of its own, not "бр." of a brigade before a name (BR_RX)
+    ("ballistic_missiles", re.compile(r"баліст|іскандер|кінжал|к[иі]нджал|х-?47|швидкісн[а-яіїє]*\s+ціл|" + BR_RX, re.I)),
     # "Мігну31к в небе", "міг 31", "миг31к": the channels decline it and drop the hyphen. The word still has
     # to start with міг/миг and be followed by 31 within three letters — loose enough for their spelling,
     # tight enough that no ordinary word raises the loudest banner in the app.
@@ -333,7 +336,7 @@ ROCKET_IS_MISSILE = frozenset({"rocket_danger_lviv"})
 # State._msl_context); a word that names one is one: ракета, КР, крилата, балістика, Калібр, Х-101, Іскандер, Кинджал, a
 # MiG-31K, a strategic bomber. A Banderol is a jet drone (its "реактивна ракета" names no missile).
 MSL_WEAK_RX = re.compile(r"швидкісн\w*\s+ціл|" + _OSTANNIA, re.I)          # 1.58.42: no 🚀 — the trackers put it on jet drones
-MSL_NAMED_RX = re.compile(r"баліст|іскандер|кінжал|к[иі]нджал|х-?47|kn-?23|х-?22|х-?32|надзвуков|крилат|калібр|калиб|х-?101|"
+MSL_NAMED_RX = re.compile(BR_RX + r"|баліст|іскандер|кінжал|к[иі]нджал|х-?47|kn-?23|х-?22|х-?32|надзвуков|крилат|калібр|калиб|х-?101|"
                           r"х-?555|х-?59|х-?69|(?<![а-яіїєґ'])ракет|(?<![\w.])кр(?![\w.])(?!\s*р[іи]г)|м[іи]г\w{0,3}\s?-?\s?31|ту-?95|ту-?160|ту-?22", re.I)
 # the Air Force's own word for a ballistic or aeroballistic missile ("🚀 Швидкісна ціль на Дніпропетровщині") — its jet
 # drones are "🏍 Реактивний БпЛА"; its 🚀 is no proof ("🚀КАБи на Харківщину")
@@ -363,7 +366,7 @@ ALERT_MSG_RX = re.compile(r"повітрян[а-яіїє]* тривог|відб
                           r"\bзагроза\s+(?:реактивн\w*\s+|ударн\w*\s+)?(?:бпла|шахед\w*|дрон\w*)\s+з\b|"
                           r"\bзагроза\s+(?:ракетного|комбінованого|ударних\s+(?:бпла|дронів))", re.I)
 MOVE_RX = re.compile(r"курс|напрям|летить|летять|летіла|рухаєт|у бік|в бік|пролітає|проходить|заходить|повз |\bнад\s|поблизу|в районі|\bбіля|з боку|зі сторони|→|➡", re.I)
-COUNT_RX = re.compile(r"(\d{1,3})\s*(?:х|x|×)\b|(\d{1,3})\s+(?:ударн\w*\s+|реактивн\w*\s+|звичайн\w*\s+)*(?:бпла|шахед|дрон|ракет|каб|реакт|бандерол|кр(?![\w.]))", re.I)
+COUNT_RX = re.compile(r"(\d{1,3})\s*(?:х|x|×)\b|(\d{1,3})\s+(?:ударн\w*\s+|реактивн\w*\s+|звичайн\w*\s+)*(?:бпла|шахед|дрон|ракет|каб|реакт|бандерол|кр(?![\w.])|бр(?![\w]))", re.I)      # 1.58.44: "2 БР"
 # a jet-powered drone: "реактивний", and the Chernihiv tracker's "реакт" / "реакти" (1.43)
 JET_RX = re.compile(r"реактив|\bреакт(?:и|ів|ом|а|ами)?\b|jet", re.I)
 GROUP_RX = re.compile(r"\bгруп", re.I)
@@ -1200,7 +1203,9 @@ STATUS_RX = [("down", re.compile(r"збит|знищен|мінус|ліквід
              ("fire", re.compile(r"пожеж|пожар|займанн|загорянн|загорін|горить|горит\b|горіння", re.I)),  # narrowed by FIRE_EVENT_RX
              # 1.43.1: "Без фиксации", "Больше не фиксируется" (@radar_kharkov) — the tracker no longer sees it
              # 1.44: "Не фіксується." on its own (@PoltavaRadar) — at the start of a sentence; "загроз не фіксується" is not
-             ("lost", re.compile(r"втрачен|зник|не спостеріга|загубл|без\s+фіксаці|більше\s+не\s+фіксу|(?:^|(?<=[.!?\n]))\s*не\s+фіксу", re.I)),
+             # 1.58.44: "Без подальшої фіксації 3х БР." (the Air Force) — no longer tracked
+             ("lost", re.compile(r"втрачен|зник|не спостеріга|загубл|без\s+(?:подальш\w*\s+|дальнейш\w*\s+)?ф[іи]ксац|більше\s+не\s+фіксу|"
+                                 r"(?:^|(?<=[.!?\n]))\s*не\s+фіксу", re.I)),
              ("clear", re.compile(r"чисто|небо чисте|чист[еиої]\w*\s+небо", re.I))]
 
 
@@ -2329,6 +2334,34 @@ def _height_only(t):
     return dict(_alt_full(t) or {"state": None, "matched": nums[0]}, m=v)
 
 
+_LAUNCH_RX = re.compile(r"(?:^|[^а-яіїє])(?:пуск|запуск|курс|напрям|летить|летять|йде|йдуть)|\bна\s+[а-яіїєґ]", re.I)
+
+
+def ended_only(text, channel=None):
+    """1.58.44: a post that only says how targets ended — "Без подальшої фіксації 3х БР.", "Мінус 2 БР" — no launch, no
+    course, no place: it warns of nothing (the server's missile level, the pages' ballistic strip)."""
+    t = _norm(prepare(text or "", channel))
+    return _status_of(t) in ("lost", "down") and not _LAUNCH_RX.search(t) and not _find_places(t)
+
+
+def _outcome_here(t, st, uid):
+    """An outcome with no place of its own ("Впав", "Мінус"): placed by the server at the channel's previous report. 1.58.44:
+    with the weapon and the count the post stated — "Без подальшої фіксації 3х БР." is three ballistic missiles no longer
+    tracked, and goes to that channel's last ballistic report (`type_stated`), never to a drone it reported since."""
+    sm = next((rx.search(t) for n, rx in STATUS_RX if n == st), None)
+    wt = next(((n, rx.search(t)) for n, rx in TYPE_RX if rx.search(t)), None)
+    mc = COUNT_RX.search(t)
+    cnt = int(mc.group(1) or mc.group(2)) if mc else None
+    stated = bool(wt) and wt[0] in MISSILE_KINDS
+    return {"type": wt[0] if stated else "drones", "status": st, "lon": None, "lat": None, "heading": None, "place": None,
+            "target": None, "count": cnt, "jet": False, "oblast_uid": uid, "needs_context": True,
+            **({"type_stated": True} if stated else {}),
+            "evidence": {"segment": t.strip(), "type": ({"matched": wt[1].group(0), "method": "keyword"} if stated else
+                                                        {"matched": sm.group(0) if sm else st, "method": "outcome keyword"}),
+                         "position": {"matched": None, "place": None, "method": "no place in this post — placed at the channel's previous report", "confidence": "medium"},
+                         "heading": None, "count": ({"matched": mc.group(0), "method": "number in text"} if mc else None)}}
+
+
 def _parse_live(text, uid):
     """@kyiv_airdef live tracking: bare place names, one per post ('ДВРЗ', 'Позняки', 'ТЕЦ-5 уважно'),
     outcome words on their own ('Впав', 'Знижується', 'Збили'), occasionally full sentences.
@@ -2369,12 +2402,7 @@ def _parse_live(text, uid):
                               "heading": None, "count": None}}]
     places = _find_places(t, uid)
     if st and not places:
-        sm = next((rx.search(t) for n, rx in STATUS_RX if n == st), None)
-        return [{"type": "drones", "status": st, "lon": None, "lat": None, "heading": None, "place": None, "target": None, "count": None, "jet": False,
-                 "oblast_uid": uid, "needs_context": True,
-                 "evidence": {"segment": t.strip(), "type": {"matched": sm.group(0) if sm else st, "method": "outcome keyword"},
-                              "position": {"matched": None, "place": None, "method": "no place in this post — placed at the channel's previous report", "confidence": "medium"},
-                              "heading": None, "count": None}}]
+        return [_outcome_here(t, st, uid)]
     if not places:
         return []
     if len(t.split()) > 6 and not re.search(r"уважн|йде|летить|на\b|бік|→", t):
@@ -3078,6 +3106,12 @@ def _parse_for_channel(channel, text, near=None):
         return out
     fn = CHANNEL_PARSER.get(channel)
     home = CHANNEL_HOME.get(channel)
+    nt = _norm(text)
+    st = _status_of(nt)
+    if not fn and st in ("lost", "down") and len(nt.split()) <= 8 and not _find_places(nt) and not _find_oblast(nt):
+        o = _outcome_here(nt, st, home or "14")
+        if o.get("type_stated"):
+            return [o]                               # 1.58.44: the missiles it names, at its last report of them (server)
     if not fn and home and home not in ("31", "14"):
         fn = lambda t: _parse_live(t, home)          # noqa: E731
     if fn:

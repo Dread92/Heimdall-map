@@ -323,6 +323,19 @@ raises it is deliberately narrow:
 The same logic applies to markers: an *announcement* of an alert never becomes a target on the map,
 and a missile is only drawn if a place or a heading was actually reported.
 
+## A sound for what concerns this reader, once (1.58.44)
+
+A tester: "it keeps pinging constantly. What to actually fear is unclear." An alarm that rings for a drone on the far side
+of the oblast teaches people to mute it — and then it is muted for the one that matters. So a drone sounds once, when it
+enters the radius the reader chose (`SND_R`: 10, 20 or 30 km, or the oblast), again only when it gets more serious (inside
+10 km, or a post says it is heading for the place — a course stated, never guessed); missiles and KABs, too fast for a
+filter, sound across the region; an official alert sounds for the reader's own area; with no place set, nothing sounds
+but the prompt to set one. The siren and the official app stay first.
+
+"БР" is a ballistic missile (1.58.44): "3х БР на Київ" was drawn as a probable drone — the wrong weapon, and the gentlest
+treatment for the most urgent one. "Без подальшої фіксації 3х БР." is three missiles no longer tracked; it ends the
+reports of them, never the warning — that is the official alert's.
+
 ## Alert colours must match the official app
 
 If the government app shows an oblast under alert, this map shows the whole oblast under alert. An

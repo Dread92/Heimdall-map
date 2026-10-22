@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-21 (1.58.43)
+**Documented version: 1.58** · last updated 2026-10-22 (1.58.44)
 
 The repository is **Dread92/Heimdall-map**. The app's address is **https://heimdall.com.ua** (1.58.34, 18 October
 2026); the Fly app keeps its first name, `kyiv-air-watch-gb`, and its first address keeps working (§15 has the move).
@@ -712,6 +712,14 @@ block for every value:
 - **Type** — `TYPE_RX`: drones (Shahed / Geran / "мопед"), jet drones, cruise, ballistic, supersonic
   (Kh-22/32, before cruise), `banderol_missiles` (Banderol / S-8000 / "реактивні ракети з БпЛА"), KAB, tactical
   and strategic aviation, MiG-31K. No type word → `unknown` (drawn as an upright ⚠, never guessed).
+  **1.58.44: "БР"** — the Air Force's and the trackers' балістичні ракети (`BR_RX`, a word of its own: not "бр." of a
+  brigade before a name) is a ballistic missile, in `TYPE_RX`, `MSL_NAMED_RX`, the tagger and `COUNT_RX` ("2 БР"):
+  "3х БР на Київ" was a probable drone, "Пуск БР з Брянщини" nothing. "Без подальшої фіксації" (and "без дальнейшей
+  фиксации") is `lost`. An outcome with no place that names a missile (`_outcome_here`, `type_stated`; from any channel,
+  a short post) goes to that channel's **last report of that weapon** within 10 minutes (`last_of_kind`, an approach
+  included) — never to a drone it reported since; with none, no mark. "Без подальшої фіксації 3х БР." ends the three
+  ballistic missiles of "3х БР на Київ" as lost. A post that only says how targets ended (`geo.ended_only`) raises no
+  missile level; the official alert still decides when it is over.
   **1.58.42: words only.** The owner: "stop using the emojis to determine the nature of the threat, because it is very
   common for the rocket / cruise missile emoji to be used for jet drones" (picked: no emoji at all). `TYPE_RX` holds no
   emoji any more (🚀 was `unspecified_missiles`, 💣 a KAB, 🛵 🛸 🏍 🚁 🅿 a drone), nor `MSL_WEAK_RX` (🚀); the arrows
@@ -1797,6 +1805,23 @@ type. Nothing about a reader is in it.
   each with its vibration (`VIB_L`). At most one tone in 10 s unless the level rises (`TONE`), so a busy night does
   not become a noise people mute. The bell's ▶ plays `l2`, `l3`, `l4` in turn at the chosen volume. And a **shoot-down notice** for a track the reader was warned about — worded so it can never read
   as an all-clear.
+- **What makes a sound** (1.58.44 — a tester: "it keeps pinging constantly … what to actually fear is unclear. Missile
+  threats make sense — no radius there. But for UAVs, it's confusing"). Three things had been ringing: every official
+  alert, threat and all-clear of any raion of Kyiv oblast and the city; with no place set, every post about Kyiv; and
+  the same drone again at each new report (warned by report, not by target). Now, per target (`sndFor`):
+  **missiles, ballistic, MiG-31K, Kh-22, cruise missiles, KABs** (`SND_REGION`) — anywhere within `REGION_R` (150 km),
+  no radius (`l4` for the immediate types, `l3` for the rest; body `n_imm_b` / `n_reg_b`); a **drone** (a Shahed, a jet,
+  a Banderol, a target of no stated type) — `l2` once it is inside the reader's radius **`SND_R`** (the bell: 10 / 20 /
+  30 km / the oblast = `REGION_R`; 20 by default; `localStorage` `sndr`), `l2` when a post names the place (`hi.named`)
+  or its **stated** course points at it within 40 km (±20°, `courseAtHome`; an approach mark's course, a guessed one,
+  none), `l3` inside 10 km; a whole-oblast report, an outcome, a stale or held mark — none. **Once per target**: the key
+  is its track (`trackKey`: the tag, else the report), with the highest `rank` it sounded at (1 radius, 2 heading this
+  way, 3 inside 10 km or a missile) — it sounds again only at a higher rank (`SND`); `homeAlerted` follows the track, so
+  its "shot down" still comes. **Official alerts**: a start and an all-clear of the reader's own area only (`areaWatch`,
+  on every state: `placeLevel(HOME)` going to R/Y, `l1`, or back to G); a threat event for the area it covers
+  (`coversHome`), a ballistic or MiG-31K one for Kyiv and its oblast for everybody. **No place set**: no target sound;
+  once, silently, "Set your place to get sound alerts" (`snd_noplace`). Under the picker, one line says it (`snd_why`).
+  Light (vibration within 10 km) and the pushes (a radius, 15 km by default, every 2 minutes at most) are unchanged.
 - **The admin's message** (1.29; headed "Message from the system admin" since 1.30): the dashboard publishes one message (UK / EN / FR, info / warning / urgent, for
   1 h – 3 days or until removed), stored in `kv.notice` and carried in the alerts state (`notice`), so the live
   line and `/api/state` bring it to both pages as a banner. A reader can close it (remembered on that phone,

@@ -1099,7 +1099,7 @@ body.lite .panel,body.lite .panel>*,body.lite .sec,body.lite .tabs.ind::after{an
 .pgrab{width:40px;height:5px;border-radius:3px;background:#3a4252;margin:8px auto 2px}
 .ph{display:flex;align-items:center;gap:8px;padding:4px 8px 6px 16px}.ph b{flex:1;font:800 19px/1.2 var(--sans)}
 .px{flex:none;width:44px;height:44px;border:1px solid var(--line);border-radius:var(--r);background:var(--panel2);color:var(--ink2);font:600 16px var(--sans);cursor:pointer}
-.pnote{padding:0 16px 8px;font:500 13.5px/1.4 var(--sans);color:var(--ink3)}
+.pnote{padding:0 16px 8px;font:500 13.5px/1.4 var(--sans);color:var(--ink3)}.pnote.sndw{padding:7px 16px 9px;font-size:12.5px;border-bottom:1px solid var(--line)}
 .panel .mg{padding:16px 16px 6px;font:750 12.5px/1 var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)}
 .panel .mi{display:block;width:100%;min-height:48px;padding:12px 16px;border:0;border-bottom:1px solid var(--line);background:transparent;color:var(--ink);font:500 15.5px/1.3 var(--sans);text-align:left;text-decoration:none;cursor:pointer}
 .panel .mi.lrow{display:flex;align-items:center;gap:10px}.panel .lsel{min-height:44px;font:600 15px var(--sans);border-radius:var(--r)}
@@ -1302,6 +1302,8 @@ body.lite #mycard,body.lite .panel{background:#000;border-color:#666}body.lite .
   <button class="mi tg" id="brgbtn" type="button"><span class="lb" data-t="m_brg">Kyiv bridges: alert me</span><small data-t="bl_brg_b"></small></button>
   <button class="mi tg on" id="snd" type="button"><span class="lb" data-t="m_snd_s">Sound</span><small data-t="bl_snd_b"></small></button>
   <div class="mrow z vol" id="sndrow"><span class="ml" data-t="m_vol">Volume</span><input type="range" id="sndvol" min="0" max="100" step="5" value="50" data-t-aria="m_vol"><b id="sndvolv">50%</b><button class="mi2" id="sndtest" type="button" data-t-aria="bl_test" data-t-title="bl_test">▶</button></div>
+  <div class="mrow z" id="sndrr"><span class="ml" data-t="snd_r">Drones within</span><button class="mi2" type="button" data-sr="10">10 km</button><button class="mi2" type="button" data-sr="20">20 km</button><button class="mi2" type="button" data-sr="30">30 km</button><button class="mi2" type="button" data-sr="0" data-t="snd_r_all">oblast</button></div>
+  <div class="pnote sndw" data-t="snd_why">A drone sounds once when it enters this radius.</div>
   <button class="mi tg" id="vib" type="button"><span class="lb" data-t="m_vib_s">Vibration</span><small data-t="bl_vib_b"></small></button>
 </div>
 <div class="panel" id="menu" hidden role="dialog" aria-labelledby="menuh"><div class="pgrab"></div>
@@ -1540,6 +1542,9 @@ function sndSave(){ try{localStorage.setItem('snd',soundOn?'1':'0');localStorage
 function volUI(){ const x=soundOn?sndVol:0; $('sndvol').value=x; $('sndvolv').textContent=soundOn?x+'%':t('m_vol_off');
   $('snd').classList.toggle('on',soundOn); $('sndrow').classList.toggle('off',!soundOn); if(master) master.gain.value=volGain(); }
 $('snd').onclick=()=>{soundOn=!soundOn;sndSave();volUI();};
+// 1.58.44: the drones' sound radius (sndFor), kept on this phone
+function sndRUI(){ document.querySelectorAll('#sndrr [data-sr]').forEach(b=>{ b.classList.toggle('on',+b.dataset.sr===SND_R); if(+b.dataset.sr) b.textContent=t('snd_km',b.dataset.sr); }); }
+document.querySelectorAll('#sndrr [data-sr]').forEach(b=>b.onclick=()=>{ SND_R=+b.dataset.sr; try{localStorage.setItem('sndr',String(SND_R));}catch(e){} sndRUI(); });
 $('sndvol').oninput=e=>{ const x=+e.target.value; soundOn=x>0; if(x>0) sndVol=x; sndSave(); volUI(); };
 // letting go of the slider plays the loudest alert the app has, at that level: what you hear is the ceiling
 $('sndvol').onchange=()=>{ if(soundOn) beep('l4',1); };
@@ -2109,6 +2114,47 @@ function homeInfo(m,x,y){
   if(m.status||m.endedBy||!v) return {near:dist<10||imm,inbound:false,named:false,dist,immediate:imm,zone};
   return {near:dist<10||imm,inbound:named,named,dist,immediate:imm,zone,eta:named&&v?dist/v:null};
 }
+// 1.58.44 — what makes a sound, per target (the owner, after a tester: "it keeps pinging constantly … what to actually
+// fear is unclear. Missile threats make sense — no radius there. But for UAVs, it's confusing"):
+//   missiles, ballistic, MiG-31K, Kh-22, cruise missiles, KABs — anywhere in the region (REGION_R), no radius;
+//   a drone (a Shahed, a jet, a Banderol, a target of no stated type) — when it enters the reader's radius (SND_R: 10, 20,
+//   30 km, or 0 = the whole region; 20 by default), louder inside 10 km; or when a post names the reader's place, or its
+//   STATED course points at the place (±20°) within 40 km — a course is never guessed;
+//   a target heading for a whole oblast, an outcome, one held off the map, one gone stale — none.
+// `rank`: 1 in the radius, 2 heading this way, 3 inside 10 km or a missile — a target sounds again only at a higher rank.
+const SND_REGION=new Set(['ballistic_missiles','mig31k_departure','supersonic_missiles','cruise_missiles','unspecified_missiles','guided_aerial_bombs']);
+const SND_RS=[10,20,30,0]; let SND_R=20;
+try{ const r=localStorage.getItem('sndr'); if(r!==null&&SND_RS.includes(+r)) SND_R=+r; }catch(e){}
+sndRUI();
+const SND=new Map();     // track → the highest rank it has sounded at
+const trackKey=m=>m.tag&&m.tag.id?`t:${m.tag.night||''}:${m.tag.id}`:m.id;
+function courseAtHome(m,x,y,d){
+  if(m.approach||m.heading==null||d==null||d>40) return false;
+  const ev=m.evidence&&m.evidence.heading; if(!ev||!ev.confidence||ev.confidence==='none') return false;
+  const [hx,hy]=proj(HOME.lon,HOME.lat), b=(Math.atan2(hx-x,-(hy-y))*180/Math.PI+360)%360;
+  return Math.abs(((m.heading-b)+540)%360-180)<=20; }
+function sndFor(m,hi,x,y){
+  if(!HOME||m.status||m.endedBy||m.stale||m.held||hi.dist==null) return null;
+  const d=hi.dist;
+  if(SND_REGION.has(m.type)){ if(d>REGION_R) return null;
+    if(IMMEDIATE.has(m.type)) return {rank:3,level:m.type==='ballistic_missiles'&&!officialLevel()?3:4,why:'imm'};
+    return {rank:3,level:3,why:'region'}; }
+  if(m.place==='область') return null;                   // a whole oblast: no point, no distance
+  if(d<=10) return {rank:3,level:3,why:'near'};
+  if(d<=REGION_R&&(hi.named||courseAtHome(m,x,y,d))) return {rank:2,level:2,why:'course'};
+  if(d<=(SND_R||REGION_R)) return {rank:1,level:2,why:'radius'};
+  return null; }
+// 1.58.44: the official alert of the reader's own place (placeLevel) — not every raion of the oblast
+let AREA_K=null;
+function areaWatch(){
+  if(!HOME||!S){ AREA_K=null; return; }
+  const k=placeLevel(HOME).k, prev=AREA_K; if(k==='U') return; AREA_K=k;
+  if(prev===null) return;                                // the first reading after the page opens says nothing new
+  const on=x=>x==='R'||x==='Y';
+  if(on(k)&&!on(prev)) notify(`🔴 ${t('n_alert')} — ${homeName()}`,fmtT(new Date().toISOString()),'start',undefined,1);
+  else if(k==='G'&&on(prev)) notify(`🟢 ${t('n_allclear')} — ${homeName()}`,'','end'); }
+function coversHome(a){ if(!HOME) return false; const u=unitAt(HOME.lon,HOME.lat); if(!u) return false;
+  return a.oblast_uid===u.obl&&((a.location_type==='oblast'&&!a.unsure)||(u.obl==='31'&&a.location_type==='city')||(a.location_type==='raion'&&!!a.raion_key&&a.raion_key===u.key)); }
 // Three fixed distances around the watched place. Not thresholds the app invented — they are the ranges
 // over which a person can actually do something different: inside 10 km you can hear it and you go now;
 // 10–30 km is the window where an ETA is worth anything at all; out to 60 km is background you want to
@@ -2643,14 +2689,19 @@ function tick(){
       } else b.hist.innerHTML='';
     } else b.hist.innerHTML='';
     const [x,y,x0,y0]=posOf(m,now); const info=inboundInfo(m,x,y); const hi=homeInfo(m,x,y); const age=agoMin(m.ts);
-    b.g.classList.toggle('tohome',hi.inbound||(hi.near&&!m.status&&!m.endedBy)); if(hi.inbound||hi.near){ if(!m.status&&!m.endedBy){ homeThreats++; if(hi.named) homeNamedN++; if(hi.inbound&&(!homeNearest||hi.dist<homeNearest.dist)) homeNearest={...hi,m}; if(!homeAlerted.has(m.id)){homeAlerted.add(m.id);
+    b.g.classList.toggle('tohome',hi.inbound||(hi.near&&!m.status&&!m.endedBy)); if(hi.inbound||hi.near){ if(!m.status&&!m.endedBy){ homeThreats++; if(hi.named) homeNamedN++; if(hi.inbound&&(!homeNearest||hi.dist<homeNearest.dist)) homeNearest={...hi,m}; } }
+    // 1.58.44: the sound, once per target (its track), again only when it gets more serious (sndFor) — a tester: "it keeps
+    // pinging constantly … for UAVs it's confusing"
+    {const sf=sndFor(m,hi,x,y), tk=trackKey(m); if(SND.has(tk)) homeAlerted.add(m.id);
+     if(sf&&sf.rank>(SND.get(tk)||0)){ SND.set(tk,sf.rank); homeAlerted.add(m.id);
       // A ballistic warning names no distance and no ETA: at this speed neither is something the reader can
       // act on, and printing "112 km" invites exactly the wrong decision — that there is time.
       // 1.42.1: as in the strip — with no official alert over the place, it says so and asks to be ready, a level lower;
       // and a mark drawn at the town it is heading for is "heading for", never "reported near"
-      if(hi.immediate){ const uo=m.type==='ballistic_missiles'&&!officialLevel(); const at=m.approach?t('n_rep_to',pn(m.place),fmtT(m.ts)):`${t('n_rep')} ${pn(m.place)} ${fmtT(m.ts)}`;
-        notify(uo?t('ts_bal_unoff'):`🚨 ${t('n_imm',THREAT[m.type]?.[1]||'')}`,`${at} · ${uo?t('ts_bal_ready'):t('n_imm_b')}`,'start',alertVol(m,hi),uo?3:4); }
-      else notify(`🏠 ${hi.inbound?t('n_hto'):t('n_hnear')} ${homeName()} — ${m.type==='drones'?(m.jet?t('k_jet_l'):t('k_shahed')):THREAT[m.type]?.[1]}`,`${Math.round(hi.dist)} km${hi.inbound?' · '+t('n_hway'):''} · ${t('n_rep')} ${pn(m.place)} ${fmtT(m.ts)}`,'start',alertVol(m,hi),hi.zone==='near'?3:2);} } }
+      const at=m.approach?t('n_rep_to',pn(m.place),fmtT(m.ts)):`${t('n_rep')} ${pn(m.place)} ${fmtT(m.ts)}`;
+      if(sf.why==='imm'||sf.why==='region'){ const uo=m.type==='ballistic_missiles'&&!officialLevel();
+        notify(uo?t('ts_bal_unoff'):`🚨 ${t('n_imm',THREAT[m.type]?.[1]||'')}`,`${at} · ${uo?t('ts_bal_ready'):t(sf.why==='imm'?'n_imm_b':'n_reg_b')}`,'start',alertVol(m,hi),sf.level); }
+      else notify(`🏠 ${sf.why==='course'?t('n_hto'):t('n_hnear')} ${homeName()} — ${m.type==='drones'?(m.jet?t('k_jet_l'):t('k_shahed')):m.type==='unknown'?unkKind(m):THREAT[m.type]?.[1]}`,`${Math.round(hi.dist)} km${sf.why==='course'?' · '+t('n_hway'):''} · ${at}`,'start',alertVol(m,hi),sf.level); } }
     // The other half of a warning: what became of it.
     //
     // Somebody was told a Shahed was coming at their place. When a later post says it was shot down, they
@@ -3344,7 +3395,7 @@ function threatStrip(){
   const ours=u=>mine.has(u)||(u==='14'&&mine.has('31'));
   for(const p of recent){ const tg=p.tags||[]; if(p.home&&!mine.has(p.home)) continue; if(p.obl&&p.obl.length&&!tg.includes('mig31k_departure')&&!p.obl.some(ours)) continue; if(tg.includes('clear')||tg.includes('forecast')||tg.includes('retract')||FORECAST.test(p.text||'')||retracted(p.ts)) continue;
     if(tg.includes('mig31k_departure')){ if(!cancelledAfter(p.ts,'mig31k_departure')) thr.push({ty:'mig31k_departure',ts:p.ts,src:p.channel,where:''}); }
-    else if(tg.includes('ballistic_missiles')&&(/(?:^|[^а-яіїє])пуск|запуск[а-яіїє]*\s+(?:баліст|іскандер|кинджал|кінжал)|швидкісн[а-яіїє]*\s+ціл|балістик[а-яіїє]*\s+(?:на|по)\s+ки[їєе]в|загроза\s+(?:застосування\s+)?баліст[а-яіїє]*\s+(?:для|по|на)?\s*ки[їєе]в|ballistic.*kyiv|launch/i.test(p.text+' '+(p.text_en||''))||(tg.includes('kyiv')&&tg.includes('official')))){ if(!cancelledAfter(p.ts,'ballistic_missiles')) thr.push({ty:'ballistic_missiles',ts:p.ts,src:p.channel,where:''}); } }
+    else if(tg.includes('ballistic_missiles')&&(/(?:^|[^а-яіїє])пуск|запуск[а-яіїє]*\s+(?:баліст|іскандер|кинджал|кінжал)|швидкісн[а-яіїє]*\s+ціл|балістик[а-яіїє]*\s+(?:на|по)\s+ки[їєе]в|(?:^|[^а-яіїє])бр\s+(?:на|по)\s+ки[їєе]в|загроза\s+(?:застосування\s+)?баліст[а-яіїє]*\s+(?:для|по|на)?\s*ки[їєе]в|ballistic.*kyiv|launch/i.test(p.text+' '+(p.text_en||''))||(tg.includes('kyiv')&&tg.includes('official')))){ if(!cancelledAfter(p.ts,'ballistic_missiles')) thr.push({ty:'ballistic_missiles',ts:p.ts,src:p.channel,where:''}); } }
   const el=$('tstrip');
   // Quiet is a state worth showing, not an absence. A blank header answers none of the questions somebody
   // opens this on a calm evening to ask — is anything happening at all, anywhere. So when nothing is
@@ -3702,7 +3753,7 @@ function scopeRegs(){ const sc=(S&&S.scope)||['14','31','10','25','20','19','24'
 function myOblasts(){ const o=new Set([MYOBL.uid]); for(const p of Object.values(SLOTS)) if(p){ const u=unitAt(p.lon,p.lat); if(u&&u.obl) o.add(u.obl==='31'?'14':u.obl); } return o; }
 function applyAlertMap(am){ for(const [el,c] of am.cls) if(el.getAttribute('class')!==c) el.setAttribute('class',c); }
 function render(){
-  if(!S) return; satAvail(S.config); const ob=S.oblasts; threatStrip(); drawBridges();
+  if(!S) return; areaWatch(); satAvail(S.config); const ob=S.oblasts; threatStrip(); drawBridges();
   {const all=Object.entries(S.sources),ok=all.filter(([k,v])=>v.ok).length; $('srcs').innerHTML=`<i class="${ok===all.length?'ok':ok?'warn':'bad'}"></i><span class="sn">${ok}/${all.length}</span>`; $('srcs').title=all.map(([k,v])=>`${v.ok?'●':'○'} ${k}${v.n?` ${v.n_ok}/${v.n}`:''}`).join('\n');}
   const MYU=MYOBL.uid, MYN=MYOBL.name, isK=MYU==='14';
   const k=ob['31'], ko=ob[MYU]||{status:'N',threats:[]};
@@ -4117,6 +4168,7 @@ function histSoon(){ if(histT) return; histT=setTimeout(()=>{histT=null;loadHist
 // 1.58.24: one live line at a time (a new one closes the old), and a line that keeps failing is asked again later and
 // later — 3 s, 6, 12, 24, then every 30 s, spread — while the pulse keeps the page current: after a restart every page
 // came back at the same second, and a line refused (too many from one address) was asked again every 3 s for ever
+let noPlaceSaid=false;   // 1.58.44: no place — no sound for every Kyiv post (it beeped for each); asked once for a place, silently
 function connect(){
   clearTimeout(esT); try{ es&&es.close(); }catch(e){}
   const qs=['sync='+(LITE?'mk,st':'mk,st,fd')]; if(LANG!=='uk') qs.push('lang='+LANG);
@@ -4127,12 +4179,13 @@ function connect(){
   es.addEventListener('tr',ev=>{const d=JSON.parse(ev.data); if(d.lang!==LANG||(LIVE_SYNC&&!LITE)) return; clearTimeout(trT); trT=setTimeout(()=>loadFeed(false),2500);});
   const onA=kind=>ev=>{const d=JSON.parse(ev.data),a=d.alert,fav=a.oblast_uid==='31'||a.oblast_uid==='14'; if(!LIVE_SYNC) loadState(); if(kind!=='update')histSoon(); if(!fav)return;
     const lt=LANG==='uk'?a.location_title:(a.location_title_en||a.location_title);
-    if(kind==='start')notify(`🔴 ${ATYPE[a.alert_type]||t('n_alert')} — ${lt}`,`${LT(a.location_type)} · ${fmtT(a.started_at)}${a.notes?' · '+a.notes:''}`,'start',undefined,1);
-    else if(kind==='end')notify(`🟢 ${t('n_allclear')} — ${lt}`,t('n_lasted',dur(a.started_at,a.finished_at)),'end');
-    else if(kind==='threat'){const th=d.threat||{};notify(`⚠️ ${THREAT[th.threat_type]?.[1]||th.threat_type} — ${lt}`,th.source_message||'','threat',undefined,IMMEDIATE.has(th.threat_type)?4:2);}};
+    // 1.58.44: an alert's start and end sound for the reader's own area only (areaWatch, on the state it brings); a
+    // ballistic or MiG-31K threat for Kyiv and its oblast, for everybody; any other threat, for the area it covers
+    if(kind==='threat'){const th=d.threat||{}, imm=IMMEDIATE.has(th.threat_type);
+      if(imm||coversHome(a)) notify(`⚠️ ${THREAT[th.threat_type]?.[1]||th.threat_type} — ${lt}`,th.source_message||'','threat',undefined,imm?4:2);}};
   ['start','end','threat','update'].forEach(k=>es.addEventListener(k,onA(k)));
   es.addEventListener('eradar',()=>{ if(!LIVE_SYNC) loadState(); });
-  es.addEventListener('feed',ev=>{const d=JSON.parse(ev.data);if(!LIVE_SYNC||LITE)loadFeed(true);if(!LIVE_SYNC)loadMarkers();if(!HOME&&(d.post.tags||[]).includes('kyiv')&&!(d.post.tags||[]).includes('official'))notify(t('n_kyivarea'),ptxt(d.post).slice(0,160),'threat');});
+  es.addEventListener('feed',ev=>{const d=JSON.parse(ev.data);if(!LIVE_SYNC||LITE)loadFeed(true);if(!LIVE_SYNC)loadMarkers();if(!HOME&&!noPlaceSaid&&(d.post.tags||[]).includes('kyiv')&&!(d.post.tags||[]).includes('official')){noPlaceSaid=true;notify(t('snd_noplace'),t('snd_noplace_b'),'threat',0);}});
   es.onerror=()=>{LIVE_SYNC=false;es.close();esT=setTimeout(connect,Math.min(30000,3000*2**Math.min(esFail++,4))*(0.75+Math.random()*0.5));};
 }
 // 1.42: the switch to Light and back can keep this page in the browser's memory (back/forward cache). The live line is

@@ -216,7 +216,7 @@ FEED_TAGS = [
     ("drones", re.compile(r"бпла|шахед|дрон|безпілотн|мопед|реактив|\bбп\b", re.I)),
     # "Кинджал" is how the Air Force and war_monitor write it (1.33): read as "a missile" it lost the ballistic
     # banner — for an aeroballistic missile that reaches Kyiv in minutes
-    ("ballistic_missiles", re.compile(r"баліст|іскандер|кінжал|к[иі]нджал|х-?47|kn-?23|балістич", re.I)),
+    ("ballistic_missiles", re.compile(r"баліст|іскандер|кінжал|к[иі]нджал|х-?47|kn-?23|балістич|(?<![\w.])бр(?![\w]|\.\s*[а-яіїєґ])", re.I)),   # 1.58.44: "БР"
     ("banderol_missiles", re.compile(r"бандерол", re.I)),
     ("cruise_missiles", re.compile(r"крилат|калібр|калиб|х-?101|х-?555|х-?59|х-?69|х-?22|х-?32|ракет|(?<![\w.])кр(?![\w.])(?!\s*р[іи]г)", re.I)),
     # the channels decline it and drop the hyphen ("Мігну31к в небе"), so міг/миг/mig then 31 within three letters
@@ -3756,6 +3756,7 @@ class State:
         # used to restart that position's clock, so on 5 October a target destroyed at Vydubychi at 20:25 stood
         # there, "1 min ago", until 20:37, carried by lines about another target 100 km south.
         last_by_channel = {}
+        last_of_kind = {}        # 1.58.44: (channel, type) → its last report of that weapon, a destination included
         # 1.44.1: the weapon each channel last named (from its posts' tags) — "Пуски КАБів в нашому напрямку" names no
         # place, and the reports after it ("Пролітають …", "Впали") name no weapon
         weapon_by_channel = {}
@@ -3878,6 +3879,18 @@ class State:
                     ev["position"] = dict(ev.get("position") or {}, matched=c1.get("place"), place=c1.get("place"))
                     ev["type"] = dict(c1.get("evidence", {}).get("type") or ev.get("type") or {})
                     m["evidence"] = ev
+                elif m.get("needs_context") and m.get("type_stated"):
+                    # 1.58.44: "Без подальшої фіксації 3х БР." — the missiles it names: at this channel's last report of
+                    # them (a destination too, "3х БР на Київ"), never at a drone it reported since; none — no mark
+                    c2 = last_of_kind.get((ck, m["type"]))
+                    if not (c2 and pts and 0 <= (pts - c2[0]).total_seconds() <= 10 * 60):
+                        continue
+                    m.update(lon=c2[1]["lon"], lat=c2[1]["lat"], place=c2[1]["place"], oblast_uid=c2[1].get("oblast_uid"), pos_ts=c2[2])
+                    m.pop("needs_context", None)
+                    ev = dict(m.get("evidence") or {})
+                    ev["position"] = {"matched": None, "place": c2[1].get("place"), "confidence": "low",
+                                      "method": "no place in this post — at this channel's last report of that weapon"}
+                    m["evidence"] = ev
                 elif m.get("needs_context"):
                     if ctx and pts and (pts - ctx[0]).total_seconds() <= 8 * 60:
                         m.update(lon=ctx[1]["lon"], lat=ctx[1]["lat"], place=ctx[1]["place"], oblast_uid=ctx[1].get("oblast_uid"), pos_ts=ctx[2])
@@ -3936,6 +3949,8 @@ class State:
                             m["heading"] = brg
                             ev = dict(m.get("evidence") or {}); ev["heading"] = {"matched": f"{ctx[1].get('place')} → {m.get('place')}", "method": "bearing between the two latest reports of this live-tracking channel", "confidence": "medium"}
                             m["evidence"] = ev
+                if m.get("lon") is not None and not m.get("status") and pts and m.get("type") in geo.MISSILE_KINDS:
+                    last_of_kind[(ck, m["type"])] = (pts, m, p["ts"])
                 if m.get("lon") is not None and not m.get("status") and not m.get("approach"):
                     # a carried position keeps the time it was reported at; only a newly named place resets the clock
                     last_by_channel[ck] = ctx if (m.get("pos_ts") and ctx) else (pts, m, p["ts"], n_here)
@@ -5688,6 +5703,8 @@ class State:
             obl = missile_obls(p.get("post_id"), p.get("channel"), p.get("text"), tags)
             if obl and not mine & set(obl):
                 continue                               # 1.56.6: a missile for another oblast ("на заході Донеччини")
+            if geo and bal & tags and geo.ended_only(p.get("text"), p.get("channel")):
+                continue                               # 1.58.44: "Без подальшої фіксації 3х БР." ends, it does not warn
             if bal & tags:
                 return self.MSL_BALLISTIC
             if kinds & tags:

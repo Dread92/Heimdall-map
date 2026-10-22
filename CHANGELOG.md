@@ -2,6 +2,20 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.44 — 2026-10-22
+
+"БР" is a ballistic missile; the sounds say what concerns the reader, once per target.
+
+- **Fixed: "БР".** "3х БР на Київ" was drawn as a probable drone, "Пуск БР з Брянщини" read as nothing: БР (балістичні
+  ракети) is a ballistic missile now, counted ("2 БР"). "Без подальшої фіксації 3х БР." — no longer tracked — ends that
+  channel's ballistic report as lost (never a drone it reported since), and raises no missile level of its own.
+- **Changed: sounds** (a tester: "it keeps pinging constantly … for UAVs, it's confusing"). Drones (Shahed, jet,
+  Banderol, probably a drone): a sound once they enter the radius chosen in the bell — 10 / 20 / 30 km / the oblast, 20 by
+  default — louder inside 10 km; also when a post names the place or a stated course points at it within 40 km. Once
+  per target: again only when it gets more serious. Missiles, ballistic, MiG-31K, Kh-22, cruise missiles and KABs: across
+  the region. Official alerts: the reader's own area only (they rang for every raion of the oblast). No place set: no
+  target sound (every post about Kyiv beeped), a prompt to set one. A line under the picker says what makes a sound.
+
 ## 1.58.43 — 2026-10-21
 
 The three channels the owner added, read as they write; a shared Heimdall link shows the logo.

@@ -32,7 +32,9 @@ def test_off_everywhere_a_number_was_shown():
     assert "tr.tg&&typeof TAGS_SHOWN!=='undefined'&&TAGS_SHOWN?tr.tg+' ':''" in REPLAY
     # every other use of a tag's number in the page goes through the switch
     uses = [m.start() for m in re.finditer(r"\.tag\.id|tg\.id", PAGE)]
-    assert uses and all("TAGS_SHOWN" in PAGE[max(0, u - 900):u] or "sig=" in PAGE[max(0, u - 200):u] for u in uses)
+    # 1.58.44: and one key that is never shown — a target sounds once per track (trackKey)
+    assert uses and all("TAGS_SHOWN" in PAGE[max(0, u - 900):u] or "sig=" in PAGE[max(0, u - 200):u]
+                        or "const trackKey=m=>" in PAGE[max(0, u - 90):u] for u in uses)
     assert "tag.id" not in LIGHT
 
 
