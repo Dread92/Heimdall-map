@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-22 (1.58.46)
+**Documented version: 1.58** · last updated 2026-10-22 (1.58.47)
 
 The repository is **Dread92/Heimdall-map**. The app's address is **https://heimdall.com.ua** (1.58.34, 18 October
 2026); the Fly app keeps its first name, `kyiv-air-watch-gb`, and its first address keeps working (§15 has the move).
@@ -145,6 +145,7 @@ Heimdall-map/
 │   ├── models3d.js         the threats in 3D on the Tactical page: each weapon built from shapes, photographed into a
 │   │                       strip of frames (1.58.45; an ES module, loaded on demand)
 │   ├── vendor/             three-m3d.min.js — three.js 0.185.1 (MIT, three.LICENSE), only the classes models3d.js uses
+│   ├── jar3d.webp          1.58.47: the donation jar in 3D (models3d.js's jar), a strip of 36 frames — scripts/render_jar.js
 │   ├── kyiv-map.json       27 oblasts + all raions, in km around Kyiv (geoBoundaries)
 │   ├── light-map.json      raions of the 8 oblasts + nearby oblast outlines, rivers, roads, towns (built)
 │   ├── light-map-x.json    raions of the 11 oblasts farther out — fetched only for a place there (built, 1.43)
@@ -175,6 +176,7 @@ Heimdall-map/
 ├── scripts/
 │   ├── build_geo.py        rebuilds data/ua_regions.json and static/light-map.json (`--light`: the Light maps only)
 │   ├── build_three.sh      rebuilds static/vendor/three-m3d.min.js from three-m3d.entry.js (npm three + esbuild; 1.58.45)
+│   ├── render_jar.js       renders static/jar3d.webp from models3d.js's jar (Node + Playwright; 1.58.47)
 │   ├── build_hromadas.py   rebuilds static/hromadas/ from OCHA's ukr_admin_boundaries.gdb (pyogrio, shapely; 1.58.16)
 │   ├── build_places.py     rebuilds data/regional_places.json from GeoNames (1.43)
 │   ├── build_extra_places.py rebuilds data/extra_places.json from GeoNames (1.52)
@@ -2881,6 +2883,14 @@ to donate to keep the infrastructure and help the devs" (a Monobank jar, his pic
   then — not with less motion; not in the blackout look), opens the support sheet; with the owner's Monobank jar set in
   the dashboard (`POST /api/admin/donate`, only `https://send.monobank.ua/jar/…`, checked again on the page) its first
   line is "Donate to the jar (Monobank)". Without it the sheet is as before.
+- **1.58.47, the jar in 3D** (the owner: "make the jar better looking, in three.js — right now it's not really standing
+  out"): `models3d.js`'s `jar` — a glass jar, the lid and a band in the flag's blue and yellow, coins piled inside, one
+  dropping through the slot with a glint, the jar rocking (`VIEWS.jar`, 36 frames, 4 s; not a threat: not in `KEYS`) —
+  photographed once into `static/jar3d.webp` (`scripts/render_jar.js`, 112-px frames, ~70 KB) and played by CSS
+  (`.jar3d`, `steps(36)`): no three.js is loaded for it. The button is larger (54 px), with a gold rim, a warm light and a
+  soft glow every few seconds (not with less motion); the strip is asked for 3 s after the page opens, never with "save
+  data" or in the blackout look — until then, and if it never comes, the drawing. The look's tag (`#modetag`, day /
+  night) moved to the top right, off the jar.
 
 ## 11. Privacy and security
 

@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Heimdall (Kyiv Air Watch) — the full technical documentation, with a map of the system.">
-<meta name="heimdall-version" content="1.58.46">
-<meta name="heimdall-docs" content="a644d4412d6f4611">
+<meta name="heimdall-version" content="1.58.47">
+<meta name="heimdall-docs" content="347031347ad1868d">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Heimdall Technical Manual</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -237,7 +237,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
 <header class="top">
   <div class="wrap">
     <a class="brand" href="#top"><b>Heimdall</b><span>Technical manual</span></a>
-    <span class="ver">1.58.46</span>
+    <span class="ver">1.58.47</span>
     <nav class="nav" aria-label="Sections">
       <a href="#map">Map</a><a href="#journeys">Journeys</a><a href="#rules">Rules</a><a href="#reference">Reference</a><a href="#safety">Safety</a>
     </nav>
@@ -256,7 +256,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
       <h1 class="title">How Heimdall works</h1>
       <p class="lead">An unofficial air-threat map for Kyiv and the oblasts around it. One Python process reads the official
       alert data and the channels that track drones and missiles, stores every post before it reads it, rebuilds the map
-      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.46, 22 October 2026:
+      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.47, 22 October 2026:
       the map first, then everything in full.</p>
     </div>
     <dl class="facts">
@@ -647,7 +647,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
     <div class="doc" id="doc">
 <section class="part" id="tech" data-label="Reference"><p class="partlabel">Part I · The reference</p>
 <h1 id="heimdall--technical-documentation">Heimdall — technical documentation</h1>
-<p><strong>Documented version: 1.58</strong> · last updated 2026-10-22 (1.58.46)</p>
+<p><strong>Documented version: 1.58</strong> · last updated 2026-10-22 (1.58.47)</p>
 <p>The repository is <strong>Dread92/Heimdall-map</strong>. The app's address is <strong>https://heimdall.com.ua</strong> (1.58.34, 18 October
 2026); the Fly app keeps its first name, <code>kyiv-air-watch-gb</code>, and its first address keeps working (§15 has the move).</p>
 <p>This is the complete technical reference: what runs, where the data comes from, how a Telegram post becomes a
@@ -796,6 +796,7 @@ real post, and a fix to the rules applies to posts already in the database.</p>
 │   ├── models3d.js         the threats in 3D on the Tactical page: each weapon built from shapes, photographed into a
 │   │                       strip of frames (1.58.45; an ES module, loaded on demand)
 │   ├── vendor/             three-m3d.min.js — three.js 0.185.1 (MIT, three.LICENSE), only the classes models3d.js uses
+│   ├── jar3d.webp          1.58.47: the donation jar in 3D (models3d.js's jar), a strip of 36 frames — scripts/render_jar.js
 │   ├── kyiv-map.json       27 oblasts + all raions, in km around Kyiv (geoBoundaries)
 │   ├── light-map.json      raions of the 8 oblasts + nearby oblast outlines, rivers, roads, towns (built)
 │   ├── light-map-x.json    raions of the 11 oblasts farther out — fetched only for a place there (built, 1.43)
@@ -826,6 +827,7 @@ real post, and a fix to the rules applies to posts already in the database.</p>
 ├── scripts/
 │   ├── build_geo.py        rebuilds data/ua_regions.json and static/light-map.json (`--light`: the Light maps only)
 │   ├── build_three.sh      rebuilds static/vendor/three-m3d.min.js from three-m3d.entry.js (npm three + esbuild; 1.58.45)
+│   ├── render_jar.js       renders static/jar3d.webp from models3d.js's jar (Node + Playwright; 1.58.47)
 │   ├── build_hromadas.py   rebuilds static/hromadas/ from OCHA's ukr_admin_boundaries.gdb (pyogrio, shapely; 1.58.16)
 │   ├── build_places.py     rebuilds data/regional_places.json from GeoNames (1.43)
 │   ├── build_extra_places.py rebuilds data/extra_places.json from GeoNames (1.52)
@@ -3920,6 +3922,14 @@ count of new ones. <code>/unlink</code> from that chat, or the dashboard, stops 
 then — not with less motion; not in the blackout look), opens the support sheet; with the owner's Monobank jar set in
 the dashboard (<code>POST /api/admin/donate</code>, only <code>https://send.monobank.ua/jar/…</code>, checked again on the page) its first
 line is &quot;Donate to the jar (Monobank)&quot;. Without it the sheet is as before.</li>
+<li><strong>1.58.47, the jar in 3D</strong> (the owner: &quot;make the jar better looking, in three.js — right now it's not really standing
+out&quot;): <code>models3d.js</code>'s <code>jar</code> — a glass jar, the lid and a band in the flag's blue and yellow, coins piled inside, one
+dropping through the slot with a glint, the jar rocking (<code>VIEWS.jar</code>, 36 frames, 4 s; not a threat: not in <code>KEYS</code>) —
+photographed once into <code>static/jar3d.webp</code> (<code>scripts/render_jar.js</code>, 112-px frames, ~70 KB) and played by CSS
+(<code>.jar3d</code>, <code>steps(36)</code>): no three.js is loaded for it. The button is larger (54 px), with a gold rim, a warm light and a
+soft glow every few seconds (not with less motion); the strip is asked for 3 s after the page opens, never with &quot;save
+data&quot; or in the blackout look — until then, and if it never comes, the drawing. The look's tag (<code>#modetag</code>, day /
+night) moved to the top right, off the jar.</li>
 </ul>
 <h2 id="11-privacy-and-security">11. Privacy and security<a class="anc" href="#11-privacy-and-security" aria-label="Link to this section">#</a></h2>
 <ul>
@@ -5990,7 +6000,7 @@ d'alerte ne sont pas des préférences de style.</p>
 </section>
     </div>
   </div>
-  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.46, 22 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
+  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.47, 22 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
 </main>
 
 <script>

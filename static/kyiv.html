@@ -256,8 +256,21 @@ button.chip{cursor:pointer;font-family:var(--mono)}button.chip:hover{border-colo
 @media (prefers-reduced-motion:no-preference){.jarbtn .drop{animation:jardrop 7s ease-in 3s infinite}}
 @keyframes jardrop{0%,86%{opacity:0;transform:translateY(-3px)}89%{opacity:1}97%{opacity:1;transform:translateY(11px)}100%{opacity:0;transform:translateY(12px)}}
 .jarbtn:active{transform:scale(.95)}.attrib.long:not([hidden])~.jarbtn{bottom:66px}
+/* 1.58.47, the owner: "make the jar better looking, in three.js — right now it's not really standing out". The 3D jar
+   (static/jar3d.webp: models3d.js's jar, photographed once by scripts/render_jar.js — no three.js loaded for it), a gold
+   rim, a warm light inside the button and, now and then, a soft glow (not with less motion). The drawing stays until the
+   strip is in (never with "save data" or in the blackout look). */
+.jarbtn{width:54px;height:54px;border:1.5px solid rgba(242,193,78,.85);background:radial-gradient(circle at 50% 62%,rgba(242,193,78,.3),rgba(11,13,17,.94) 72%)}
+.jarbtn .jar3d{display:none;width:48px;height:48px;background:url(/static/jar3d.webp) 0 0/3600% 100% no-repeat;animation:jarturn 4s steps(36,jump-none) infinite}
+.jarbtn.j3 .jar3d{display:block}.jarbtn.j3 svg{display:none}
+@keyframes jarturn{from{background-position:0 0}to{background-position:100% 0}}
+@media (prefers-reduced-motion:no-preference){.jarbtn{animation:jarglow 7s ease-in-out 5s infinite}}
+@media (prefers-reduced-motion:reduce){.jarbtn .jar3d{animation:none}}
+@keyframes jarglow{0%,72%,100%{box-shadow:0 0 0 0 rgba(242,193,78,0)}82%{box-shadow:0 0 16px 4px rgba(242,193,78,.55)}}
+body.m-day .jarbtn{background:radial-gradient(circle at 50% 62%,rgba(242,193,78,.35),#fff 72%);border-color:#c9971d}
+body.m-night .jarbtn{background:#070a0f;border-color:#5c4a1c;animation:none}body.m-night .jarbtn .jar3d{opacity:.55}
 @media (min-width:1000px){.jarbtn{bottom:24px}}
-body.lite .jarbtn{display:none}body.m-day .jarbtn{background:#fff;color:#12161c;border-color:#c3c8d0}body.m-night .jarbtn{background:#070a0f;color:#8fa3b8;border-color:#1c242f}body.m-night .jarbtn .jc{fill:#7a6a3a;stroke:none}
+body.lite .jarbtn{display:none}body.m-day .jarbtn{color:#12161c}body.m-night .jarbtn{color:#8fa3b8}body.m-night .jarbtn .jc{fill:#7a6a3a;stroke:none}
 .jarlink{display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px;margin:12px 0 4px;border-radius:var(--r);background:#f2c14e;color:#12161c!important;font-weight:700;text-decoration:none}
 .fbk{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}.fbk button{min-height:38px;padding:0 12px;border:1px solid var(--line2);border-radius:var(--r);background:transparent;color:var(--ink);font:inherit;font-size:13px}.fbk button.on{background:var(--ink);color:var(--bg,#0b0d11);border-color:var(--ink)}
 .fbf textarea,.fbf input{width:100%;box-sizing:border-box;margin:6px 0;padding:10px;border:1px solid var(--line2);border-radius:var(--r);background:rgba(255,255,255,.04);color:var(--ink);font:inherit;font-size:16px}.fbf textarea{min-height:120px;resize:vertical}
@@ -978,7 +991,7 @@ body.m-night .ob.region.R{fill:rgba(140,42,38,.10)}body.m-night .ob.region.Y{fil
 body.m-night .hl,body.m-night .homemk .ico{opacity:.7}
 body.m-night .tip,body.m-night .homerow,body.m-night .rt,body.m-night .livebar .chip,
 body.m-night .mapctl,body.m-night #toast,body.m-night .menu,body.m-night .mbox{background:#070a0f;color:#8fa3b8;border-color:#1c242f}body.m-night .mapctl button{color:#8fa3b8;border-color:#1c242f}
-#modetag{display:none;position:absolute;right:8px;bottom:8px;z-index:7;font:700 9.5px var(--mono);letter-spacing:.1em;color:var(--ink3);border:1px solid var(--line);padding:2px 5px;pointer-events:none}
+#modetag{display:none;position:absolute;right:8px;top:8px;z-index:7;font:700 9.5px var(--mono);letter-spacing:.1em;color:var(--ink3);border:1px solid var(--line);padding:2px 5px;pointer-events:none}
 body.m-night #modetag,body.m-day #modetag{display:block}
 
 /* blackout mode: 2G, weak signal, OLED. Pure black and white, no tiles, no images, minimal payload. */
@@ -1398,7 +1411,7 @@ body.lite #mycard,body.lite .panel{background:#000;border-color:#666}body.lite .
   <div class="mapctl"><button id="laybtn" type="button" data-t-title="m_layers" data-t-aria="m_layers" title="Map layers" aria-label="Map layers"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 3 8l9 5 9-5-9-5z"/><path d="m3 13 9 5 9-5"/></svg></button><button id="zin" type="button" aria-label="+">+</button><button id="zout" type="button" aria-label="−">−</button><button id="zkyiv" type="button" data-t-title="t_center" data-t-aria="t_center" title="Centre on my place"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><path d="M12 2.5v4M12 17.5v4M2.5 12h4M17.5 12h4"/></svg></button><button id="rpbtn" type="button" data-t-title="rp_open" data-t-aria="rp_open" title="Replay — the last 7 days" aria-label="Replay — the last 7 days"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1"/><path d="M3 4v4.5h4.5"/><path d="M12 7.5V12l3 2"/></svg></button><button id="fsbtn" type="button" data-t-title="m_full" data-t-aria="m_full" title="Full-screen map" aria-label="Full-screen map"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="fsin" d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/><path class="fsout" d="M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5"/></svg></button></div>
   <!-- 1.58.46: the donation jar (the owner: "a small jar with coins at the bottom right of the map, for users who want to
        donate to keep the infrastructure and help the devs") — opens the support sheet, with the owner's Monobank jar -->
-  <button class="jarbtn" id="jarbtn" type="button" data-t-title="jar_aria" data-t-aria="jar_aria" title="Donate — keep Heimdall running" aria-label="Donate — keep Heimdall running"><svg viewBox="0 0 24 24" aria-hidden="true"><circle class="jc drop" cx="12" cy="1.8" r="1.6"/><path class="jl" d="M8 4.2h8v2.4H8z"/><path class="jj" d="M8.4 6.6h7.2v1.2c2.2.9 3.4 2.6 3.4 5.2v5.4a2.4 2.4 0 0 1-2.4 2.4H7.4A2.4 2.4 0 0 1 5 18.4V13c0-2.6 1.2-4.3 3.4-5.2z"/><ellipse class="jc" cx="9.6" cy="18.2" rx="2.1" ry="1.1"/><ellipse class="jc" cx="14.2" cy="18.4" rx="2.1" ry="1.1"/><ellipse class="jc" cx="11.9" cy="16.6" rx="2.1" ry="1.1"/><ellipse class="jc" cx="13.6" cy="14.7" rx="1.9" ry="1"/></svg></button>
+  <button class="jarbtn" id="jarbtn" type="button" data-t-title="jar_aria" data-t-aria="jar_aria" title="Donate — keep Heimdall running" aria-label="Donate — keep Heimdall running"><svg viewBox="0 0 24 24" aria-hidden="true"><circle class="jc drop" cx="12" cy="1.8" r="1.6"/><path class="jl" d="M8 4.2h8v2.4H8z"/><path class="jj" d="M8.4 6.6h7.2v1.2c2.2.9 3.4 2.6 3.4 5.2v5.4a2.4 2.4 0 0 1-2.4 2.4H7.4A2.4 2.4 0 0 1 5 18.4V13c0-2.6 1.2-4.3 3.4-5.2z"/><ellipse class="jc" cx="9.6" cy="18.2" rx="2.1" ry="1.1"/><ellipse class="jc" cx="14.2" cy="18.4" rx="2.1" ry="1.1"/><ellipse class="jc" cx="11.9" cy="16.6" rx="2.1" ry="1.1"/><ellipse class="jc" cx="13.6" cy="14.7" rx="1.9" ry="1"/></svg><span class="jar3d" aria-hidden="true"></span></button>
   <div class="tip" id="tip" hidden></div>
   <div id="heatleg" hidden><div class="hlh" id="heath"><b class="hll" data-t="hm_title">Where drones were reported</b><b class="hls" data-t="hm_short">Heat map</b><span class="hlp" id="heatp"></span><button type="button" id="heatfold" data-t-aria="hm_fold" aria-label="Fold" aria-expanded="true">▾</button><button type="button" id="heatx" data-t-aria="hm_off" aria-label="Hide">✕</button></div>
     <div class="hlbody"><div class="hlw" id="heatw"></div><div class="hlt" id="heattop"></div><div class="hlr" id="heatramp"></div><div class="hln" data-t="hm_not_live">Not live.</div><div class="hln" data-t="hm_alerts">Official alerts: a faint tint while it is on.</div></div></div>
@@ -4047,6 +4060,10 @@ $('supbtn').onclick=()=>{closePanels();supportSheet();};
 // 1.58.46: the map's jar — the support sheet; the jar's link is asked for once, a few seconds after the page opens
 let DONATE_JAR='';
 setTimeout(()=>fetch('/api/donate',{cache:'no-store'}).then(r=>r.ok?r.json():null).then(d=>{ if(d&&typeof d.jar==='string') DONATE_JAR=d.jar; }).catch(()=>{}),4000);
+// 1.58.47: the 3D jar's strip, a few seconds after the page opens — not with "save data", not in the blackout look
+setTimeout(()=>{ let sd=false; try{ sd=!!(navigator.connection&&navigator.connection.saveData); }catch(e){}
+  if(sd||document.body.classList.contains('lite')) return;
+  const im=new Image(); im.onload=()=>$('jarbtn').classList.add('j3'); im.src='/static/jar3d.webp'; },3000);
 $('jarbtn').onclick=()=>{ closePanels(); const go=()=>supportSheet();
   if(DONATE_JAR) return go();
   fetch('/api/donate',{cache:'no-store'}).then(r=>r.ok?r.json():null).then(d=>{ if(d&&typeof d.jar==='string') DONATE_JAR=d.jar; }).catch(()=>{}).finally(go); };

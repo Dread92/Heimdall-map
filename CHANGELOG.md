@@ -2,6 +2,16 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.47 — 2026-10-22
+
+The donation jar in 3D.
+
+- **A 3D jar** (the owner: "make the jar better looking, in three.js — right now it's not really standing out"): a glass
+  jar with a blue lid and a yellow band, coins inside, one dropping in with a glint, gently rocking — built with the
+  threats' 3D code and rendered once into an image strip (`static/jar3d.webp`), so the map loads no 3D library for it.
+- The button is larger, with a gold rim and a warm light, and glows softly now and then (not when the phone asks for less
+  motion). The day / night tag moved to the top right of the map, off the jar.
+
 ## 1.58.46 — 2026-10-22
 
 Feedback reaches the dashboard and the owner's Telegram; a donation jar on the map; the jet drone's flame; and the

@@ -24,6 +24,9 @@ import * as T from './vendor/three-m3d.min.js';
 
 export const KEYS = ['drone', 'jetdrone', 'banderol', 'missile', 'ballistic', 'supersonic', 'bomb', 'fighter', 'bomber', 'unknown'];
 export const VIEWS = {top: {n: 8, dur: 0.8}, spin: {n: 24, dur: 3.2}};   // ten and eight frames a second: alive, not busy
+// 1.58.47: the donation jar (not a threat: no KEYS entry, never on the map) — seen from the front and a little above,
+// rocking; photographed once into static/jar3d.webp by scripts/render_jar.js
+VIEWS.jar = {n: 36, dur: 4.0};
 const FRAME = 28;                     // world units across a frame (glyphs.js: viewBox -14 -14 28 28)
 
 // ---- shapes ---------------------------------------------------------------------------------------------------------
@@ -215,6 +218,60 @@ const BUILD = {
     g.userData.sign = true;
     return g;
   },
+  // 1.58.47 — the owner, of the jar button: "make the jar better looking, in three.js — right now it's not really standing
+  // out". A glass jar (Y is up here), the lid and a band in the flag's blue and yellow, coins piled inside, one dropping
+  // through the slot with a glint; the jar rocks a little. Its own materials: it has no threat colour.
+  jar() {
+    const g = new T.Group();
+    const glass = new T.MeshStandardMaterial({color: '#cfe9ff', emissive: '#16324d', transparent: true, opacity: 0.24, roughness: 0.05,
+                                              metalness: 0.1, side: T.DoubleSide, depthWrite: false});
+    const shine = new T.MeshBasicMaterial({color: '#ffffff', transparent: true, opacity: 0.42, depthWrite: false, side: T.DoubleSide});
+    const rim = new T.MeshStandardMaterial({color: '#ffffff', transparent: true, opacity: 0.55, roughness: 0.1, side: T.DoubleSide, depthWrite: false});
+    const gold = new T.MeshStandardMaterial({color: '#ffcf3f', emissive: '#6b4a00', metalness: 0.45, roughness: 0.28});
+    const blue = new T.MeshStandardMaterial({color: '#1f63d6', metalness: 0.35, roughness: 0.38});
+    const yellow = new T.MeshStandardMaterial({color: '#ffd21f', roughness: 0.45});
+    const dark = new T.MeshStandardMaterial({color: '#11151c', roughness: 0.6});
+    const spark = new T.MeshBasicMaterial({color: '#fffbe6', transparent: true, opacity: 0.95, depthWrite: false, side: T.DoubleSide});
+    // the coins first (inside), the glass drawn over them
+    const coin = () => new T.Mesh(new T.CylinderGeometry(1.75, 1.75, 0.5, 20), gold);
+    // a pile up to just under the band: layers of coins, each a little tilted (fixed, so every frame is the same pile)
+    let n = 0;
+    for (let y = -9.9; y < -2.6; y += 0.62) {
+      const w = 6.4 - Math.max(0, y + 6) * 0.9;                                  // a mound: narrower towards the top
+      for (let a = 0; a < 6.28; a += 1.25) {
+        n += 1;
+        const r = (n * 0.37) % 1 * w, c = coin();
+        c.position.set(Math.cos(a + n) * r, y + (n % 3) * 0.12, Math.sin(a + n) * r);
+        c.rotation.set(((n * 13) % 7 - 3) * 0.09, 0, ((n * 7) % 5 - 2) * 0.12); g.add(c);
+      }
+    }
+    const body = new T.Mesh(new T.LatheGeometry([[0, -10.6], [6.8, -10.6], [7.8, -9.6], [8.1, -6], [8.1, 4.2], [7.4, 6.6], [5.9, 7.9], [5.7, 9.2]]
+      .map(([r, y]) => V(r, y)), 40), glass);
+    body.renderOrder = 2; g.add(body);
+    for (const [x, z, h, w, rot] of [[-5.6, 5.6, 12.5, 0.75, 0.78], [-3.9, 6.9, 9, 0.35, 0.5]]) {   // the light on the glass
+      const st = new T.Mesh(new T.BoxGeometry(w, h, 0.04), shine); st.position.set(x, -0.6, z); st.rotation.y = -rot; st.renderOrder = 3; g.add(st);
+    }
+    const ring = new T.Mesh(new T.CylinderGeometry(5.8, 5.8, 0.5, 40, 1, true), rim); ring.position.y = 9.0; ring.renderOrder = 3; g.add(ring);
+    const band = new T.Mesh(new T.CylinderGeometry(8.16, 8.16, 3.2, 48, 1, true), yellow); band.position.y = 1.8; g.add(band);
+    const band2 = new T.Mesh(new T.CylinderGeometry(8.18, 8.18, 0.6, 48, 1, true), blue); band2.position.y = 3.7; g.add(band2);
+    const lid = new T.Mesh(new T.CylinderGeometry(6.3, 6.3, 2.3, 40), blue); lid.position.y = 10.25; g.add(lid);
+    const lip = new T.Mesh(new T.CylinderGeometry(6.5, 6.5, 0.6, 40), blue); lip.position.y = 9.35; g.add(lip);
+    const slot = new T.Mesh(new T.BoxGeometry(3.4, 0.3, 0.75), dark); slot.position.y = 11.42; g.add(slot);
+    const drop = coin(); drop.rotation.x = Math.PI / 2; g.add(drop);                  // on its edge, falling into the slot
+    const glint = new T.Group(); glint.position.set(0, 12.6, 0.6);
+    for (const r of [0, Math.PI / 2]) { const b = new T.Mesh(new T.BoxGeometry(0.28, 3.4, 0.05), spark); b.rotation.z = r + Math.PI / 4; glint.add(b); }
+    g.add(glint);
+    g.userData.anim = f => {
+      g.rotation.y = 0.38 * Math.sin(f * 2 * Math.PI);                                    // it rocks
+      const t = Math.min(1, f / 0.3);                                                      // the coin drops, turning
+      drop.visible = f < 0.3;
+      drop.position.set(0, 14.8 - 3.6 * t * t, 0);
+      drop.rotation.y = f * 14;
+      const k = f >= 0.27 && f < 0.48 ? Math.sin((f - 0.27) / 0.21 * Math.PI) : 0;      // and glints going in
+      glint.visible = k > 0.02; glint.scale.setScalar(0.4 + 0.9 * k); glint.rotation.z = f * 3;
+    };
+    return g;
+  },
 };
 
 // ---- posing ---------------------------------------------------------------------------------------------------------
@@ -229,6 +286,7 @@ function pose(holder, model, view, f) {
   if (model.userData.roll) model.rotation.y = f * model.userData.roll * Math.PI / 180 * (view === 'spin' ? 4 : 1);
   if (model.userData.sign) { model.rotation.x = view === 'spin' ? 1.1 : 0.25 * Math.sin(f * 2 * Math.PI); }
   const fl = 0.82 + 0.18 * Math.abs(Math.sin(f * 37.7 + 1.3)) + 0.08 * Math.sin(f * 91.1);
+  if (model.userData.anim) model.userData.anim(f);
   model.traverse(o => {
     if (o.userData.prop) o.userData.prop.rotation.y = f * (view === 'spin' ? 9 : 1) * 2 * Math.PI / o.userData.blades;
     // the jet's flame breathes harder: longer and shorter, wider and narrower, so it reads at map size
@@ -254,6 +312,11 @@ function stage(px) {
   R.setPixelRatio(1); R.setSize(px, px, false);
 }
 function aim(view) {
+  if (view === 'jar') {                       // Y is up for the jar: from the front, 14° above
+    const e = 14 * Math.PI / 180;
+    CAM.position.set(0, 80 * Math.sin(e), 80 * Math.cos(e)); CAM.up.set(0, 1, 0); CAM.lookAt(0, 1.2, 0);
+    CAM.zoom = 0.94; CAM.updateProjectionMatrix(); return;
+  }
   // top: from above and a little behind (20°), nose up; spin: from 26° above the horizon, the model turning
   const el = (view === 'top' ? 70 : 26) * Math.PI / 180, d = 80;
   CAM.position.set(0, -d * Math.cos(el), d * Math.sin(el));
@@ -288,7 +351,8 @@ export async function sheet(key, view, color, px, line = '#080b10') {
     }
   }
   SCENE.remove(holder);
-  holder.traverse(o => { if (o.geometry) o.geometry.dispose(); });
+  const own = new Set(Object.values(MAT));
+  holder.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material && !own.has(o.material)) o.material.dispose(); });
   for (const k in MAT) MAT[k].dispose();
   // the outline: the shape in near-black, drawn 8 times around and under it
   const sil = document.createElement('canvas'); sil.width = out.width; sil.height = px;
