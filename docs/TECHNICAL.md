@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-22 (1.58.45)
+**Documented version: 1.58** · last updated 2026-10-22 (1.58.46)
 
 The repository is **Dread92/Heimdall-map**. The app's address is **https://heimdall.com.ua** (1.58.34, 18 October
 2026); the Fly app keeps its first name, `kyiv-air-watch-gb`, and its first address keeps working (§15 has the move).
@@ -2854,6 +2854,34 @@ Android app at once**; a new APK is needed only for its name, icon, address or A
   alert (`raionFull`), "Вишгородський р-н" on the map (`raionLbl`), "Vyshhorod raion", "raion de Vychhorod" (`lt_unit_r`,
   with "raion d'Obukhiv"); the place picker lists "Вишгородський район" (tests/test_asof_raions_1578.py).
 
+### 10.10 Feedback and the donation jar (1.58.46)
+
+The owner: "we need a clean way to collect feedback and bug reports" — "a feedback integration we can reach from our admin
+dashboard" (with a Telegram ping, his pick); and "a small jar with coins at the bottom right of the map, for users who want
+to donate to keep the infrastructure and help the devs" (a Monobank jar, his pick).
+
+- **The form**: the Tactical page's menu ("Send feedback · report a bug") and the footer's "Feedback" link open a sheet
+  (`feedbackSheet()`): the kind (a bug, an idea, wrong on the map, other), the words, a contact if they want an answer,
+  and a line saying what goes with it and that no place does. On a page without the sheet (Light) the link is
+  `/feedback` (`static/feedback.html`, the same form, `i18n.js`'s words). `POST /api/feedback` (§12): the page, its
+  language, build and look, the screen's size; the server adds the system and browser (`ua_family`), never the whole
+  string. Never a place: not the pins, not HOME — nothing in the request names one.
+- **Kept** (`feedback` table, §13): what was written (`clean_text`: no control characters, no bidirectional overrides,
+  no zero-width ones), limited per address (`limits.py`'s `feedback`, and 6 a day by the daily hash of the address — not
+  of the browser, which a client writes), 300 a day in all, 180 days.
+- **The dashboard's Feedback tab** (`admin.html`, `drawFB`): new · open · done · spam · all, with the count of new ones on
+  the tab (every minute); read, done, spam, delete; a contact is a `mailto:` or a `t.me/` link only when it has that
+  shape. Every word a reader wrote is shown as text (`escA`).
+- **The Telegram ping**: the dashboard makes a one-time code (8 characters, 10 minutes, kept as its hash; 5 wrong tries a
+  chat, 50 in all); the owner sends `/link CODE` to the bot from his own Telegram (`tgbot._feedback_link`) and that chat
+  (`kv fb_chat`) gets one plain-text message a minute at most (`State.feedback_ping`): the kind, the page, the language,
+  the first 300 characters with every link and command defanged, whether a contact was given (not the contact), the
+  count of new ones. `/unlink` from that chat, or the dashboard, stops it.
+- **The jar**: a button beside the map's controls, bottom right (`#jarbtn`, a jar with coins, one dropping in now and
+  then — not with less motion; not in the blackout look), opens the support sheet; with the owner's Monobank jar set in
+  the dashboard (`POST /api/admin/donate`, only `https://send.monobank.ua/jar/…`, checked again on the page) its first
+  line is "Donate to the jar (Monobank)". Without it the sheet is as before.
+
 ## 11. Privacy and security
 
 - The four places never leave the phone; the Light page's requests carry no place (checked in the render tests).
@@ -2946,6 +2974,56 @@ was fixed in the same patch. Kept here so the next reader knows what each guard 
 - Not changed, on purpose: the pages' inline scripts (`'unsafe-inline'` stays in the policy; the pages are single
   files by design), the OSM tiles' host (a layer that is off by default), the `build` allowances.
 
+### 11.2 The audit of 22 October 2026 (1.58.46)
+
+The owner, before the app is promoted publicly: "a full cyber security audit — try to see whether flaws are exploitable,
+and fix them". The code was read in three parts (the server's routes, the pages, the bot / integrations / supply
+chain), each finding tried on an in-process server, and the live service probed with ordinary requests (headers, TLS,
+the locked routes, path tricks — all as expected). Fixed in 1.58.46:
+
+- **An official alert's words were written into pages as HTML** (high): `alert_type`, `alert_level`, `location_type`, a
+  threat's `threat_type` / `source_message`, a raion's title — from alerts.in.ua / ukrainealarm, passed through as they
+  came — reached `innerHTML` on the Tactical page's band and alerts tab, `/desktop` and `/mobile`. A hostile or broken
+  upstream answer ran a script in every reader's page (and, with `'unsafe-inline'`, could send the pins away by
+  navigating). Now each field has one shape where alerts come in (`safe_alert`: an identifier, red / yellow / none,
+  plain text of a bounded length; in both sources' `normalise`, `apply_snapshot` and `upsert_alert`), and the pages
+  escape them all.
+- **Push subscriptions that never answer** (high): any port and any name under a push service's was taken
+  (`fcm.googleapis.com:81` never answers: each such row cost a send its whole timeout, twice). Now the services' own
+  names (Windows' regional ones by pattern), port 443 only, a 4-second connect (`push.CONNECT_S`) and no second try of
+  a fresh connection; the rows with strikes go last in a fan-out.
+- **The answers' cache could fill the memory** (high): 400 copies of a 7-day history are a gigabyte. Now a byte budget
+  as well as the count (`State.RESP_BYTES`, 160 MB; the longest unused go first), and `/api/history`'s periods are the
+  pages' (24 h, 3 and 7 days).
+- **An IPv6 address was a fresh allowance each** (medium): every limit, the Esri tile budget and the daily hash now count
+  an IPv6 address as its /64 (`limits.net_key`).
+- **A key in a header was not throttled** (medium): `X-Admin-Key` / `X-Access-Key` now take a try of the sign-in page's
+  allowance when wrong (a second's wait, logged), and are not compared once it is spent (`Handler._header_key`).
+- **A slow body held a thread for days** (medium): the body within 10 s in all (`Handler._read_body`, else 408), and at
+  most `Server.MAX_HANDLERS` (384) requests handled at once.
+- **The bot** (medium): a chat past its messages a minute gets no button answer either, and the answers to users wait
+  apart, behind the alerts (`TgBot.replies`, bounded) — button presses could delay a ballistic warning; the 5-second pass
+  skips a place 30 km away that no post names (`_name_c`, cached); a token with spaces around it is cleaned, and an
+  error never carries it (`TOKEN_RX`, `configured`); the chats' pending answers are dropped by age every minute.
+- **Low**: an alert note naming a Telegram channel ("@…") said which to readers (`public` rewrites it; `/api/history`
+  and the events log go through `public`); a made-up flag token rescanned the feed under the database's lock (once in
+  5 minutes now); a flag's channel came from the client; feedback: per address, not per browser, its own allowance, JSON
+  from this site only (a flag too), a ping without links; the `/link` code's tries per chat; a body that is not a JSON
+  object is a 400, not a 500; new devices one address can add to a day's count (2 000); the replay's cache
+  bookkeeping; the `Server` header ("Heimdall"); `next=` after the sign-in with a control character; the icons served
+  before the whole-app lock by exact name only; the dashboard's `esc` encodes (it stripped `<>&` and let quotes end an
+  attribute); `/guide?lang=constructor` blanked the page; the service worker kept `shelters.js` (code) cache-first; the
+  channel's `esc` and the double quote; the Google translation key in a header.
+- **Supply chain**: the workflows' actions pinned to commits, `permissions: contents: read`, `persist-credentials:
+  false`; `Pillow>=10.3`; `build_three.sh` installs with `--ignore-scripts` and checks the bundle's SHA-256;
+  `.gitignore` / `.dockerignore` cover sessions, signing keys, `.env.*`, tiles, databases at any depth.
+- **Checked and fine**: every dashboard route's guard and the cross-site check; sessions (256-bit, hashed, 12 h); SQL
+  (placeholders only); file serving; outbound requests (built from integers and fixed names); the bot's escaping and
+  buttons; the AI's output (counts and quoted words only, escaped, never on the map); git history (no secret ever
+  committed); the 3D code; TLS 1.3 and the headers on the live service.
+- **Left to the owner**: the bot is still an administrator of the old private channel (remove it); the `set-*-key.bat`
+  scripts show the pasted key on screen.
+
 ## 12. HTTP API
 
 All JSON unless stated. Public unless marked 🔒 (`ADMIN_KEY`).
@@ -2979,12 +3057,18 @@ All JSON unless stated. Public unless marked 🔒 (`ADMIN_KEY`).
 | `GET /api/drone_heat?days=1|7|30` | the heat layer: `points` `[lon, lat, posts, place, oblast]` — where drones and unidentified targets were reported (cached 10 min) |
 | `POST /api/push/subscribe`, `/api/push/unsubscribe`, `/api/push/test`; `GET /api/push/key` | Web Push; subscribe takes `{subscription, home, topics: ["bridges"], lang}`. 1.58.35: `subscription` must be a browser's (https, a known push service, a 65-byte `p256dh`, a 16-byte `auth` — `push.clean_subscription`), else 400; only `{endpoint, keys}` is stored; `test` goes to a stored endpoint only (404 otherwise); `key` gives `{enabled, key}` and no count |
 | `POST /access/login` | 1.58.35: the whole-app lock's sign-in (`static/access-login.html`): `key=` and `next=` (a path of this site) → 303 there with the `hacc` session cookie; 401 for a wrong key (a second's wait), 429 past 5 tries; 404 when no `ACCESS_KEY` is set |
-| `POST /api/flag` | "this reading is wrong" report |
+| `POST /api/flag` | "this reading is wrong" report (1.58.46: JSON from this site only — 415 / 403 otherwise; the channel is the stored post's) |
+| `POST /api/feedback` | 1.58.46 (§10.10): a reader's feedback `{kind: bug\|idea\|map\|other, text (3–2000), contact (≤ 120, optional), page, lang, build, look, screen, website}` → `{ok}`; JSON from this site only; `website` filled (a bot): `ok`, nothing kept; 429 past `feedback` (6, then one in 10 min) or 6 a day per address / 300 a day in all |
+| `GET /feedback` | 1.58.46: the feedback form on its own (`static/feedback.html`; Light's footer) |
+| `GET /api/donate` | 1.58.46: `{jar}` — the Monobank jar the map's jar button opens (null: the support sheet's addresses only) |
 | `GET /admin` | 1.58.21: the sign-in page (`static/admin-login.html`) until a session is open, then the dashboard (§12.2); `?key=` in the address is never accepted — the page says so |
 | `POST /admin/login` | 1.58.21: `key=` (form) or `{key}` (JSON) → 303 to `/admin` with the session cookie; 401 for a wrong key (a second's wait), 429 past 5 tries |
 | 🔒 `POST /admin/logout` | 1.58.21: ends this session (`all=1`: every session) → 303 to `/admin`; 1.58.24: a session already ended is signed out too (no 401) |
 | 🔒 `GET /api/admin/security` | 1.58.21: `{sessions: [{id, at, seen, ua, net, mine}], events: [{t, e, ua, net, d}], fails_24h, ttl_h}`; `POST {end: id}` ends one session, `{everyone: true}` all of them |
 | 🔒 `GET /api/usage` | usage counters |
+| 🔒 `GET /api/admin/feedback?show=new\|open\|done\|spam\|all&limit=` | 1.58.46: `{items: [{id, ts, kind, text, contact, page, lang, build, look, device, status}], counts: {new, read, done, spam, open, total}, tg: {linked, bot, configured}, jar}`; `POST {id, status}` or `{id, delete: true}` |
+| 🔒 `POST /api/admin/feedback_tg` | 1.58.46: `{action: code}` → `{code, expires_s}` — the one-time code the owner sends to the bot (`/link CODE`); `{action: unlink}` |
+| 🔒 `POST /api/admin/donate` | 1.58.46: `{jar}` — a Monobank jar link (`DONATE_JAR_RX`), `""` clears it |
 | 🔒 `GET /api/health` | official sources (ok, last check, detail), every channel read (posts / marks 24 h, share read 7 d, last post, reader state, `mode`, `read_via`, `builtin`, `home`), the compartments (`regions`: `id`, `name`, `en`, `on`, `locked`, `channels`), translation backends, lead time over the official alert in Kyiv + oblast (30 days), the imagery (`imagery`, 1.48) and the AI reader's state (`ai_reader`, 1.50) |
 | 🔒 `GET /api/online` | pages open now with a live line (`total`, `tactical`, `light`, today's peak), the current message, the nuclear event (`nuke`), the last push fan-out (phones, seconds, delivered) |
 | 🔒 `GET /api/analytics?days=` | the dashboard's Analytics (§8c), 7–365 days: `af` per date (launched, down, used, impacts, debris, periods), `af_areas`, `af_directions`, `af_models`, `kyiv` per date (city / oblast minutes, city alerts), `starts` (7 × 24), `reports` per date by type, `hours`, `headings`; since 1.33 `weather` per date (`kyiv`, `launch`), `approach` (8 sectors per date), `air` (`per_date`, `stats`, `sorties`), `obl` (`by`, `cols`, `rows`), `weather_status`; since 1.34 `places` (the heat layer's top 25) and `bridges` (`per_date`, `totals`, `recent`) |
@@ -3093,6 +3177,7 @@ SQLite in WAL mode (`DB_PATH`; on Fly, the volume). Tables:
 | `bridge_events` | each time a target was reported on or near a Kyiv bridge (§9b): time, bridge, level, km, type, place, channel |
 | `weather` | each night's weather per point (`date, place`, JSON: mean wind, strongest gust, mean cloud cover, rain, lowest temperature) |
 | `flags` | readings people reported as wrong |
+| `feedback` | 1.58.46 (§10.10): readers' feedback — `ts, kind, text, contact` (only if given), `page, lang, build, look, device` (system, browser, screen), the daily throwaway hash that limits it (`day_hash`, address only), `status` (new · read · done · spam); kept 180 days |
 | `corpus_reviews` | verdicts from `/admin` review, merged back with `scripts/corpus.py pull` |
 | `targets` | 1.51: each target tag (§7.8) — `night`, `n`, the letter, origin, whose reading (`osrc`), its words, the post, first / last time, type. Kept 60 days |
 | `target_reports` | 1.51: which tag each report of a track belongs to (`report` = the mark id) — how a tag survives the window and a restart |

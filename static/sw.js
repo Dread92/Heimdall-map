@@ -14,9 +14,11 @@ const CACHE = 'heimdall-shell-3';
 const TILES = 'heimdall-tiles-2';
 const TILES_MAX = 5000;
 // the map's drawing (borders, towns, districts): answered from here at once, then refreshed for the next opening
-// 1.57: and the city's shelters (static/shelters.js), so the nearest one is still found with no network
+// 1.57: and the city's shelters (static/shelters.json), so the nearest one is still found with no network — 1.58.46, the
+// audit (C5): its list only; the code that reads it (static/shelters.js) is kept network first (KEEP), so a new release's
+// code is never answered from an old copy
 const FAST = ['/static/kyiv-map.json', '/static/map-ua.json', '/static/ukraine-map.json', '/static/light-map.json', '/static/kyiv-districts.json', '/static/towns-ua.json',
-  '/static/shelters.js', '/static/shelters.json'];
+  '/static/shelters.json'];
 const GUIDE = ['/guide', '/static/glyphs.js', '/static/heimdall-64.png'];
 // downloaded at install: small, and shared by both pages
 // 1.58.16: and the hromadas' outlines helper (static/hromadas.js); the outlines themselves (static/hromadas/<oblast>.json,
@@ -24,7 +26,7 @@ const GUIDE = ['/guide', '/static/glyphs.js', '/static/heimdall-64.png'];
 const SHELL = ['/static/i18n.js', '/static/live.js', '/static/hromadas.js', '/static/heimdall-192.png', '/static/logo-64.png'];
 // kept when they are first fetched through the worker (never downloaded ahead: a Light reader on 2G does not need
 // the full map) — the page itself from its next opening on
-const KEEP = GUIDE.concat(SHELL, ['/m', '/light', '/static/kyiv-map.json', '/static/map-ua.json', '/static/ukraine-map.json', '/static/light-map.json', '/static/kyiv-districts.json', '/static/towns-ua.json', '/manifest.json', '/light.webmanifest']);
+const KEEP = GUIDE.concat(SHELL, ['/m', '/light', '/static/kyiv-map.json', '/static/map-ua.json', '/static/ukraine-map.json', '/static/light-map.json', '/static/kyiv-districts.json', '/static/towns-ua.json', '/manifest.json', '/light.webmanifest', '/static/shelters.js']);
 // the addresses that are the same page
 const ALIAS = { '/': '/m', '/k': '/m', '/kyiv': '/m', '/l': '/light' };
 self.addEventListener('install', e => {

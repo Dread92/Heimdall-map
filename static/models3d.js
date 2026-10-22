@@ -60,14 +60,22 @@ function cyl(r0, r1, y0, y1, mat, x = 0, z = 0, seg = 16) {
   const m = new T.Mesh(new T.CylinderGeometry(top, bot, Math.abs(y1 - y0), seg), mat);
   m.position.set(x, (y0 + y1) / 2, z); return m;
 }
-// the exhaust: an outer flame and a white core along -Y from y0; flickers by scale (anim)
-function flame(y0, len, r, x = 0, z = 0) {
+// the exhaust: an outer flame and a white core along -Y from y0; flickers by scale (anim). `big` (1.58.46, the jet drone —
+// the owner: "the animation must be clearer, put flames behind the engine to tell it from the normal Shahed"): a third,
+// red outer plume, a glowing nozzle and two shock diamonds, and a stronger flicker
+function flame(y0, len, r, x = 0, z = 0, big = false) {
   const g = new T.Group(); g.position.set(x, y0, z);
-  const outer = new T.Mesh(new T.ConeGeometry(r, len, 14, 1, true), MAT.flame);
-  outer.rotation.x = Math.PI; outer.position.y = -len / 2; g.add(outer);
-  const core = new T.Mesh(new T.ConeGeometry(r * 0.5, len * 0.55, 12, 1, true), MAT.core);
-  core.rotation.x = Math.PI; core.position.y = -len * 0.275; g.add(core);
-  g.userData.flame = true; return g;
+  const cone = (rad, l, mat) => { const m = new T.Mesh(new T.ConeGeometry(rad, l, 14, 1, true), mat); m.rotation.x = Math.PI; m.position.y = -l / 2; g.add(m); return m; };
+  if (big) cone(r * 1.45, len * 1.12, MAT.plume);
+  cone(r, len, big ? MAT.hot : MAT.flame);
+  cone(r * 0.5, len * 0.55, MAT.core);
+  if (big) {
+    const noz = new T.Mesh(new T.CylinderGeometry(r * 1.05, r * 1.05, 0.25, 18, 1, true), MAT.glow); noz.position.y = -0.1; g.add(noz);
+    for (const [at, k] of [[0.3, 0.55], [0.55, 0.38]]) {
+      const d = new T.Mesh(new T.SphereGeometry(r * k, 12, 8), MAT.core); d.scale.set(1, 1.9, 1); d.position.y = -len * at; g.add(d);
+    }
+  }
+  g.userData.flame = big ? 2 : 1; return g;
 }
 // a propeller turning about Y: blades and the blur of them
 function prop(y, r, blades, x = 0, z = 0) {
@@ -91,6 +99,9 @@ function mats(col) {
   MAT.blur = new T.MeshBasicMaterial({color: '#cfd6df', transparent: true, opacity: 0.22, side: T.DoubleSide, depthWrite: false});
   MAT.flame = new T.MeshBasicMaterial({color: '#ffb347', transparent: true, opacity: 0.85, side: T.DoubleSide, depthWrite: false});
   MAT.core = new T.MeshBasicMaterial({color: '#fff4d6', transparent: true, opacity: 0.95, side: T.DoubleSide, depthWrite: false});
+  MAT.plume = new T.MeshBasicMaterial({color: '#ff3d00', transparent: true, opacity: 0.42, side: T.DoubleSide, depthWrite: false});
+  MAT.hot = new T.MeshBasicMaterial({color: '#ffd23a', transparent: true, opacity: 0.8, side: T.DoubleSide, depthWrite: false});
+  MAT.glow = new T.MeshBasicMaterial({color: '#ffd27a', side: T.DoubleSide});
   MAT.sign = new T.MeshStandardMaterial({color: '#080b10', metalness: 0.1, roughness: 0.6});
 }
 
@@ -115,7 +126,7 @@ const BUILD = {
     g.add(cyl(1.0, 1.15, 0.6, -6.6, MAT.skin2, 0, 1.75));
     g.add(cyl(1.15, 0.85, -6.6, -7.6, MAT.dark, 0, 1.75));
     const ring = new T.Mesh(new T.CylinderGeometry(1.05, 1.05, 0.3, 16, 1, true), MAT.dark); ring.position.set(0, 0.7, 1.75); g.add(ring);
-    g.add(flame(-7.6, 5.4, 0.8, 0, 1.75));
+    g.add(flame(-7.6, 6.6, 1.3, 0, 1.75, true));
     return g;
   },
   // S8000 Banderol: slim body, straight wings mid-body, the small turbojet on its back behind them, an X tail
@@ -220,7 +231,9 @@ function pose(holder, model, view, f) {
   const fl = 0.82 + 0.18 * Math.abs(Math.sin(f * 37.7 + 1.3)) + 0.08 * Math.sin(f * 91.1);
   model.traverse(o => {
     if (o.userData.prop) o.userData.prop.rotation.y = f * (view === 'spin' ? 9 : 1) * 2 * Math.PI / o.userData.blades;
-    if (o.userData.flame) o.scale.set(1, fl, 1);
+    // the jet's flame breathes harder: longer and shorter, wider and narrower, so it reads at map size
+    if (o.userData.flame === 2) { const k = 0.72 + 0.42 * Math.abs(Math.sin(f * 2 * Math.PI * (view === 'spin' ? 9 : 3) + 0.7)); o.scale.set(0.9 + 0.2 * k, k, 0.9 + 0.2 * k); }
+    else if (o.userData.flame) o.scale.set(1, fl, 1);
   });
 }
 
@@ -258,7 +271,22 @@ export async function sheet(key, view, color, px, line = '#080b10') {
   const holder = new T.Group(), model = BUILD[key](); holder.add(model); SCENE.add(holder);
   const out = document.createElement('canvas'); out.width = px * n; out.height = px;
   const ctx = out.getContext('2d');
-  for (let i = 0; i < n; i++) { pose(holder, model, view, i / n); R.render(SCENE, CAM); ctx.drawImage(R.domElement, i * px, 0); }
+  // the flames go on a layer of their own, drawn last with a glow and no outline (a black edge made them read as a solid
+  // part); the body still hides them where it is in front (its depth is written, not its colour)
+  const flames = []; model.traverse(o => { if (o.userData.flame) flames.push(o); });
+  const FX = new Set([MAT.flame, MAT.core, MAT.plume, MAT.hot, MAT.glow]);
+  const body = Object.values(MAT).filter(m => !FX.has(m));
+  const fx = flames.length ? document.createElement('canvas') : null, fc = fx && fx.getContext('2d');
+  if (fx) { fx.width = out.width; fx.height = px; }
+  for (let i = 0; i < n; i++) {
+    pose(holder, model, view, i / n);
+    flames.forEach(f => { f.visible = false; }); R.render(SCENE, CAM); ctx.drawImage(R.domElement, i * px, 0);
+    if (fx) {
+      flames.forEach(f => { f.visible = true; }); body.forEach(m => { m.colorWrite = false; });
+      R.render(SCENE, CAM); fc.drawImage(R.domElement, i * px, 0);
+      body.forEach(m => { m.colorWrite = true; });
+    }
+  }
   SCENE.remove(holder);
   holder.traverse(o => { if (o.geometry) o.geometry.dispose(); });
   for (const k in MAT) MAT[k].dispose();
@@ -273,6 +301,13 @@ export async function sheet(key, view, color, px, line = '#080b10') {
     ctx.restore();
   }
   ctx.globalCompositeOperation = 'source-over';
+  if (fx) for (let i = 0; i < n; i++) {
+    ctx.save(); ctx.beginPath(); ctx.rect(i * px, 0, px, px); ctx.clip();
+    try { ctx.filter = `blur(${o * 1.6}px)`; } catch (e) { /* no canvas filters (older Safari): no glow */ }
+    ctx.globalAlpha = 0.9; ctx.drawImage(fx, i * px, 0, px, px, i * px, 0, px, px);
+    ctx.filter = 'none'; ctx.globalAlpha = 1; ctx.drawImage(fx, i * px, 0, px, px, i * px, 0, px, px);
+    ctx.restore();
+  }
   const blob = await new Promise(res => out.toBlob(res, 'image/png'));
   if (!blob) return null;
   return {url: URL.createObjectURL(blob), n, dur, px};

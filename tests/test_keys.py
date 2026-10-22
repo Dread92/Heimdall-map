@@ -27,8 +27,14 @@ class _H:
             self.headers["X-Admin-Key"] = header
         self.q = {"key": [key]} if key else {}
 
+    client_address = ("127.0.0.1", 0)
     _admin_key = server.Handler._admin_key
     _admin_ok = server.Handler._admin_ok
+    _header_key = server.Handler._header_key          # 1.58.46: a key in a header, held to the sign-in rule
+
+    def _sec(self, *a):
+        pass
+
     _access_key = server.Handler._access_key
     _authorized = server.Handler._authorized
 

@@ -27,7 +27,8 @@ import time
 
 # kind: (burst, refill per second)
 RULES = {"build": (60, 1.0), "write": (20, 1 / 30), "push": (300, 5.0),
-         "login": (5, 1 / 120)}     # 1.58.21: the dashboard's key — 5 tries, then one every two minutes
+         "login": (5, 1 / 120),     # 1.58.21: the dashboard's key — 5 tries, then one every two minutes
+         "feedback": (6, 1 / 600)}  # 1.58.46: readers' feedback — 6, then one every ten minutes
 STREAMS = 200          # open live lines from one client
 MAX_CLIENTS = 50_000   # buckets kept; full ones are forgotten first
 
@@ -43,11 +44,12 @@ class Limits:
         self._salt, self._day = os.urandom(16), None
 
     def who(self, ip):
-        """A salted, daily hash of an address — the only form it is held in."""
+        """A salted, daily hash of an address — the only form it is held in. 1.58.46, the audit (S3): an IPv6 address
+        counts as its /64 (one subscriber's network: 2^64 addresses were 2^64 fresh allowances)."""
         day = time.strftime("%Y-%m-%d", time.gmtime())
         if day != self._day:
             self._salt, self._day = os.urandom(16), day
-        return hashlib.sha256(self._salt + (ip or "").encode("utf-8")).hexdigest()[:16]
+        return hashlib.sha256(self._salt + net_key(ip).encode("utf-8")).hexdigest()[:16]
 
     def take(self, who, kind):
         """0 when allowed (and counted), else the seconds until one is allowed again."""
@@ -65,6 +67,15 @@ class Limits:
             self.refused[kind] += 1
             return max(1, int((1 - tok) / rate + 0.999))
 
+    def spent(self, who, kind):
+        """1.58.46: True when this client's allowance of `kind` is used up — asked without taking one."""
+        if kind not in self.rules:
+            return False
+        burst, rate = self.rules[kind]
+        with self.lock:
+            tok, t = self.b.get((who, kind), (burst, self.clock()))
+            return min(burst, tok + (self.clock() - t) * rate) < 1
+
     def _prune(self, now):
         for k, (tok, t) in list(self.b.items()):
             burst, rate = self.rules[k[1]]
@@ -75,6 +86,20 @@ class Limits:
         """For the dashboard: how many requests were refused, by kind, since the start — nothing about who."""
         with self.lock:
             return dict(self.refused)
+
+
+def net_key(ip):
+    """1.58.46: what one client is, for a limit — an IPv4 address (an IPv4-mapped IPv6 one as IPv4), or an IPv6 address's
+    /64. Anything unreadable stays as it is."""
+    try:
+        a = ipaddress.ip_address(str(ip or "").split("%")[0].strip("[]"))
+    except ValueError:
+        return str(ip or "")
+    if a.version == 6:
+        if a.ipv4_mapped:
+            return str(a.ipv4_mapped)
+        return str(ipaddress.ip_network(f"{a}/64", strict=False))
+    return str(a)
 
 
 def client_ip(headers, peer):

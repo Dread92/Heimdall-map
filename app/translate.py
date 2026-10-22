@@ -319,8 +319,9 @@ def _deepl(text, target="en"):
 
 def _google_cloud(text, target="en"):
     body = _json.dumps({"q": text, "source": "uk", "target": _TARGET[target][1], "format": "text"}).encode()
-    req = _ur.Request("https://translation.googleapis.com/language/translate/v2?key=" + _up.quote(KEYS["google_cloud"]), data=body,
-                      method="POST", headers={"Content-Type": "application/json", "User-Agent": "heimdall"})
+    # 1.58.46, the audit (I9): the key in a header Google takes (X-Goog-Api-Key), not in the address an error could quote
+    req = _ur.Request("https://translation.googleapis.com/language/translate/v2", data=body, method="POST",
+                      headers={"Content-Type": "application/json", "User-Agent": "heimdall", "X-Goog-Api-Key": KEYS["google_cloud"]})
     with _ur.urlopen(req, timeout=10, context=_CTX) as r:
         return _json.loads(r.read().decode("utf-8"))["data"]["translations"][0]["translatedText"]
 

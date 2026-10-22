@@ -234,7 +234,7 @@ function render(){
     const main = S.active.find(a=>a.oblast_uid===u && a.location_type==='oblast');
     const st = o.status==='A'?'🔴 AIR RAID ALERT':o.status==='P'?'🟠 PARTIAL ALERT':'🟢 No alert';
     const types = o.types.filter(t=>t!=='air_raid').map(t=>`<span class="chip red">${ATYPE[t]?.[0]||''} ${ATYPE[t]?.[1]||t}</span>`).join('');
-    const thr = o.threats.map(t=>`<span class="chip ${t.level||''}" title="${esc(t.source_message||'')} · ${fmtT(t.started_at)}">${THREAT[t.threat_type]?.ico||'❔'} ${THREAT[t.threat_type]?.en||t.threat_type}</span>`).join('');
+    const thr = o.threats.map(t=>`<span class="chip ${/^(red|yellow)$/.test(t.level)?t.level:''}" title="${esc(t.source_message||'')} · ${fmtT(t.started_at)}">${THREAT[t.threat_type]?.ico||'❔'} ${esc(THREAT[t.threat_type]?.en||t.threat_type)}</span>`).join('');
     return `<div class="panel fav ${o.status}">
       <div class="name">${esc(o.uk)} · ${esc(o.en)}</div>
       <div class="status">${st}</div>
@@ -250,7 +250,7 @@ function render(){
     const p=POS[uid]; if(!p) continue;
     const short = o.en.replace(' oblast',' obl.');
     const lvl = o.level==='red'?'red':'';
-    tiles.push(`<div class="tile ${o.status} ${lvl} ${favs.includes(uid)?'fav':''} ${OCCUPIED.has(uid)?'occ':''}" style="grid-column:${p[0]}${p[2]?'/span '+p[2]:''};grid-row:${p[1]}${p[3]?'/span '+p[3]:''}" title="${esc(o.uk)}${o.since?' — since '+fmtT(o.since):''}${o.threats.length?'\n'+o.threats.map(t=>(THREAT[t.threat_type]?.en||t.threat_type)+(t.source_message?': '+t.source_message:'')).join('\n'):''}">
+    tiles.push(`<div class="tile ${o.status} ${lvl} ${favs.includes(uid)?'fav':''} ${OCCUPIED.has(uid)?'occ':''}" style="grid-column:${p[0]}${p[2]?'/span '+p[2]:''};grid-row:${p[1]}${p[3]?'/span '+p[3]:''}" title="${esc(o.uk)}${o.since?' — since '+fmtT(o.since):''}${o.threats.length?'\n'+esc(o.threats.map(t=>(THREAT[t.threat_type]?.en||t.threat_type)+(t.source_message?': '+t.source_message:'')).join('\n')):''}">
       <div class="n">${esc(short)}</div>
       <div class="t"><span>${o.status==='A'?dur(o.since):o.status==='P'?'partial':''}</span><span>${o.threats.slice(0,3).map(t=>THREAT[t.threat_type]?.ico||'').join('')}</span></div></div>`);
   }
@@ -269,7 +269,7 @@ function render(){
   }
   const gl=Object.values(groups).sort((a,b)=>(a.level==='red'?0:1)-(b.level==='red'?0:1));
   $('thrcount').textContent = gl.length?`${gl.length} type(s)`:'';
-  $('threats').innerHTML = gl.length ? gl.map(g=>`<div class="row ${g.level}">
+  $('threats').innerHTML = gl.length ? gl.map(g=>`<div class="row ${g.level==='red'?'red':'yellow'}">
       <div class="ico">${THREAT[g.type]?.ico||'❔'}</div>
       <div><div class="title">${THREAT[g.type]?.en||esc(g.type)} <span class="chip ${esc(g.level)}" style="padding:1px 6px;font-size:11px">${esc(g.level)}</span></div>
         <div class="meta">${[...g.regions.values()].sort().map(esc).join(', ')}</div>
@@ -280,10 +280,10 @@ function render(){
   // active list
   const act=[...S.active].sort((a,b)=>(favs.includes(b.oblast_uid)-favs.includes(a.oblast_uid))||(a.location_type==='oblast'?-1:1)-(b.location_type==='oblast'?-1:1)||(a.started_at<b.started_at?1:-1));
   $('actcount').textContent = act.length?`${act.length}`:'';
-  $('active').innerHTML = act.length ? act.map(a=>`<div class="row ${a.alert_level||''} ${favs.includes(a.oblast_uid)?'fav':''}">
+  $('active').innerHTML = act.length ? act.map(a=>`<div class="row ${/^(red|yellow)$/.test(a.alert_level)?a.alert_level:''} ${favs.includes(a.oblast_uid)?'fav':''}">
       <div class="ico">${ATYPE[a.alert_type]?.[0]||'🚨'}</div>
       <div><div class="title">${esc(enName(a))} <span style="color:var(--muted);font-weight:400">· ${esc(a.location_title)}</span></div>
-        <div class="meta">${a.location_type}${a.location_type!=='oblast'?' in '+esc(ob[a.oblast_uid]?.en||''):''} · ${ATYPE[a.alert_type]?.[1]||a.alert_type} · since ${fmtT(a.started_at)}${a.notes?' · '+esc(a.notes):''}${(a.threats||[]).length?' · '+a.threats.map(t=>THREAT[t.threat_type]?.ico||'').join(''):''}</div></div>
+        <div class="meta">${esc(a.location_type)}${a.location_type!=='oblast'?' in '+esc(ob[a.oblast_uid]?.en||''):''} · ${esc(ATYPE[a.alert_type]?.[1]||a.alert_type)} · since ${fmtT(a.started_at)}${a.notes?' · '+esc(a.notes):''}${(a.threats||[]).length?' · '+a.threats.map(t=>THREAT[t.threat_type]?.ico||'').join(''):''}</div></div>
       <div class="dur">${dur(a.started_at)}</div></div>`).join('') : '<div class="empty">No active alerts anywhere. 🟢</div>';
 
   renderTimeline();
@@ -295,7 +295,7 @@ function renderTimeline(){
   $('timeline').innerHTML = favs.map(u=>{
     const rows = hist.filter(a=>a.oblast_uid===u && a.location_type==='oblast');
     const bars = rows.map(a=>{ const s=Math.max(start,new Date(a.started_at)), e=a.finished_at?new Date(a.finished_at):now; if(e<start) return ''; const l=(s-start)/W*100, w=Math.max(.15,(e-s)/W*100);
-      return `<div class="bar ${a.finished_at?'':'open'}" style="left:${l}%;width:${w}%" title="${fmtDT(a.started_at)} → ${a.finished_at?fmtDT(a.finished_at):'ongoing'} (${dur(a.started_at,a.finished_at)})${(a.threats||[]).length?'\n'+a.threats.map(t=>THREAT[t.threat_type]?.en||t.threat_type).join(', '):''}"></div>`; }).join('');
+      return `<div class="bar ${a.finished_at?'':'open'}" style="left:${l}%;width:${w}%" title="${fmtDT(a.started_at)} → ${a.finished_at?fmtDT(a.finished_at):'ongoing'} (${dur(a.started_at,a.finished_at)})${(a.threats||[]).length?'\n'+esc(a.threats.map(t=>THREAT[t.threat_type]?.en||t.threat_type).join(', ')):''}"></div>`; }).join('');
     return `<div class="tlrow"><div class="lab">${esc(ob[u]?.en||u)}</div><div class="track">${bars}<div class="nowline" style="left:100%"></div></div></div>`;
   }).join('');
   const n= histHours<=24?6:histHours<=72?6:7;
@@ -323,7 +323,7 @@ function renderFeed(posts, {flash=false}={}){
 
 function renderEvents(evs){
   $('events').innerHTML = evs.length? evs.map(e=>`<div class="row"><div class="ico">${e.kind==='start'?'🔴':e.kind==='end'?'🟢':e.kind==='threat'?'⚠️':'✏️'}</div>
-    <div><div class="title">${e.kind} — ${esc(e.location_title)}</div><div class="meta">${ATYPE[e.alert_type]?.[1]||e.alert_type}${e.detail&&e.detail.threat_type?' · '+(THREAT[e.detail.threat_type]?.en||e.detail.threat_type)+(e.detail.source_message?': '+esc(e.detail.source_message):''):''}</div></div>
+    <div><div class="title">${esc(e.kind)} — ${esc(e.location_title)}</div><div class="meta">${esc(ATYPE[e.alert_type]?.[1]||e.alert_type)}${e.detail&&e.detail.threat_type?' · '+esc(THREAT[e.detail.threat_type]?.en||e.detail.threat_type)+(e.detail.source_message?': '+esc(e.detail.source_message):''):''}</div></div>
     <div class="dur">${fmtDT(e.ts)}</div></div>`).join('') : '<div class="empty">Nothing yet.</div>';
 }
 

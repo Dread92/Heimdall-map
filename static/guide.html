@@ -774,8 +774,9 @@ var ICON={shahed:['drone','var(--ora)',''],jet:['jetdrone','var(--amb)',' jet'],
   ballistic:['ballistic','var(--msl)',' bal'],kab:['bomb','var(--vio)',''],debris:['down','var(--ink2)','']};
 var $=function(id){return document.getElementById(id);};
 function pick(){
-  try{ var q=new URLSearchParams(location.search).get('lang'); if(GD[q]) return q; }catch(e){}
-  try{ var l=localStorage.getItem('lang'); if(GD[l]) return l; }catch(e){}
+  // 1.58.46, the audit (C4): one of the three languages — "?lang=constructor" was an object's own key and blanked the page
+  try{ var q=new URLSearchParams(location.search).get('lang'); if(ORDER.indexOf(q)>=0) return q; }catch(e){}
+  try{ var l=localStorage.getItem('lang'); if(ORDER.indexOf(l)>=0) return l; }catch(e){}
   var n=(navigator.language||'en').slice(0,2).toLowerCase(); return n==='uk'||n==='ru'?'uk':n==='fr'?'fr':'en';
 }
 var LANG=pick();

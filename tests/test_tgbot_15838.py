@@ -481,7 +481,9 @@ def test_the_server_runs_the_bot_instead_of_the_channel():
     assert "state.bot = tgbot.start(state, log=log, ssl_ctx=_SSL_CTX, sat=SAT, oblasts=NAME_BY_UID)" in SRV
     assert "chanpost.start(" not in SRV and not re.search(r"state\.channel\b", SRV)
     assert 'official.append(self.bot.health())' in SRV and 'if u.path == "/api/admin/bot_switch":' in SRV
-    assert tgbot.configured({"TG_BOT_TOKEN": "x"}) and not tgbot.configured({"TG_CHANNEL_ID": "-100"})
+    tok = "123456789:" + "A" * 35                                       # 1.58.46: a token of Telegram's shape
+    assert tgbot.configured({"TG_BOT_TOKEN": tok}) and tgbot.configured({"TG_BOT_TOKEN": tok + " \r\n"})
+    assert not tgbot.configured({"TG_BOT_TOKEN": "x"}) and not tgbot.configured({"TG_CHANNEL_ID": "-100"})
     assert tgbot.start(object(), env={}) is None
     assert "fetch('/api/admin/bot_switch'" in ADMIN and "drawBotSw()" in ADMIN and "t.me/${esc(s.username)}" in ADMIN
     for k in ("bs_h:", "bs_none:", "bs_setup:", "bs_note_on:", "bs_note_off:", "bs_q_off:", "bs_q_on:", "bs_users:", "bs_link:"):

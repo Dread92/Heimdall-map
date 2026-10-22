@@ -253,23 +253,23 @@ function render(){
   const el=$('kyiv'); el.className='kyiv '+st;
   const subs=S.active.filter(a=>(a.oblast_uid==='14'||a.oblast_uid==='31')&&a.location_type!=='oblast');
   const since=k.since||ko.since||(subs[0]&&subs[0].started_at);
-  const thr=[...k.threats,...ko.threats].map(t=>`${THREAT[t.threat_type]?.[0]||''} ${THREAT[t.threat_type]?.[1]||t.threat_type}`);
+  const thr=[...k.threats,...ko.threats].map(t=>`${THREAT[t.threat_type]?.[0]||''} ${esc(THREAT[t.threat_type]?.[1]||t.threat_type)}`);
   const uniq=[...new Set(thr)];
   el.innerHTML=`<div class="dot ${st}"></div><div><div class="big">${st==='A'?'🔴 Kyiv — ALERTE':st==='P'?'🟠 Kyiv — alerte partielle':'🟢 Kyiv — calme'}</div>
-    <div class="small">${st==='A'?`ville ${k.status==='A'?'✔':'—'} · oblast ${ko.status==='A'?'✔':'—'}${since?' · depuis '+fmtT(since):''}`:st==='P'?`${subs.map(a=>a.location_title_en||a.location_title).join(', ')}`:'aucune alerte à Kyiv ni dans l\'oblast'}${uniq.length?' · '+uniq.join(', '):''}</div></div>
+    <div class="small">${st==='A'?`ville ${k.status==='A'?'✔':'—'} · oblast ${ko.status==='A'?'✔':'—'}${since?' · depuis '+fmtT(since):''}`:st==='P'?`${subs.map(a=>esc(a.location_title_en||a.location_title)).join(', ')}`:'aucune alerte à Kyiv ni dans l\'oblast'}${uniq.length?' · '+uniq.join(', '):''}</div></div>
     ${st!=='N'&&since?`<div class="dur">${dur(since)}</div>`:''}`;
   document.title=(st==='A'?'🔴 ':'')+'UA Alerts';
   // threats chips across country
   const groups={}; for(const a of S.active) for(const t of a.threats||[]){ const g=groups[t.threat_type]||={n:new Set(),lvl:'yellow'}; g.n.add(ob[a.oblast_uid]?.en||a.location_title); if(t.level==='red')g.lvl='red'; }
   const nA=Object.values(ob).filter(o=>o.status==='A').length;
-  $('threats').innerHTML=`<span class="chip ${nA?'red':'clear'}"><b>${nA}</b> oblast${nA>1?'s':''} en alerte</span>`+Object.entries(groups).map(([t,g])=>`<span class="chip ${g.lvl}">${THREAT[t]?.[0]||''} ${THREAT[t]?.[1]||t} <b>${g.n.size}</b></span>`).join('')
+  $('threats').innerHTML=`<span class="chip ${nA?'red':'clear'}"><b>${nA}</b> oblast${nA>1?'s':''} en alerte</span>`+Object.entries(groups).map(([t,g])=>`<span class="chip ${g.lvl}">${THREAT[t]?.[0]||''} ${esc(THREAT[t]?.[1]||t)} <b>${g.n.size}</b></span>`).join('')
     +(!S.config.has_token&&!S.config.demo?`<span class="chip">mode keyless</span>`:'');
   // oblasts
   for(const [uid,o] of Object.entries(ob)){ const p=$('o'+uid); if(!p) continue; p.setAttribute('class',`obl ${o.status} ${o.level==='red'?'red':''} ${favs.includes(uid)?'fav':''} ${OCC.has(uid)?'occ':''}`); }
   // alerts tab
   const act=[...S.active].sort((a,b)=>(favs.includes(b.oblast_uid)-favs.includes(a.oblast_uid))||(a.started_at<b.started_at?1:-1));
-  $('alerts').innerHTML=act.length?act.map(a=>`<div class="card ${a.alert_level||''} ${favs.includes(a.oblast_uid)?'kyiv':''}"><div class="title">${esc(a.location_title_en||a.location_title)} <span style="color:var(--muted);font-weight:400">· ${esc(a.location_title)}</span></div>
-     <div class="meta">${ATYPE[a.alert_type]||a.alert_type} · ${a.location_type} · depuis ${fmtT(a.started_at)} (${dur(a.started_at)})${(a.threats||[]).length?' · '+a.threats.map(t=>THREAT[t.threat_type]?.[0]||'').join(''):''}</div></div>`).join('')
+  $('alerts').innerHTML=act.length?act.map(a=>`<div class="card ${/^(red|yellow)$/.test(a.alert_level)?a.alert_level:''} ${favs.includes(a.oblast_uid)?'kyiv':''}"><div class="title">${esc(a.location_title_en||a.location_title)} <span style="color:var(--muted);font-weight:400">· ${esc(a.location_title)}</span></div>
+     <div class="meta">${esc(ATYPE[a.alert_type]||a.alert_type)} · ${esc(a.location_type)} · depuis ${fmtT(a.started_at)} (${dur(a.started_at)})${(a.threats||[]).length?' · '+a.threats.map(t=>THREAT[t.threat_type]?.[0]||'').join(''):''}</div></div>`).join('')
      :'<div class="empty">Aucune alerte active en Ukraine 🟢</div>';
 }
 let feedFilter='all', lastPosts=[];

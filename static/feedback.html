@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b0d11">
+<meta name="robots" content="noindex">
+<title>Heimdall — feedback</title>
+<link rel="icon" href="/static/heimdall-64.png">
+<!-- 1.58.46: the feedback form on its own — the footer's "Feedback" link from Light (the Tactical page opens the same form
+     in its sheet). What goes: the words, the kind, a contact only if given, the language and the screen's size (the
+     server adds the phone's system and browser). Never a place. Read on the dashboard's Feedback tab. -->
+<style>
+:root{--bg:#0b0d11;--ink:#ecebe6;--ink2:#b5b3ab;--line:#2a2f38;--r:6px;color-scheme:dark}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:560px;margin:0 auto;padding:18px 16px 40px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:6px}header img{width:32px;height:32px}
+h1{font-size:20px;margin:0}a.back{color:#9cc0ff;font-size:14px}
+p.i{color:var(--ink2);margin:8px 0 12px}
+.k{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}.k button{min-height:40px;padding:0 14px;border:1px solid var(--line);border-radius:999px;background:transparent;color:var(--ink);font:inherit;font-size:14px}
+.k button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+textarea,input{width:100%;box-sizing:border-box;margin:6px 0;padding:11px;border:1px solid var(--line);border-radius:var(--r);background:#13161c;color:var(--ink);font:inherit;font-size:16px}
+textarea{min-height:150px;resize:vertical}.hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
+small{display:block;color:var(--ink2);font-size:13px;margin:4px 0 10px}
+.m{min-height:22px;margin:8px 0;font-size:14px}.m.ok{color:#5fd39a}.m.bad{color:#ff8a80}
+.go{width:100%;min-height:48px;border:0;border-radius:var(--r);background:#ecebe6;color:#0b0d11;font:inherit;font-weight:700}
+.go:disabled{opacity:.5}
+</style>
+</head>
+<body>
+<main>
+  <header><img src="/static/heimdall-64.png" alt=""><h1 id="h"></h1></header>
+  <a class="back" id="back" href="/light"></a>
+  <p class="i" id="intro"></p>
+  <form id="f" novalidate>
+    <div class="k" id="k" role="radiogroup"></div>
+    <textarea id="t" maxlength="2000" required></textarea>
+    <input id="c" maxlength="120" autocomplete="off">
+    <input class="hp" id="w" tabindex="-1" autocomplete="off" aria-hidden="true">
+    <small id="np"></small>
+    <div class="m" id="m" role="status"></div>
+    <button class="go" type="submit" id="s"></button>
+  </form>
+</main>
+<script src="/static/i18n.js"></script>
+<script>
+(function(){
+  var $=function(id){return document.getElementById(id);}, K=['bug','idea','map','other'], k='bug';
+  var from=(document.referrer&&document.referrer.indexOf(location.origin)===0)?new URL(document.referrer).pathname:'';
+  var page=/^\/(light|l)$/.test(from)?'light':/^\/(m|k|kyiv)?$/.test(from)?'tactical':'page';
+  document.documentElement.lang=LANG; document.title='Heimdall — '+t('fb_title');
+  $('h').textContent=t('fb_title'); $('intro').textContent=t('fb_intro');
+  $('back').textContent='← Heimdall'; $('back').href=page==='tactical'?'/m':'/light';
+  $('t').placeholder=t('fb_text_ph'); $('c').placeholder=t('fb_contact'); $('np').textContent=t('fb_noplace'); $('s').textContent=t('fb_send');
+  K.forEach(function(x){ var b=document.createElement('button'); b.type='button'; b.setAttribute('role','radio'); b.dataset.k=x; b.textContent=t('fb_k_'+x);
+    b.onclick=function(){pick(x);}; $('k').appendChild(b); });
+  function pick(x){ k=x; [].forEach.call($('k').children,function(b){ b.classList.toggle('on',b.dataset.k===x); b.setAttribute('aria-checked',String(b.dataset.k===x)); }); }
+  pick(/[?&]k=(idea|map|other)\b/.test(location.search)?RegExp.$1:'bug');
+  $('f').onsubmit=function(e){ e.preventDefault(); var m=$('m'), txt=$('t').value.trim();
+    if(txt.length<3){ m.className='m bad'; m.textContent=t('fb_short'); return; }
+    $('s').disabled=true; m.className='m'; m.textContent='…';
+    var look=''; try{ look=localStorage.getItem('mode')||''; }catch(err){}
+    fetch('/api/feedback',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:k,text:txt,
+      contact:$('c').value.trim(),website:$('w').value,page:page,lang:LANG,look:/^(standard|day|night)$/.test(look)?look:'',
+      screen:screen.width+'x'+screen.height})})
+    .then(function(r){ if(r.ok){ m.className='m ok'; m.textContent=t('fb_sent'); $('t').value=''; $('c').value=''; }
+      else { m.className='m bad'; m.textContent=r.status===429?t('fb_limit'):t('fb_err'); } })
+    .catch(function(){ m.className='m bad'; m.textContent=t('fb_err'); })
+    .then(function(){ $('s').disabled=false; }); };
+})();
+</script>
+</body>
+</html>

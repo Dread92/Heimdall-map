@@ -8,4 +8,4 @@ telethon>=1.36
 tzdata>=2024.1
 # Pillow draws the map picture of the owner's private Telegram channel (1.58, app/mapshot.py); without it the channel
 # posts its text alone. The channel runs only when TG_BOT_TOKEN and TG_CHANNEL_ID are set (scripts/set-telegram-channel.bat).
-Pillow>=10.0
+Pillow>=10.3   # 1.58.46, the audit (I6): not the 10.0 whose bundled libwebp had CVE-2023-4863

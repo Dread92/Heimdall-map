@@ -440,6 +440,62 @@ def tag_feed_text(text, channel=None, near=None):
 # ---------------------------------------------------------------------------
 # Utilities
 # ---------------------------------------------------------------------------
+# 1.58.46: text a reader typed, made safe to keep and to show: no control characters (a newline kept unless `oneline`), no
+# bidirectional overrides (they can make a line read differently from what it holds), at most `n` characters
+_CTRL_RX = re.compile(r"[\x00-\x08\x0b-\x1f\x7f-\x9f\u200b-\u200f\u202a-\u202e\u2060-\u2069\ufeff]")   # + zero-width, C1
+
+
+def clean_text(v, n, oneline=False):
+    t = _CTRL_RX.sub("", str(v or "").replace("\r\n", "\n").replace("\r", "\n"))
+    if oneline:
+        t = " ".join(t.split())
+    else:
+        t = re.sub(r"\n{3,}", "\n\n", t)
+    return t.strip()[:n]
+
+
+# 1.58.46, the audit (C1): an official alert as it comes from a third-party API is data, never markup — its words are
+# written into pages. Each field keeps one shape: a type is a short identifier, a level red / yellow / none, a title or
+# a note plain text of a bounded length, a threat the same. Applied where the sources' alerts come in and are stored.
+_IDENT_RX = re.compile(r"[a-z][a-z0-9_]{0,39}")
+
+
+def safe_alert(a):
+    if not isinstance(a, dict):
+        return a
+    out = dict(a)
+    ident = lambda v, dflt: v if isinstance(v, str) and _IDENT_RX.fullmatch(v) else dflt   # noqa: E731
+    out["alert_type"] = ident(a.get("alert_type"), "air_raid")
+    out["location_type"] = ident(a.get("location_type"), "unknown")
+    out["alert_level"] = a.get("alert_level") if a.get("alert_level") in ("red", "yellow") else None
+    for k, n in (("location_title", 160), ("location_title_en", 160), ("notes", 300), ("raion_title", 160)):
+        if k in out and out[k] is not None:
+            out[k] = clean_text(out[k], n, oneline=True)
+    thr = []
+    for t in (a.get("threats") or [])[:20]:
+        if isinstance(t, dict) and isinstance(t.get("threat_type"), str) and _IDENT_RX.fullmatch(t["threat_type"]):
+            thr.append({**{k: v for k, v in t.items() if k in ("started_at", "finished_at")},
+                        "threat_type": t["threat_type"], "level": t.get("level") if t.get("level") in ("red", "yellow") else None,
+                        "source_message": clean_text(t.get("source_message"), 300, oneline=True)})
+    out["threats"] = thr
+    return out
+
+
+def ua_family(ua):
+    """A browser's rough kind for a bug report — the system and the browser, never the full string (it can single a
+    phone out)."""
+    u = ua or ""
+    os_ = ("iPhone" if "iPhone" in u else "iPad" if "iPad" in u else "Android" if "Android" in u else "Windows" if "Windows" in u
+           else "Mac" if "Mac OS" in u else "Linux" if "Linux" in u else "")
+    br = ("Edge" if "Edg/" in u else "Samsung" if "SamsungBrowser" in u else "Firefox" if ("Firefox/" in u or "FxiOS" in u)
+          else "Chrome" if ("Chrome/" in u or "CriOS" in u) else "Safari" if "Safari/" in u else "")
+    return " ".join(x for x in (os_, br) if x)
+
+
+# 1.58.46: the only donation link the map's jar opens — a Monobank jar ("банка"), set by the owner in the dashboard
+DONATE_JAR_RX = re.compile(r"https://send\.monobank\.ua/jar/[A-Za-z0-9]{6,24}")
+
+
 def now_iso():
     return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
 
@@ -531,7 +587,10 @@ class Usage:
             self.day = d
             self.salt = self._salt_for(d)
             self.seen = self._seen_for(d)
+            self.per_net = {}
         return d
+
+    NEW_PER_NET = 2000   # 1.58.46, the audit (S10): devices one address (an IPv6 /64) can add to a day's count — a carrier's NAT stays under it
 
     def _salt_for(self, day):
         """One salt per day, kept only for that day. New day, new salt: nobody can be followed across days."""
@@ -575,6 +634,14 @@ class Usage:
                 day = self._roll()
                 h = hashlib.blake2s(self.salt + (ip or "").encode() + (ua or "")[:120].encode(), digest_size=8).hexdigest()
                 new = h not in self.seen
+                if new:
+                    # each made-up browser was a new device, and a write: past NEW_PER_NET a day, one address adds none
+                    nk = hashlib.blake2s(self.salt + limits.net_key(ip).encode(), digest_size=8).hexdigest()
+                    pn = getattr(self, "per_net", None)
+                    if pn is None:
+                        pn = self.per_net = {}
+                    pn[nk] = pn.get(nk, 0) + 1
+                    new = pn[nk] <= self.NEW_PER_NET
                 if new:
                     self.seen.add(h)
                     try:
@@ -1248,6 +1315,10 @@ class Store:
         if "en_mt" not in cols:     # 1 = the English came from a machine translator, not the offline glossary
             c.execute("ALTER TABLE feed ADD COLUMN en_mt INTEGER")
         c.execute("CREATE TABLE IF NOT EXISTS kv(k TEXT PRIMARY KEY, v TEXT)")
+        # 1.58.46: what readers write from the app (Store.feedback_add) — the dashboard's Feedback tab
+        c.execute("""CREATE TABLE IF NOT EXISTS feedback(
+            id INTEGER PRIMARY KEY AUTOINCREMENT, ts TEXT, kind TEXT, text TEXT, contact TEXT, page TEXT, lang TEXT,
+            build TEXT, look TEXT, device TEXT, day_hash TEXT, status TEXT DEFAULT 'new')""")
         c.execute("CREATE TABLE IF NOT EXISTS push_subs(endpoint TEXT PRIMARY KEY, sub TEXT, home TEXT, created TEXT, last_ok TEXT)")
         # 1.34: what a phone asked for besides its own area ("bridges"), and the language to say it in
         # 1.58.35: `fails` — sends that got no answer or a refusal in a row; three and the row goes
@@ -1553,7 +1624,10 @@ class Store:
         if c and time.monotonic() - c[0] < 3:
             return c[1]
         with self.lock:
-            rows = self.conn.execute("SELECT endpoint,sub,home,topics,lang FROM push_subs").fetchall()
+            # 1.58.46, the audit (S1): the phones that answer first, a row with strikes last — a dead row never stands
+            # before a live one in a fan-out
+            rows = self.conn.execute("SELECT endpoint,sub,home,topics,lang FROM push_subs "
+                                     "ORDER BY COALESCE(fails,0), last_ok DESC").fetchall()
         out = [self._push_row(r) for r in rows]
         self._push_cache = (time.monotonic(), out)
         return out
@@ -1599,6 +1673,63 @@ class Store:
         keys = ("id", "ts", "post_id", "channel", "marker_id", "place", "kind", "reason", "note", "text", "done")
         return [dict(zip(keys, r)) for r in rows]
 
+    # -- readers' feedback (1.58.46) -------------------------------------------------------------------------------
+    # The owner: "we need a clean way to collect feedback and bug reports in Heimdall" — "a feedback integration we can
+    # reach from our admin dashboard". What is kept is what the reader wrote, its kind, the page, its language, build and
+    # look, a rough device ("Android · 412×915") — and a contact only if they chose to give one, to be answered. Never a
+    # place: no pin, no location, no address field (the form asks them not to write one). The same throwaway daily hash
+    # as the flags limits one device to FB_PER_DEVICE a day; FB_PER_DAY in all keeps a flood off the disk and the
+    # owner's phone; a message is kept FB_KEEP_DAYS, then deleted.
+    FB_KINDS = ("bug", "idea", "map", "other")
+    FB_STATUS = ("new", "read", "done", "spam")
+    FB_PER_DEVICE, FB_PER_DAY, FB_KEEP_DAYS = 6, 300, 180
+
+    def feedback_add(self, row):
+        """The new message's id, or None when a limit is reached."""
+        with self.lock:
+            c = self.conn
+            day = row["ts"][:10]
+            if row.get("day_hash") and c.execute("SELECT COUNT(*) FROM feedback WHERE day_hash=? AND ts>=?",
+                                                 (row["day_hash"], day)).fetchone()[0] >= self.FB_PER_DEVICE:
+                return None
+            if c.execute("SELECT COUNT(*) FROM feedback WHERE ts>=?", (day,)).fetchone()[0] >= self.FB_PER_DAY:
+                return None
+            cut = (datetime.now(timezone.utc) - timedelta(days=self.FB_KEEP_DAYS)).isoformat(timespec="seconds").replace("+00:00", "Z")
+            c.execute("DELETE FROM feedback WHERE ts<?", (cut,))
+            cur = c.execute("INSERT INTO feedback(ts,kind,text,contact,page,lang,build,look,device,day_hash,status) "
+                            "VALUES(?,?,?,?,?,?,?,?,?,?,'new')",
+                            (row["ts"], row["kind"], row["text"], row.get("contact") or "", row.get("page") or "",
+                             row.get("lang") or "", row.get("build") or "", row.get("look") or "", row.get("device") or "",
+                             row.get("day_hash") or ""))
+            c.commit()
+            return cur.lastrowid
+
+    def feedback_list(self, show="open", limit=300):
+        where = {"new": "WHERE status='new'", "open": "WHERE status IN ('new','read')", "done": "WHERE status='done'",
+                 "spam": "WHERE status='spam'"}.get(show, "")
+        keys = ("id", "ts", "kind", "text", "contact", "page", "lang", "build", "look", "device", "status")
+        with self.lock:
+            rows = self.conn.execute(f"SELECT {','.join(keys)} FROM feedback {where} ORDER BY id DESC LIMIT ?", (limit,)).fetchall()
+        return [dict(zip(keys, r)) for r in rows]
+
+    def feedback_counts(self):
+        with self.lock:
+            rows = self.conn.execute("SELECT status, COUNT(*) FROM feedback GROUP BY status").fetchall()
+        d = {k: 0 for k in self.FB_STATUS}
+        d.update({k: n for k, n in rows if k in d})
+        return dict(d, open=d["new"] + d["read"], total=sum(d.values()))
+
+    def feedback_set(self, fid, status=None, delete=False):
+        with self.lock:
+            if delete:
+                n = self.conn.execute("DELETE FROM feedback WHERE id=?", (fid,)).rowcount
+            elif status in self.FB_STATUS:
+                n = self.conn.execute("UPDATE feedback SET status=? WHERE id=?", (status, fid)).rowcount
+            else:
+                return False
+            self.conn.commit()
+        return n > 0
+
     # -- corpus review verdicts ---------------------------------------------
     # The corpus itself is a repo file, shipped inside the image and read-only here: anything written to it on
     # a deployed machine would vanish on the next release. So the verdicts live on the volume instead, and get
@@ -1626,6 +1757,7 @@ class Store:
             self.conn.commit()
 
     def upsert_alert(self, a):
+        a = safe_alert(a)
         with self.lock:
             self.conn.execute("""INSERT INTO alerts(key,source,location_uid,location_title,location_title_en,location_type,
                 oblast_uid,alert_type,alert_level,started_at,finished_at,notes,threats)
@@ -3436,6 +3568,7 @@ class State:
         """alerts: list of normalised alerts currently active according to `source`.
         authoritative_levels: set of location_type values this source is authoritative for
         (a keyless oblast-only source must not close raion-level alerts it cannot see)."""
+        alerts = [safe_alert(a) for a in alerts or []]          # 1.58.46, the audit: every source, one shape per field
         ts = now_iso()
         events = []
         with self.lock:
@@ -4081,6 +4214,7 @@ class State:
     _resp_guard = threading.Lock()
 
     RESP_MAX = 400          # 1.58.17: answers kept for parameters ("stats:14", "hist:24:14,31"); 1.58.24: the longest unused go first
+    RESP_BYTES = 160 * 1024 * 1024    # 1.58.46: and what they weigh, at most
 
     def cached(self, name, ttl, build, ver=None, gate=None):
         """(built_at, body, gzipped body or None, object) for `build()`; rebuilt when `ver` changes or `ttl`
@@ -4113,13 +4247,25 @@ class State:
             hit = (time.time(), body, gzip.compress(body, 5) if len(body) > 1400 else None, obj, ver)
             self._resp[name] = hit
             self._resp_used[name] = hit[0]
-            if len(self._resp) > self.RESP_MAX:
+            # 1.58.46, the audit (S2): a count was not enough — 400 copies of a 7-day history are a gigabyte. Copies kept for
+            # parameters ("x:y") also live within RESP_BYTES (the body, its gzip, and the object at about twice the body);
+            # the longest unused go first
+            weigh = lambda v: 3 * len(v[1]) + len(v[2] or b"")    # noqa: E731
+            keyed_all = [(k, v) for k, v in list(self._resp.items()) if ":" in k and k != name]
+            total = sum(weigh(v) for _k, v in keyed_all) + weigh(hit)
+            if len(self._resp) > self.RESP_MAX or total > self.RESP_BYTES:
                 used = self._resp_used
-                keyed = sorted((used.get(k, v[0]), k) for k, v in list(self._resp.items()) if ":" in k and k != name)
-                for _t, k in keyed[:len(self._resp) - self.RESP_MAX]:
+                keyed = sorted((used.get(k, v[0]), k, weigh(v)) for k, v in keyed_all)
+                over = len(self._resp) - self.RESP_MAX
+                for _t, k, w in keyed:
+                    if over <= 0 and total <= self.RESP_BYTES:
+                        break
                     self._resp.pop(k, None)
-                    self._resp_locks.pop(k, None)
                     used.pop(k, None)
+                    with self._resp_guard:
+                        self._resp_locks.pop(k, None)
+                    over -= 1
+                    total -= w
             return hit
 
     _bridges_res = None
@@ -4291,6 +4437,12 @@ class State:
         self._pub_key()
         if token in self._pub_map:
             return self._pub_map[token]
+        # 1.58.46, the audit (S6): a made-up token rescanned the whole feed under the database's lock, each time — now at
+        # most once every five minutes
+        now = time.monotonic()
+        if now - getattr(self, "_pub_scan_at", -1e9) < 300:
+            return None
+        self._pub_scan_at = now
         try:                                   # the map empties at a restart: fill it from the channels there are
             with self.store.lock:
                 rows = self.store.conn.execute("SELECT DISTINCT channel FROM feed").fetchall()
@@ -4337,9 +4489,14 @@ class State:
                 out[k] = keep
             elif k == "config" and isinstance(v, dict):
                 out[k] = {ck: cv for ck, cv in v.items() if ck != "channels"}
+            elif k == "notes" and isinstance(v, str) and "@" in v:
+                # 1.58.46, the audit (S7): an official alert read from a Telegram channel said which, in its note
+                out[k] = self._AT_CH.sub("Telegram", v)
             else:
                 out[k] = self.public(v)
         return out
+
+    _AT_CH = re.compile(r"@[A-Za-z][A-Za-z0-9_]{3,31}")
 
     def _markers_pub_obj(self):
         real = self.cached("markers", 10, self._markers_obj, ver=self.seq)[3]
@@ -4707,6 +4864,65 @@ class State:
         return {"configured": bool(tgbot and tgbot.configured()), "running": b is not None,
                 "on": self.store.kv_get("bot_on") != "0", "health": b.health() if b else None,
                 "status": b.status() if b else None}
+
+    # ---- 1.58.46: the feedback's Telegram ping, and the dashboard's code that points it at the owner's chat -------------
+    # The owner picked "dashboard + a Telegram ping". The bot cannot know which chat is the owner's, and a chat number is
+    # not something to ask him to look up — so the dashboard makes a one-time code (FB_CODE_S, kept only as its hash, five
+    # wrong tries and it is void) and he sends "/link CODE" to the bot from his own Telegram. That chat's number is the one
+    # thing kept (kv fb_chat); "/unlink", or the dashboard's button, forgets it.
+    FB_CODE_S, FB_CODE_TRIES, FB_CODE_ALL, FB_PING_S = 600, 5, 50, 60
+
+    def feedback_tg_code(self):
+        code = "".join(secrets.choice("ABCDEFGHJKLMNPQRSTUVWXYZ23456789") for _ in range(8))
+        self._fb_code = [hashlib.sha256(code.encode()).hexdigest(), time.time() + self.FB_CODE_S, 0, {}]
+        return code
+
+    def feedback_tg_claim(self, code, chat):
+        # 1.58.46, the audit (S9): the wrong tries are counted per chat (FB_CODE_TRIES each) — a stranger's tries voided the
+        # owner's code — and in all at most FB_CODE_ALL (with 32^8 codes, 50 guesses are nothing)
+        c = getattr(self, "_fb_code", None)
+        if not c or time.time() > c[1] or c[2] >= self.FB_CODE_ALL or c[3].get(chat, 0) >= self.FB_CODE_TRIES:
+            return False
+        if not hmac.compare_digest(hashlib.sha256(str(code or "").strip().upper().encode()).hexdigest(), c[0]):
+            c[2] += 1
+            c[3][chat] = c[3].get(chat, 0) + 1
+            return False
+        self._fb_code = None
+        self.store.kv_set("fb_chat", str(int(chat)))
+        log("feedback: Telegram pings linked to the chat that sent the dashboard's code")     # never the chat's number
+        return True
+
+    def feedback_tg_unlink(self):
+        self.store.kv_set("fb_chat", "")
+
+    def feedback_tg(self):
+        b = getattr(self, "bot", None)
+        return {"linked": bool(self.store.kv_get("fb_chat")), "bot": ("@" + b.username) if b and b.username else None,
+                "configured": bool(b) or bool(tgbot and tgbot.configured())}
+
+    def feedback_ping(self, kind, text, lang, page, contact):
+        """A short message to the owner's chat — at most one a minute (the dashboard has the rest). Plain text: nothing a
+        reader wrote is read as markup. No contact in it, only that one was given."""
+        b, chat = getattr(self, "bot", None), self.store.kv_get("fb_chat")
+        if not b or not chat:
+            return False
+        now = time.time()
+        if now - getattr(self, "_fb_ping_at", 0) < self.FB_PING_S:
+            return False
+        self._fb_ping_at = now
+        n = self.store.feedback_counts()["new"]
+        body = text if len(text) <= 300 else text[:300] + "…"
+        # 1.58.46, the audit (I3): Telegram makes links and commands of a reader's words — none of them is one here
+        body = re.sub(r"(?i)\b(https?|tg|ftp)://", r"\1[:]//", body)
+        body = re.sub(r"(?i)\b([a-z0-9-]{1,63})\.([a-z]{2,24})\b", r"\1[.]\2", body)
+        body = body.replace("/", "∕").replace("@", "＠")
+        msg = (f"Heimdall — feedback ({kind} · {page or '?'} · {lang or '?'})\n\n{body}\n\n"
+               + ("contact given · " if contact else "") + f"{n} new — {b.public_url.rstrip('/')}/admin")
+        try:
+            b.send(int(chat), "sendMessage", {"text": msg, "link_preview_options": {"is_disabled": True}})
+        except (TypeError, ValueError):
+            return False
+        return True
 
     def lead_times(self, days=30):
         """How long before each official air-raid alert over Kyiv or Kyiv oblast the map already showed a threat
@@ -5771,7 +5987,11 @@ class State:
         if hit is not None and name not in self._replay_keys:   # a refused window does not push out a kept one
             self._replay_keys.append(name)
             while len(self._replay_keys) > 12:
-                self._resp.pop(self._replay_keys.pop(0), None)
+                old = self._replay_keys.pop(0)
+                self._resp.pop(old, None)
+                self._resp_used.pop(old, None)                  # 1.58.46, the audit (S13): its bookkeeping too
+                with self._resp_guard:
+                    self._resp_locks.pop(old, None)
         return hit
 
     def replay(self, t0, t1):
@@ -6581,7 +6801,7 @@ class AlertsInUa(threading.Thread):
 
     @staticmethod
     def normalise(a):
-        return {
+        return safe_alert({                     # 1.58.46: one shape per field (safe_alert)
             "key": f"aiu:{a['id']}",
             "source": "alerts_in_ua",
             "location_uid": str(a.get("location_uid")),
@@ -6595,7 +6815,7 @@ class AlertsInUa(threading.Thread):
             "finished_at": a.get("finished_at"),
             "notes": a.get("notes"),
             "threats": a.get("threats") or [],
-        }
+        })
 
     def run(self):
         interval = max(10, int(self.cfg.get("poll_alerts_seconds", 15)))
@@ -6791,7 +7011,7 @@ class UkraineAlarm(threading.Thread):
                             "location_type": p["type"], "oblast_uid": p["obl"], "alert_type": atype, "alert_level": level,
                             "started_at": min(times) if times else now_iso(), "finished_at": None, "notes": reason, "threats": [],
                             "raion_uid": p.get("raion_uid"), "raion_key": p.get("raion_key"), "raion_title": p.get("raion_title")}
-        return list(out.values())
+        return [safe_alert(x) for x in out.values()]          # 1.58.46: one shape per field
 
 
 class Ubilling(threading.Thread):
@@ -8547,11 +8767,33 @@ class Server(ThreadingHTTPServer):
     """ThreadingHTTPServer that does not close a connection handed to the stream hub."""
     daemon_threads = True
     request_queue_size = 128      # Python's default of 5 left a burst of pages waiting on SYN retries
+    # 1.58.46, the audit (S5): at most this many requests handled at once — a thread each; past it a connection is closed
+    # at once rather than a new thread started (the live lines are handed to the hub and hold none)
+    MAX_HANDLERS = 384
 
     def __init__(self, *a, **k):
         self.detached = set()
         self.detached_lock = threading.Lock()
+        self.slots = threading.BoundedSemaphore(self.MAX_HANDLERS)
+        self.refused_full = 0
         super().__init__(*a, **k)
+
+    def process_request(self, request, client_address):
+        if not self.slots.acquire(timeout=2):
+            self.refused_full += 1
+            self.shutdown_request(request)
+            return
+        try:
+            super().process_request(request, client_address)
+        except Exception:
+            self.slots.release()
+            raise
+
+    def process_request_thread(self, request, client_address):
+        try:
+            super().process_request_thread(request, client_address)
+        finally:
+            self.slots.release()
 
     def shutdown_request(self, request):
         with self.detached_lock:
@@ -8573,6 +8815,8 @@ class Handler(BaseHTTPRequestHandler):
     state: State = None  # set at startup
     # 1.58.35, the audit: a client that sends its request a byte a minute held a thread for ever. A live line
     # (/api/stream) is adopted by the hub, which makes its socket non-blocking: this does not touch it.
+    server_version = "Heimdall"   # 1.58.46, the audit: not "BaseHTTP/0.6 Python/3.x"
+    sys_version = ""
     timeout = 20
 
     def log_message(self, fmt, *args):  # quiet
@@ -8752,6 +8996,74 @@ class Handler(BaseHTTPRequestHandler):
                         "post_id": post_id or c.get("post_id"), "reading": reading})
         return {"cases": out, "pending": total_pending, "reviewed": len(done)}
 
+    BODY_S = 10
+
+    def _read_body(self, n):
+        """1.58.46, the audit (S5): the body within BODY_S seconds in all — `timeout` is per read, and a byte every 19 s
+        held a thread for days. None when it did not come in time."""
+        end, buf = time.monotonic() + self.BODY_S, bytearray()
+        try:
+            while len(buf) < n:
+                if time.monotonic() > end:
+                    return None
+                chunk = self.rfile.read1(min(65536, n - len(buf)))
+                if not chunk:
+                    break
+                buf += chunk
+        except (socket.timeout, TimeoutError):
+            return None
+        return bytes(buf)
+
+    def _day_hash(self, ua=True):
+        """The usage counter's throwaway daily hash of this device (address + browser, salted, the salt dropped each day) —
+        what limits a flag per device; never an address. 1.58.46, the audit (S3, S8): the address as a client is counted
+        (an IPv6 /64), and for feedback without the browser (a client writes its User-Agent, each one a fresh allowance)."""
+        usage = getattr(self.state, "usage", None)
+        if not usage:
+            return ""
+        try:
+            with usage.lock:
+                usage._roll()
+                return hashlib.blake2s(usage.salt + limits.net_key(self._peer_ip() or "").encode()
+                                       + ((self.headers.get("User-Agent") or "")[:120].encode() if ua else b""), digest_size=8).hexdigest()
+        except Exception:
+            return ""
+
+    # 1.58.46: a reader's feedback (the app's form, static/feedback.html). See Store.feedback_add for what is kept.
+    def _feedback(self, data):
+        st = self.state
+        if not isinstance(data, dict):
+            return self._json({"error": "bad request"}, 400)
+        if str(data.get("website") or ""):             # the form's hidden field: only a bot fills it — "ok", nothing kept
+            return self._json({"ok": True})
+        kind = str(data.get("kind") or "other")
+        kind = kind if kind in Store.FB_KINDS else "other"
+        text = clean_text(data.get("text"), 2000)
+        if len(text) < 3:
+            return self._json({"error": "write a few words"}, 400)
+        contact = clean_text(data.get("contact"), 120, oneline=True)
+        page = str(data.get("page") or "")
+        page = page if page in ("tactical", "light", "page") else "page"
+        lang = str(data.get("lang") or "")
+        lang = lang if lang in ("uk", "en", "fr") else ""
+        build = str(data.get("build") or "")
+        build = build if re.fullmatch(r"[0-9a-f]{1,16}", build) else ""
+        look = str(data.get("look") or "")
+        look = look if look in ("standard", "day", "night", "lite") else ""
+        scr = str(data.get("screen") or "")
+        scr = scr if re.fullmatch(r"\d{2,5}x\d{2,5}", scr) else ""
+        device = " · ".join(x for x in (ua_family(self.headers.get("User-Agent") or ""), scr) if x)
+        fid = st.store.feedback_add({"ts": now_iso(), "kind": kind, "text": text, "contact": contact, "page": page,
+                                     "lang": lang, "build": build, "look": look, "device": device,
+                                     "day_hash": self._day_hash(ua=False)})
+        if fid is None:
+            return self._json({"error": "too many messages today — thank you, the team has them"}, 429)
+        try:
+            st.feedback_ping(kind, text, lang, page, contact)
+        except Exception as e:
+            log("feedback: ping failed —", type(e).__name__)
+        return self._json({"ok": True})
+
     def _flag(self, data):
         st = self.state
         mid = st.real_id(str(data.get("marker") or "")[:120])              # 1.58.36: the token at its front → the channel
@@ -8759,7 +9071,7 @@ class Handler(BaseHTTPRequestHandler):
         reason = str(data.get("reason") or "other")[:32]
         if reason not in ("place", "type", "not_a_threat", "already_gone", "other"):
             reason = "other"
-        text, channel = "", str(data.get("channel") or "")[:64]
+        text, channel = "", ""          # 1.58.46, the audit (S12): the channel is the stored post's, never the client's
         if post_id:
             try:
                 with st.store.lock:
@@ -8768,18 +9080,7 @@ class Handler(BaseHTTPRequestHandler):
                     channel, text = row[0], row[1]
             except Exception:
                 pass
-        usage = getattr(st, "usage", None)
-        day_hash = ""
-        if usage:
-            try:
-                import hashlib
-                with usage.lock:
-                    usage._roll()
-                    day_hash = hashlib.blake2s(
-                        usage.salt + (self._peer_ip() or "").encode()
-                        + (self.headers.get("User-Agent") or "")[:120].encode(), digest_size=8).hexdigest()
-            except Exception:
-                day_hash = ""
+        day_hash = self._day_hash()
         ok = st.store.flag_add({"ts": now_iso(), "post_id": post_id, "channel": channel, "marker_id": mid,
                                 "place": str(data.get("place") or "")[:80], "kind": str(data.get("kind") or "")[:40],
                                 "reason": reason, "note": data.get("note"), "day_hash": day_hash, "text": text})
@@ -8805,7 +9106,7 @@ class Handler(BaseHTTPRequestHandler):
         key = self._admin_key()
         if not key:
             return False               # no key configured: the dashboard does not exist, it is never open
-        if adminauth.same_key(self.headers.get("X-Admin-Key"), key):
+        if self.headers.get("X-Admin-Key") is not None and self._header_key("X-Admin-Key", key):
             return True
         ss = getattr(self.state, "admin", None)
         return bool(ss and ss.check(adminauth.cookie_value(self.headers), kp=adminauth.key_print(key)))
@@ -8914,15 +9215,40 @@ class Handler(BaseHTTPRequestHandler):
         key = self._access_key()
         if not key:
             return True
-        if adminauth.same_key(self.headers.get("X-Access-Key"), key):
+        if self.headers.get("X-Access-Key") is not None and self._header_key("X-Access-Key", key):
             return True
         ss = getattr(self.state, "access", None)
         return bool(ss and ss.check(adminauth.cookie_value(self.headers, adminauth.ACCESS_COOKIE), kp=adminauth.key_print(key)))
 
+    def _header_key(self, name, key):
+        """1.58.46, the audit (S4): a key in a header (scripts, tests) is held to the sign-in page's rule — a wrong one
+        takes one of the five tries (then one every two minutes, `login` in limits.py), is logged, and costs a second;
+        with the tries spent, no header key is even compared. Asked once per request."""
+        memo = getattr(self, "_hk_memo", None)           # this request's (a kept-alive connection serves several)
+        if memo is not None and memo[0] == name and memo[1] is self.headers:
+            return memo[2]
+        lim = getattr(self.state, "limits", None)
+        ip = limits.client_ip(self.headers, self.client_address[0] if self.client_address else "")
+        who = lim.who(ip) if (lim and ip and "login" in lim.rules) else None
+        if who and lim.spent(who, "login"):
+            ok = False
+        else:
+            ok = adminauth.same_key(self.headers.get(name), key)
+            if not ok:
+                if who:
+                    lim.take(who, "login")
+                self._sec("login_fail", "header " + name)
+                time.sleep(1)
+        self._hk_memo = (name, self.headers, ok)
+        return ok
+
     @staticmethod
     def _safe_next(v):
-        """A path of this site to go back to after the login — never another site, never a scheme."""
+        """A path of this site to go back to after the login — never another site, never a scheme. 1.58.46, the audit:
+        never a control character, a space or a tab either (a line break in it was a header of the answer)."""
         v = (v or "").strip()
+        if re.search(r"[\x00-\x20\x7f]", v):
+            return "/m"
         return v if v.startswith("/") and not v.startswith("//") and "\\" not in v and ":" not in v.split("?")[0] else "/m"
 
     def _access_page(self, code=401, msg=None, nxt="/m"):
@@ -8994,7 +9320,9 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json({"ok": False, "stuck": "database"}, 503)
             st.store.lock.release()
             return self._json({"ok": True})
-        if u.path.startswith(("/static/logo", "/static/heimdall-")) or u.path == "/favicon.ico":
+        # the icons open before the whole-app lock (the sign-in page shows them) — 1.58.46, the audit: those exact files only
+        # ("/static/heimdall-x/kyiv.html" served the page itself, unlocked)
+        if re.fullmatch(r"/static/(?:logo|heimdall-)[A-Za-z0-9_-]*\.(?:png|webp)", u.path) or u.path == "/favicon.ico":
             name = u.path.split("/")[-1] if u.path != "/favicon.ico" else "heimdall-64.png"
             return self._file(name, "image/png" if name.endswith(".png") else None)
         if not self._authorized(u, q):
@@ -9030,6 +9358,10 @@ class Handler(BaseHTTPRequestHandler):
             # still opens with no network (static/sw.js). It asks the server for nothing.
             if u.path == "/guide":
                 return self._file("guide.html", "text/html; charset=utf-8")
+            if u.path == "/feedback":                       # 1.58.46: the feedback form on its own (Light, the guide)
+                return self._file("feedback.html", "text/html; charset=utf-8")
+            if u.path == "/api/donate":                     # 1.58.46: the jar the map's button opens (None: the support sheet)
+                return self._json({"jar": st.store.kv_get("donate_jar") or None})
             if u.path == "/api/places":
                 oq = q.get("oblast", ["14,31"])[0]
                 # 1.43: "scope" — the oblasts the map covers now, as the dashboard set them
@@ -9064,6 +9396,15 @@ class Handler(BaseHTTPRequestHandler):
             # is configured, so an open deployment can never expose it by accident.
             if u.path == "/admin":
                 return self._admin_page(q)                     # 1.58.21: the login page until a session is open
+            if u.path == "/api/admin/feedback":
+                # 1.58.46: the readers' messages, newest first (`show`: new · open · done · spam · all), the counts, the
+                # Telegram ping's state and the jar
+                if not self._admin_ok(q):
+                    return self._json({"error": "unauthorized"}, 401)
+                show = q.get("show", ["open"])[0]
+                return self._json({"items": st.store.feedback_list(show, self._int(q, "limit", 300, 1, 2000)),
+                                   "counts": st.store.feedback_counts(), "tg": st.feedback_tg(),
+                                   "jar": st.store.kv_get("donate_jar") or None})
             if u.path == "/api/admin/security":
                 if not self._admin_ok(q):
                     return self._json({"error": "unauthorized"}, 401)
@@ -9146,9 +9487,10 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send_cached(st.feed_pub(limit))    # 1.58.36: no channel named
             if u.path == "/api/history":
                 # every open page asks for it after an alert starts or ends: one query for all of them (1.29)
-                hours = self._int(q, "hours", 24, 1, 168)
+                # 1.58.46, the audit (S2): the periods the pages ask (24 h, 3 and 7 days) — any other is rounded up to one
+                hours = next(h for h in (24, 72, 168) if h >= self._int(q, "hours", 24, 1, 168))
                 obl = ",".join(sorted({x for x in (q.get("oblast", [""])[0] or "").split(",") if x in NAME_BY_UID}))
-                return self._send_gated(st.cached(f"hist:{hours}:{obl}", 20, lambda: {"alerts": st.store.history(hours, obl.split(",") if obl else None)},
+                return self._send_gated(st.cached(f"hist:{hours}:{obl}", 20, lambda: st.public({"alerts": st.store.history(hours, obl.split(",") if obl else None)}),
                                                   ver=st.seq, gate=self._gate))
             if u.path == "/api/events_log":
                 # 1.58.24: the desktop page asks after every alert event — one copy for every page, rebuilt when an
@@ -9158,7 +9500,7 @@ class Handler(BaseHTTPRequestHandler):
                 except ValueError:                  # the desktop page's log: never refused for a bad limit (1.58.24)
                     n = 200
                 n = next(x for x in (60, 200, 500) if x >= min(max(n, 1), 500))
-                return self._send_gated(st.cached(f"evlog:{n}", 30, lambda: {"events": st.store.events(n)}, ver=st.seq, gate=self._gate))
+                return self._send_gated(st.cached(f"evlog:{n}", 30, lambda: st.public({"events": st.store.events(n)}), ver=st.seq, gate=self._gate))
             # Flagged readings are yours alone, on the same terms as the dashboard: they quote posts and
             # somebody's opinion of them, and neither belongs on an open endpoint.
             # The corpus, for reviewing from a browser instead of a terminal. The reading shown is computed
@@ -9293,7 +9635,10 @@ class Handler(BaseHTTPRequestHandler):
             n = int(self.headers.get("Content-Length") or 0)
             if n < 0 or n > 65536:                         # 1.58.17: no request of the pages is near this (1.58.24: nor below 0 — read to the end)
                 return self._json({"error": "too large"}, 413)
-            raw = self.rfile.read(n) if n else b""
+            raw = self._read_body(n) if n else b""
+            if raw is None:                                # 1.58.46, the audit (S5): a body sent a byte at a time
+                self.close_connection = True
+                return self._json({"error": "request body too slow"}, 408)
             if u.path == "/access/login":                  # 1.58.35: the whole-app lock's login (a form of this site)
                 org = self.headers.get("Origin")
                 if org and urlparse(org).netloc.lower() != (self.headers.get("Host") or "").lower():
@@ -9302,8 +9647,15 @@ class Handler(BaseHTTPRequestHandler):
             # 1.58.21: what changes something on the dashboard's side comes from this site's own pages only
             adm = u.path.startswith(("/admin/", "/api/admin/", "/api/digest/", "/api/corpus/"))
             org = self.headers.get("Origin")
-            if adm and org and urlparse(org).netloc.lower() != (self.headers.get("Host") or "").lower():
+            # 1.58.46, the audit: also what the browser says of the request (Sec-Fetch-Site), when it says it — and the
+            # readers' two forms (a flag, a feedback) the same way: another site cannot post them through its visitors
+            sfs = (self.headers.get("Sec-Fetch-Site") or "").lower()
+            reader_form = u.path in ("/api/feedback", "/api/flag")
+            if (adm or reader_form) and ((org and urlparse(org).netloc.lower() != (self.headers.get("Host") or "").lower())
+                                         or (sfs and sfs not in ("same-origin", "none"))):
                 return self._json({"error": "cross-site request refused"}, 403)
+            if reader_form and not (self.headers.get("Content-Type") or "").lower().startswith("application/json"):
+                return self._json({"error": "application/json"}, 415)
             if u.path == "/admin/login":
                 return self._admin_login(raw)
             if u.path == "/admin/logout":
@@ -9311,7 +9663,12 @@ class Handler(BaseHTTPRequestHandler):
                 ok = self._admin_ok(q)
                 return self._admin_logout(everyone=ok and (parse_qs(raw.decode("utf-8", "replace")).get("all") or [""])[0] == "1",
                                           signed=ok)
-            data = json.loads(raw.decode("utf-8") or "{}") if raw else {}
+            try:
+                data = json.loads(raw.decode("utf-8") or "{}") if raw else {}
+            except (ValueError, UnicodeDecodeError, RecursionError):
+                return self._json({"error": "bad request: a JSON object"}, 400)    # 1.58.46, the audit (S11): not a 500
+            if not isinstance(data, dict):
+                return self._json({"error": "bad request: a JSON object"}, 400)
             if adm and self._admin_ok(q):
                 self._sec("action", u.path)
             if u.path == "/api/admin/security":
@@ -9327,6 +9684,42 @@ class Handler(BaseHTTPRequestHandler):
                 if not self._allow("write"):
                     return self._limited()
                 return self._flag(data)
+            if u.path == "/api/feedback":                   # 1.58.46: a reader's feedback — its own allowance (limits.py)
+                if not self._allow("feedback"):
+                    return self._limited()
+                return self._feedback(data)
+            if u.path == "/api/admin/feedback":
+                # 1.58.46: the dashboard's Feedback tab — a message read, done, spam, or deleted
+                if not self._admin_ok(q):
+                    return self._json({"error": "unauthorized"}, 401)
+                try:
+                    fid = int(data.get("id"))
+                except (TypeError, ValueError):
+                    return self._json({"error": "id"}, 400)
+                ok = st.store.feedback_set(fid, status=data.get("status"), delete=data.get("delete") is True)
+                return self._json({"ok": ok, "counts": st.store.feedback_counts()}, 200 if ok else 400)
+            if u.path == "/api/admin/feedback_tg":
+                # 1.58.46: the Telegram ping — a one-time code to send to the bot, or forget the chat it goes to
+                if not self._admin_ok(q):
+                    return self._json({"error": "unauthorized"}, 401)
+                if data.get("action") == "unlink":
+                    st.feedback_tg_unlink()
+                    return self._json({"ok": True, "tg": st.feedback_tg()})
+                if data.get("action") == "code":
+                    if not getattr(st, "bot", None):
+                        return self._json({"error": "the bot is not running (TG_BOT_TOKEN)"}, 503)
+                    return self._json({"ok": True, "code": st.feedback_tg_code(), "expires_s": st.FB_CODE_S, "tg": st.feedback_tg()})
+                return self._json({"error": "action = code | unlink"}, 400)
+            if u.path == "/api/admin/donate":
+                # 1.58.46: the map's donation jar — the owner's Monobank jar, or none ('' clears it)
+                if not self._admin_ok(q):
+                    return self._json({"error": "unauthorized"}, 401)
+                jar = str(data.get("jar") or "").strip()
+                if jar and not DONATE_JAR_RX.fullmatch(jar):
+                    return self._json({"error": "a Monobank jar link: https://send.monobank.ua/jar/…"}, 400)
+                st.store.kv_set("donate_jar", jar)
+                log("donate: the jar link " + ("set" if jar else "cleared") + " from the dashboard")
+                return self._json({"ok": True, "jar": jar or None})
             if u.path == "/api/admin/ai_report":
                 # 1.53: "write this night's report now" — only asks the NightReports thread
                 if not self._admin_ok(q):
@@ -9590,9 +9983,9 @@ class Handler(BaseHTTPRequestHandler):
         shows the Sentinel picture under it (the OSM streets for the map)."""
         m, k = self._ESRI_RX.fullmatch(path), self._ESRI_KIND_RX.fullmatch(path)
         if m:
-            code, data, ctype, cc = self.state.esri.fetch(*map(int, m.groups()), ip=self._peer_ip())
+            code, data, ctype, cc = self.state.esri.fetch(*map(int, m.groups()), ip=limits.net_key(self._peer_ip()))   # 1.58.46: a /64
         elif k:
-            code, data, ctype, cc = self.state.esri.fetch(*map(int, k.groups()[1:]), ip=self._peer_ip(), kind=k.group(1), lang=lang)
+            code, data, ctype, cc = self.state.esri.fetch(*map(int, k.groups()[1:]), ip=limits.net_key(self._peer_ip()), kind=k.group(1), lang=lang)
         else:
             code, data, ctype, cc = 404, b"", None, "public, max-age=86400"
         self.send_response(code)

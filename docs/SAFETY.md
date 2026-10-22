@@ -346,6 +346,17 @@ Its colour is read from the silhouette underneath, so every colour that warns �
 reader's place, grey stale — stays; an outcome, the night and blackout looks keep the 2D drawing. The pictures are
 illustrations of the type a post named, not of the object seen: the words of the post decide the type, as before.
 
+## Feedback asks for no place, and the jar never asks while something is in the air (1.58.46)
+
+A reader writing to the team must not have to tell where they are: the form sends what they wrote, the kind and a
+contact only if they give one, with the page and the phone's kind — never a pin, never HOME, and it says so above the
+button. The donation jar is a small button beside the map's controls; it opens the support sheet when pressed and never
+by itself (the reminder keeps its own rule: never during an alert).
+
+An official alert's words are data (1.58.46, the audit): a type, a level, a title or a threat from an API reach a page
+as text only, with one shape each — an upstream answer can be wrong, and it must never be able to run anything in a
+reader's page.
+
 ## Alert colours must match the official app
 
 If the government app shows an oblast under alert, this map shows the whole oblast under alert. An

@@ -5,6 +5,7 @@ import base64
 import http.client
 import json
 import os
+import re
 import ssl
 import struct
 import threading
@@ -102,9 +103,10 @@ def send(subscription, payload, priv_b64, pub_b64, subject=SUBJECT, ttl=300, urg
 # every notification then waited on it (a connect timeout each), while the same field let the server be pointed at any
 # host. A real subscription comes from one of the browsers' push services, over https, with a 65-byte P-256 point and a
 # 16-byte auth secret; that, and nothing else, is what gets stored (never the client's whole object).
-PUSH_HOSTS = ("fcm.googleapis.com", "android.googleapis.com", "updates.push.services.mozilla.com", "notify.windows.com",
-              "push.apple.com", "web.push.apple.com", "push.services.mozilla.com")
+PUSH_HOSTS = ("fcm.googleapis.com", "android.googleapis.com", "updates.push.services.mozilla.com",
+              "web.push.apple.com", "push.services.mozilla.com")
 ENDPOINT_MAX = 1024
+CONNECT_S = 4
 
 
 def _b64u_len(v):
@@ -115,9 +117,15 @@ def _b64u_len(v):
         return -1
 
 
+# 1.58.46, the audit (S1): the push services' own names only — not any name under them ("x.fcm.googleapis.com" was taken,
+# and so was any port: Google's address on port 81 never answers, so each such row cost a send its whole timeout). Windows'
+# service is the one with regional names ("wns2-par02p.notify.windows.com").
+_WNS_RX = re.compile(r"[a-z0-9-]{1,63}\.notify\.windows\.com")
+
+
 def push_host_ok(host):
     host = (host or "").lower().rstrip(".")
-    return any(host == h or host.endswith("." + h) for h in PUSH_HOSTS)
+    return host in PUSH_HOSTS or bool(_WNS_RX.fullmatch(host))
 
 
 def clean_subscription(sub):
@@ -132,6 +140,11 @@ def clean_subscription(sub):
     except ValueError:
         return None
     if u.scheme != "https" or not u.hostname or u.username or u.password or not push_host_ok(u.hostname) or not u.path:
+        return None
+    try:
+        if u.port not in (None, 443):                   # 1.58.46: the service's https port, nothing else
+            return None
+    except ValueError:
         return None
     keys = sub.get("keys") if isinstance(sub.get("keys"), dict) else {}
     p, a = keys.get("p256dh"), keys.get("auth")
@@ -210,14 +223,18 @@ class Sender:
             c = self._conn(u.scheme, u.netloc)
             reused = c.sock is not None
             if not reused:
+                # 1.58.46, the audit (S1): a push service answers a connection within a second or two — CONNECT_S, not the
+                # whole timeout, and a fresh connection that fails is not tried again (it only doubled a dead row's cost)
+                c.timeout = min(self.timeout, CONNECT_S)
                 try:
                     c.connect()
                 except OSError:
-                    # nothing was sent yet, so trying again cannot deliver twice
                     self._drop(u.scheme, u.netloc)
-                    if attempt:
-                        return 0, False
-                    continue
+                    return 0, False
+                try:
+                    c.sock.settimeout(self.timeout)
+                except OSError:
+                    pass
             try:
                 c.request("POST", path, body=body, headers=headers)
                 r = c.getresponse()

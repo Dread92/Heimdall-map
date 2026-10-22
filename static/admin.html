@@ -122,6 +122,18 @@ table.aivt{max-width:440px;margin:0 0 16px}
 .onl .d{font:12px/1.5 var(--sans);color:var(--ink2);margin-top:8px}.onl .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);margin-right:6px;animation:bl 2s infinite}
 @keyframes bl{50%{opacity:.35}}
 .msg{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--blue);padding:12px 14px}
+/* 1.58.46: the Feedback tab */
+.fbn{display:inline-block;min-width:16px;margin-left:6px;padding:1px 5px;border-radius:9px;background:var(--orange,#d95926);color:#fff;font:700 10.5px var(--mono);font-style:normal}
+.fbw{display:grid;gap:12px}.fbbox{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--blue);padding:12px 14px}
+.fbbox h3{margin:0 0 8px;font:700 12px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink2)}
+.fbf{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}.fbf button.on{border-color:var(--ink);color:var(--ink);background:#1b2029}
+.fbi{border-top:1px solid var(--line);padding:10px 0}.fbi.new{border-left:3px solid var(--orange,#d95926);padding-left:9px}
+.fbh{display:flex;flex-wrap:wrap;gap:4px 10px;font:12px var(--mono);color:var(--ink3)}.fbh b{color:var(--ink)}
+.fbx{margin:6px 0;font:14px/1.45 var(--sans);white-space:pre-wrap;overflow-wrap:anywhere}
+.fbc{font:13px var(--sans);color:var(--ink2);margin-bottom:6px;overflow-wrap:anywhere}.fbc a{color:#9cc0ff}
+.fba{display:flex;flex-wrap:wrap;gap:6px}.fbcode{font:800 26px var(--mono);letter-spacing:.18em;margin:6px 0}
+.fbjar{width:100%;max-width:520px;background:#0b0d11;border:1px solid var(--line);color:var(--ink);padding:8px;font:13px var(--mono)}
+.fbnote{font:12.5px/1.45 var(--sans);color:var(--ink3);margin:6px 0}
 .msg h3{margin:0 0 8px;font:700 12px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink2)}
 .msg textarea{width:100%;min-height:52px;background:#0b0d11;border:1px solid var(--line);color:var(--ink);font:13.5px/1.4 var(--sans);padding:7px 8px;border-radius:2px;resize:vertical;margin:2px 0 8px}
 .msg label.t{display:block;font:600 10.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)}
@@ -264,6 +276,7 @@ table.ptt tr[data-cell]{cursor:pointer}table.ptt tr[data-cell]:hover td{backgrou
   <button data-tab="sources" role="tab" data-tr="tab_sources">Sources</button>
   <button data-tab="ai" role="tab" data-tr="tab_ai">AI reader</button>
   <button data-tab="usage" role="tab" data-tr="tab_usage">Usage</button>
+  <button data-tab="feedback" role="tab"><span data-tr="tab_fb">Feedback</span><em class="fbn" id="fbn" hidden></em></button>
 </nav>
 
 <section class="tabsec" id="tab-live">
@@ -338,6 +351,8 @@ table.ptt tr[data-cell]{cursor:pointer}table.ptt tr[data-cell]:hover td{backgrou
 </section>
 <section class="tabsec" id="tab-sources" hidden><div id="health"></div></section>
 <section class="tabsec" id="tab-ai" hidden><div id="aiv"></div></section>
+<!-- 1.58.46: what readers write from the app (the form in the sheet, /feedback), the Telegram ping, the map's jar -->
+<section class="tabsec" id="tab-feedback" hidden><div id="fbv"></div></section>
 <section class="tabsec" id="tab-usage" hidden><div id="out"></div><div class="foot" id="foot"></div></section>
 <div class="antip" id="antip" hidden></div>
 <script>
@@ -482,7 +497,16 @@ const T={
   rg_note:'Each oblast is a compartment: switch it off and it leaves the map — its channels are not read and nothing reported there is drawn, counted or pushed. Kyiv is always on. A channel’s oblast is also how its posts are read: the villages and city districts of that oblast, in Ukrainian or Russian.',
   ch_added:'@{0} added on trial: its posts show in the feed, flagged, and put nothing on the map until you switch it to Map.',
   ch_map_q:'Put @{0} on the map? Its posts will place marks, can raise banners and send alerts to phones.',
-  ch_modes:'<b>Map</b> — its posts place marks and can raise banners and alerts. <b>Trial</b> — its posts only show in the feed, flagged “on trial”: judge a new channel by what it posts and the share of it the app can read (“Read 7 d”) before trusting it. <b>Off</b> — not read, and its posts leave the feed. The default channels can be switched off but not removed.'},
+  ch_modes:'<b>Map</b> — its posts place marks and can raise banners and alerts. <b>Trial</b> — its posts only show in the feed, flagged “on trial”: judge a new channel by what it posts and the share of it the app can read (“Read 7 d”) before trusting it. <b>Off</b> — not read, and its posts leave the feed. The default channels can be switched off but not removed.',
+  tab_fb:'Feedback',fb_h:'Readers’ feedback',fb_new:'New',fb_open:'Open',fb_done:'Done',fb_spam:'Spam',fb_all:'All',
+  fb_none:'Nothing here.',fb_read:'Mark read',fb_mdone:'Done',fb_mspam:'Spam',fb_del:'Delete',fb_del_q:'Delete this message for good?',
+  fb_k_bug:'bug',fb_k_idea:'idea',fb_k_map:'wrong on the map',fb_k_other:'other',fb_contact:'Contact',
+  fb_tg_h:'Telegram ping',fb_tg_on:'Linked — new feedback is announced in your Telegram chat (at most one message a minute).',
+  fb_tg_off:'Not linked. Make a code, then send it to the bot from your own Telegram.',fb_tg_code:'Make a code',fb_tg_unlink:'Unlink',
+  fb_tg_send:'Send this to {0} within 10 minutes:',fb_tg_nobot:'The bot is not running (TG_BOT_TOKEN is not set), so there is nothing to link.',
+  fb_jar_h:'Donation jar on the map',fb_jar_note:'Your Monobank jar link (https://send.monobank.ua/jar/…). The jar button on the map opens the support sheet with it; with none set, the sheet shows the addresses as before.',
+  fb_jar_save:'Save',fb_jar_clear:'Clear',fb_saved:'saved',fb_keep:'Kept 180 days. Never a place: the form asks readers not to write one.'
+ },
  uk:{title:'Heimdall — панель',
   tab_pat:'Закономірності',pt_all:'Усе',pt_kind_drones:'Усі дрони',pt_kind_drone:'Гвинтові',pt_kind_jet:'Реактивні',pt_kind_unst:'Тип не вказано',
   pt_note:'Куди летять дрони, район за районом — за повідомленнями каналів про кожну позначену ціль, по черзі: не радар. Переміщення — від одного повідомлення до наступного; % — частка цих переміщень із 95% діапазоном. Для кількох переміщень діапазон широкий: довіряйте % лише тоді, коли діапазон вузький. Лише для панелі: у застосунку цього немає.',
@@ -617,13 +641,23 @@ const T={
   rg_note:'Кожна область — окремий відсік: вимкніть її, і вона зникне з мапи — її канали не читаються, а нічого з того, що там повідомлено, не показується, не рахується й не надсилається. Київ увімкнено завжди. Область каналу — це ще й те, як читаються його дописи: села й райони міст цієї області, українською чи російською.',
   ch_added:'@{0} додано на перевірку: його дописи з’являються у стрічці з позначкою й нічого не ставлять на мапу, доки ви не перемкнете його на «Мапа».',
   ch_map_q:'Поставити @{0} на мапу? Його дописи ставитимуть позначки, можуть піднімати банери й надсилати сповіщення.',
-  ch_modes:'<b>Мапа</b> — дописи ставлять позначки й можуть піднімати банери та сповіщення. <b>Перевірка</b> — дописи лише у стрічці з позначкою «на перевірці»: оцініть новий канал за тим, що він пише, і часткою, яку застосунок може прочитати («Зчитано 7 д»), перш ніж довіряти. <b>Вимк.</b> — не читається, дописи зникають зі стрічки. Типові канали можна вимкнути, але не прибрати.'}};
+  ch_modes:'<b>Мапа</b> — дописи ставлять позначки й можуть піднімати банери та сповіщення. <b>Перевірка</b> — дописи лише у стрічці з позначкою «на перевірці»: оцініть новий канал за тим, що він пише, і часткою, яку застосунок може прочитати («Зчитано 7 д»), перш ніж довіряти. <b>Вимк.</b> — не читається, дописи зникають зі стрічки. Типові канали можна вимкнути, але не прибрати.',
+  tab_fb:'Відгуки',fb_h:'Відгуки читачів',fb_new:'Нові',fb_open:'Відкриті',fb_done:'Зроблено',fb_spam:'Спам',fb_all:'Усі',
+  fb_none:'Тут нічого.',fb_read:'Прочитано',fb_mdone:'Зроблено',fb_mspam:'Спам',fb_del:'Видалити',fb_del_q:'Видалити це повідомлення назавжди?',
+  fb_k_bug:'помилка',fb_k_idea:'ідея',fb_k_map:'неправильно на мапі',fb_k_other:'інше',fb_contact:'Контакт',
+  fb_tg_h:'Сповіщення в Telegram',fb_tg_on:'Під’єднано — про новий відгук пише бот у ваш чат (не частіше разу на хвилину).',
+  fb_tg_off:'Не під’єднано. Створіть код і надішліть його ботові зі свого Telegram.',fb_tg_code:'Створити код',fb_tg_unlink:'Від’єднати',
+  fb_tg_send:'Надішліть це {0} протягом 10 хвилин:',fb_tg_nobot:'Бот не працює (TG_BOT_TOKEN не задано) — нема чого під’єднувати.',
+  fb_jar_h:'Банка для донатів на мапі',fb_jar_note:'Посилання на вашу банку Monobank (https://send.monobank.ua/jar/…). Кнопка-банка на мапі відкриває аркуш підтримки з ним; без нього аркуш показує адреси, як раніше.',
+  fb_jar_save:'Зберегти',fb_jar_clear:'Очистити',fb_saved:'збережено',fb_keep:'Зберігається 180 днів. Жодних місць: форма просить їх не писати.'
+ }};
 
 let L='en'; try{const v=localStorage.getItem('adminlang'); if(v==='en'||v==='uk') L=v;}catch(e){}
 const tr=(k,...a)=>{let s=(T[L]&&T[L][k])!==undefined?T[L][k]:(T.en[k]!==undefined?T.en[k]:k);
   a.forEach((v,i)=>{s=s.split('{'+i+'}').join(v)}); return s;};
 const fmt=n=>(n||0).toLocaleString(L==='uk'?'uk-UA':'en-GB');
-const esc=t=>String(t==null?'':t).replace(/[<>&]/g,'');
+// 1.58.46, the audit (C2): encoded, not stripped — it is used inside attributes too, where a quote ended the value
+const esc=t=>String(t==null?'':t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 let D=null, H=null, H_ERR='';
 const KEYQ='';   // 1.58.21: the key never travels in an address — the page's requests carry the session's cookie
@@ -693,7 +727,7 @@ function drawHealth(){
     const rv=!c.listed?'':H.tg_api?`<select class="chsel" data-ch="${esc(c.channel)}" data-k="via">${opt('web',c.read_via,tr('ch_web'))}${opt('api',c.read_via,tr('ch_api2'))}</select>`:esc(c.read_via==='api'?tr('ch_api2'):tr('ch_web'));
     const del=c.listed&&!c.builtin?`<button class="chdel" data-ch="${esc(c.channel)}" title="${esc(tr('ch_del'))}">✕</button>`:'';
     const hm=c.listed?`<select class="chsel" data-ch="${esc(c.channel)}" data-k="home">${RG_OPTS(c.home||'')}</select>`:'';
-    return {home:c.listed?(c.home||''):'', marks:c.marks_24h||0, html:`<tr class="${bad?'bad':warn?'warn':''} m-${esc(c.mode||'')}" title="${esc(c.error||'')}"><td>@${esc(c.channel)}${c.mode==='trial'?` <span class="trial">${tr('ch_trial')}</span>`:''}</td><td>${use}</td><td>${rv}</td><td>${hm}</td><td class="n">${fmt(c.posts_24h)}</td><td class="n">${fmt(c.marks_24h)}</td><td class="n">${pct}</td><td>${ago(c.last_post)}</td><td><span class="st ${bad?'bad':c.ok?'ok':''}">${c.mode==='off'?tr('ch_off'):via}</span>${bad&&c.error?` <span style="color:var(--ink3)">${esc(c.error).slice(0,80)}</span>`:''}</td><td>${del}</td></tr>`}; });
+    return {home:c.listed?(c.home||''):'', marks:c.marks_24h||0, html:`<tr class="${bad?'bad':warn?'warn':''} m-${esc(c.mode||'')}" title="${esc(String(c.error||'').slice(0,160))}"><td>@${esc(c.channel)}${c.mode==='trial'?` <span class="trial">${tr('ch_trial')}</span>`:''}</td><td>${use}</td><td>${rv}</td><td>${hm}</td><td class="n">${fmt(c.posts_24h)}</td><td class="n">${fmt(c.marks_24h)}</td><td class="n">${pct}</td><td>${ago(c.last_post)}</td><td><span class="st ${bad?'bad':c.ok?'ok':''}">${c.mode==='off'?tr('ch_off'):via}</span>${bad&&c.error?` <span style="color:var(--ink3)">${esc(c.error).slice(0,80)}</span>`:''}</td><td>${del}</td></tr>`}; });
   const trn=H.translation||{};
   const paused=Object.keys(trn.paused||{});
   badges();
@@ -1037,6 +1071,45 @@ async function loadAI(){
 function badges(){ const bad=!!H&&((H.official||[]).some(x=>!x.ok)||(H.channels||[]).some(c=>c.ok===false&&c.mode!=='off'));
   $('tabs').querySelector('[data-tab="sources"]').classList.toggle('bad',bad); }
 
+// ---- 1.58.46: feedback ----------------------------------------------------------------------------------------------
+// The readers' messages (newest first), what is done with them, the Telegram ping (a one-time code sent to the bot from
+// the owner's own Telegram) and the map's donation jar. Every word a reader wrote is shown as text, never as markup.
+// (the tab's words are in T.en / T.uk with the others)
+
+let FB=null, FB_SHOW='open', FB_CODE=null;
+const fbContact=c=>{ const v=String(c||'').trim(); if(!v) return '';
+  if(/^[^\s@<>"'`]+@[^\s@<>"'`]+\.[A-Za-z]{2,}$/.test(v)) return `<a href="mailto:${escA(v)}">${escA(v)}</a>`;
+  const h=v.match(/^@?([A-Za-z][A-Za-z0-9_]{4,31})$/); if(h) return `<a href="https://t.me/${escA(h[1])}" target="_blank" rel="noopener noreferrer">${escA(v)}</a>`;
+  return escA(v); };
+async function loadFB(quiet){ try{ const r=await fetch('/api/admin/feedback?show='+FB_SHOW,{cache:'no-store'}); if(r.status===401){ location.reload(); return; }
+    FB=await r.json(); }catch(e){ if(!quiet) FB={error:String(e)}; } drawFB(); }
+function fbBadge(){ const n=FB&&FB.counts?FB.counts.new:0, b=$('fbn'); if(b){ b.hidden=!n; b.textContent=n>99?'99+':String(n); } }
+function drawFB(){ fbBadge(); const v=$('fbv'); if(!v||!FB) return; if(FB.error){ v.textContent=FB.error; return; }
+  const c=FB.counts||{}, f=[['new',c.new],['open',c.open],['done',c.done],['spam',c.spam],['all',c.total]];
+  const items=(FB.items||[]).map(x=>`<div class="fbi${x.status==='new'?' new':''}" data-id="${+x.id}">
+      <div class="fbh"><b>${escA(tr('fb_k_'+x.kind))}</b><span>${escA(String(x.ts||'').replace('T',' ').slice(0,16))}</span><span>${escA(x.page)}</span><span>${escA(x.lang)}</span>${x.look?`<span>${escA(x.look)}</span>`:''}${x.device?`<span>${escA(x.device)}</span>`:''}${x.build?`<span>build ${escA(x.build)}</span>`:''}<span>${escA(x.status)}</span></div>
+      <div class="fbx">${escA(x.text)}</div>${x.contact?`<div class="fbc">${escA(tr('fb_contact'))}: ${fbContact(x.contact)}</div>`:''}
+      <div class="fba">${x.status==='new'?`<button class="dgb" data-st="read">${escA(tr('fb_read'))}</button>`:''}${x.status!=='done'?`<button class="dgb" data-st="done">${escA(tr('fb_mdone'))}</button>`:''}${x.status!=='spam'?`<button class="dgb" data-st="spam">${escA(tr('fb_mspam'))}</button>`:''}<button class="dgb" data-del="1">${escA(tr('fb_del'))}</button></div></div>`).join('');
+  const tg=FB.tg||{};
+  v.innerHTML=`<div class="fbw"><div class="fbbox"><h3>${escA(tr('fb_h'))}</h3>
+      <div class="fbf">${f.map(([k,n])=>`<button class="dgb${FB_SHOW===k?' on':''}" data-show="${k}">${escA(tr('fb_'+k))} ${n||0}</button>`).join('')}</div>
+      ${items||`<div class="fbnote">${escA(tr('fb_none'))}</div>`}<div class="fbnote">${escA(tr('fb_keep'))}</div></div>
+    <div class="fbbox"><h3>${escA(tr('fb_tg_h'))}</h3>
+      ${!tg.configured?`<div class="fbnote">${escA(tr('fb_tg_nobot'))}</div>`:tg.linked?`<div class="fbnote">${escA(tr('fb_tg_on'))}</div><button class="dgb" id="fbunl">${escA(tr('fb_tg_unlink'))}</button>`
+        :`<div class="fbnote">${escA(tr('fb_tg_off'))}</div>${FB_CODE?`<div class="fbnote">${escA(tr('fb_tg_send',tg.bot||'the bot'))}</div><div class="fbcode">/link ${escA(FB_CODE)}</div>`:''}<button class="dgb" id="fbcode">${escA(tr('fb_tg_code'))}</button>`}</div>
+    <div class="fbbox"><h3>${escA(tr('fb_jar_h'))}</h3><div class="fbnote">${escA(tr('fb_jar_note'))}</div>
+      <input class="fbjar" id="fbjar" maxlength="80" placeholder="https://send.monobank.ua/jar/…" value="${escA(FB.jar||'')}">
+      <div class="fba" style="margin-top:8px"><button class="dgb" id="fbjs">${escA(tr('fb_jar_save'))}</button><button class="dgb" id="fbjc">${escA(tr('fb_jar_clear'))}</button><span class="res" id="fbjr"></span></div></div></div>`;
+  v.querySelectorAll('[data-show]').forEach(b=>b.onclick=()=>{ FB_SHOW=b.dataset.show; loadFB(); });
+  v.querySelectorAll('.fbi').forEach(el=>{ const id=+el.dataset.id;
+    el.querySelectorAll('[data-st]').forEach(b=>b.onclick=()=>fbPost('/api/admin/feedback',{id,status:b.dataset.st}).then(()=>loadFB()));
+    const d=el.querySelector('[data-del]'); if(d) d.onclick=()=>{ if(confirm(tr('fb_del_q'))) fbPost('/api/admin/feedback',{id,delete:true}).then(()=>loadFB()); }; });
+  const cb=$('fbcode'); if(cb) cb.onclick=async()=>{ const d=await fbPost('/api/admin/feedback_tg',{action:'code'}); if(d&&d.code){ FB_CODE=d.code; if(d.tg) FB.tg=d.tg; drawFB(); setTimeout(()=>{ FB_CODE=null; loadFB(true); },600000); } else if(d&&d.error) alert(d.error); };
+  const ub=$('fbunl'); if(ub) ub.onclick=async()=>{ await fbPost('/api/admin/feedback_tg',{action:'unlink'}); loadFB(); };
+  const jr=$('fbjr'), save=async jar=>{ const d=await fbPost('/api/admin/donate',{jar}); if(d&&d.ok){ FB.jar=d.jar; jr.textContent=tr('fb_saved'); $('fbjar').value=d.jar||''; } else jr.textContent=(d&&d.error)||'error'; };
+  $('fbjs').onclick=()=>save($('fbjar').value.trim()); $('fbjc').onclick=()=>save(''); }
+async function fbPost(url,body){ try{ const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}); return await r.json(); }catch(e){ return {error:String(e)}; } }
+
 // ---- tabs (1.32) --------------------------------------------------------------------------------------------
 let TAB='live'; try{ const v=localStorage.getItem('admintab'); if(v) TAB=v; }catch(e){}
 function showTab(t){ if(!$('tab-'+t)) t='live';          // 1.58.37: a tab kept from before that is gone
@@ -1047,7 +1120,8 @@ function showTab(t){ if(!$('tab-'+t)) t='live';          // 1.58.37: a tab kept 
   document.querySelectorAll('.tabsec').forEach(s=>s.hidden=s.id!=='tab-'+t);
   if(t==='analytics'&&!AN) loadAnalytics();
   if(t==='patterns'&&!PT) loadPatterns();
-  if(t==='ai'){ loadAI(); loadPer(); } }
+  if(t==='ai'){ loadAI(); loadPer(); }
+  if(t==='feedback') loadFB(); }
 $('tabs').addEventListener('click',e=>{ const b=e.target.closest('button[data-tab]'); if(b) showTab(b.dataset.tab); });
 
 // ---- analytics (1.32): the Air Force's series, Kyiv's alerts, the reports over Kyiv ---------------------------
@@ -1462,6 +1536,7 @@ $('langsw').addEventListener('click',e=>{
   loadHealth(); setInterval(loadHealth,60000);  // the health view is worth leaving open on a live night
   setInterval(()=>{ if(TAB==='analytics'&&!document.hidden) loadAnalytics(true); },300000);
   setInterval(()=>{ if(TAB==='ai'&&!document.hidden) loadAI(); },60000);
+  loadFB(true); setInterval(()=>{ if(!document.hidden) loadFB(true); },60000);   // 1.58.46: the unread count on the tab
   try{ const r=await fetch('/api/usage?days=30'+KEYQ);
        D=await r.json(); if(D.error) throw new Error(D.error); }
   catch(e){ $('out').innerHTML='<div class="err">'+esc(e.message||e)+'</div>'; $('gen').textContent=''; D=null; return; }

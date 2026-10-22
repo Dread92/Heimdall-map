@@ -13,7 +13,13 @@ config.json
 .site
 vapid.json
 .env
+.env.*
 *.pem
+# 1.58.46, the audit (I7): a Telegram session, the Android signing key, local satellite tiles — never in the repository
+*.session
+*.jks
+*.keystore
+*.mbtiles
 
 # ---- python ----
 __pycache__/

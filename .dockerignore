@@ -1,9 +1,18 @@
-# runtime data and local state — never goes into the image
-*.sqlite
-*.sqlite-wal
-*.sqlite-shm
-__pycache__/
-*.pyc
+# runtime data and local state — never goes into the image (1.58.46, the audit (I7): at any depth, and every secret file)
+**/*.sqlite
+**/*.sqlite-wal
+**/*.sqlite-shm
+**/__pycache__/
+**/*.pyc
+vapid.json
+.env
+.env.*
+*.pem
+*.session
+*.jks
+*.keystore
+*.mbtiles
+diag/
 .venv/
 config.json
 .flyapp

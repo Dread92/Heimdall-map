@@ -112,7 +112,8 @@ def test_the_phone_works_it_out_and_says_no_more_than_the_city():
     assert MOD.count("two walls") == 1 and MOD.count("правило двох стін") == 1 and MOD.count("deux murs") == 1
     assert MOD.count("Heimdall does not check shelters") == 1 and MOD.count("straight-line distance") == 1
     assert "closed(i){ const h=SH.D.s[i][6]; return h==='S'||h==='r'; }" in MOD
-    assert "'/static/shelters.js', '/static/shelters.json'" in SW                    # kept for no network
+    assert "'/static/shelters.json'];" in SW and "'/light.webmanifest', '/static/shelters.js']);" in SW   # kept for no network
+    # (1.58.46: the list answered from the kept copy at once; the code network first, never an old release's)
 
 
 def test_the_pages():

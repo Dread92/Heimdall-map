@@ -248,6 +248,20 @@ button.chip{cursor:pointer;font-family:var(--mono)}button.chip:hover{border-colo
 /* 1.58.33, the audit: one instrument, not six pebbles — the buttons share a bar, a divider between them, the active
    layer marked by a yellow rule; the full-screen button in ink like the others (the alert's yellow was on it) */
 .mapctl{position:absolute;right:8px;bottom:12px;display:flex;flex-direction:column;gap:0;border:1px solid var(--line2);border-radius:var(--r);background:rgba(11,13,17,.92);overflow:hidden}
+/* 1.58.46: the donation jar — beside the map's controls, bottom right; lifted above a long imagery credit; a coin drops in
+   now and then (not with less motion); not in the blackout look */
+.jarbtn{position:absolute;right:62px;bottom:12px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;padding:0;border:1px solid var(--line2);border-radius:var(--r);background:rgba(11,13,17,.92);color:var(--ink);cursor:pointer;z-index:2}
+.jarbtn svg{width:26px;height:26px;overflow:visible}.jarbtn .jj,.jarbtn .jl{fill:rgba(156,192,255,.08);stroke:currentColor;stroke-width:1.5;stroke-linejoin:round}.jarbtn .jl{fill:currentColor;opacity:.75}
+.jarbtn .jc{fill:#f2c14e;stroke:#8a6512;stroke-width:.6}.jarbtn .drop{opacity:0}
+@media (prefers-reduced-motion:no-preference){.jarbtn .drop{animation:jardrop 7s ease-in 3s infinite}}
+@keyframes jardrop{0%,86%{opacity:0;transform:translateY(-3px)}89%{opacity:1}97%{opacity:1;transform:translateY(11px)}100%{opacity:0;transform:translateY(12px)}}
+.jarbtn:active{transform:scale(.95)}.attrib.long:not([hidden])~.jarbtn{bottom:66px}
+@media (min-width:1000px){.jarbtn{bottom:24px}}
+body.lite .jarbtn{display:none}body.m-day .jarbtn{background:#fff;color:#12161c;border-color:#c3c8d0}body.m-night .jarbtn{background:#070a0f;color:#8fa3b8;border-color:#1c242f}body.m-night .jarbtn .jc{fill:#7a6a3a;stroke:none}
+.jarlink{display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px;margin:12px 0 4px;border-radius:var(--r);background:#f2c14e;color:#12161c!important;font-weight:700;text-decoration:none}
+.fbk{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}.fbk button{min-height:38px;padding:0 12px;border:1px solid var(--line2);border-radius:var(--r);background:transparent;color:var(--ink);font:inherit;font-size:13px}.fbk button.on{background:var(--ink);color:var(--bg,#0b0d11);border-color:var(--ink)}
+.fbf textarea,.fbf input{width:100%;box-sizing:border-box;margin:6px 0;padding:10px;border:1px solid var(--line2);border-radius:var(--r);background:rgba(255,255,255,.04);color:var(--ink);font:inherit;font-size:16px}.fbf textarea{min-height:120px;resize:vertical}
+.fbf .hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}.fbf .fbm{min-height:20px;margin:6px 0;font-size:13px}.fbf .fbm.ok{color:#5fd39a}.fbf .fbm.bad{color:#ff8a80}
 .mapctl button{width:44px;height:44px;border:0;border-bottom:1px solid var(--line);background:transparent;color:var(--ink);border-radius:0;font:600 18px var(--mono);padding:0;display:flex;align-items:center;justify-content:center}
 .mapctl button:last-child{border-bottom:0}
 .mapctl svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2;stroke-linejoin:round}
@@ -1333,6 +1347,7 @@ body.lite #mycard,body.lite .panel{background:#000;border-color:#666}body.lite .
   <button class="mi" type="button" data-hf="share" data-t="share_app">Share the app</button>
   <button class="mi" id="helpbtn" type="button" data-t="m_help">How this app works</button>
   <button class="mi" id="supbtn" type="button" data-t="m_support">Support the project</button>
+  <button class="mi" id="fbbtn" type="button" data-t="fb_menu">Send feedback · report a bug</button>
   <a class="mi" id="tgbtn" data-t="m_tg" target="_blank" rel="noopener" hidden>Community on Telegram</a>
   <button class="mi" id="aboutbtn" type="button" data-t="m_about">About · disclaimer</button>
   <div class="mi bt" id="buildtag">v1.58</div>
@@ -1381,6 +1396,9 @@ body.lite #mycard,body.lite .panel{background:#000;border-color:#666}body.lite .
   <div id="pinhold"></div>
   <div id="pinarm" hidden><span data-t="sl_pin_arm">Tap the map where the pin goes</span><button type="button" id="pinarmx" data-t="sl_pin_cancel">Cancel</button></div>
   <div class="mapctl"><button id="laybtn" type="button" data-t-title="m_layers" data-t-aria="m_layers" title="Map layers" aria-label="Map layers"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 3 8l9 5 9-5-9-5z"/><path d="m3 13 9 5 9-5"/></svg></button><button id="zin" type="button" aria-label="+">+</button><button id="zout" type="button" aria-label="−">−</button><button id="zkyiv" type="button" data-t-title="t_center" data-t-aria="t_center" title="Centre on my place"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><path d="M12 2.5v4M12 17.5v4M2.5 12h4M17.5 12h4"/></svg></button><button id="rpbtn" type="button" data-t-title="rp_open" data-t-aria="rp_open" title="Replay — the last 7 days" aria-label="Replay — the last 7 days"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1"/><path d="M3 4v4.5h4.5"/><path d="M12 7.5V12l3 2"/></svg></button><button id="fsbtn" type="button" data-t-title="m_full" data-t-aria="m_full" title="Full-screen map" aria-label="Full-screen map"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="fsin" d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/><path class="fsout" d="M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5"/></svg></button></div>
+  <!-- 1.58.46: the donation jar (the owner: "a small jar with coins at the bottom right of the map, for users who want to
+       donate to keep the infrastructure and help the devs") — opens the support sheet, with the owner's Monobank jar -->
+  <button class="jarbtn" id="jarbtn" type="button" data-t-title="jar_aria" data-t-aria="jar_aria" title="Donate — keep Heimdall running" aria-label="Donate — keep Heimdall running"><svg viewBox="0 0 24 24" aria-hidden="true"><circle class="jc drop" cx="12" cy="1.8" r="1.6"/><path class="jl" d="M8 4.2h8v2.4H8z"/><path class="jj" d="M8.4 6.6h7.2v1.2c2.2.9 3.4 2.6 3.4 5.2v5.4a2.4 2.4 0 0 1-2.4 2.4H7.4A2.4 2.4 0 0 1 5 18.4V13c0-2.6 1.2-4.3 3.4-5.2z"/><ellipse class="jc" cx="9.6" cy="18.2" rx="2.1" ry="1.1"/><ellipse class="jc" cx="14.2" cy="18.4" rx="2.1" ry="1.1"/><ellipse class="jc" cx="11.9" cy="16.6" rx="2.1" ry="1.1"/><ellipse class="jc" cx="13.6" cy="14.7" rx="1.9" ry="1"/></svg></button>
   <div class="tip" id="tip" hidden></div>
   <div id="heatleg" hidden><div class="hlh" id="heath"><b class="hll" data-t="hm_title">Where drones were reported</b><b class="hls" data-t="hm_short">Heat map</b><span class="hlp" id="heatp"></span><button type="button" id="heatfold" data-t-aria="hm_fold" aria-label="Fold" aria-expanded="true">▾</button><button type="button" id="heatx" data-t-aria="hm_off" aria-label="Hide">✕</button></div>
     <div class="hlbody"><div class="hlw" id="heatw"></div><div class="hlt" id="heattop"></div><div class="hlr" id="heatramp"></div><div class="hln" data-t="hm_not_live">Not live.</div><div class="hln" data-t="hm_alerts">Official alerts: a faint tint while it is on.</div></div></div>
@@ -3841,7 +3859,7 @@ function render(){
   const st=cityL?cityL:(oblL?maxL(oblL,anyR?'R':''):(hasRaions?(anyR?'R':'Y'):((isK&&k.status==='P')||ko.status==='P'?'P':'N')));
   const uN=unsureNote(MYU);
   const since=(isK?k.since:null)||ko.since||(raionAlerts[0]&&raionAlerts[0].started_at);
-  const thr=[...new Set([...(isK?k.threats:[]),...(ko.threats||[])].map(t=>`${thrIco(t.threat_type,'currentColor')}${THREAT[t.threat_type]?.[1]||t.threat_type}`))];
+  const thr=[...new Set([...(isK?k.threats:[]),...(ko.threats||[])].map(t=>`${thrIco(t.threat_type,'currentColor')}${esc(THREAT[t.threat_type]?.[1]||t.threat_type)}`))];
   const el=$('kyiv'); el.className='band '+st;
   const nR=Object.values(rst).filter(l=>l==='R').length,nY=Object.values(rst).filter(l=>l==='Y').length;
   const hR=Object.values(hst).filter(l=>l==='R').length,hY=Object.values(hst).filter(l=>l==='Y').length;
@@ -3877,8 +3895,8 @@ function render(){
   $('raions').innerHTML=(cityL?`<span class="rt ${cityL}">${t('b_kyiv')}</span>`:'')+Object.entries(RAION).filter(([r])=>r!=='kyiv-city').map(([r,n])=>{const l=maxL(oblFill,rst[r]);return l?`<span class="rt ${l}">${n}</span>`:'';}).join('')+regTags.join('');
   // alerts tab: what is in the air right now (the live tally, moved out of Stats in 1.19), then the official alerts
   const act=[...S.active].sort((a,b)=>((b.oblast_uid==='31'||b.oblast_uid==='14')-(a.oblast_uid==='31'||a.oblast_uid==='14'))||(a.started_at<b.started_at?1:-1));
-  $('alerts').innerHTML='<div id="livecounts"></div>'+(act.length?act.map(a=>`<div class="card plain ${a.alert_level||''} ${(a.oblast_uid==='31'||a.oblast_uid==='14')?'kyiv':''}"><div class="title">${esc(LANG==='uk'?a.location_title:(a.location_title_en||a.location_title))} ${LANG==='uk'?'':`<span style="color:var(--muted);font-weight:400">· ${esc(a.location_title)}</span>`}</div>
-     <div class="meta">${ATYPE[a.alert_type]||a.alert_type} · ${LT(a.location_type)}${a.since_known===false?'':` · ${t('al_since')} ${fmtT(a.started_at)} (${dur(a.started_at)})`}${a.notes?' · '+esc(a.notes):''}${(a.threats||[]).length?' · '+[...new Set(a.threats.map(x=>x.threat_type))].map(ty=>thrIco(ty)).join(''):''}</div></div>`).join('')
+  $('alerts').innerHTML='<div id="livecounts"></div>'+(act.length?act.map(a=>`<div class="card plain ${/^(red|yellow)$/.test(a.alert_level)?a.alert_level:''} ${(a.oblast_uid==='31'||a.oblast_uid==='14')?'kyiv':''}"><div class="title">${esc(LANG==='uk'?a.location_title:(a.location_title_en||a.location_title))} ${LANG==='uk'?'':`<span style="color:var(--muted);font-weight:400">· ${esc(a.location_title)}</span>`}</div>
+     <div class="meta">${esc(ATYPE[a.alert_type]||a.alert_type)} · ${esc(LT(a.location_type))}${a.since_known===false?'':` · ${t('al_since')} ${fmtT(a.started_at)} (${dur(a.started_at)})`}${a.notes?' · '+esc(a.notes):''}${(a.threats||[]).length?' · '+[...new Set(a.threats.map(x=>x.threat_type))].map(ty=>thrIco(ty)).join(''):''}</div></div>`).join('')
      :`<div class="empty">${t('al_none')}</div>`);
   renderLiveCounts();
 }
@@ -4010,8 +4028,11 @@ function supportSheet(){
   const row=(label,addr,id)=>`<div class="kv1 muted" style="margin-top:10px">${esc(label)}</div>
     <div class="sup"><b>${esc(addr)}</b><button class="tgl" data-copy="${esc(addr)}" id="${id}">${t('sup_copy')}</button></div>`;
   const same=CONTACT.hosting===CONTACT.ngo;
+  // 1.58.46: the owner's Monobank jar (the dashboard's; /api/donate) above the addresses
+  const jar=DONATE_JAR&&/^https:\/\/send\.monobank\.ua\/jar\/[A-Za-z0-9]{6,24}$/.test(DONATE_JAR)?DONATE_JAR:'';
   $('sheetbody').innerHTML=`<div class="type">${t('sup_title')}</div>
-    <div class="kv1">${esc(t('sup_free'))}</div>
+    <div class="kv1">${esc(jar?t('jar_why'):t('sup_free'))}</div>
+    ${jar?`<a class="jarlink" href="${esc(jar)}" target="_blank" rel="noopener noreferrer">${esc(t('jar_btn'))}</a>`:''}
     ${same?row(t('sup_hosting')+' · '+t('sup_ngo'),CONTACT.ngo,'cp1')
           :row(t('sup_hosting'),CONTACT.hosting,'cp1')+row(t('sup_ngo'),CONTACT.ngo,'cp2')}
     <div class="kv1 muted" style="margin-top:8px">${esc(t('sup_thanks'))}</div>
@@ -4023,6 +4044,49 @@ function supportSheet(){
   $('donnever').onclick=()=>{ls('sup_never','1');closeSheet();};
   $('sheet').classList.add('show'); }
 $('supbtn').onclick=()=>{closePanels();supportSheet();};
+// 1.58.46: the map's jar — the support sheet; the jar's link is asked for once, a few seconds after the page opens
+let DONATE_JAR='';
+setTimeout(()=>fetch('/api/donate',{cache:'no-store'}).then(r=>r.ok?r.json():null).then(d=>{ if(d&&typeof d.jar==='string') DONATE_JAR=d.jar; }).catch(()=>{}),4000);
+$('jarbtn').onclick=()=>{ closePanels(); const go=()=>supportSheet();
+  if(DONATE_JAR) return go();
+  fetch('/api/donate',{cache:'no-store'}).then(r=>r.ok?r.json():null).then(d=>{ if(d&&typeof d.jar==='string') DONATE_JAR=d.jar; }).catch(()=>{}).finally(go); };
+
+// ---- 1.58.46: feedback ------------------------------------------------------------------------------------------------
+// The owner: "we need a clean way to collect feedback and bug reports" — read on the dashboard (Feedback tab), with a
+// ping on his Telegram. What goes: the words, the kind, a contact only if given, the page, its language, build and look,
+// the screen's size (the server adds the phone's system and browser). Never a place — not the pins, not HOME.
+function feedbackSheet(kind){
+  const K=['bug','idea','map','other']; let k=K.includes(kind)?kind:'bug';
+  $('sheetbody').innerHTML=`<div class="type">${esc(t('fb_title'))}</div>
+    <div class="kv1">${esc(t('fb_intro'))}</div>
+    <form class="fbf" id="fbf" novalidate>
+      <div class="fbk" role="radiogroup">${K.map(x=>`<button type="button" role="radio" data-k="${x}">${esc(t('fb_k_'+x))}</button>`).join('')}</div>
+      <textarea id="fbt" maxlength="2000" required placeholder="${esc(t('fb_text_ph'))}"></textarea>
+      <input id="fbc" maxlength="120" autocomplete="off" placeholder="${esc(t('fb_contact'))}">
+      <input class="hp" id="fbw" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <div class="kv1 muted" style="font-size:12px">${esc(t('fb_noplace'))}</div>
+      <div class="fbm" id="fbm" role="status"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+        <button class="b-t" type="button" onclick="closeSheet()">${t('btn_close')}</button>
+        <button class="tgl on" type="submit" id="fbs">${esc(t('fb_send'))}</button></div>
+    </form>`;
+  const kb=$('sheetbody').querySelectorAll('.fbk button'), pick=x=>{ k=x; kb.forEach(b=>{ b.classList.toggle('on',b.dataset.k===x); b.setAttribute('aria-checked',String(b.dataset.k===x)); }); };
+  kb.forEach(b=>b.onclick=()=>pick(b.dataset.k)); pick(k);
+  $('fbf').onsubmit=async e=>{ e.preventDefault(); const m=$('fbm'), txt=$('fbt').value.trim();
+    if(txt.length<3){ m.className='fbm bad'; m.textContent=t('fb_short'); return; }
+    $('fbs').disabled=true; m.className='fbm'; m.textContent='…';
+    const body={kind:k,text:txt,contact:$('fbc').value.trim(),website:$('fbw').value,page:'tactical',lang:LANG,
+      build:String(MYBUILD||''),look:document.body.classList.contains('lite')?'lite':MODE,screen:`${screen.width}x${screen.height}`};
+    try{ const r=await fetch('/api/feedback',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+      if(r.ok){ m.className='fbm ok'; m.textContent=t('fb_sent'); $('fbt').value=''; $('fbc').value=''; setTimeout(()=>{ if($('fbf')) closeSheet(); },1800); return; }
+      m.className='fbm bad'; m.textContent=r.status===429?t('fb_limit'):t('fb_err');
+    }catch(err){ m.className='fbm bad'; m.textContent=t('fb_err'); }
+    $('fbs').disabled=false; };
+  $('sheet').classList.add('show'); setTimeout(()=>{ const ta=$('fbt'); if(ta) ta.focus(); },250); }
+$('fbbtn').onclick=()=>{closePanels();feedbackSheet();};
+// the footer's "Feedback" link (static/i18n.js) goes to /feedback on a page without this sheet; here it opens the sheet
+document.addEventListener('click',e=>{ const a=e.target.closest('[data-hf="feedback"]'); if(!a) return; e.preventDefault();
+  const fromNotice=!!a.closest('#disc'); closePanels(); feedbackSheet(); $('sheet').classList.toggle('top',fromNotice); });
 // the footer's "Support" link (static/i18n.js): the support sheet — above the welcome notice when it is opened from it
 document.addEventListener('click',e=>{ const b=e.target.closest('[data-hf="support"]'); if(!b) return;
   const fromNotice=!!b.closest('#disc'); closePanels(); supportSheet(); $('sheet').classList.toggle('top',fromNotice); });

@@ -21,6 +21,7 @@ Its rules (docs/SAFETY.md §the channel):
     TG_CHANNEL_ID), read from the environment, never written to the database, a log or an answer. The server's
     bot only posts in that one channel; it reads nothing (the channels are read as before).
 """
+import http.client
 import json
 import math
 import os
@@ -86,7 +87,8 @@ KM_C, KM_X, KM_Y = (30.52, 50.45), 70.67939956918688, 111.0
 
 
 def esc(s):
-    return str(s).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    # 1.58.46, the audit (I9): and the double quote — it is also put inside href="…" (Telegram knows &quot;)
+    return str(s).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
 
 
 def _tz():
@@ -360,7 +362,9 @@ class BotAPI:
     BASE = "https://api.telegram.org"
 
     def __init__(self, token, ssl_ctx=None, timeout=30):
-        self._token, self.ssl_ctx, self.timeout = token, ssl_ctx, timeout
+        # 1.58.46, the audit (I4): a token pasted with a space or a line end made an invalid URL, and the error's text —
+        # the URL, token included — reached the log and the dashboard
+        self._token, self.ssl_ctx, self.timeout = str(token or "").strip(), ssl_ctx, timeout
 
     def call(self, method, fields, files=None):
         if files:
@@ -377,7 +381,7 @@ class BotAPI:
                 out = json.loads(e.read() or b"{}")
             except ValueError:
                 out = {"ok": False, "error_code": e.code, "description": "HTTP error"}
-        except (urllib.error.URLError, OSError, ValueError) as e:
+        except (urllib.error.URLError, OSError, ValueError, http.client.HTTPException) as e:
             raise TgError(0, f"{method}: network — {type(e).__name__}") from None
         if not out.get("ok"):
             ra = (out.get("parameters") or {}).get("retry_after")

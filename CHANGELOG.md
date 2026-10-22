@@ -2,6 +2,27 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.46 — 2026-10-22
+
+Feedback reaches the dashboard and the owner's Telegram; a donation jar on the map; the jet drone's flame; and the
+fixes of a full security audit before the public launch.
+
+- **Feedback** (the owner: "a feedback integration we can reach from our admin dashboard"): "Send feedback · report a
+  bug" in the menu and "Feedback" in every footer — the kind, the words, a contact if wanted; never a place. Read in
+  the dashboard's new Feedback tab (new / open / done / spam, a count on the tab); a short message from the bot to the
+  owner's Telegram, once linked with a one-time code (`/link CODE`). Light opens the same form at `/feedback`.
+- **A donation jar** bottom right of the map (the owner: "a small jar with coins … to keep the infrastructure and help
+  the devs"): it opens the support sheet, with the owner's Monobank jar first once it is set in the dashboard.
+- **The jet drone's flame** (the owner: "the animation must be clearer — flames behind the engine to tell it from the
+  normal Shahed"): a long, bright, flickering exhaust with a glow, drawn without an outline; the other flames get the
+  glow too.
+- **The security audit** (docs/TECHNICAL.md §11.2): an official alert's words could run a script in a reader's page
+  (now one shape per field, escaped everywhere); push subscriptions that never answer could slow every notification;
+  the answers' cache could fill the memory; IPv6 addresses each had their own allowance; a key in a header was not
+  throttled; a slow body held a thread; button presses could delay the bot's alerts; and a dozen smaller ones, the
+  supply chain included.
+- The NGO's site is a link in the footer (https://07300.org.ua).
+
 ## 1.58.45 — 2026-10-22
 
 The threats in 3D: on the Tactical map, in the card and in the sheet.

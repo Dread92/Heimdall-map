@@ -30,6 +30,7 @@ Its rules (docs/SAFETY.md, "The bot writes about a place because it was given on
 """
 import collections
 import difflib
+import functools
 import hashlib
 import json
 import math
@@ -77,6 +78,7 @@ POLL_S = 25                       # getUpdates' long poll (BotAPI waits 30 s)
 RATE_PER_S = 25                   # Telegram: about 30 messages a second in all, one a second in one chat
 IN_PER_MIN = 20                   # a chat's messages to the bot answered each minute (more are ignored)
 PICK_TTL_S = 15 * 60
+REPLIES_MAX = 2000                 # 1.58.46: answers to users waiting at once (the oldest are dropped past it)
 SEARCH_MAX = 6
 LIST_MAX = 5                      # targets listed in one message
 LOC_KM = 12.0                     # a shared location: the places this close
@@ -415,6 +417,12 @@ class BotStore:
 
 
 # ---- what a message says ------------------------------------------------------------------------------------------
+@functools.lru_cache(maxsize=8192)
+def _name_c(name):
+    """1.58.46: a place name as the gazetteer compares it — once per name, not once per place and target."""
+    return canon(base_name(geo.display_place(name) if geo else name))
+
+
 def label_key(m):
     t = m.get("type")
     if t == "drones" and m.get("jet"):
@@ -524,7 +532,10 @@ class TgBot:
                 shot = None
         self.shot = shot
         self.lock = threading.RLock()
-        self.out = collections.deque()          # the messages waiting to go
+        self.out = collections.deque()          # the alerts waiting to go
+        # 1.58.46, the audit (I1): the answers to users wait apart, behind the alerts — a stranger pressing buttons all day
+        # kept the queue's head busy and a ballistic warning waited behind the answers. Bounded.
+        self.replies = collections.deque(maxlen=REPLIES_MAX)
         self.sent_at = collections.deque()      # the times of the last second's calls
         self.chat_last = {}                     # chat → time of its last alert message
         self.inbox = {}                         # chat → [times of its messages, this minute]
@@ -573,14 +584,14 @@ class TgBot:
     def send(self, chat, method, fields, files=None, cb=None, front=False, pk=None):
         it = {"chat": chat, "method": method, "fields": dict(fields, chat_id=chat), "files": files, "cb": cb, "pk": pk}
         if front:
-            self.out.appendleft(it)
+            self.replies.appendleft(it)         # the last one queued leaves first, as before (the explanation, then the answer)
         else:
             self.out.append(it)
 
     def flush(self, n=None):
         """Send what waits, at most RATE_PER_S a second (and `n` this call). Returns how many went."""
         done = 0
-        while self.out and (n is None or done < n):
+        while (self.out or self.replies) and (n is None or done < n):
             now = self.clock()
             if now < self.pause_until:
                 break
@@ -588,7 +599,7 @@ class TgBot:
                 self.sent_at.popleft()
             if len(self.sent_at) >= RATE_PER_S:
                 break
-            it = self.out.popleft()
+            it = self.out.popleft() if self.out else self.replies.popleft()
             self.sent_at.append(now)
             if it.get("pk") and it.get("files") and self.photos.get(it["pk"]):
                 it["fields"]["photo"], it["files"] = self.photos[it["pk"]], None        # uploaded once: its file id since
@@ -680,9 +691,12 @@ class TgBot:
 
     def _busy(self, chat):
         now = self.clock()
-        if len(self.inbox) > 5000:
+        # 1.58.46, the audit (I8): by age, every minute — not only past 5 000 chats (a first message waited days in memory)
+        if len(self.inbox) > 5000 or now - getattr(self, "_pruned_at", 0) > 60:
+            self._pruned_at = now
             self.inbox = {c: v for c, v in self.inbox.items() if v and now - v[-1] < 60}
             self.pending = {c: v for c, v in self.pending.items() if now - v[0] <= PICK_TTL_S}
+            self.pick = {c: v for c, v in self.pick.items() if now - v[0] <= PICK_TTL_S}
         t = [x for x in self.inbox.get(chat, []) if now - x < 60]
         t.append(now)
         self.inbox[chat] = t
@@ -721,6 +735,9 @@ class TgBot:
             return
         lang = self._lang(cid, msg.get("from"))
         text = (msg.get("text") or "").strip()
+        low = text.lower()
+        if low.startswith(("/link ", "/unlink")):
+            return self._feedback_link(cid, text)
         if not self.store.chat(cid) and not text.lower().startswith(("/stop", "/delete")):
             # a new user: the language first. What they wrote waits for it (in memory, a place name or a command only —
             # a shared location is never kept: they are asked to send it again)
@@ -731,6 +748,22 @@ class TgBot:
             return self._location(cid, lang, msg["location"])
         if text:
             self._text(cid, lang, text)
+
+    # 1.58.46: the dashboard's feedback ping — the owner sends "/link CODE" (the code the dashboard showed him) from his own
+    # Telegram; that chat is where a reader's feedback is announced. "/unlink" from it stops it. Nobody else's chat is
+    # kept for this, and a wrong code is a plain "no".
+    def _feedback_link(self, cid, text):
+        st = self.state
+        if text.lower().startswith("/unlink"):
+            linked = str(getattr(st, "store", None) and st.store.kv_get("fb_chat") or "")
+            if linked and linked == str(cid) and hasattr(st, "feedback_tg_unlink"):
+                st.feedback_tg_unlink()
+                return self._reply(cid, "Feedback pings stopped for this chat.")
+            return self._reply(cid, "This chat gets no feedback pings.")
+        parts = text.split()
+        ok = len(parts) == 2 and hasattr(st, "feedback_tg_claim") and st.feedback_tg_claim(parts[1], cid)
+        return self._reply(cid, "✓ Linked: Heimdall's feedback is announced here. /unlink to stop." if ok
+                           else "✗ That code is wrong or expired — make a new one on the dashboard (Feedback tab).")
 
     def _text(self, cid, lang, text):
         if text.startswith("/"):
@@ -796,12 +829,15 @@ class TgBot:
         self._reply(cid, (head + "\n" if head else "") + tr(lang, "places", i=len(have), n=MAX_PLACES), kb, edit=edit)
 
     def _callback(self, q):
-        """A button pressed: done, then Telegram told it was received (its answer goes first, before the reply)."""
+        """A button pressed: done, then Telegram told it was received (its answer goes first, before the reply). 1.58.46,
+        the audit (I1): a chat past its messages a minute (`_busy`) gets neither — every press was answered before."""
+        chat = ((q.get("message") or {}).get("chat") or {}).get("id")
+        if not chat or self._busy(chat):
+            return
         try:
             self._button(q)
         finally:
-            chat = (q.get("message") or {}).get("chat") or {}
-            self.send(chat.get("id") or 0, "answerCallbackQuery", {"callback_query_id": q.get("id")}, front=True)
+            self.send(chat, "answerCallbackQuery", {"callback_query_id": q.get("id")}, front=True)
 
     def _button(self, q):
         msg = q.get("message") or {}
@@ -809,8 +845,6 @@ class TgBot:
         if chat.get("type") != "private" or "id" not in chat:
             return
         cid, data, mid = chat["id"], str(q.get("data") or ""), msg.get("message_id")
-        if self._busy(cid):
-            return
         lang = self._lang(cid, q.get("from"))
         if data == "x":
             self.pick.pop(cid, None)
@@ -875,7 +909,7 @@ class TgBot:
             return False
         if name == e["key"]:
             return True
-        if canon(base_name(geo.display_place(name) if geo else name)) != e["c"]:
+        if _name_c(name) != e["c"]:
             return False
         if d is not None:
             return d <= MENTION_KM
@@ -885,8 +919,15 @@ class TgBot:
 
     def hit(self, e, m):
         """Why a target concerns place `e`, or None: {"kind": here | dest | near | region, "d": km}."""
+        imm = geo is not None and geo.is_immediate(m.get("type"))
+        if not imm and (abs(e["lat"] - m["lat"]) > 0.3 or abs(e["lon"] - m["lon"]) > 0.5):
+            # 1.58.46, the audit (I2): over 30 km away, only a name can concern it — the post's place or where it heads;
+            # neither is this place's: nothing (the 5-second pass compared every place with every target in full)
+            named = (m.get("place") or "").strip().lstrip("→").strip()
+            if all(not x or (x != e["key"] and _name_c(x) != e["c"]) for x in (named, m.get("target"))):
+                return None
         d = haversine_km(e["lat"], e["lon"], m["lat"], m["lon"])
-        if geo is not None and geo.is_immediate(m.get("type")):
+        if imm:
             return {"kind": "region", "d": None} if d <= geo.REGION_ALERT_KM else None
         raw = (m.get("place") or "").strip()
         arrow = raw.startswith("→")
@@ -1119,7 +1160,10 @@ class TgBot:
 
     def _loop(self, name, fn, every, first=None):
         if first:
-            first()
+            try:
+                first()
+            except Exception as e:                          # 1.58.46, the audit (I4): its name only — never its text
+                self.log(f"bot: {name} setup failed —", type(e).__name__)
         said = (None, 0.0)
         while True:
             try:
@@ -1128,7 +1172,7 @@ class TgBot:
                     time.sleep(30)
                     continue
             except Exception as e:                          # the bot never stops the rest of the server
-                what = f"{type(e).__name__} {str(e)[:160]}"
+                what = TOKEN_RX.sub("<token>", f"{type(e).__name__} {str(e)[:160]}")   # 1.58.46: never a token
                 self.stats.update(errors=self.stats["errors"] + 1, failing=True, last_error=f"{name}: {what}"[:200])
                 if what != said[0] or time.time() - said[1] > 600:      # Telegram unreachable: once, not every 5 s
                     self.log(f"bot: {name} failed —", what)
@@ -1146,9 +1190,13 @@ class TgBot:
         return self
 
 
+TOKEN_RX = re.compile(r"\d{5,12}:[A-Za-z0-9_-]{30,64}")
+
+
 def configured(env=None):
+    """1.58.46, the audit (I4): a token of Telegram's shape, spaces around it dropped — anything else is not a token."""
     env = os.environ if env is None else env
-    return bool(env.get("TG_BOT_TOKEN"))
+    return bool(TOKEN_RX.fullmatch((env.get("TG_BOT_TOKEN") or "").strip()))
 
 
 def start(state, log=print, ssl_ctx=None, env=None, sat=None, oblasts=None):
@@ -1156,6 +1204,7 @@ def start(state, log=print, ssl_ctx=None, env=None, sat=None, oblasts=None):
     env = os.environ if env is None else env
     if not configured(env):
         return None
-    b = TgBot(state, env["TG_BOT_TOKEN"], chanpost.public_url(env), api=BotAPI(env["TG_BOT_TOKEN"], ssl_ctx), log=log,
+    tok = env["TG_BOT_TOKEN"].strip()
+    b = TgBot(state, tok, chanpost.public_url(env), api=BotAPI(tok, ssl_ctx), log=log,
               sat=sat, oblasts=oblasts)
     return b.start()
