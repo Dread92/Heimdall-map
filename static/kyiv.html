@@ -283,6 +283,15 @@ body.m-day .jarcap{color:#8a6512}body.m-night .jarcap{color:#9c8545}
 @keyframes jarhintin{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 @media (min-width:1000px){.jarbtn{bottom:24px}}
 body.lite .jarbtn{display:none}body.m-day .jarbtn{color:#12161c}body.m-night .jarbtn{color:#8fa3b8}body.m-night .jarbtn .jc{fill:#7a6a3a;stroke:none}
+/* 1.58.49, the owner (on a phone): "the jar takes too much space, and it stands out too much". On a phone it is one more
+   map control: 44 px, the controls' dark face and line, the turning jar alone — no word under it (it stays in the button's
+   label and in the first-visit line), no gold rim, no glow. A computer keeps 1.58.48's jar. */
+@media (max-width:999px){
+  .jarbtn{width:44px;height:44px;padding:0;gap:0;border:1px solid var(--line2);background:rgba(11,13,17,.92);animation:none}
+  .jarbtn .jar3d{width:38px;height:38px}.jarbtn svg{width:26px;height:26px;margin:0}.jarcap{display:none}
+  body.m-day .jarbtn{background:#fff;border-color:#7d858f}body.m-night .jarbtn{background:#070a0f;border-color:#1c242f}
+  .jarhint{bottom:64px}.jarhint::after{right:16px}.attrib.long:not([hidden])~.jarhint{bottom:118px}
+}
 .jarlink{display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px;margin:12px 0 4px;border-radius:var(--r);background:#f2c14e;color:#12161c!important;font-weight:700;text-decoration:none}
 .fbk{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}.fbk button{min-height:38px;padding:0 12px;border:1px solid var(--line2);border-radius:var(--r);background:transparent;color:var(--ink);font:inherit;font-size:13px}.fbk button.on{background:var(--ink);color:var(--bg,#0b0d11);border-color:var(--ink)}
 .fbf textarea,.fbf input{width:100%;box-sizing:border-box;margin:6px 0;padding:10px;border:1px solid var(--line2);border-radius:var(--r);background:rgba(255,255,255,.04);color:var(--ink);font:inherit;font-size:16px}.fbf textarea{min-height:120px;resize:vertical}
@@ -804,6 +813,16 @@ body.lite .leader{stroke:#fff;stroke-opacity:.6}body.lite .anchor{fill:#fff}
 @media (min-width:1000px){#updbar,#pwabar{left:auto;right:calc(var(--rw) + 16px);width:360px;bottom:16px}}
 .sup{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);padding:8px 10px;margin-top:8px;font:600 14px var(--mono);word-break:break-all}
 .sup b{flex:1;font-weight:600;color:var(--ua-yellow)}
+.suph{margin-top:14px;font:700 12px/1.3 var(--sans);letter-spacing:.04em;text-transform:uppercase;color:var(--ink)}.supn{color:var(--ink)}
+.sup.supt{font:500 13.5px/1.4 var(--sans);word-break:normal}.sup.supt b{color:var(--ink)}   /* 1.58.49: the payment purpose: words, not a number */
+.supqr{display:flex;align-items:center;gap:14px;margin-top:10px}.supqri{flex:none;display:block;line-height:0;background:#fff;padding:6px;border-radius:var(--r)}
+.supqri img{width:120px;height:120px;display:block;image-rendering:pixelated}.supqrt{display:grid;gap:10px;min-width:0}
+.supqrb{display:flex;align-items:center;justify-content:center;min-height:44px;padding:0 12px;border-radius:var(--r);background:var(--ink);color:var(--bg,#0b0d11)!important;font:700 14px var(--sans);text-decoration:none;text-align:center}
+body.lite .supqri{display:none}.suppp{margin-top:8px;background:#ffc439;color:#111!important}.sup.supi{flex-wrap:wrap;row-gap:4px;font-size:min(13px,3.4vw);letter-spacing:-.01em}.sup.supi b{flex:1 1 100%;white-space:nowrap}.sup.supi .supc{margin-left:auto}   /* the IBAN on one line, never broken */
+.supb{width:100%;text-align:left;color:inherit;cursor:pointer;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;transition:border-color .15s,background-color .15s}
+.supb:active{transform:scale(.985)}.supb.ok{border-color:#2fbf71;background:rgba(47,191,113,.12)}
+.supc{display:flex;align-items:center;gap:5px;flex:none;font:600 12px var(--sans);color:var(--ink2)}.supb.ok .supc{color:#2fbf71}
+.supc svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linejoin:round}
 .hsec{margin-top:12px}.hsec h4{margin:0 0 3px;font:700 14px var(--cond);letter-spacing:.04em;text-transform:uppercase;color:var(--ink)}
 .hsec p{margin:0;font:400 13.5px/1.45 var(--sans);color:var(--ink2)}
 .warnbox{border-left:3px solid var(--red);background:rgba(224,52,44,.08);padding:8px 10px;font:500 13px/1.4 var(--sans);margin-top:8px}
@@ -4052,22 +4071,35 @@ if(isIOS()&&!standalone()) setTimeout(()=>showPwaBar(true),20000);
 
 // ---- 3. support / donations -------------------------------------------------------------
 function supportSheet(){
-  const row=(label,addr,id)=>`<div class="kv1 muted" style="margin-top:10px">${esc(label)}</div>
-    <div class="sup"><b>${esc(addr)}</b><button class="tgl" data-copy="${esc(addr)}" id="${id}">${t('sup_copy')}</button></div>`;
-  const same=CONTACT.hosting===CONTACT.ngo;
+  // 1.58.49, the NGO's head: "is it possible to make it one button, or press and hold to copy?" — the whole row is the
+  // button: a tap copies it, and so does pressing and holding it
+  const row=(label,addr,id,shown,cls)=>`<div class="kv1 muted" style="margin-top:10px">${esc(label)}</div>
+    <button type="button" class="sup supb${cls?' '+cls:''}" data-copy="${esc(addr)}" id="${id}" aria-label="${esc(t('sup_copy')+' — '+label)}"><b>${esc(shown||addr)}</b><span class="supc"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="1.5"/><path d="M16 8V5.5A1.5 1.5 0 0 0 14.5 4h-9A1.5 1.5 0 0 0 4 5.5v9A1.5 1.5 0 0 0 5.5 16H8"/></svg><span>${t('sup_copy')}</span></span></button>`;
+  // 1.58.49: the NGO's account (CONTACT.iban: the IBAN shown in groups of four, copied whole), its name and the purpose;
+  // then PayPal for donors abroad
+  const ibanShown=String(CONTACT.iban||'').replace(/(.{4})/g,'$1 ').trim();
+  const qr=/^https:\/\/bank\.gov\.ua\/qr\/[A-Za-z0-9_-]{20,600}$/.test(CONTACT.ibanLink||'')?CONTACT.ibanLink:'';   // the NBU link: the bank app fills it in
+  const pp=/^https:\/\/www\.paypal\.com\/donate\/\?hosted_button_id=[A-Z0-9]{8,20}$/.test(CONTACT.paypal||'')?CONTACT.paypal:'';   // PayPal's own page
   // 1.58.46: the owner's Monobank jar (the dashboard's; /api/donate) above the addresses
   const jar=DONATE_JAR&&/^https:\/\/send\.monobank\.ua\/jar\/[A-Za-z0-9]{6,24}$/.test(DONATE_JAR)?DONATE_JAR:'';
   $('sheetbody').innerHTML=`<div class="type">${t('sup_title')}</div>
     <div class="kv1">${esc(jar?t('jar_why'):t('sup_free'))}</div>
     ${jar?`<a class="jarlink" href="${esc(jar)}" target="_blank" rel="noopener noreferrer">${esc(t('jar_btn'))}</a>`:''}
-    ${same?row(t('sup_hosting')+' · '+t('sup_ngo'),CONTACT.ngo,'cp1')
-          :row(t('sup_hosting'),CONTACT.hosting,'cp1')+row(t('sup_ngo'),CONTACT.ngo,'cp2')}
+    ${CONTACT.iban?`<div class="suph">${esc(t('sup_bank'))}</div>
+      <div class="kv1 muted" style="margin-top:6px">${esc(t('sup_recipient'))}: <b class="supn">${esc(CONTACT.ibanName)}</b></div>
+      ${qr?`<div class="supqr"><a class="supqri" href="${esc(qr)}" target="_blank" rel="noopener noreferrer" aria-label="${esc(t('sup_qr_btn'))}"><img src="/static/nbu-qr.svg" width="132" height="132" alt=""></a>
+        <div class="supqrt"><div class="kv1 muted">${esc(t('sup_qr'))}</div><a class="supqrb" href="${esc(qr)}" target="_blank" rel="noopener noreferrer">${esc(t('sup_qr_btn'))}</a></div></div>`:''}
+      ${row('IBAN',CONTACT.iban,'cpi',ibanShown,'supi')}${row(t('sup_purpose'),CONTACT.ibanPurpose,'cpp','','supt')}`:''}
+    ${pp?`<div class="suph">${esc(t('sup_paypal'))}</div><a class="supqrb suppp" href="${esc(pp)}" target="_blank" rel="noopener noreferrer">${esc(t('sup_pp_btn'))}</a>`
+        :row(t('sup_paypal'),CONTACT.ngo,'cp1')}
     <div class="kv1 muted" style="margin-top:8px">${esc(t('sup_thanks'))}</div>
     ${footerHTML({free:false,build:MYBUILD})}
     <div style="margin-top:10px;display:flex;justify-content:space-between;align-items:center">
       <button class="tgl" id="donnever" style="font-size:11px">${t('sup_never')}</button>
       <button class="b-t" onclick="closeSheet()">${t('btn_close')}</button></div>`;
-  $('sheetbody').querySelectorAll('[data-copy]').forEach(btn=>btn.onclick=()=>copyText(btn.dataset.copy,btn,t('sup_copied')));
+  $('sheetbody').querySelectorAll('.supb[data-copy]').forEach(btn=>{
+    const go=()=>{ copyText(btn.dataset.copy,btn.querySelector('.supc span'),t('sup_copied')); btn.classList.add('ok'); setTimeout(()=>btn.classList.remove('ok'),1600); };
+    btn.onclick=go; btn.oncontextmenu=e=>{ e.preventDefault(); go(); }; });     // a long press opens no menu: it copies
   $('donnever').onclick=()=>{ls('sup_never','1');closeSheet();};
   $('sheet').classList.add('show'); }
 $('supbtn').onclick=()=>{closePanels();supportSheet();};

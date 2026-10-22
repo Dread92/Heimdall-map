@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-22 (1.58.48)
+**Documented version: 1.58** · last updated 2026-10-22 (1.58.49)
 
 The repository is **Dread92/Heimdall-map**. The app's address is **https://heimdall.com.ua** (1.58.34, 18 October
 2026); the Fly app keeps its first name, `kyiv-air-watch-gb`, and its first address keeps working (§15 has the move).
@@ -2896,6 +2896,19 @@ to donate to keep the infrastructure and help the devs" (a Monobank jar, his pic
   (`jar3d.webp` rendered again), and once, on a first visit, 20 s after the page opens, a line pointing at it (`#jarhint`,
   `jar_hint`) for 8 s — tapping it opens the support sheet; never while an alert is on, in the blackout look, or for a
   reader who chose "Never show this again" (`sup_never`); `jar_hint` in localStorage remembers it was shown.
+- **1.58.49, the NGO's account in the support sheet** (its head, Oleksandr Tymoshenko: "only with official data" — "only the
+  IBAN", "and ГО "07300"", and the purpose; "make it one button, or press and hold to copy"; "better with a link… or a
+  QR"): `CONTACT.iban`, `ibanName`, `ibanPurpose` and `ibanLink` (`static/i18n.js`, the same as 07300.org.ua) — the
+  recipient, the NBU payment link (a button: a banking app fills the payment in; tested by him) and its QR code
+  (`static/nbu-qr.svg`, for a computer's screen), then the IBAN (shown in groups of four on one line, never broken — the copy word goes under it; copied whole) and the purpose
+  (in Ukrainian: what the bank reads). Each row is one button: a tap copies it, and so does pressing and holding it (no
+  menu: `contextmenu` copies). Below them, for donors abroad, the NGO's PayPal donation page (`CONTACT.paypal`, a button;
+  "two options — the monobank link, the PayPal link"; the address `CONTACT.ngo` to copy only if it is missing); above,
+  the jar once set.
+- **1.58.49, the jar on a phone** (the owner: "on a phone the jar takes too much space, and it stands out too much"):
+  under 1000 px wide `#jarbtn` is one more map control — 44 × 44, the controls' dark face and line (white in the day
+  look, dim at night), the turning jar alone at 38 px, no `jar_cap` word, no gold rim, no `jarglow`; the button keeps its
+  name (`jar_aria`) and the first-visit line (`#jarhint`, moved down to point at it). A computer keeps 1.58.48's jar.
 
 ## 11. Privacy and security
 
@@ -3264,6 +3277,8 @@ failing there). `static/i18n.js` must evaluate with no browser globals at all.
   a `.site` file overrides the address) — the version shown must be the new one. The image is built by Fly's own builder (`--depot=false`); if that deploy fails — its builder machine
   sometimes does not answer ("failed to get status … unable to upgrade to h2c, received 500") — it tries once more
   with Fly's other builder, Depot (1.41.4). GitHub is pushed only after a deploy succeeded.
+  A patch file waiting in the folder (`*.patch`) is ignored by git (1.58.49) — it is applied, not committed, and does
+  not stop a release.
 - **First deployment, or changing a key**: `deploy-fly.bat` (Windows) — sign-in, app, volume, the dashboard
   key, the optional DeepL key, deploy. Details in [DEPLOY.md](DEPLOY.md). `fly deploy -a kyiv-air-watch-gb`
   alone also works.

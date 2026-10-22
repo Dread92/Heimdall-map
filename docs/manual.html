@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Heimdall (Kyiv Air Watch) — the full technical documentation, with a map of the system.">
-<meta name="heimdall-version" content="1.58.48">
-<meta name="heimdall-docs" content="3d27e112e6299293">
+<meta name="heimdall-version" content="1.58.49">
+<meta name="heimdall-docs" content="cdc09b2a0fced1a8">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Heimdall Technical Manual</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -237,7 +237,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
 <header class="top">
   <div class="wrap">
     <a class="brand" href="#top"><b>Heimdall</b><span>Technical manual</span></a>
-    <span class="ver">1.58.48</span>
+    <span class="ver">1.58.49</span>
     <nav class="nav" aria-label="Sections">
       <a href="#map">Map</a><a href="#journeys">Journeys</a><a href="#rules">Rules</a><a href="#reference">Reference</a><a href="#safety">Safety</a>
     </nav>
@@ -256,7 +256,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
       <h1 class="title">How Heimdall works</h1>
       <p class="lead">An unofficial air-threat map for Kyiv and the oblasts around it. One Python process reads the official
       alert data and the channels that track drones and missiles, stores every post before it reads it, rebuilds the map
-      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.48, 22 October 2026:
+      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.49, 22 October 2026:
       the map first, then everything in full.</p>
     </div>
     <dl class="facts">
@@ -647,7 +647,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
     <div class="doc" id="doc">
 <section class="part" id="tech" data-label="Reference"><p class="partlabel">Part I · The reference</p>
 <h1 id="heimdall--technical-documentation">Heimdall — technical documentation</h1>
-<p><strong>Documented version: 1.58</strong> · last updated 2026-10-22 (1.58.48)</p>
+<p><strong>Documented version: 1.58</strong> · last updated 2026-10-22 (1.58.49)</p>
 <p>The repository is <strong>Dread92/Heimdall-map</strong>. The app's address is <strong>https://heimdall.com.ua</strong> (1.58.34, 18 October
 2026); the Fly app keeps its first name, <code>kyiv-air-watch-gb</code>, and its first address keeps working (§15 has the move).</p>
 <p>This is the complete technical reference: what runs, where the data comes from, how a Telegram post becomes a
@@ -3935,6 +3935,19 @@ word under it (<code>jar_cap</code>: &quot;Підтримати&quot; / &quot;Su
 (<code>jar3d.webp</code> rendered again), and once, on a first visit, 20 s after the page opens, a line pointing at it (<code>#jarhint</code>,
 <code>jar_hint</code>) for 8 s — tapping it opens the support sheet; never while an alert is on, in the blackout look, or for a
 reader who chose &quot;Never show this again&quot; (<code>sup_never</code>); <code>jar_hint</code> in localStorage remembers it was shown.</li>
+<li><strong>1.58.49, the NGO's account in the support sheet</strong> (its head, Oleksandr Tymoshenko: &quot;only with official data&quot; — &quot;only the
+IBAN&quot;, &quot;and ГО &quot;07300&quot;&quot;, and the purpose; &quot;make it one button, or press and hold to copy&quot;; &quot;better with a link… or a
+QR&quot;): <code>CONTACT.iban</code>, <code>ibanName</code>, <code>ibanPurpose</code> and <code>ibanLink</code> (<code>static/i18n.js</code>, the same as 07300.org.ua) — the
+recipient, the NBU payment link (a button: a banking app fills the payment in; tested by him) and its QR code
+(<code>static/nbu-qr.svg</code>, for a computer's screen), then the IBAN (shown in groups of four on one line, never broken — the copy word goes under it; copied whole) and the purpose
+(in Ukrainian: what the bank reads). Each row is one button: a tap copies it, and so does pressing and holding it (no
+menu: <code>contextmenu</code> copies). Below them, for donors abroad, the NGO's PayPal donation page (<code>CONTACT.paypal</code>, a button;
+&quot;two options — the monobank link, the PayPal link&quot;; the address <code>CONTACT.ngo</code> to copy only if it is missing); above,
+the jar once set.</li>
+<li><strong>1.58.49, the jar on a phone</strong> (the owner: &quot;on a phone the jar takes too much space, and it stands out too much&quot;):
+under 1000 px wide <code>#jarbtn</code> is one more map control — 44 × 44, the controls' dark face and line (white in the day
+look, dim at night), the turning jar alone at 38 px, no <code>jar_cap</code> word, no gold rim, no <code>jarglow</code>; the button keeps its
+name (<code>jar_aria</code>) and the first-visit line (<code>#jarhint</code>, moved down to point at it). A computer keeps 1.58.48's jar.</li>
 </ul>
 <h2 id="11-privacy-and-security">11. Privacy and security<a class="anc" href="#11-privacy-and-security" aria-label="Link to this section">#</a></h2>
 <ul>
@@ -4623,7 +4636,9 @@ a Git clone of the repository <strong>Dread92/Heimdall-map</strong>. Patches are
 deploys to Fly.io, pushes to GitHub, and prints the live <code>/api/version</code> from <code>https://heimdall.com.ua</code> (1.58.34;
 a <code>.site</code> file overrides the address) — the version shown must be the new one. The image is built by Fly's own builder (<code>--depot=false</code>); if that deploy fails — its builder machine
 sometimes does not answer (&quot;failed to get status … unable to upgrade to h2c, received 500&quot;) — it tries once more
-with Fly's other builder, Depot (1.41.4). GitHub is pushed only after a deploy succeeded.</li>
+with Fly's other builder, Depot (1.41.4). GitHub is pushed only after a deploy succeeded.
+A patch file waiting in the folder (<code>*.patch</code>) is ignored by git (1.58.49) — it is applied, not committed, and does
+not stop a release.</li>
 <li><strong>First deployment, or changing a key</strong>: <code>deploy-fly.bat</code> (Windows) — sign-in, app, volume, the dashboard
 key, the optional DeepL key, deploy. Details in <a href="#deploy">DEPLOY.md</a>. <code>fly deploy -a kyiv-air-watch-gb</code>
 alone also works.</li>
@@ -6005,7 +6020,7 @@ d'alerte ne sont pas des préférences de style.</p>
 </section>
     </div>
   </div>
-  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.48, 22 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
+  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.49, 22 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
 </main>
 
 <script>

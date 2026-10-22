@@ -53,3 +53,5 @@ diag/
 imagery/
 # 1.58.3: how the server ended last time (written on a stop signal), beside the database
 last-exit.json
+# 1.58.49: a patch file waiting in the folder is not part of the code (it was committed once by mistake)
+*.patch

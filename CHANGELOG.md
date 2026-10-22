@@ -2,6 +2,24 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.49 — 2026-10-22
+
+The NGO's official account on the support page.
+
+- **Bank transfer to NGO "07300"** (its head: "only with official data — only the IBAN", "ГО "07300"", and the purpose):
+  the recipient, the IBAN and the payment purpose on the support page — each row one button: a tap copies it, and so does
+  pressing and holding it.
+- **"Pay in a banking app"** (the head: "better with a link of course… or a QR"): the NBU payment link opens a Ukrainian
+  banking app with the payment filled in, and its QR code is there for scanning from a computer's screen.
+- **"Donate with PayPal"** for donors abroad (the head: "two options — the monobank link, the PayPal link"): the NGO's
+  PayPal donation page, instead of an address to copy. The Monobank jar, once set, stays above.
+- **A smaller, quieter jar on a phone** (the owner: "on a phone the jar takes too much space, and it stands out too
+  much"): there it is one more map control — 44 px, the controls' dark face and line, the turning jar alone, no gold rim,
+  no glow, no word under it (its name stays in the button's label and in the first-visit line). A computer keeps the
+  bigger jar.
+- **A patch file left in the folder is no longer committed** (`hd15849.patch` went in with a release once): `*.patch`
+  is ignored, and that file is gone again.
+
 ## 1.58.48 — 2026-10-22
 
 The jar says what it is for.
