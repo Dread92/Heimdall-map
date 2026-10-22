@@ -83,7 +83,7 @@ button{font:inherit;cursor:pointer}
 .notice .ntb{flex:1;min-width:0;font:500 13px/1.4 var(--sans);white-space:pre-wrap;overflow-wrap:anywhere;max-height:30vh;overflow:auto}
 .notice .nth{display:block;font:700 10.5px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--ink2);margin-bottom:2px}
 .notice .mvgo{display:inline-block;margin-top:6px;padding:7px 12px;background:var(--ua-yellow);color:#111;font:700 13px var(--sans);border-radius:4px;text-decoration:none}
-.notice .nx{flex:none;background:transparent;border:1px solid var(--line);color:var(--ink2);width:32px;height:32px;border-radius:var(--r);font:600 14px var(--sans);cursor:pointer}
+.notice .nx{flex:none;background:rgba(255,255,255,.07);border:1px solid var(--line2);color:var(--ink);width:40px;height:40px;border-radius:var(--r);font:600 17px var(--sans);cursor:pointer}
 body.m-day .notice{background:#e8f0ff;color:#12161c}body.m-day .notice.lv-warn{background:#fff1e0}body.m-day .notice.lv-alert{background:#ffe3e0}
 /* 1.32: the admin's message, loud: bright green for information, bright red — slowly pulsing — for urgent. The same
    in every display mode; the pulse is one cycle in 1.6 s and stops for a reader who asks for less motion. */
@@ -480,6 +480,11 @@ body.kbd #homelist{flex:1 1 auto;min-height:0;max-height:none}
 #homeq,#homen{width:100%;padding:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font:15px var(--sans);border-radius:2px}#homeq,#homen{font-size:16px}#homen{width:auto}
 .toast{position:fixed;left:10px;right:10px;top:calc(var(--sat) + var(--top) + 8px);z-index:40;background:#14171d;border:1px solid var(--line);border-left:4px solid var(--red);padding:10px 12px;display:none;box-shadow:0 10px 30px rgba(0,0,0,.6)}
 .toast.show{display:block}.toast b{font:700 16px/1.1 var(--cond);text-transform:uppercase;letter-spacing:.03em}
+.toast .tb{color:var(--muted);font-size:13.5px;margin-top:3px}
+/* 1.58.50: the banner's ✕ — top right, where people look for it, 40 px to hit; the text keeps clear of it */
+#toast{padding-right:54px}
+.toast .tx{position:absolute;top:6px;right:6px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;padding:0;border:1px solid var(--line2);border-radius:var(--r);background:rgba(255,255,255,.07);color:inherit;font:600 17px/1 var(--sans);cursor:pointer}
+body.m-day .toast .tx{background:#eef0f3;border-color:#7d858f}
 
 /* ---------- desktop ---------- */
 @media (min-width:1000px){
@@ -1113,7 +1118,8 @@ body.lite .mk.inbound .lbl2,body.lite .mk.tohome .lbl2{fill:#ff9ab0}
 .mych.old{opacity:.55;filter:grayscale(1)}
 .mcfoot{display:grid;grid-template-columns:auto 1fr auto;grid-template-areas:"s s f" "n w f";align-items:center;column-gap:8px;min-height:44px;padding:0 4px;font:500 13px/1.25 var(--sans);color:var(--ink2)}
 .mcfoot .srcs{grid-area:s;justify-self:start}.mcfoot .mcun{grid-area:n;justify-self:start}.mcfoot .mcwhat{grid-area:w}
-.mcfold{grid-area:f;width:44px;height:44px;margin-left:4px;border:1px solid var(--line);border-radius:var(--r);background:var(--panel2);color:var(--ink2);font:700 15px/1 var(--sans);cursor:pointer}
+.mcfold{grid-area:f;min-width:44px;height:44px;margin-left:4px;display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:0 10px 0 12px;border:1px solid var(--line2);border-radius:var(--r);background:var(--panel2);color:var(--ink);font:700 13px/1 var(--sans);cursor:pointer;white-space:nowrap}
+.mcfold svg{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
 .mcmini.w{border-radius:var(--r);padding:0 10px;background:#3a1030;color:#ffd0f0}.mcmini.w b{font:800 13.5px/1.2 var(--sans);text-transform:uppercase;white-space:normal}
 .mcmini.w.mig{background:#5b2fa8;color:#fff}.mcmini.w.bal,.mcmini.w.offr{background:#7a0f16;color:#fff}.mcmini.w.offy{background:#4a3a06;color:#ffe9a8}.mcmini.w em{color:inherit}
 body.lite .mcmini.w{background:#fff;color:#000}
@@ -1261,7 +1267,13 @@ body.m-day .bul .bai{color:#2340a0;border-color:#2340a0}body.m-day .bul .bm,body
 }
 body.m-day .panel,body.m-day #mycard{background:#fff;color:#12161c;border-color:#9aa1ac}body.m-day .hb{background:#fff;color:#12161c}
 body.m-day .slotrow{border-bottom-color:#c3c8d0}
-body.m-day .band{background:#fff}body.m-day .band.N{border-left-color:#0d6b3f}body.m-day .band.N .big{color:#0d6b3f}body.m-day .band.H{color:#5a4600}body.m-day .mych{background:transparent}
+body.m-day .band{background:#fff}body.m-day .band.N{border-left-color:#0d6b3f}
+/* 1.58.50: in the day look the white above painted over the official alert's red (and the yellow), and its white words
+   went white on white: "ПОВІТРЯНА ТРИВОГА" could not be read. The alert keeps its colours in daylight. */
+body.m-day:not(.lite) .band.R,body.m-day:not(.lite) .band.A{background:#c62a22;border-left-color:#7a1611;color:#fff}
+body.m-day:not(.lite) .band.Y,body.m-day:not(.lite) .band.P{background:var(--ua-yellow);border-left-color:#b89400;color:#0b0d11}
+body.m-day .tabs em{color:#fff}   /* 1.58.50: the "Near" count was dark on dark in the day look */
+body.m-day .band.N .big{color:#0d6b3f}body.m-day .band.H{color:#5a4600}body.m-day .mych{background:transparent}
 body.m-night .panel,body.m-night #mycard,body.m-night .hb{background:#070a0f;color:#8fa3b8;border-color:#1c242f}body.m-night .slotrow button{background:transparent}
 body.m-night .band{background:#070a0f}body.m-night .band.R,body.m-night .band.A{background:#5a1a16;border-left-color:#3a0e0b;color:#e8c9c6}body.m-night .band.N .big{color:#7fa395}
 body.m-night .tstrip.bal,body.m-night .tstrip.mig,body.m-night .tstrip.offr{background:#2a0e14;color:#d8b7bd;border-color:#4a1a22}
@@ -1277,7 +1289,7 @@ body.m-night .tstrip.bal,body.m-night .tstrip.mig,body.m-night .tstrip.offr{back
   .tsrow{margin-top:4px}.tstrip .tsgo{margin-top:0;font-size:13.5px}.tstrip .tsbtn{margin-top:0;min-height:38px;padding:0 12px;font-size:14px}
   #mycard:has(.tstrip:not([hidden]):not(.calm):not(.old)) .mych.calm small{display:none}
   .mcfoot{display:flex;flex-wrap:wrap;align-items:center;column-gap:10px;row-gap:0;min-height:36px}
-  .mcfold{width:38px;height:38px;margin-left:auto}
+  .mcfold{height:38px;margin-left:auto}
   .notice{padding:6px 10px}.notice .ntb{cursor:pointer}
   .notice:not(.open) .ntx{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:normal}
   body.shmk #notice,body.shmk #moved{display:none!important}
@@ -1353,7 +1365,7 @@ body.lite #mycard,body.lite .panel{background:#000;border-color:#666}body.lite .
     <div class="mych" id="mych" hidden></div>
     <div class="mych mysh" id="mysh" hidden role="button" tabindex="0"></div>
     <div class="brgbar" id="brgbar" hidden role="alert"></div>
-    <div class="mcfoot" id="mcfoot"><span class="srcs" id="srcs"></span><button type="button" class="mcun" id="mcun" data-t="mc_unoff">unofficial · not radar</button><a class="mcwhat" href="/guide" data-t="mc_what">What to do →</a><button type="button" class="mcfold" id="mcfold" data-t-aria="mc_fold" aria-label="Fold the card">▴</button></div>
+    <div class="mcfoot" id="mcfoot"><span class="srcs" id="srcs"></span><button type="button" class="mcun" id="mcun" data-t="mc_unoff">unofficial · not radar</button><a class="mcwhat" href="/guide" data-t="mc_what">What to do →</a><button type="button" class="mcfold" id="mcfold" data-t-aria="mc_fold" aria-label="Fold the card"><span data-t="mc_fold_s">Collapse</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button></div>
     <button type="button" class="mcmini" id="mcmini" hidden></button>
     <div class="bul" id="bulL" hidden></div>
     <div class="nearl" id="nearL"></div>
@@ -1716,7 +1728,12 @@ function alertVol(m,hi){ if(m&&IMMEDIATE.has(m.type)) return 2;
 // once every 10 s, unless the level is higher than the last one played: a raid of thirty marks is not thirty alarms.
 const VIB_L={2:[120],3:[400,120,400],4:[300,120,300,120,600]};
 let TONE={t:0,l:0};
-function notify(title,body,kind,vol,level){ const el=$('toast'); el.style.borderLeftColor=kind==='end'?'var(--green)':kind==='threat'?'var(--yellow)':'var(--red)'; el.innerHTML=`<b>${esc(title)}</b><div style="color:var(--muted);font-size:13.5px;margin-top:3px">${esc(body||'')}</div>`; el.classList.add('show'); el.onclick=()=>el.classList.remove('show'); clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('show'),7000);
+// 1.58.50, the owner: "when there are several banners, how to close them must be obvious at once, so nobody has to look
+// for it" — the map's banner has its ✕ (a tap anywhere on it still closes it, and it still goes by itself)
+function toastShow(color,title,body,ms){ const el=$('toast'); if(!el) return; el.style.borderLeftColor=color;
+  el.innerHTML=`<button type="button" class="tx" aria-label="${esc(t('btn_close'))}">✕</button><b>${esc(title)}</b><div class="tb">${esc(body||'')}</div>`;
+  el.classList.add('show'); el.onclick=()=>el.classList.remove('show'); clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('show'),ms); }
+function notify(title,body,kind,vol,level){ toastShow(kind==='end'?'var(--green)':kind==='threat'?'var(--yellow)':'var(--red)',title,body,7000);
   if(level){ const now=Date.now(); if(now-TONE.t<10000&&level<=TONE.l) return; TONE={t:now,l:level};
     beep('l'+level,vol); if(vibOn&&navigator.vibrate&&VIB_L[level]) navigator.vibrate(VIB_L[level]); return; }
   beep(kind,vol); if(vibOn&&navigator.vibrate) navigator.vibrate(kind==='end'?[80]:(vol!=null&&vol>1.2)?[300,80,300,80,300]:[200,100,200]); }
@@ -1913,9 +1930,7 @@ function runMark(ok){ try{ localStorage.setItem(RUN_K,JSON.stringify({bg:LAYERS.
 runMark(document.visibilityState==='hidden');
 document.addEventListener('visibilitychange',()=>runMark(document.visibilityState==='hidden'));
 addEventListener('pagehide',()=>runMark(true));
-function toastQuiet(title,body){ const el=$('toast'); if(!el) return; el.style.borderLeftColor='var(--yellow)';
-  el.innerHTML=`<b>${esc(title)}</b><div style="color:var(--muted);font-size:13.5px;margin-top:3px">${esc(body||'')}</div>`;
-  el.classList.add('show'); el.onclick=()=>el.classList.remove('show'); clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('show'),12000); }
+function toastQuiet(title,body){ toastShow('var(--yellow)',title,body,12000); }
 if(RUN_FELL) setTimeout(()=>toastQuiet(t('map_fell_t'),t('map_fell_b')),2500);
 function applyLayers(){for(const [l,on] of Object.entries(LAYERS)){svg.classList.toggle('no-'+l,!on);const cb=document.querySelector(`#layerbox input[data-l="${l}"]`);if(cb)cb.checked=on;}
   {const b=LAYERS.sat?'sat':LAYERS.tiles?'map':'none'; const rb=document.querySelector(`#lbase input[value="${b}"]`); if(rb) rb.checked=true;}if(typeof updateTiles==='function')updateTiles();if(typeof drawHeat==='function')drawHeat();}
@@ -3560,9 +3575,13 @@ function threatStrip(){
   // urgent stays on the line, the rest fold behind a count that opens in place. In the header, never over
   // the map, and never as a pop-up — nothing here may cover what somebody is trying to look at.
   const rest=thr.slice(1);
+  const lab=x=>(tsAge(x)>fresh(x)?{mig31k_departure:t('ts_mig_old'),ballistic_missiles:t('ts_bal_old'),strategic_aircraft_activity:t('ts_strat_old'),cruise_missiles:t('ts_cruise_old')}
+               :{mig31k_departure:t('ts_mig'),ballistic_missiles:unoff(x)?t('ts_bal_unoff'):t('ts_bal'),strategic_aircraft_activity:t('ts_strat'),cruise_missiles:t('ts_cruise')})[x.ty]||'';
+  // 1.58.50: the warning's words, for the card's folded line — the strip starts with the threat's icon, and the line,
+  // which read the strip's first text, had been empty since the icons came: a red bar with no words
+  el.dataset.line=lab(tt);
   const one=x=>{const a=tsAge(x); const o=a>fresh(x);
-    const lb=(o?{mig31k_departure:t('ts_mig_old'),ballistic_missiles:t('ts_bal_old'),strategic_aircraft_activity:t('ts_strat_old'),cruise_missiles:t('ts_cruise_old')}
-               :{mig31k_departure:t('ts_mig'),ballistic_missiles:unoff(x)?t('ts_bal_unoff'):t('ts_bal'),strategic_aircraft_activity:t('ts_strat'),cruise_missiles:t('ts_cruise')})[x.ty];
+    const lb=lab(x);
     const n=x.srcs?x.srcs.size:(x.src?1:0);
     return `${thrIco(x.ty,'currentColor')}${esc(lb)} <small>· ${fmtT(x.ts)} · ${esc(o?t('ts_unconf',a):t('ts_ago',a))}${n>1?' · '+esc(t('ts_conf',n)):''}</small>`;};
   // 1.36: a fresh ballistic or MiG-31K warning says what to do, in words, with the guide one tap away
@@ -3663,9 +3682,8 @@ function drawShelters(){ const g=$('shelg'); if(!g) return;
   for(const i of SHNEAR.ix){ const s=SH.D.s[i]; if(n>=1500) break; if(!all&&s[2]>=SH.STRONG&&i!==SHSEL) continue; const [x,y]=SHXY[i]; if(x<VB.x||x>x1||y<VB.y||y>y1) continue; n++;
     h+=`<g class="shl${s[2]<SH.STRONG?' st':''}${SH.closed(i)?' no':''}${i===nr?' nr':''}${i===SHSEL?' sel':''}" data-i="${i}"><rect class="hit" x="${kx(x-hr)}" y="${kx(y-hr)}" width="${kx(2*hr)}" height="${kx(2*hr)}"/><rect x="${kx(x-r)}" y="${kx(y-r)}" width="${kx(2*r)}" height="${kx(2*r)}" rx="${kx(r*.3)}"/></g>`; }
   g.innerHTML=h; }
-function shNoPin(){ if(shIn(HOME)) return; const el=$('toast'); el.style.borderLeftColor='#5aa9ff';
-  el.innerHTML=`<b>🛡 ${esc(SH.T[LANG]?SH.T[LANG].title:SH.T.en.title)}</b><div style="color:var(--muted);font-size:13.5px;margin-top:3px">${esc((SH.T[LANG]||SH.T.en).nopin.replace('{0}',SH.RADIUS_KM))}</div>`;
-  el.classList.add('show'); el.onclick=()=>el.classList.remove('show'); clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('show'),7000); }
+function shNoPin(){ if(shIn(HOME)) return;
+  toastShow('#5aa9ff','🛡 '+(SH.T[LANG]?SH.T[LANG].title:SH.T.en.title),(SH.T[LANG]||SH.T.en).nopin.replace('{0}',SH.RADIUS_KM),7000); }
 function shCard(pk){ const el=$('mysh'); if(!el) return;
   if(!HOME||!shIn(HOME)||!(LEVEL>=1||pk!=='G'||LAYERS.shelters)){ el.hidden=true; return; }
   if(!window.SH||!SH.D){ el.hidden=true; shLoad().then(()=>paintCard(true)).catch(()=>{}); return; }
@@ -3690,7 +3708,7 @@ function paintCard(force){
   const pk=HOME?placeLevel(HOME).k:(officialLevel()||'G');
   const sig=[LANG,LEVEL,ACTIVE,HOME?HOME.lon+','+HOME.lat:'',pk,top?[top.m.id,Math.round(top.d),top.n,top.chs,Math.round(agoMin(top.m.ts)),top.hi.inbound].join(','):'',
     n30,rows.map(r=>r.m.id+':'+Math.round(r.d)+':'+Math.round(agoMin(r.m.ts))+':'+r.n+(r.m.stale?'s':'')).join('|'),
-    tw?tw.className+(tw.firstChild?tw.firstChild.textContent:''):'',$('kyiv').querySelector('.dur')?.textContent||''].join('#');
+    tw?tw.className+(tw.dataset.line||''):'',$('kyiv').querySelector('.dur')?.textContent||''].join('#');
   shCard(pk);
   if(sig===CARD_SIG&&!force) return; CARD_SIG=sig;
   const card=$('mycard'); card.className=(card.classList.contains('mini')?'mini ':'')+'lv'+LEVEL+(HOME?' hasplace':'');
@@ -3707,7 +3725,7 @@ function paintCard(force){
   // preventive warning is on, that warning, in its own colour
   const mini=$('mcmini'); if(mini){ const dk=HOME?pk:(officialLevel()||'G'), dur=$('kyiv').querySelector('.dur')?.textContent||'';
     mini.className='mcmini'+(tw?' w '+tw.className.replace('tstrip','').trim():'');
-    mini.innerHTML=tw?`<i class="${dk}"></i><b>${esc((tw.firstChild?tw.firstChild.textContent:'').trim())}</b><em>▾</em>`
+    mini.innerHTML=tw?`<i class="${dk}"></i><b>${esc(tw.dataset.line||'')}</b><em>▾</em>`
       :`<i class="${dk}"></i><b>${esc(HOME?t('lt_'+dk):($('kyiv').querySelector('.big')||{}).textContent||'')}</b>${HOME?`<span>${esc(homeName())}${dur?' · '+esc(dur):''}${n30?' · '+esc(tn('mc_tgt',n30)):''}</span>`:''}<em>▾</em>`;
     mini.setAttribute('aria-label',t('mc_open')); }
   const nb=$('nearn'); if(nb){ nb.hidden=!n30; nb.textContent=n30; }

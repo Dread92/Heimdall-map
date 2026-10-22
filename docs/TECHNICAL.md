@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-22 (1.58.49)
+**Documented version: 1.58** · last updated 2026-10-22 (1.58.50)
 
 The repository is **Dread92/Heimdall-map**. The app's address is **https://heimdall.com.ua** (1.58.34, 18 October
 2026); the Fly app keeps its first name, `kyiv-air-watch-gb`, and its first address keeps working (§15 has the move).
@@ -2631,6 +2631,23 @@ the siren sounds (not "do not wait for the siren"), and turns grey after 4 minut
 rest). The in-app toast says the same, one tone level lower. With an official alert over the place, the full warning
 at once. A mark drawn at the town it is heading for (`approach`) is "heading for Kyiv — where it is now was not
 given" in its sheet, with no distance and no zone (it said "Kyiv · 0 km from Kyiv · near zone, up to 10 km").
+
+### 10.3f Closing and folding at a glance (1.58.50)
+
+The owner, on 22 Oct at 21:01 — an official alert, a ballistic warning in the card and the map's banner ("cruise
+missiles in your region") on one phone screen: "when there are several banners, how to close them must be obvious at
+once, so nobody has to look for it". The map's banner (`#toast`, one function now: `toastShow(colour, title, body,
+ms)` for `notify`, `toastQuiet` and `shNoPin`) has a ✕ at its top right (`.tx`, 40 px, `btn_close`); a tap anywhere
+on it still closes it, and it still goes by itself (7 s, 12 s for the quiet one). The admin's message and the "moved"
+line keep their ✕, now 40 px and as visible. The card's ▴ is a word with its arrow: "Згорнути" / "Collapse" /
+"Réduire" (`mc_fold_s`; its label stays `mc_fold`). The card is folded, never closed: it carries the official status.
+
+Two faults found on the way. The folded line under a warning was a red bar with no words: it read the strip's first
+text, and the strip has begun with the threat's icon since the icons came — the strip now keeps its words in
+`data-line` (`tstrip.dataset.line`), which the line and the card's signature read. And in the day look,
+`body.m-day .band{background:#fff}` painted over the official alert's red, leaving "ПОВІТРЯНА ТРИВОГА" white on white
+(and the yellow white): the red and yellow bands keep their colours in daylight (not in the blackout look, which has
+its own); the "Near" count, dark on dark there, is white.
 
 ### 10.3d Daylight and night (1.42)
 

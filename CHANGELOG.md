@@ -2,6 +2,20 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.50 — 2026-10-22
+
+Closing a banner, at a glance.
+
+- **The map's banner has a ✕** (the owner: "when there are several banners, how to close them must be obvious at once,
+  so nobody has to look for it"): top right, big enough for a thumb. A tap anywhere on the banner still closes it, and
+  it still goes by itself. The admin's message's ✕ is as big and as visible.
+- **The card's ▴ became "Згорнути ▴"** ("Collapse" / "Réduire"): the word says what it does. The card folds to its
+  one line; it is never closed, because it carries the official status.
+- **Fixed: the folded line under a warning had no words** — a red bar only. It says the warning again ("МіГ-31К у
+  повітрі — балістична загроза").
+- **Fixed: in the day look the official alert was white on white** — "ПОВІТРЯНА ТРИВОГА" could not be read. The red
+  (and the yellow) bands keep their colours in daylight. The "Near" count, dark on dark there, is white.
+
 ## 1.58.49 — 2026-10-22
 
 The NGO's official account on the support page.

@@ -498,6 +498,12 @@ the card opens by itself — not on the reader's next tap — when something new
 it was folded at, or a preventive warning or a bridge bar appears; while a fresh warning is on, the line is that
 warning. Folding hides detail, never the official status and never a new warning.
 
+Folding is the card's only "close" (1.58.50: a word, "Згорнути ▴", not a lone arrow), and the folded line must say
+something: under a warning, the warning's own words (for a while they were missing — a red bar with no words). The
+map's banner, a copy of a notification, may be closed (its ✕) and goes by itself: what it says is on the map, in the
+lists and in the feed too. The official alert's colour is the same in every look (in the day look it was white on white, unreadable,
+until 1.58.50).
+
 ## The heat map is statistics, and says so
 
 Where drones were reported (1.34) is a record of the past, under every mark, with "not live, not alerts" in its
