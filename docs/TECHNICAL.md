@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-22 (1.58.47)
+**Documented version: 1.58** · last updated 2026-10-22 (1.58.48)
 
 The repository is **Dread92/Heimdall-map**. The app's address is **https://heimdall.com.ua** (1.58.34, 18 October
 2026); the Fly app keeps its first name, `kyiv-air-watch-gb`, and its first address keeps working (§15 has the move).
@@ -2891,6 +2891,11 @@ to donate to keep the infrastructure and help the devs" (a Monobank jar, his pic
   soft glow every few seconds (not with less motion); the strip is asked for 3 s after the page opens, never with "save
   data" or in the blackout look — until then, and if it never comes, the drawing. The look's tag (`#modetag`, day /
   night) moved to the top right, off the jar.
+- **1.58.48, what the jar is for** (the owner: "make it more obvious that the jar of coins is for supporting the app"): its
+  word under it (`jar_cap`: "Підтримати" / "Support" / "Soutenir"; the button is 72 × 68), a red heart on the jar's band
+  (`jar3d.webp` rendered again), and once, on a first visit, 20 s after the page opens, a line pointing at it (`#jarhint`,
+  `jar_hint`) for 8 s — tapping it opens the support sheet; never while an alert is on, in the blackout look, or for a
+  reader who chose "Never show this again" (`sup_never`); `jar_hint` in localStorage remembers it was shown.
 
 ## 11. Privacy and security
 

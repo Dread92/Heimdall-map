@@ -44,7 +44,7 @@ def test_the_strip():
 
 
 def test_the_button():
-    assert '<span class="jar3d" aria-hidden="true"></span></button>' in PAGE
+    assert '<span class="jar3d" aria-hidden="true"></span><span class="jarcap"' in PAGE     # 1.58.48: its word after it
     assert ".jarbtn .jar3d{display:none;width:48px;height:48px;background:url(/static/jar3d.webp) 0 0/3600% 100% no-repeat;animation:jarturn 4s steps(36,jump-none) infinite}" in PAGE
     assert ".jarbtn.j3 .jar3d{display:block}.jarbtn.j3 svg{display:none}" in PAGE
     assert "@media (prefers-reduced-motion:no-preference){.jarbtn{animation:jarglow" in PAGE

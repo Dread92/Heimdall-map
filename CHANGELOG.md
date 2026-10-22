@@ -2,6 +2,15 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.48 — 2026-10-22
+
+The jar says what it is for.
+
+- **"Support" under the jar** (the owner: "make it more obvious that the jar of coins is for supporting the app"):
+  "Підтримати" / "Support" / "Soutenir" in gold under it, and a red heart on the jar itself.
+- **Once, on a first visit**, a short line points at it: "Heimdall is free — you can support it here" (tapping it opens
+  the support page). Never during an alert, in the blackout look, or for someone who asked not to be reminded.
+
 ## 1.58.47 — 2026-10-22
 
 The donation jar in 3D.

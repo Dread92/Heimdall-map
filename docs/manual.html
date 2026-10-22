@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Heimdall (Kyiv Air Watch) — the full technical documentation, with a map of the system.">
-<meta name="heimdall-version" content="1.58.47">
-<meta name="heimdall-docs" content="347031347ad1868d">
+<meta name="heimdall-version" content="1.58.48">
+<meta name="heimdall-docs" content="3d27e112e6299293">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Heimdall Technical Manual</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -237,7 +237,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
 <header class="top">
   <div class="wrap">
     <a class="brand" href="#top"><b>Heimdall</b><span>Technical manual</span></a>
-    <span class="ver">1.58.47</span>
+    <span class="ver">1.58.48</span>
     <nav class="nav" aria-label="Sections">
       <a href="#map">Map</a><a href="#journeys">Journeys</a><a href="#rules">Rules</a><a href="#reference">Reference</a><a href="#safety">Safety</a>
     </nav>
@@ -256,7 +256,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
       <h1 class="title">How Heimdall works</h1>
       <p class="lead">An unofficial air-threat map for Kyiv and the oblasts around it. One Python process reads the official
       alert data and the channels that track drones and missiles, stores every post before it reads it, rebuilds the map
-      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.47, 22 October 2026:
+      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.48, 22 October 2026:
       the map first, then everything in full.</p>
     </div>
     <dl class="facts">
@@ -647,7 +647,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
     <div class="doc" id="doc">
 <section class="part" id="tech" data-label="Reference"><p class="partlabel">Part I · The reference</p>
 <h1 id="heimdall--technical-documentation">Heimdall — technical documentation</h1>
-<p><strong>Documented version: 1.58</strong> · last updated 2026-10-22 (1.58.47)</p>
+<p><strong>Documented version: 1.58</strong> · last updated 2026-10-22 (1.58.48)</p>
 <p>The repository is <strong>Dread92/Heimdall-map</strong>. The app's address is <strong>https://heimdall.com.ua</strong> (1.58.34, 18 October
 2026); the Fly app keeps its first name, <code>kyiv-air-watch-gb</code>, and its first address keeps working (§15 has the move).</p>
 <p>This is the complete technical reference: what runs, where the data comes from, how a Telegram post becomes a
@@ -3930,6 +3930,11 @@ photographed once into <code>static/jar3d.webp</code> (<code>scripts/render_jar.
 soft glow every few seconds (not with less motion); the strip is asked for 3 s after the page opens, never with &quot;save
 data&quot; or in the blackout look — until then, and if it never comes, the drawing. The look's tag (<code>#modetag</code>, day /
 night) moved to the top right, off the jar.</li>
+<li><strong>1.58.48, what the jar is for</strong> (the owner: &quot;make it more obvious that the jar of coins is for supporting the app&quot;): its
+word under it (<code>jar_cap</code>: &quot;Підтримати&quot; / &quot;Support&quot; / &quot;Soutenir&quot;; the button is 72 × 68), a red heart on the jar's band
+(<code>jar3d.webp</code> rendered again), and once, on a first visit, 20 s after the page opens, a line pointing at it (<code>#jarhint</code>,
+<code>jar_hint</code>) for 8 s — tapping it opens the support sheet; never while an alert is on, in the blackout look, or for a
+reader who chose &quot;Never show this again&quot; (<code>sup_never</code>); <code>jar_hint</code> in localStorage remembers it was shown.</li>
 </ul>
 <h2 id="11-privacy-and-security">11. Privacy and security<a class="anc" href="#11-privacy-and-security" aria-label="Link to this section">#</a></h2>
 <ul>
@@ -6000,7 +6005,7 @@ d'alerte ne sont pas des préférences de style.</p>
 </section>
     </div>
   </div>
-  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.47, 22 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
+  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.48, 22 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
 </main>
 
 <script>

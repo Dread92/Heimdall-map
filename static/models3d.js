@@ -254,6 +254,17 @@ const BUILD = {
     const ring = new T.Mesh(new T.CylinderGeometry(5.8, 5.8, 0.5, 40, 1, true), rim); ring.position.y = 9.0; ring.renderOrder = 3; g.add(ring);
     const band = new T.Mesh(new T.CylinderGeometry(8.16, 8.16, 3.2, 48, 1, true), yellow); band.position.y = 1.8; g.add(band);
     const band2 = new T.Mesh(new T.CylinderGeometry(8.18, 8.18, 0.6, 48, 1, true), blue); band2.position.y = 3.7; g.add(band2);
+    // 1.58.48, the owner: "make it more obvious that the jar is for supporting the app" — a heart on the band
+    const heart = new T.Shape();
+    heart.moveTo(0, -1.25);
+    heart.bezierCurveTo(-0.3, -0.95, -1.55, -0.15, -1.55, 0.55); heart.bezierCurveTo(-1.55, 1.2, -0.95, 1.45, -0.6, 1.45);
+    heart.bezierCurveTo(-0.25, 1.45, 0, 1.15, 0, 0.9); heart.bezierCurveTo(0, 1.15, 0.25, 1.45, 0.6, 1.45);
+    heart.bezierCurveTo(0.95, 1.45, 1.55, 1.2, 1.55, 0.55); heart.bezierCurveTo(1.55, -0.15, 0.3, -0.95, 0, -1.25);
+    const hg = new T.ExtrudeGeometry(heart, {depth: 0.35, bevelEnabled: true, bevelThickness: 0.12, bevelSize: 0.1, bevelSegments: 2});
+    const red = new T.MeshStandardMaterial({color: '#e8333a', emissive: '#4a0508', roughness: 0.35, metalness: 0.1});
+    const white = new T.MeshStandardMaterial({color: '#ffffff', roughness: 0.5});
+    const h1 = new T.Mesh(hg, red); h1.scale.set(1.3, 1.3, 1); h1.position.set(0, 1.6, 8.12); g.add(h1);
+    const h0 = new T.Mesh(hg, white); h0.scale.set(1.58, 1.58, 0.6); h0.position.set(0, 1.5, 8.02); g.add(h0);
     const lid = new T.Mesh(new T.CylinderGeometry(6.3, 6.3, 2.3, 40), blue); lid.position.y = 10.25; g.add(lid);
     const lip = new T.Mesh(new T.CylinderGeometry(6.5, 6.5, 0.6, 40), blue); lip.position.y = 9.35; g.add(lip);
     const slot = new T.Mesh(new T.BoxGeometry(3.4, 0.3, 0.75), dark); slot.position.y = 11.42; g.add(slot);
