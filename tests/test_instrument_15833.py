@@ -131,7 +131,7 @@ def test_the_chrome_has_no_colour_emoji_and_the_banderol_is_an_airframe():
     for k in ("sup_link", "n_home", "sl_pin_set", "ts_bal", "ts_cruise", "ts_mig", "mk_fire", "lb_damage", "lt_locate", "al_none", "d_p2", "d_p3"):
         for m in re.finditer(k + r":'((?:[^'\\]|\\.)*)'", I18N):
             assert not emo.search(m.group(1)), (k, m.group(1)[:40])
-    assert "${thrIco(x.ty,'currentColor')}${esc(lb)}" in PAGE and "${thrIco(cur.type)}${cur.type==='drones'" in PAGE
+    assert "${thrIco(x.ty,'currentColor')}${esc(lb)}" in PAGE and "${m3Ico(cur,28)||thrIco(cur.type)}${cur.type==='drones'" in PAGE   # 1.58.45: the 3D model first
     b = re.search(r"\bbanderol:'(.*?)',?\n", GLY).group(1)
     assert b.count('<path class="glyph"') == 5 and b.count('<rect class="glyph"') == 1 and 'class="jetfx"' in b
     assert 'x="-9.8" y="-1.4" width="19.6"' not in GLY                                           # the cross of two bars

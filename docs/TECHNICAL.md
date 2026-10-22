@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-22 (1.58.44)
+**Documented version: 1.58** · last updated 2026-10-22 (1.58.45)
 
 The repository is **Dread92/Heimdall-map**. The app's address is **https://heimdall.com.ua** (1.58.34, 18 October
 2026); the Fly app keeps its first name, `kyiv-air-watch-gb`, and its first address keeps working (§15 has the move).
@@ -142,6 +142,9 @@ Heimdall-map/
 │   ├── light.html          Light page (one self-contained file)
 │   ├── i18n.js             every UI string in EN / UK / FR, place / raion / river / channel names
 │   ├── glyphs.js           the weapon silhouettes (G, GLYPH_BY_TYPE), shared by both pages
+│   ├── models3d.js         the threats in 3D on the Tactical page: each weapon built from shapes, photographed into a
+│   │                       strip of frames (1.58.45; an ES module, loaded on demand)
+│   ├── vendor/             three-m3d.min.js — three.js 0.185.1 (MIT, three.LICENSE), only the classes models3d.js uses
 │   ├── kyiv-map.json       27 oblasts + all raions, in km around Kyiv (geoBoundaries)
 │   ├── light-map.json      raions of the 8 oblasts + nearby oblast outlines, rivers, roads, towns (built)
 │   ├── light-map-x.json    raions of the 11 oblasts farther out — fetched only for a place there (built, 1.43)
@@ -171,6 +174,7 @@ Heimdall-map/
 │   └── corpus.jsonl        regression corpus of real posts and their expected readings
 ├── scripts/
 │   ├── build_geo.py        rebuilds data/ua_regions.json and static/light-map.json (`--light`: the Light maps only)
+│   ├── build_three.sh      rebuilds static/vendor/three-m3d.min.js from three-m3d.entry.js (npm three + esbuild; 1.58.45)
 │   ├── build_hromadas.py   rebuilds static/hromadas/ from OCHA's ukr_admin_boundaries.gdb (pyogrio, shapely; 1.58.16)
 │   ├── build_places.py     rebuilds data/regional_places.json from GeoNames (1.43)
 │   ├── build_extra_places.py rebuilds data/extra_places.json from GeoNames (1.52)
@@ -2339,6 +2343,27 @@ Main parts:
   north" (`noFront(gk, m, stated)`: `glyphKey`, before the night arrows; Light's `silKey`; `mapshot.no_front` and the
   picture's `_glyph`). Its label, the card, the lists' icons (`silSvg`, Light's `icoSvg` / `wpnKey`) keep the weapon's
   silhouette, upright. It takes its silhouette, turned, once a post gives a course or its reports move;
+- **1.58.45, the threats in 3D** (the owner: "could you make some little animated threejs icon for every threat that we
+  have" — on the marks, the card and the sheet; and of a Banderol drawn as the `nofront` disc although its post named it:
+  "if the target is correctly identified like here, then display a real logo … it needs to be a 3D model").
+  `static/models3d.js` (an ES module) builds each weapon from plain three.js shapes — Shahed, jet drone, Banderol,
+  cruise missile, ballistic, Kh-22, KAB with its glide kit, fighter, Tu-95, and the ⚠ sign — on the silhouettes'
+  outlines, ~24 units nose to tail in their 28-unit box, and `sheet(key, view, colour, px, line)` photographs it into a
+  strip of frames with one offscreen `WebGLRenderer` (a blob: PNG; the outline in `line`). Two views: **`top`** (8 frames,
+  0.8 s — from above and 20° behind, nose up; the propellers turn, the flame flickers, a ballistic missile rolls) and
+  **`spin`** (24 frames, 3.2 s — from 26° above, the model turning on itself; the sign rocks instead). The page's **M3
+  block** (`kyiv.html`): `m3Start()` imports the module only once there is a mark (`tick`), never with "save data" or
+  without WebGL; `m3Sheet()` caches the strips, made one at a time a frame apart (`m3Pump`), and lets the renderer go
+  (`release()`) when the queue is empty; `m3Mark(b, m, gk)` puts `<g class="m3 glyph"><svg class="m3v">` (the window
+  on the strip; a filter on it would stop Chromium clipping it) over the silhouette, which stays underneath, hidden
+  (`.mk.m3on .rot>:not(.m3)`) — its computed fill and stroke, read with its blink paused, colour the model, so every
+  state colour stays (`m3sig`: again only when the mark's classes or the look change); the `<g>` takes the glow, fade
+  and blink rules (`.glyph`; the fill blink is an opacity step, `m3bl`). A mark with a course shows `top`, turned by
+  `orientOf` like the silhouette; a `nofront` mark shows `spin` of its weapon (`m3Key`) — it never holds a heading; with
+  reduced motion it stays the disc. Outcomes, night arrows, blackout (`body.lite`): 2D. The card (`showTip`) and the
+  sheet (`openSheet`, the oblast list) show `m3Ico(m, px)` — the `spin` strip as an animated background in the type's
+  colour (`m3IcoCol`); until it is made, the silhouette. Light, the guide and the channel's picture keep the silhouettes.
+  The strategic-aviation and MiG-31K marks had no fill rule (black on the dark map): purple like the tactical ones;
 - `tick()` — marks: silhouettes per weapon (`G`, `GLYPH_BY_TYPE` from `static/glyphs.js`), turned only to a stated course (`orientOf`),
   uncertainty ring up to 25 km, 5-minute tail, labels (1.53.3: no off-screen edge indicators any more — the owner: the map has too much on it now; a target off the screen is in the Near list);
 - `threatStrip()` — the banner stack, coloured by `officialLevel()`; `idleLine()` when calm;

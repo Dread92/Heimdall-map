@@ -336,6 +336,16 @@ but the prompt to set one. The siren and the official app stay first.
 treatment for the most urgent one. "Без подальшої фіксації 3х БР." is three missiles no longer tracked; it ends the
 reports of them, never the warning — that is the official alert's.
 
+## A 3D model says what it is, never where it is going (1.58.45)
+
+The owner asked for the threats in 3D, on the marks too, and for a named weapon whose post gave no course to show its
+model rather than a "?" disc. A model has a nose, so the silhouettes' rule holds for it unchanged: seen from above, it
+turns only to a course a post reported (`orientOf`). With no course, it turns on itself without stopping (`spin`) — it
+never holds a heading, so none can be read into it; for a reader whose phone asks for less motion, it stays the disc.
+Its colour is read from the silhouette underneath, so every colour that warns — red missile, pink-red heading for the
+reader's place, grey stale — stays; an outcome, the night and blackout looks keep the 2D drawing. The pictures are
+illustrations of the type a post named, not of the object seen: the words of the post decide the type, as before.
+
 ## Alert colours must match the official app
 
 If the government app shows an oblast under alert, this map shows the whole oblast under alert. An

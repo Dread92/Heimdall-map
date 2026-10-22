@@ -2,6 +2,24 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.45 — 2026-10-22
+
+The threats in 3D: on the Tactical map, in the card and in the sheet.
+
+- **3D models** (the owner: "could you make some little animated threejs icon for every threat that we have" — on the
+  marks, the card and the sheet). Shahed, jet drone, Banderol, cruise missile, ballistic missile, Kh-22, KAB with its
+  glide kit, tactical and strategic aviation, and the ⚠ of an unnamed target are built in three.js and photographed
+  into short animated strips (propellers, flames, a ballistic missile's roll) in the mark's own colour — red missile,
+  pink-red heading for your place, grey when stale (`static/models3d.js`, three.js 0.185.1 in `static/vendor/`, only
+  the parts used; loaded once there is a target on the map).
+- **A named weapon with no course is its model, turning** (the owner, of a Banderol drawn as a "?" disc: "if the target
+  is correctly identified like here, then display a real logo … it needs to be a 3D model"). It turns on itself without
+  stopping, so it shows no heading nobody reported; with a course it flies that course, seen from above, as before.
+- Unchanged: outcomes, the night arrows and the blackout look stay 2D, as do Light, the guide and the channel's
+  picture; "save data", no WebGL, or less motion asked: the silhouettes and the disc.
+- Fixed: a strategic-aviation or MiG-31K mark was black on the dark map (no colour of its own): purple like the
+  tactical ones.
+
 ## 1.58.44 — 2026-10-22
 
 "БР" is a ballistic missile; the sounds say what concerns the reader, once per target.

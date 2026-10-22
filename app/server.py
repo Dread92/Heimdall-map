@@ -460,7 +460,8 @@ BUILD_FILES = ("static/kyiv.html", "static/light.html", "static/light-map.json",
                "app/chanpost.py", "app/tgbot.py", "app/mapshot.py", "app/areas.py", "app/ai_reader.py", "app/translate.py",
                "static/hromadas.js", "static/replay.js",   # 1.58.16
                "app/limits.py",                            # 1.58.17
-               "app/adminauth.py", "static/admin.html", "static/admin-login.html")   # 1.58.21
+               "app/adminauth.py", "static/admin.html", "static/admin-login.html",   # 1.58.21
+               "static/models3d.js", "static/vendor/three-m3d.min.js")              # 1.58.45: the threats in 3D
 
 
 def build_id():

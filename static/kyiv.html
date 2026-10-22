@@ -671,7 +671,7 @@ body.lite .mk.unknown .glyph{fill:#fff!important;stroke:#000;animation:none}
 body.lite .mk.unknown .halo{stroke:#fff}
 .mk.drones .glyph{fill:#ff8a3d}.mk.drones.jet .glyph{fill:#ffb15c}
 .mk.cruise_missiles .glyph,.mk.unspecified_missiles .glyph,.mk.ballistic_missiles .glyph{fill:#ff5c61}
-.mk.guided_aerial_bombs .glyph,.mk.tactic_aircraft_activity .glyph{fill:#b07cff}
+.mk.guided_aerial_bombs .glyph,.mk.tactic_aircraft_activity .glyph,.mk.strategic_aircraft_activity .glyph,.mk.mig31k_departure .glyph{fill:#b07cff}   /* 1.58.45: the strategic aviation and MiG-31K marks had no fill — black */
 .mk.inbound .glyph{fill:#ff3b3f}
 .mk .halo{fill:none;stroke:#ff8a3d;stroke-width:1.5px;vector-effect:non-scaling-stroke;opacity:.6;transform-box:fill-box;transform-origin:center;animation:halo 2.2s ease-out infinite}
 .mk.inbound .halo{stroke:#ff3b3f;animation-duration:1.1s}
@@ -711,6 +711,18 @@ body.lite .mk.st-impact .glyph.x{fill:#fff;filter:none;animation:none}
 .mk .cnt circle{fill:#fff;stroke:#080b10;stroke-width:1}.mk .cnt text{font:800 9px var(--mono);fill:#080b10;text-anchor:middle}.mk.inbound .cnt circle,.mk.tohome .cnt circle{fill:#ff4d57}.mk.inbound .cnt text,.mk.tohome .cnt text{fill:#fff}.mk.stale .cnt circle{fill:#9aa5b8}
 /* 1.58.42: a missile with no course stated — a disc with a "?" (glyphs.js G.nofront), in glyph units */
 .mk .nfq,.sil .nfq{font:800 12px var(--mono);fill:#080b10;stroke:none;pointer-events:none}body.m-night .mk .nfq{fill:#ff6b60}
+/* 1.58.45: the 3D model (models3d.js, the M3 block) over the silhouette, which stays underneath — hidden — for its colour.
+   The strip is played by CSS: one step a frame. It takes the silhouette's glow, fade and blink rules through .glyph; the
+   blink that changed the fill is an opacity step here (an image has no fill). */
+.mk.m3on .rot>:not(.m3){visibility:hidden}
+.mk .m3{stroke:none!important}.mk .m3v{overflow:hidden}
+.mk .m3i{transform-box:fill-box;animation-name:m3run;animation-iteration-count:infinite}
+@keyframes m3run{to{transform:translateX(-100%)}}
+@keyframes m3bl{0%,55%{opacity:1}56%,100%{opacity:.7}}
+.mk.m3on.msl .m3{animation:m3bl 1s steps(2) infinite}.mk.m3on.ballistic_missiles .m3{animation:m3bl .55s steps(2) infinite}.mk.m3on.unknown:not(.drones) .m3{animation:m3bl .9s steps(2) infinite}
+.m3ico{display:inline-block;flex:none;vertical-align:-9px;margin:-4px 6px -4px -2px;background-repeat:no-repeat;animation-name:m3bg;animation-iteration-count:infinite}
+@keyframes m3bg{from{background-position:0 0}to{background-position:100% 0}}
+@media (prefers-reduced-motion:reduce){.mk .m3i,.m3ico{animation:none}}
 .mk .qm{display:none;font:700 calc(var(--k,1)*11px) var(--mono);fill:#ffd166;paint-order:stroke;stroke:#080b10;stroke-width:calc(var(--k,1)*3px);text-anchor:middle}.mk.stale .qm{display:block}
 .mk.ended{opacity:.55}.mk.ended .halo{display:none}.mk.ended .glyph{fill:#6f7b90}.mk.ended .lbl2{fill:#a8f0cf}
 .trail.ended{stroke:#3ecf8e;stroke-dasharray:4 4;stroke-opacity:.8}
@@ -2524,7 +2536,7 @@ const oblIco=m=>m.status?statusIco(m.status):'';
 const oblWord=m=>m.status?(STATUS_W[m.status]||statusName(m.status)):kindOf(m);
 function oblEventSheet(uid){
   const evs=(OBLEVT[uid]||[]).slice().sort((a,b)=>a.ts<b.ts?1:-1); if(!evs.length) return;
-  $('sheetbody').innerHTML=`<div class="type">${evs[0].status?oblIco(evs[0]):silSvg(evs[0]).replace('<svg ','<svg style="width:22px;height:22px;vertical-align:-6px" ')} ${esc(evs[0].status?statusName(evs[0].status):kindOf(evs[0]))} — ${esc(oblFull(uid))}</div>`
+  $('sheetbody').innerHTML=`<div class="type">${evs[0].status?oblIco(evs[0]):(m3Ico(evs[0],34)||silSvg(evs[0]).replace('<svg ','<svg style="width:22px;height:22px;vertical-align:-6px" '))} ${esc(evs[0].status?statusName(evs[0].status):kindOf(evs[0]))} — ${esc(oblFull(uid))}</div>`
     +`<div class="kv1 muted" style="margin-bottom:8px">${esc(t(uid==='31'?'city_noplace':'obl_noplace'))}</div>`
     // 1.58.20: what the badge's "~12" is
     +(()=>{ const by={}; for(const m of evs){ if(m.status) continue; const k=oblKey(m); if(OBL_EST(k)) by[k]=(by[k]||0)+(m.count||1); }
@@ -2607,6 +2619,56 @@ function orientOf(m){
   return m.heading;
 }
 const upright=()=>0;   // kept for outcome marks, which have no course at all
+// 1.58.45 — the threats in 3D (static/models3d.js). The owner: "could you make some little animated threejs icon for every
+// threat that we have" — on the map's marks, the card and the sheet; and of a Banderol drawn as a "?" disc (no course
+// stated): "if the target is correctly identified like here, then display a real logo … it needs to be a 3D model".
+// Each weapon is photographed once into a strip of frames (a sprite sheet) and played with CSS; the silhouette stays
+// under it, hidden, as the fallback and as the source of its colour — so a mark keeps every colour that warns (red
+// missile, pink-red heading for the reader's place, grey stale…). The rules do not move:
+//   - a mark with a course (orientOf) shows the model from above, nose up, turned to that course and no other;
+//   - a mark whose post gave no course (glyphs.js's `nofront`) shows the model turning on itself without stopping —
+//     it never holds a heading, so none can be read into it; with reduced motion it stays the "?" disc;
+//   - an outcome (shot down, impact, lost), the night and blackout looks, "save data", no WebGL: the 2D drawing.
+const M3={mod:null,state:0,cache:new Map(),queue:[],busy:false,rm:matchMedia('(prefers-reduced-motion: reduce)')};
+const M3_KEYS=new Set(['drone','jetdrone','banderol','missile','ballistic','supersonic','bomb','fighter','bomber','unknown']);
+const M3DPR=Math.min(3,window.devicePixelRatio||1);
+const M3PX=Math.max(40,Math.min(96,Math.round(32*M3DPR/8)*8)), M3IPX=Math.max(40,Math.min(104,Math.round(34*M3DPR/8)*8));
+function m3Start(){ if(M3.state) return; let sd=false; try{sd=!!(navigator.connection&&navigator.connection.saveData);}catch(e){}
+  if(sd||!window.WebGLRenderingContext){M3.state=-1;return;} M3.state=1;
+  import('/static/models3d.js').then(mod=>mod.init().then(ok=>{ if(!ok){M3.state=-1;return;} M3.mod=mod; M3.state=2; m3Pump(); })).catch(()=>{M3.state=-1;}); }
+const m3Ok=()=>M3.state===2&&MODE!=='night'&&!document.body.classList.contains('lite');
+// a strip from the cache, or queued: made one at a time, a frame apart, so a phone never stalls on them
+function m3Sheet(key,view,col,px,line){ line=line||'#080b10'; const id=key+'|'+view+'|'+col+'|'+line+'|'+px, c=M3.cache.get(id); if(c) return c.url?c:null;
+  M3.cache.set(id,{}); M3.queue.push([id,key,view,col,px,line]); m3Pump(); return null; }
+async function m3Pump(){ if(M3.busy||!M3.mod||!M3.queue.length) return; M3.busy=true;
+  while(M3.queue.length){ const [id,key,view,col,px,line]=M3.queue.shift();
+    try{ const sh=await M3.mod.sheet(key,view,col,px,line); if(sh) M3.cache.set(id,sh); }catch(e){}
+    await new Promise(r=>requestAnimationFrame(()=>setTimeout(r,0))); }
+  M3.busy=false; M3.mod.release(); }   // its WebGL context is let go until a new strip is needed
+const m3Key=m=>((m.type==='drones'||asDrone(m))&&m.jet)?'jetdrone':asDrone(m)?'drone':(GLYPH_BY_TYPE[m.type]||'missile');
+// the card's and the sheet's colours — thrIco's, the jet's own amber, a ballistic missile white (its silhouette's fill)
+const m3IcoCol=m=>(m.type==='drones'||asDrone(m))?(m.jet?'#ffb15c':'#ff8a3d'):/aircraft|mig31k|guided_aerial_bombs/.test(m.type)?'#b07cff':m.type==='ballistic_missiles'?'#ffffff':'#ff5b52';
+function m3Mark(b,m,gk){
+  const rot=b.g.querySelector('.rot'); let s=null;
+  if(m3Ok()&&!m.status&&(gk==='nofront'?!M3.rm.matches:M3_KEYS.has(gk))){
+    // the colours: the silhouette's own fill and stroke, read with its blink paused, again only when the mark's classes or
+    // the look change
+    const sig=b.g.getAttribute('class').replace(/\s*\bm3on\b/,'')+'|'+document.body.className;
+    if(b.m3sig!==sig){ b.m3sig=sig; const el=rot.querySelector('.glyph:not(.m3)'); b.m3col=b.m3line='';
+      if(el){ el.style.animation='none'; const cs=getComputedStyle(el); b.m3col=cs.fill; b.m3line=/^rgb/.test(cs.stroke)?cs.stroke:''; el.style.animation=''; } }
+    if(b.m3col&&/^(rgb|#)/.test(b.m3col)){ s=m3Sheet(gk==='nofront'?m3Key(m):gk,gk==='nofront'?'spin':'top',b.m3col,M3PX,b.m3line);
+      m3Sheet(m3Key(m),'spin',m3IcoCol(m),M3IPX); }   // and the card's, ready before the mark is touched
+  }
+  const id=s?s.url:''; if(b.m3id===id) return; b.m3id=id;
+  const old=rot.querySelector('.m3'); if(old) old.remove();
+  b.g.classList.toggle('m3on',!!s);
+  // the <g> takes the silhouette's glow, fade and blink (.glyph); the <svg> inside is the window on the strip — kept apart,
+  // because a filter on the <svg> itself makes Chromium stop clipping it (the whole strip showed across the map)
+  if(s) rot.insertAdjacentHTML('beforeend',`<g class="m3 glyph"><svg class="m3v" x="-14" y="-14" width="28" height="28" viewBox="0 0 ${s.px} ${s.px}" aria-hidden="true"><image class="m3i" href="${s.url}" width="${s.px*s.n}" height="${s.px}" style="animation-duration:${s.dur}s;animation-timing-function:steps(${s.n})"/></svg></g>`);
+}
+// the card and the sheet: the model turning, in the type's colour ('' until its strip is made — then the silhouette)
+function m3Ico(m,sz){ if(!m3Ok()||!m||m.status) return ''; const s=m3Sheet(m3Key(m),'spin',m3IcoCol(m),M3IPX); if(!s) return '';
+  return `<span class="m3ico" style="width:${sz}px;height:${sz}px;background-image:url(${s.url});background-size:${s.n*100}% 100%;animation-duration:${s.dur}s;animation-timing-function:steps(${s.n},jump-none)" aria-hidden="true"></span>`; }
 // Outcomes the map no longer draws.
 //   clear  — a channel writing "чисто" is not an all-clear. It painted a green ✓ that read as the raid being
 //            over while the official alert was still red, and only the official alert may say that. It still
@@ -2617,6 +2679,8 @@ const HIDDEN_STATUS=new Set(['clear','fire','damage']);
 let LBLBOX={sig:'',boxes:[]};   // threat labels on screen (px from the map's corner), set by tick(), read by layoutTownLabels()
 function tick(){
   if(!MAP){setTimeout(tick,300);return;}
+  if(!M3.state&&MK.length&&MODE!=='night'&&!document.body.classList.contains('lite')) m3Start();   // 1.58.45: three.js only once there is
+  // a target to draw in a look that shows it — never before the map
   // An explosion is a moment, not a state. Left on the map for 25 minutes it read as "it is still going on
   // there", and during a raid the map filled with bursts that had already finished. Ten minutes, then it
   // belongs to the history layer — which is where you go to ask what happened, not what is happening.
@@ -2732,8 +2796,9 @@ function tick(){
     b.g.dataset.tx=gx.toFixed(3); b.g.dataset.ty=gy.toFixed(3);
     b.g.setAttribute('transform',`translate(${gx.toFixed(3)} ${gy.toFixed(3)})`);
     // a later post can add the course that the first one lacked: swap the blind mark for a pointed one
-    {const gk=glyphKey(m); if(b.gk!==gk){b.gk=gk; b.g.querySelector('.rot').innerHTML=G[gk];}
-     const ad=asDrone(m); b.g.classList.toggle('unknown',m.type==='unknown'&&!ad); b.g.classList.toggle('drones',m.type==='drones'||ad);}
+    {const gk=glyphKey(m); if(b.gk!==gk){b.gk=gk; b.m3id=b.m3sig=''; b.g.querySelector('.rot').innerHTML=G[gk];}
+     const ad=asDrone(m); b.g.classList.toggle('unknown',m.type==='unknown'&&!ad); b.g.classList.toggle('drones',m.type==='drones'||ad);
+     m3Mark(b,m,gk);}     // 1.58.45: the 3D model over the silhouette (the M3 block)
     // The figure-of-eight loiter is gone. It was there to say "the exact point is not known", but an
     // animation reads as observed motion — a drone visibly flying a path it was never reported flying.
     // The uncertainty it was standing in for is said properly now: by the ring, by the confidence, and by
@@ -2943,7 +3008,7 @@ function courseHtml(m,inb){ if(m.status||m.endedBy) return '';
 function showTip(m,e){
   const cur=MK.find(x=>x.id===m.id)||m; const [x,y]=posOf(cur,Date.now()); const info=inboundInfo(cur,x,y);
   const th=THREAT[cur.type]||THREAT.unknown;
-  const title=cur.status?`${statusIco(cur.status)} ${statusName(cur.status)}`:`${TAGS_SHOWN&&cur.tag?`<span class="tagid">${esc(cur.tag.id)}</span> `:''}${thrIco(cur.type)}${cur.type==='drones'&&cur.jet?t('k_jet'):th[1]}${cur.count>1?' ×'+cur.count:''}`;
+  const title=cur.status?`${statusIco(cur.status)} ${statusName(cur.status)}`:`${TAGS_SHOWN&&cur.tag?`<span class="tagid">${esc(cur.tag.id)}</span> `:''}${m3Ico(cur,28)||thrIco(cur.type)}${cur.type==='drones'&&cur.jet?t('k_jet'):th[1]}${cur.count>1?' ×'+cur.count:''}`;
   const where=cur.place==='область'?oblWhere(cur):pn(cur.place);
   const ev=cur.evidence||{};
   // 1.50.2: a mark drawn at the town it is heading for was "spotted near" that town — "2 реактиви у бік Києва з півдня"
@@ -3004,7 +3069,7 @@ function openSheet(id){
   const alt=m.alt&&!m.status?m.alt:null, altF=alt&&altNow(m);     // 1.56.2: the chip only while the report is 4 minutes old at most
   const ALTL={descending:t('alt_desc_l'),climbing:t('alt_climb'),low:t('alt_low'),high:t('alt_high')};
   const altChip=!altF?'':alt&&alt.state==='descending'?` <span class="chip desc">↓ ${esc(t('alt_desc'))}</span>`:alt&&alt.m?` <span class="chip alt">~${alt.m} ${t('m_unit')}</span>`:alt&&alt.state?` <span class="chip">${esc(ALTL[alt.state]||alt.state)}</span>`:'';
-  $('sheetbody').innerHTML=`<div class="type">${kind}${m.count?` <span class="chip">×${m.count}</span>`:''}${altChip}${m.status?'':phaseChip(m)}${info.inbound&&!m.stale&&!closer?` <span class="chip red">${t('lb_tokyiv')}</span>`:''}<span class="chip ${CONF[overall][0]}" style="margin-left:auto">${cf(overall)}</span></div>
+  $('sheetbody').innerHTML=`<div class="type">${m3Ico(m,34)}${kind}${m.count?` <span class="chip">×${m.count}</span>`:''}${altChip}${m.status?'':phaseChip(m)}${info.inbound&&!m.stale&&!closer?` <span class="chip red">${t('lb_tokyiv')}</span>`:''}<span class="chip ${CONF[overall][0]}" style="margin-left:auto">${cf(overall)}</span></div>
     ${courseHtml(m,info.inbound&&!m.stale&&!closer)}
     <div class="kv1 muted">${src}</div>
     ${tagLine(m)}
