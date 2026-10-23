@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-23 (1.58.51)
+**Documented version: 1.58** · last updated 2026-10-23 (1.58.52)
 
 The repository is **Dread92/Heimdall-map**. The app's address is **https://heimdall.com.ua** (1.58.34, 18 October
 2026); the Fly app keeps its first name, `kyiv-air-watch-gb`, and its first address keeps working (§15 has the move).
@@ -2933,6 +2933,15 @@ to donate to keep the infrastructure and help the devs" (a Monobank jar, his pic
   military units, mobile air-defence teams, medics — not "the servers") / `sup_fund_qr` / `sup_fund_btn`, and its QR
   code, `static/pumb-qr.svg` (segno; decoded back to the link). The IBAN, the purpose, the NBU link and `nbu-qr.svg` are
   gone; PayPal and the owner's Monobank jar (when set in the dashboard) stay. No card number is written anywhere.
+- **1.58.52, Heimdall first** (the owner: "inside the Heimdall app the top priority should be supporting Heimdall — clean and
+  straightforward; clear primary and secondary actions, no mismatched yellows"): `supportSheet()` is three things, in this
+  order — the main card `.payc` (`sup_hd_h`, `sup_hd_b`: what the donations pay for; the QR code `static/heimdall-qr.svg`
+  of `CONTACT.fundHd`; the one primary button `.payb.pri`, `sup_hd_btn`; `sup_qr_pc`; the owner's Monobank jar, when set,
+  as a secondary button), the NGO's banner `.payngo` (`sup_ngo_h` + `sup_ngo_b`, `CONTACT.fundNgo`) and PayPal
+  (`sup_abroad`, `.payb.sec.pp`). Both PUMB links are checked against `mobile-app.pumb.ua/…` (`pumb()`) before they are
+  drawn. Each button names where it goes (`.payl`: "ПУМБ" / `sup_pumb`, "PayPal") — a plain name, not the brands' logos.
+  `CONTACT.fund`, `sup_fund*`, `sup_paypal`, `static/pumb-qr.svg`, `.supqr*`, `.suppp` and `.jarlink` are gone; so is the
+  footer under the cards (`footerHTML` stays on the help sheet).
 - **1.58.51, the Ukrainian wording** (the owner: "some automated translations in the forms and cards sound a bit clunky",
   string by string): the feedback form's text box (`fb_text_ph`), its contact field (`fb_contact`) and its line on what is
   sent (`fb_noplace`: the page, its language, the version and the phone's model — "your location is never sent"); and the

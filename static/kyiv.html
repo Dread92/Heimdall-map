@@ -292,7 +292,6 @@ body.lite .jarbtn{display:none}body.m-day .jarbtn{color:#12161c}body.m-night .ja
   body.m-day .jarbtn{background:#fff;border-color:#7d858f}body.m-night .jarbtn{background:#070a0f;border-color:#1c242f}
   .jarhint{bottom:64px}.jarhint::after{right:16px}.attrib.long:not([hidden])~.jarhint{bottom:118px}
 }
-.jarlink{display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px;margin:12px 0 4px;border-radius:var(--r);background:#f2c14e;color:#12161c!important;font-weight:700;text-decoration:none}
 .fbk{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}.fbk button{min-height:38px;padding:0 12px;border:1px solid var(--line2);border-radius:var(--r);background:transparent;color:var(--ink);font:inherit;font-size:13px}.fbk button.on{background:var(--ink);color:var(--bg,#0b0d11);border-color:var(--ink)}
 .fbf textarea,.fbf input{width:100%;box-sizing:border-box;margin:6px 0;padding:10px;border:1px solid var(--line2);border-radius:var(--r);background:rgba(255,255,255,.04);color:var(--ink);font:inherit;font-size:16px}.fbf textarea{min-height:120px;resize:vertical}
 .fbf .hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}.fbf .fbm{min-height:20px;margin:6px 0;font-size:13px}.fbf .fbm.ok{color:#5fd39a}.fbf .fbm.bad{color:#ff8a80}
@@ -818,12 +817,29 @@ body.lite .leader{stroke:#fff;stroke-opacity:.6}body.lite .anchor{fill:#fff}
 @media (min-width:1000px){#updbar,#pwabar{left:auto;right:calc(var(--rw) + 16px);width:360px;bottom:16px}}
 .sup{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);padding:8px 10px;margin-top:8px;font:600 14px var(--mono);word-break:break-all}
 .sup b{flex:1;font-weight:600;color:var(--ua-yellow)}
-.suph{margin-top:14px;font:700 12px/1.3 var(--sans);letter-spacing:.04em;text-transform:uppercase;color:var(--ink)}.supn{color:var(--ink)}
-.sup.supt{font:500 13.5px/1.4 var(--sans);word-break:normal}.sup.supt b{color:var(--ink)}   /* 1.58.49: the payment purpose: words, not a number */
-.supqr{display:flex;align-items:center;gap:14px;margin-top:10px}.supqri{flex:none;display:block;line-height:0;background:#fff;padding:6px;border-radius:var(--r)}
-.supqri img{width:120px;height:120px;display:block;image-rendering:pixelated}.supqrt{display:grid;gap:10px;min-width:0}
-.supqrb{display:flex;align-items:center;justify-content:center;min-height:44px;padding:0 12px;border-radius:var(--r);background:var(--ink);color:var(--bg,#0b0d11)!important;font:700 14px var(--sans);text-decoration:none;text-align:center}
-body.lite .supqri{display:none}.suppp{margin-top:8px;background:#ffc439;color:#111!important}.supqrb.supfund{background:var(--ua-yellow);color:#111!important}   /* 1.58.51: the fundraiser's button, the sheet's one call to act */
+/* 1.58.52, the owner: "inside the app the top priority should be supporting Heimdall — clean and straightforward; clear
+   primary and secondary actions, no mismatched yellows". The main card (Heimdall's fundraiser: what it pays for, its QR
+   code for a computer, the one bright button), the NGO's fundraiser under it as a quiet banner, then PayPal from abroad.
+   Each button names where it goes (ПУМБ, PayPal) — a plain name, not the brand's logo. */
+.payc{margin-top:12px;padding:12px;border:1px solid var(--line2);border-left:3px solid var(--ua-yellow);border-radius:var(--r);background:var(--panel)}
+.paych{font:800 15px/1.25 var(--sans);color:var(--ink)}
+.paycb{margin-top:6px;font:500 13.5px/1.45 var(--sans);color:var(--ink2)}
+.paycr{display:flex;align-items:center;gap:12px;margin-top:12px}
+.payqr{flex:none;display:block;line-height:0;background:#fff;padding:5px;border-radius:var(--r)}
+.payqr img{width:96px;height:96px;display:block;image-rendering:pixelated}
+.paycs{flex:1;min-width:0;display:grid;gap:8px}.payqt{font-size:12px;line-height:1.35}
+.payb{display:flex;align-items:center;justify-content:center;gap:10px;min-height:48px;padding:0 14px;border-radius:var(--r);font:700 15px/1.2 var(--sans);text-decoration:none;text-align:center;-webkit-tap-highlight-color:transparent}
+.payb.pri{background:var(--ua-yellow);border:1px solid var(--ua-yellow);color:#111!important}
+.payb.sec{background:transparent;border:1px solid var(--line2);color:var(--ink)!important}
+.payb:active,.payngo:active{transform:scale(.985)}
+.payl{flex:none;font:800 10.5px/1 var(--sans);font-style:normal;letter-spacing:.04em;padding:4px 6px;border-radius:4px;background:rgba(0,0,0,.14)}
+.payb.sec .payl,.payngo .payl{background:rgba(255,255,255,.08);color:var(--ink2)}body.m-day .payb.sec .payl,body.m-day .payngo .payl{background:rgba(0,0,0,.07)}
+.payngo{display:flex;align-items:center;gap:12px;margin-top:10px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r);color:var(--ink2)!important;text-decoration:none;font:500 12.5px/1.45 var(--sans)}
+.payngo b{font-weight:700;color:var(--ink)}.payngoa{flex:none;display:flex;align-items:center;gap:4px;color:var(--ink)}
+.payngoa svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.payab{margin-top:16px;font:700 11px/1 var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)}.payb.pp{margin-top:7px}
+body.lite .payqr{display:none}
+@media (max-width:360px){.payqr img{width:80px;height:80px}.payb{font-size:14px;padding:0 10px}}
 .supb{width:100%;text-align:left;color:inherit;cursor:pointer;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;transition:border-color .15s,background-color .15s}
 .supb:active{transform:scale(.985)}.supb.ok{border-color:#2fbf71;background:rgba(47,191,113,.12)}
 .supc{display:flex;align-items:center;gap:5px;flex:none;font:600 12px var(--sans);color:var(--ink2)}.supb.ok .supc{color:#2fbf71}
@@ -4093,23 +4109,26 @@ function supportSheet(){
   // button: a tap copies it, and so does pressing and holding it
   const row=(label,addr,id,shown,cls)=>`<div class="kv1 muted" style="margin-top:10px">${esc(label)}</div>
     <button type="button" class="sup supb${cls?' '+cls:''}" data-copy="${esc(addr)}" id="${id}" aria-label="${esc(t('sup_copy')+' — '+label)}"><b>${esc(shown||addr)}</b><span class="supc"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="1.5"/><path d="M16 8V5.5A1.5 1.5 0 0 0 14.5 4h-9A1.5 1.5 0 0 0 4 5.5v9A1.5 1.5 0 0 0 5.5 16H8"/></svg><span>${t('sup_copy')}</span></span></button>`;
-  // 1.58.51: the NGO's fundraiser (CONTACT.fund, a PUMB payment page — its head: "the link takes the user straight to the
-  // payment page"), with its QR code for a computer's screen; it replaced 1.58.49's IBAN block. Then PayPal, from abroad
-  const fund=/^https:\/\/mobile-app\.pumb\.ua\/[A-Za-z0-9]{4,32}$/.test(CONTACT.fund||'')?CONTACT.fund:'';
+  // 1.58.52: Heimdall's fundraiser first (CONTACT.fundHd: the main card, its QR code, the bright button), the NGO's under it
+  // (CONTACT.fundNgo: a quiet banner), PayPal from abroad last. Only a PUMB payment page is ever linked from these two.
+  const pumb=u=>/^https:\/\/mobile-app\.pumb\.ua\/[A-Za-z0-9]{4,32}$/.test(u||'')?u:'';
+  const hd=pumb(CONTACT.fundHd), ngo=pumb(CONTACT.fundNgo);
   const pp=/^https:\/\/www\.paypal\.com\/donate\/\?hosted_button_id=[A-Z0-9]{8,20}$/.test(CONTACT.paypal||'')?CONTACT.paypal:'';   // PayPal's own page
-  // 1.58.46: the owner's Monobank jar (the dashboard's; /api/donate) above the addresses
+  // 1.58.46: the owner's Monobank jar (the dashboard's; /api/donate): in the main card, under its button, when it is set
   const jar=DONATE_JAR&&/^https:\/\/send\.monobank\.ua\/jar\/[A-Za-z0-9]{6,24}$/.test(DONATE_JAR)?DONATE_JAR:'';
+  const ext=`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>`;
   $('sheetbody').innerHTML=`<div class="type">${t('sup_title')}</div>
-    <div class="kv1">${esc(jar?t('jar_why'):t('sup_free'))}</div>
-    ${jar?`<a class="jarlink" href="${esc(jar)}" target="_blank" rel="noopener noreferrer">${esc(t('jar_btn'))}</a>`:''}
-    ${fund?`<div class="suph">${esc(t('sup_fund'))}</div>
-      <div class="kv1 muted" style="margin-top:6px">${esc(t('sup_fund_for'))}</div>
-      <div class="supqr"><a class="supqri" href="${esc(fund)}" target="_blank" rel="noopener noreferrer" aria-label="${esc(t('sup_fund_btn'))}"><img src="/static/pumb-qr.svg" width="132" height="132" alt=""></a>
-        <div class="supqrt"><div class="kv1 muted">${esc(t('sup_fund_qr'))}</div><a class="supqrb supfund" href="${esc(fund)}" target="_blank" rel="noopener noreferrer">${esc(t('sup_fund_btn'))}</a></div></div>`:''}
-    ${pp?`<div class="suph">${esc(t('sup_paypal'))}</div><a class="supqrb suppp" href="${esc(pp)}" target="_blank" rel="noopener noreferrer">${esc(t('sup_pp_btn'))}</a>`
-        :row(t('sup_paypal'),CONTACT.ngo,'cp1')}
-    <div class="kv1 muted" style="margin-top:8px">${esc(t('sup_thanks'))}</div>
-    ${footerHTML({free:false,build:MYBUILD})}
+    ${hd?`<div class="payc">
+      <div class="paych">${esc(t('sup_hd_h'))}</div>
+      <div class="paycb">${esc(t('sup_hd_b'))}</div>
+      <div class="paycr"><a class="payqr" href="${esc(hd)}" target="_blank" rel="noopener noreferrer" aria-label="${esc(t('sup_hd_btn'))}"><img src="/static/heimdall-qr.svg" width="96" height="96" alt=""></a>
+        <div class="paycs"><a class="payb pri" href="${esc(hd)}" target="_blank" rel="noopener noreferrer"><span>${esc(t('sup_hd_btn'))}</span><i class="payl">${esc(t('sup_pumb'))}</i></a>
+          <div class="kv1 muted payqt">${esc(t('sup_qr_pc'))}</div>
+          ${jar?`<a class="payb sec" href="${esc(jar)}" target="_blank" rel="noopener noreferrer">${esc(t('jar_btn'))}</a>`:''}</div></div></div>`:''}
+    ${ngo?`<a class="payngo" href="${esc(ngo)}" target="_blank" rel="noopener noreferrer"><span><b>${esc(t('sup_ngo_h'))}</b> ${esc(t('sup_ngo_b'))}</span><span class="payngoa"><i class="payl">${esc(t('sup_pumb'))}</i>${ext}</span></a>`:''}
+    <div class="payab">${esc(t('sup_abroad'))}</div>
+    ${pp?`<a class="payb sec pp" href="${esc(pp)}" target="_blank" rel="noopener noreferrer"><span>${esc(t('sup_pp_btn'))}</span><i class="payl">PayPal</i></a>`:row('PayPal',CONTACT.ngo,'cp1')}
+    <div class="kv1 muted" style="margin-top:12px">${esc(t('sup_thanks'))}</div>
     <div style="margin-top:10px;display:flex;justify-content:space-between;align-items:center">
       <button class="tgl" id="donnever" style="font-size:11px">${t('sup_never')}</button>
       <button class="b-t" onclick="closeSheet()">${t('btn_close')}</button></div>`;

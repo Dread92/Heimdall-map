@@ -50,7 +50,7 @@ def test_one_footer_for_every_screen():
     i = PAGE.index("function paintFooters(){")
     body = PAGE[i:PAGE.index("\n}", i)]
     assert "footerHTML({support:true,build:MYBUILD})" in body and "'discfoot','panelfoot'" in body
-    assert PAGE.count("${footerHTML(") == 2                         # the support sheet and the help sheet
+    assert PAGE.count("${footerHTML(") == 1                         # the help sheet (1.58.52: the support sheet is the cards alone)
     assert "footerHTML({logos:false})" in LIGHT and 'id="hfoot"' in LIGHT
     # what it says, in order: free service + support, share, ©, built by · version · build, community on its own line
     f = I18N[I18N.index("function footerHTML("):I18N.index("function shareURL(")]

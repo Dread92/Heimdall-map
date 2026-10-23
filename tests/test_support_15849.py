@@ -23,8 +23,8 @@ def test_one_button_a_row_and_press_and_hold():
     # PayPal for donors abroad: its donation page ("two options — the monobank link, the PayPal link"), the address if none
     assert "paypal:'https://www.paypal.com/donate/?hosted_button_id=2KGHU5SWLAALE'," in I18N
     assert "/^https:\\/\\/www\\.paypal\\.com\\/donate\\/\\?hosted_button_id=[A-Z0-9]{8,20}$/.test(CONTACT.paypal||'')" in sup
-    assert '<a class="supqrb suppp" href="${esc(pp)}" target="_blank" rel="noopener noreferrer">' in sup
-    assert ":row(t('sup_paypal'),CONTACT.ngo,'cp1')}" in sup and len(re.findall(r"\bsup_pp_btn:'", I18N)) == 3
+    assert '<a class="payb sec pp" href="${esc(pp)}" target="_blank" rel="noopener noreferrer">' in sup   # 1.58.52's button
+    assert ":row('PayPal',CONTACT.ngo,'cp1')}" in sup and len(re.findall(r"\bsup_pp_btn:'", I18N)) == 3
 
 
 def test_the_jar_on_a_phone_is_one_more_map_control():

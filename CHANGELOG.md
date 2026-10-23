@@ -2,6 +2,20 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.52 — 2026-10-23
+
+The support page puts Heimdall first (the owner: "inside the Heimdall app the top priority should definitely be supporting
+Heimdall … clean and straightforward").
+
+- **Main card: "Збір на розвиток Heimdall"** — what the donations pay for (servers, hosting, subscriptions, testing, the
+  team, the whole development cycle, no ads), its QR code for a computer, and the page's one bright button, "Підтримати
+  Heimdall", to its PUMB payment page.
+- **Under it, a quiet banner: "Збір ГО «07300»"** — logistics, transfers, repairs, fuel, tyres and parts for the Armed
+  Forces' vehicles; drones, optics, generators, power banks and more — one tap to its own payment page.
+- **At the bottom, PayPal** for donations from abroad.
+- **One yellow**: the primary button is yellow, every other one outlined; each says where it goes ("ПУМБ", "PayPal").
+  The share-and-credits footer is no longer under the cards.
+
 ## 1.58.51 — 2026-10-23
 
 The NGO's fundraiser in one tap, and clearer Ukrainian in the feedback form and the shelter row.
