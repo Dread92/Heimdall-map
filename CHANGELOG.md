@@ -2,6 +2,21 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.54 — 2026-10-23
+
+- **The bot's line on the dashboard says how it is now** (the owner: "i keep seeing telegram bot failing"). One long
+  poll that could not reach Telegram turned "telegram bot (private messages)" red until the bot next sent a message —
+  the poll 5 s later, which worked, did not turn it back. Now each of its threads fails and recovers by itself: red only
+  while it keeps failing (3 times in a row, or 2 minutes), back to OK at its next call that works, and the end of a
+  failure is logged ("bot: updates working again after 4 failure(s) in 130 s").
+- **"Last check" is its last answered poll** (it was its last alert: "never" while none had gone out); the last alert's
+  time is in the detail.
+- **The error says what the network did** — "getUpdates: network — URLError (timed out)", "(DNS: gaierror -3)",
+  "(connection reset)" — from the error's class and number, never its text (which can hold the address, token included),
+  and how long: "— 3 failure(s) in a row since 14:05".
+- The long poll's socket waits 20 s past Telegram's 25 (it waited 5), and a message lost to the network is sent once
+  more 5 s later.
+
 ## 1.58.53 — 2026-10-23
 
 - **The jar without its box** (the owner: "the jar has some black background which looks bad"): on a phone and on a

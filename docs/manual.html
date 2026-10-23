@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Heimdall (Kyiv Air Watch) — the full technical documentation, with a map of the system.">
-<meta name="heimdall-version" content="1.58.53">
-<meta name="heimdall-docs" content="44feddc6d37e2800">
+<meta name="heimdall-version" content="1.58.54">
+<meta name="heimdall-docs" content="9946530790c37b0e">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Heimdall Technical Manual</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -237,7 +237,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
 <header class="top">
   <div class="wrap">
     <a class="brand" href="#top"><b>Heimdall</b><span>Technical manual</span></a>
-    <span class="ver">1.58.53</span>
+    <span class="ver">1.58.54</span>
     <nav class="nav" aria-label="Sections">
       <a href="#map">Map</a><a href="#journeys">Journeys</a><a href="#rules">Rules</a><a href="#reference">Reference</a><a href="#safety">Safety</a>
     </nav>
@@ -256,7 +256,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
       <h1 class="title">How Heimdall works</h1>
       <p class="lead">An unofficial air-threat map for Kyiv and the oblasts around it. One Python process reads the official
       alert data and the channels that track drones and missiles, stores every post before it reads it, rebuilds the map
-      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.53, 23 October 2026:
+      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.54, 23 October 2026:
       the map first, then everything in full.</p>
     </div>
     <dl class="facts">
@@ -647,7 +647,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
     <div class="doc" id="doc">
 <section class="part" id="tech" data-label="Reference"><p class="partlabel">Part I · The reference</p>
 <h1 id="heimdall--technical-documentation">Heimdall — technical documentation</h1>
-<p><strong>Documented version: 1.58</strong> · last updated 2026-10-23 (1.58.53)</p>
+<p><strong>Documented version: 1.58</strong> · last updated 2026-10-23 (1.58.54)</p>
 <p>The repository is <strong>Dread92/Heimdall-map</strong>. The app's address is <strong>https://heimdall.com.ua</strong> (1.58.34, 18 October
 2026); the Fly app keeps its first name, <code>kyiv-air-watch-gb</code>, and its first address keeps working (§15 has the move).</p>
 <p>This is the complete technical reference: what runs, where the data comes from, how a Telegram post becomes a
@@ -3188,6 +3188,15 @@ for 10 min (<code>END_AFTER_S</code>), &quot;⏹ Нових дописів пі�
 <p><strong>Sending</strong>: one queue (<code>TgBot.out</code>), at most 25 calls a second (<code>RATE_PER_S</code>); its answers to a user go first; a 429's
 <code>retry_after</code> is obeyed; an error leaving <code>BotAPI</code> names the method and Telegram's words, never the token. A second
 program reading the bot's updates (a webhook, another server: 409) is waited for, and the dashboard says so.</p>
+<p><strong>Health</strong> (1.58.54, the owner: &quot;i keep seeing telegram bot failing&quot;): each thread — <code>updates</code>, <code>alerts</code>, <code>sending</code> —
+runs one turn at a time (<code>TgBot._turn</code>): a turn that raises is kept in <code>stats[&quot;down&quot;][name]</code> (how many in a row, since
+when, Telegram's words), the next turn that works removes it (<code>_up</code>); a message Telegram refused is kept as <code>message</code>
+until one goes. The dashboard's line is red only while one of them is serious (<code>FAIL_N</code> = 3 in a row, or <code>FAIL_S</code> = 2 min)
+or another reader holds the updates: &quot;updates: getUpdates: network — URLError (timed out) — 3 failure(s) in a row since
+14:05&quot;. Its &quot;last check&quot; is the last answered long poll (<code>stats[&quot;polled&quot;]</code>); the last alert's time is in the detail. A
+network error names its cause from the error's class and number (<code>chanpost.net_why</code>: timed out, DNS, TLS, connection
+refused / reset, <code>OSError 101</code>), never its text. <code>BotAPI</code> waits for a long poll its <code>timeout</code> + 20 s; a message lost to
+the network goes once more 5 s later (<code>_failed</code>). Before: one failed call left the line red until a message went out.</p>
 <p><strong>Dashboard</strong>: Live → &quot;Telegram bot — ON / OFF&quot; (<code>POST /api/admin/bot_switch</code> 🔒, <code>kv</code> <code>bot_on</code>): off, no alert goes
 out from its next pass; it still answers its commands, so <code>/stop</code> always works. The block shows its address
 (t.me/@name), how many users and places, the alerts sent; the official sources list &quot;telegram bot (private messages)&quot;.
@@ -6062,7 +6071,7 @@ d'alerte ne sont pas des préférences de style.</p>
 </section>
     </div>
   </div>
-  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.53, 23 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
+  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.54, 23 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
 </main>
 
 <script>

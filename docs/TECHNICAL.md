@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-23 (1.58.53)
+**Documented version: 1.58** · last updated 2026-10-23 (1.58.54)
 
 The repository is **Dread92/Heimdall-map**. The app's address is **https://heimdall.com.ua** (1.58.34, 18 October
 2026); the Fly app keeps its first name, `kyiv-air-watch-gb`, and its first address keeps working (§15 has the move).
@@ -2113,6 +2113,16 @@ for 10 min (`END_AFTER_S`), "⏹ Нових дописів після HH:MM не
 **Sending**: one queue (`TgBot.out`), at most 25 calls a second (`RATE_PER_S`); its answers to a user go first; a 429's
 `retry_after` is obeyed; an error leaving `BotAPI` names the method and Telegram's words, never the token. A second
 program reading the bot's updates (a webhook, another server: 409) is waited for, and the dashboard says so.
+
+**Health** (1.58.54, the owner: "i keep seeing telegram bot failing"): each thread — `updates`, `alerts`, `sending` —
+runs one turn at a time (`TgBot._turn`): a turn that raises is kept in `stats["down"][name]` (how many in a row, since
+when, Telegram's words), the next turn that works removes it (`_up`); a message Telegram refused is kept as `message`
+until one goes. The dashboard's line is red only while one of them is serious (`FAIL_N` = 3 in a row, or `FAIL_S` = 2 min)
+or another reader holds the updates: "updates: getUpdates: network — URLError (timed out) — 3 failure(s) in a row since
+14:05". Its "last check" is the last answered long poll (`stats["polled"]`); the last alert's time is in the detail. A
+network error names its cause from the error's class and number (`chanpost.net_why`: timed out, DNS, TLS, connection
+refused / reset, `OSError 101`), never its text. `BotAPI` waits for a long poll its `timeout` + 20 s; a message lost to
+the network goes once more 5 s later (`_failed`). Before: one failed call left the line red until a message went out.
 
 **Dashboard**: Live → "Telegram bot — ON / OFF" (`POST /api/admin/bot_switch` 🔒, `kv` `bot_on`): off, no alert goes
 out from its next pass; it still answers its commands, so `/stop` always works. The block shows its address

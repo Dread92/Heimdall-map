@@ -25,6 +25,8 @@ import http.client
 import json
 import math
 import os
+import socket
+import ssl
 import threading
 import time
 import urllib.error
@@ -350,6 +352,33 @@ def link_outcomes(marks, extra=()):
     return ended
 
 
+def net_why(e):
+    """1.58.54: what a network error was — " (timed out)", " (DNS: gaierror -3)", " (connection reset)" — from its class and
+    its number only: never its text, which can hold the address (and the token in it). "" when nothing more is known."""
+    r = getattr(e, "reason", e)
+    if isinstance(r, str):
+        return " (timed out)" if "timed out" in r.lower() else ""
+    if not isinstance(r, BaseException):
+        return ""
+    if isinstance(r, (socket.timeout, TimeoutError)):
+        return " (timed out)"
+    if isinstance(r, socket.gaierror):
+        return f" (DNS: gaierror {r.errno})" if isinstance(r.errno, int) else " (DNS)"
+    if isinstance(r, ssl.SSLCertVerificationError):
+        return " (TLS certificate)"
+    if isinstance(r, ssl.SSLError):
+        return " (TLS)"
+    words = {ConnectionRefusedError: "connection refused", ConnectionResetError: "connection reset",
+             ConnectionAbortedError: "connection aborted", BrokenPipeError: "connection closed"}
+    for cls, w in words.items():
+        if isinstance(r, cls):
+            return f" ({w})"
+    if r is e:
+        return ""
+    no = getattr(r, "errno", None)
+    return f" ({type(r).__name__}{' ' + str(no) if isinstance(no, int) else ''})"
+
+
 class TgError(Exception):
     def __init__(self, code, desc, retry_after=None):
         super().__init__(f"{code} {desc}")
@@ -373,8 +402,10 @@ class BotAPI:
             body, ctype = json.dumps(fields).encode(), "application/json"
         req = urllib.request.Request(f"{self.BASE}/bot{self._token}/{method}", data=body,
                                      headers={"Content-Type": ctype, "User-Agent": "heimdall-channel/1.0"})
+        # 1.58.54: a long poll is answered after up to its own `timeout` — the socket waits 20 s more (it waited 5)
+        wait = max(self.timeout, int(fields.get("timeout") or 0) + 20) if method == "getUpdates" else self.timeout
         try:
-            with urllib.request.urlopen(req, timeout=self.timeout, context=self.ssl_ctx) as r:
+            with urllib.request.urlopen(req, timeout=wait, context=self.ssl_ctx) as r:
                 out = json.loads(r.read() or b"{}")
         except urllib.error.HTTPError as e:
             try:
@@ -382,7 +413,7 @@ class BotAPI:
             except ValueError:
                 out = {"ok": False, "error_code": e.code, "description": "HTTP error"}
         except (urllib.error.URLError, OSError, ValueError, http.client.HTTPException) as e:
-            raise TgError(0, f"{method}: network — {type(e).__name__}") from None
+            raise TgError(0, f"{method}: network — {type(e).__name__}{net_why(e)}") from None
         if not out.get("ok"):
             ra = (out.get("parameters") or {}).get("retry_after")
             raise TgError(out.get("error_code") or 0, f"{method}: {out.get('description') or 'failed'}", ra)

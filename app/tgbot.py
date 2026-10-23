@@ -74,7 +74,10 @@ END_AFTER_S = 10 * 60             # no new report for this long: "no new reports
 CHAT_GAP_S = 20                   # one alert message a chat at most this often (a swarm is one message); a missile waits not
 KEEP_S = 6 * 3600                 # what is kept of the targets told
 TICK_S = 5
-POLL_S = 25                       # getUpdates' long poll (BotAPI waits 30 s)
+POLL_S = 25                       # getUpdates' long poll (1.58.54: BotAPI waits 45 s for its answer)
+# 1.58.54, the owner: "i keep seeing telegram bot failing" — one failed call turned the dashboard red until a message went
+# out, though the next poll worked 5 s later. A thread is "failing" now while it keeps failing: 3 times in a row, or 2 min.
+FAIL_N, FAIL_S = 3, 120
 RATE_PER_S = 25                   # Telegram: about 30 messages a second in all, one a second in one chat
 IN_PER_MIN = 20                   # a chat's messages to the bot answered each minute (more are ignored)
 PICK_TTL_S = 15 * 60
@@ -547,7 +550,7 @@ class TgBot:
         self.offset = None
         self.username = None
         self.stats = {"alerts": 0, "closed": 0, "replies": 0, "errors": 0, "blocked": 0, "last_error": None, "last_alert": None,
-                      "failing": False, "conflict": False}
+                      "last_alert_t": None, "polled": None, "down": {}, "conflict": False}
         self.sent = self._load()
         self._dirty_at = None
 
@@ -605,7 +608,7 @@ class TgBot:
                 it["fields"]["photo"], it["files"] = self.photos[it["pk"]], None        # uploaded once: its file id since
             try:
                 r = self.api.call(it["method"], it["fields"], it.get("files"))
-                self.stats["failing"] = False
+                self._up("message")
             except TgError as e:
                 r = None
                 self._failed(it, e)
@@ -625,6 +628,11 @@ class TgBot:
                 it["retried"] = True
                 self.out.appendleft(it)
             return
+        if e.code == 0 and not it.get("retried"):         # 1.58.54: Telegram out of reach a moment — once more in 5 s
+            it["retried"] = True
+            self.pause_until = self.clock() + 5
+            self.out.appendleft(it)
+            return
         low = desc.lower()
         if e.code == 403 or "chat not found" in low or "user is deactivated" in low:
             self.forget(it["chat"])                        # blocked, or gone: what was kept of them goes
@@ -632,7 +640,7 @@ class TgBot:
             return
         if it["method"] in ("editMessageText", "answerCallbackQuery") and e.code == 400:
             return                                          # a button pressed twice, a message unchanged: nothing
-        self.stats.update(errors=self.stats["errors"] + 1, last_error=desc, failing=True)
+        self._down("message", desc)
         self.log("bot:", desc)
 
     def forget(self, chat):
@@ -647,15 +655,44 @@ class TgBot:
         self.chat_last.pop(chat, None)
         self._save(force=True)
 
+    # ---- 1.58.54: its health — each thread fails and recovers by itself ---------------------------------------------
+    def _down(self, name, what):
+        """A thread's call failed (or a message): counted, and kept until the same thread works again."""
+        now, d = self.clock(), self.stats["down"].get(name)
+        self.stats["down"][name] = {"n": (d["n"] + 1) if d else 1, "since": d["since"] if d else now, "error": what[:200]}
+        self.stats.update(errors=self.stats["errors"] + 1, last_error=f"{name}: {what}"[:200])
+
+    def _up(self, name):
+        """It worked: what it had failed goes. A failure long enough to have shown on the dashboard is logged as ended."""
+        now = self.clock()
+        if name == "updates":
+            self.stats["polled"] = datetime.fromtimestamp(now, timezone.utc).isoformat(timespec="seconds")
+        d = self.stats["down"].pop(name, None)
+        if d and self._serious(d, now):
+            self.log(f"bot: {name} working again after {d['n']} failure(s) in {int(now - d['since'])} s")
+
+    @staticmethod
+    def _serious(d, now):
+        return d["n"] >= FAIL_N or now - d["since"] >= FAIL_S
+
     def health(self):
-        st, c = self.stats, self.store.counts()
-        ok = not st["failing"] and not st["conflict"]
-        err = ("another program reads this bot's messages (getUpdates conflict)" if st["conflict"] else st["last_error"])
-        return {"name": "telegram bot (private messages)", "ok": ok, "last": st["last_alert"], "error": None if ok else err,
+        st, c, now = self.stats, self.store.counts(), self.clock()
+        bad = [(k, d) for k, d in dict(st["down"]).items() if self._serious(d, now)]
+        ok = not bad and not st["conflict"]
+        if st["conflict"]:
+            err = "another program reads this bot's messages (getUpdates conflict)"
+        elif bad:
+            k, d = bad[0]
+            err = f"{k}: {d['error']} — {d['n']} failure(s) in a row since {hhmm(d['since'])}"
+        else:
+            err = None
+        # "last check": its last answered long poll (1.58.38–1.58.53: its last alert, "never" while none had gone out)
+        return {"name": "telegram bot (private messages)", "ok": ok, "last": st["polled"], "error": err,
                 "note": ("switched OFF on the dashboard · " if not self.enabled() else "")
                         + (f"@{self.username} · " if self.username else "")
-                        + f"users {c['with_places']} · places {c['places']} · alerts {st['alerts']} · closed {st['closed']}"
-                        + f" · answers {st['replies']}" + (f" · left {st['blocked']}" if st["blocked"] else "")}
+                        + f"users {c['with_places']} · places {c['places']} · alerts {st['alerts']}"
+                        + (f" (last {hhmm(st['last_alert_t'])})" if st["last_alert_t"] else "")
+                        + f" · closed {st['closed']} · answers {st['replies']}" + (f" · left {st['blocked']}" if st["blocked"] else "")}
 
     def status(self):
         return {"username": self.username, **self.store.counts(), "alerts": self.stats["alerts"]}
@@ -1090,6 +1127,7 @@ class TgBot:
         self.chat_last[chat] = now
         self.stats["alerts"] += 1
         self.stats["last_alert"] = datetime.fromtimestamp(now, timezone.utc).isoformat(timespec="seconds")
+        self.stats["last_alert_t"] = now
         if len(hits) == 1:
             h = hits[0]
             text = alert_text(h, lang, labels[h["place"]], self.public_url)
@@ -1166,20 +1204,30 @@ class TgBot:
                 self.log(f"bot: {name} setup failed —", type(e).__name__)
         said = (None, 0.0)
         while True:
-            try:
-                r = fn()
-                if r == -1:
-                    time.sleep(30)
-                    continue
-            except Exception as e:                          # the bot never stops the rest of the server
-                what = TOKEN_RX.sub("<token>", f"{type(e).__name__} {str(e)[:160]}")   # 1.58.46: never a token
-                self.stats.update(errors=self.stats["errors"] + 1, failing=True, last_error=f"{name}: {what}"[:200])
+            r, what = self._turn(name, fn)
+            if what:
                 if what != said[0] or time.time() - said[1] > 600:      # Telegram unreachable: once, not every 5 s
                     self.log(f"bot: {name} failed —", what)
                     said = (what, time.time())
                 time.sleep(5)
+            elif r == -1:
+                time.sleep(30)
+                continue
             if every:
                 time.sleep(every)
+
+    def _turn(self, name, fn):
+        """One turn of a thread, and its health (1.58.54): (what it returned, None), or (None, what failed)."""
+        try:
+            r = fn()
+        except Exception as e:                              # the bot never stops the rest of the server
+            # 1.58.46: never a token. 1.58.54: Telegram's words alone ("getUpdates: network — URLError (timed out)")
+            what = TOKEN_RX.sub("<token>", e.desc if isinstance(e, TgError) else f"{type(e).__name__} {str(e)[:160]}")
+            self._down(name, what)
+            return None, what
+        if r != -1:                                         # -1: another reader holds the updates (shown as a conflict)
+            self._up(name)                                  # a call that works ends its failure
+        return r, None
 
     def start(self):
         threading.Thread(target=self._loop, args=("updates", self.poll, 0, self.setup), daemon=True, name="bot-in").start()
