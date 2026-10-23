@@ -823,7 +823,7 @@ body.lite .leader{stroke:#fff;stroke-opacity:.6}body.lite .anchor{fill:#fff}
 .supqr{display:flex;align-items:center;gap:14px;margin-top:10px}.supqri{flex:none;display:block;line-height:0;background:#fff;padding:6px;border-radius:var(--r)}
 .supqri img{width:120px;height:120px;display:block;image-rendering:pixelated}.supqrt{display:grid;gap:10px;min-width:0}
 .supqrb{display:flex;align-items:center;justify-content:center;min-height:44px;padding:0 12px;border-radius:var(--r);background:var(--ink);color:var(--bg,#0b0d11)!important;font:700 14px var(--sans);text-decoration:none;text-align:center}
-body.lite .supqri{display:none}.suppp{margin-top:8px;background:#ffc439;color:#111!important}.sup.supi{flex-wrap:wrap;row-gap:4px;font-size:min(13px,3.4vw);letter-spacing:-.01em}.sup.supi b{flex:1 1 100%;white-space:nowrap}.sup.supi .supc{margin-left:auto}   /* the IBAN on one line, never broken */
+body.lite .supqri{display:none}.suppp{margin-top:8px;background:#ffc439;color:#111!important}.supqrb.supfund{background:var(--ua-yellow);color:#111!important}   /* 1.58.51: the fundraiser's button, the sheet's one call to act */
 .supb{width:100%;text-align:left;color:inherit;cursor:pointer;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;transition:border-color .15s,background-color .15s}
 .supb:active{transform:scale(.985)}.supb.ok{border-color:#2fbf71;background:rgba(47,191,113,.12)}
 .supc{display:flex;align-items:center;gap:5px;flex:none;font:600 12px var(--sans);color:var(--ink2)}.supb.ok .supc{color:#2fbf71}
@@ -4093,21 +4093,19 @@ function supportSheet(){
   // button: a tap copies it, and so does pressing and holding it
   const row=(label,addr,id,shown,cls)=>`<div class="kv1 muted" style="margin-top:10px">${esc(label)}</div>
     <button type="button" class="sup supb${cls?' '+cls:''}" data-copy="${esc(addr)}" id="${id}" aria-label="${esc(t('sup_copy')+' — '+label)}"><b>${esc(shown||addr)}</b><span class="supc"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="1.5"/><path d="M16 8V5.5A1.5 1.5 0 0 0 14.5 4h-9A1.5 1.5 0 0 0 4 5.5v9A1.5 1.5 0 0 0 5.5 16H8"/></svg><span>${t('sup_copy')}</span></span></button>`;
-  // 1.58.49: the NGO's account (CONTACT.iban: the IBAN shown in groups of four, copied whole), its name and the purpose;
-  // then PayPal for donors abroad
-  const ibanShown=String(CONTACT.iban||'').replace(/(.{4})/g,'$1 ').trim();
-  const qr=/^https:\/\/bank\.gov\.ua\/qr\/[A-Za-z0-9_-]{20,600}$/.test(CONTACT.ibanLink||'')?CONTACT.ibanLink:'';   // the NBU link: the bank app fills it in
+  // 1.58.51: the NGO's fundraiser (CONTACT.fund, a PUMB payment page — its head: "the link takes the user straight to the
+  // payment page"), with its QR code for a computer's screen; it replaced 1.58.49's IBAN block. Then PayPal, from abroad
+  const fund=/^https:\/\/mobile-app\.pumb\.ua\/[A-Za-z0-9]{4,32}$/.test(CONTACT.fund||'')?CONTACT.fund:'';
   const pp=/^https:\/\/www\.paypal\.com\/donate\/\?hosted_button_id=[A-Z0-9]{8,20}$/.test(CONTACT.paypal||'')?CONTACT.paypal:'';   // PayPal's own page
   // 1.58.46: the owner's Monobank jar (the dashboard's; /api/donate) above the addresses
   const jar=DONATE_JAR&&/^https:\/\/send\.monobank\.ua\/jar\/[A-Za-z0-9]{6,24}$/.test(DONATE_JAR)?DONATE_JAR:'';
   $('sheetbody').innerHTML=`<div class="type">${t('sup_title')}</div>
     <div class="kv1">${esc(jar?t('jar_why'):t('sup_free'))}</div>
     ${jar?`<a class="jarlink" href="${esc(jar)}" target="_blank" rel="noopener noreferrer">${esc(t('jar_btn'))}</a>`:''}
-    ${CONTACT.iban?`<div class="suph">${esc(t('sup_bank'))}</div>
-      <div class="kv1 muted" style="margin-top:6px">${esc(t('sup_recipient'))}: <b class="supn">${esc(CONTACT.ibanName)}</b></div>
-      ${qr?`<div class="supqr"><a class="supqri" href="${esc(qr)}" target="_blank" rel="noopener noreferrer" aria-label="${esc(t('sup_qr_btn'))}"><img src="/static/nbu-qr.svg" width="132" height="132" alt=""></a>
-        <div class="supqrt"><div class="kv1 muted">${esc(t('sup_qr'))}</div><a class="supqrb" href="${esc(qr)}" target="_blank" rel="noopener noreferrer">${esc(t('sup_qr_btn'))}</a></div></div>`:''}
-      ${row('IBAN',CONTACT.iban,'cpi',ibanShown,'supi')}${row(t('sup_purpose'),CONTACT.ibanPurpose,'cpp','','supt')}`:''}
+    ${fund?`<div class="suph">${esc(t('sup_fund'))}</div>
+      <div class="kv1 muted" style="margin-top:6px">${esc(t('sup_fund_for'))}</div>
+      <div class="supqr"><a class="supqri" href="${esc(fund)}" target="_blank" rel="noopener noreferrer" aria-label="${esc(t('sup_fund_btn'))}"><img src="/static/pumb-qr.svg" width="132" height="132" alt=""></a>
+        <div class="supqrt"><div class="kv1 muted">${esc(t('sup_fund_qr'))}</div><a class="supqrb supfund" href="${esc(fund)}" target="_blank" rel="noopener noreferrer">${esc(t('sup_fund_btn'))}</a></div></div>`:''}
     ${pp?`<div class="suph">${esc(t('sup_paypal'))}</div><a class="supqrb suppp" href="${esc(pp)}" target="_blank" rel="noopener noreferrer">${esc(t('sup_pp_btn'))}</a>`
         :row(t('sup_paypal'),CONTACT.ngo,'cp1')}
     <div class="kv1 muted" style="margin-top:8px">${esc(t('sup_thanks'))}</div>

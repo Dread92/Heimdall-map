@@ -2,6 +2,21 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.51 — 2026-10-23
+
+The NGO's fundraiser in one tap, and clearer Ukrainian in the feedback form and the shelter row.
+
+- **Support page: the NGO's fundraiser link** (its head, 23 Oct: "the official bank account is too long and asks a lot of
+  the user — the link takes them straight to the payment page"; the owner: "replace it with this, but keep PayPal"): "Збір
+  ГО «07300 — Люди для людей»", what it is for (military units, mobile air-defence teams and medics), one button to the
+  payment page, and its QR code for a computer's screen. It replaces the IBAN, the purpose and the NBU link. PayPal stays.
+
+- **Feedback form**: "Опишіть проблему або вашу ідею. Якщо це стосується позначки на мапі — вкажіть, де і коли ви її
+  бачили." in the text box; "Контакт для зворотного зв’язку (Telegram @username або email)"; and under it "Не вказуйте
+  свою адресу чи поточне місцеперебування. Разом із текстом передаються лише сторінка, її мова, версія та модель
+  телефону. Ваша геопозиція ніколи не передається."
+- **Shelter row**: "найближче укриття: 70 м" instead of "найближче будь-яке: 70 м".
+
 ## 1.58.50 — 2026-10-22
 
 Closing a banner, at a glance.

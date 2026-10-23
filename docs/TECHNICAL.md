@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-22 (1.58.50)
+**Documented version: 1.58** · last updated 2026-10-23 (1.58.51)
 
 The repository is **Dread92/Heimdall-map**. The app's address is **https://heimdall.com.ua** (1.58.34, 18 October
 2026); the Fly app keeps its first name, `kyiv-air-watch-gb`, and its first address keeps working (§15 has the move).
@@ -2926,6 +2926,17 @@ to donate to keep the infrastructure and help the devs" (a Monobank jar, his pic
   under 1000 px wide `#jarbtn` is one more map control — 44 × 44, the controls' dark face and line (white in the day
   look, dim at night), the turning jar alone at 38 px, no `jar_cap` word, no gold rim, no `jarglow`; the button keeps its
   name (`jar_aria`) and the first-visit line (`#jarhint`, moved down to point at it). A computer keeps 1.58.48's jar.
+- **1.58.51, the NGO's fundraiser instead of the bank transfer** (its head, 23 Oct: "for Heimdall we use the link, the QR
+  code… the official bank account is too long and asks a lot of the user; the link takes them straight to the payment
+  page"; the owner: "replace it with this, but keep PayPal"): `CONTACT.fund` (a PUMB payment page, checked against
+  `mobile-app.pumb.ua/…` before it is drawn), `sup_fund` / `sup_fund_for` (what the fundraiser is for, in its own words:
+  military units, mobile air-defence teams, medics — not "the servers") / `sup_fund_qr` / `sup_fund_btn`, and its QR
+  code, `static/pumb-qr.svg` (segno; decoded back to the link). The IBAN, the purpose, the NBU link and `nbu-qr.svg` are
+  gone; PayPal and the owner's Monobank jar (when set in the dashboard) stay. No card number is written anywhere.
+- **1.58.51, the Ukrainian wording** (the owner: "some automated translations in the forms and cards sound a bit clunky",
+  string by string): the feedback form's text box (`fb_text_ph`), its contact field (`fb_contact`) and its line on what is
+  sent (`fb_noplace`: the page, its language, the version and the phone's model — "your location is never sent"); and the
+  shelter row's "nearest of any kind" (`static/shelters.js`, `any1`: "найближче укриття:"). English and French unchanged.
 
 ## 11. Privacy and security
 
