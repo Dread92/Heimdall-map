@@ -74,8 +74,9 @@ def test_it_stays_light():
     # 1.58.34: the pins that exist and a "+"
     # 1.58.35 raised both by 0.4 KB: the audit — the settings carried in a link are checked one by one (their shapes)
     # 1.58.43 raised both by 0.3 KB: a shared link shows the logo, the title and a line (the og: tags — the owner)
-    assert page < 27_300, f"the light page is no longer light ({page} B gzipped)"
-    assert page + extra < 68_300, f"page + map data = {page + extra} B gzipped"   # 1.58.16: the same 0.6 KB
+    # 1.58.56 raised both by 0.1 KB: the near zone the reader chose on Tactical (10, 15 or 20 km) — its ring and its rows
+    assert page < 27_400, f"the light page is no longer light ({page} B gzipped)"
+    assert page + extra < 68_400, f"page + map data = {page + extra} B gzipped"   # 1.58.16: the same 0.6 KB
     # 1.29: the live line is allowed — the light variant only (alerts and marks, no feed, no raw events). An open
     # line costs the server nothing any more (one thread holds them all) and the phone ~100 bytes every 15 s,
     # against ~8 KB every 15 s for asking.

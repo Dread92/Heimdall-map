@@ -132,7 +132,7 @@ def test_the_bypass_survives_the_branch_for_markers_with_no_speed_model():
     early = early[:early.index("\n")]
     assert "immediate:imm" in early.replace(" ", ""), (
         "homeInfo's no-speed branch drops the bypass — ballistic markers go back to being filtered by radius")
-    assert "dist<10||imm" in early.replace(" ", "")
+    assert "dist<NEAR_R||imm" in early.replace(" ", "")              # 1.58.56: the reader's near zone (it was 10 km)
 
 
 def test_the_page_has_no_speed_for_ballistic_which_is_why_that_branch_matters():

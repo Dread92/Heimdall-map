@@ -2,6 +2,25 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.56 — 2026-10-24
+
+A reader's first minutes with the app on a phone ("the banner and the invitation to place a marker took almost the whole
+screen … there were difficulties placing the marker … the user must complete three steps").
+
+- **The first run in three steps.** On a phone with no pin, the notice is step 1 (its language list, "1/3", "I
+  understand — next"). Step 2 shows the map alone on the whole screen: zoom with two fingers (or the mouse wheel) and
+  tap your place; tap again to move the pin, at any zoom — or "Where I am now", or "Find an address". Step 3 shows your
+  near zone around the pin, 10, 15 or 20 km, and the approach signal's switch. "Skip" ends it; it comes only once.
+- **The near zone is yours: 10, 15 or 20 km, 15 unless you choose** (it was 10 km for everybody — the reader: "a jet
+  drone at 450–600 km/h covers 10 km in about a minute"). It is the first ring, the Near list's first band, the highest
+  level and its sound, on Tactical and on Light; under 🔔, or in the setup. The Telegram bot keeps its 10 km.
+- **The approach signal.** While a target is reported inside your near zone, a short beep repeats — every 8 seconds at
+  the zone's edge, every second at your pin — by the distance the last post reported: it changes only with a new post,
+  and stops when the target is lost, over, or not reported for 5 minutes. A chip on the map says it ("6 km · reported
+  1 min ago"); one tap silences it; off for good under 🔔.
+- Polish and Romanian (the same reader's suggestion) are not added now: the whole interface, machine-translated and
+  unread, on a safety app — and their countries' alerts would need sources of their own.
+
 ## 1.58.55 — 2026-10-24
 
 - **The 3D models in the Near list and the cheat sheet** (the owner: "update the 3D models in the threats nearby and in

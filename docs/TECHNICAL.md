@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-23 (1.58.55)
+**Documented version: 1.58** · last updated 2026-10-24 (1.58.56)
 
 The repository is **Dread92/Heimdall-map**. The app's address is **https://heimdall.com.ua** (1.58.34, 18 October
 2026); the Fly app keeps its first name, `kyiv-air-watch-gb`, and its first address keeps working (§15 has the move).
@@ -1830,6 +1830,17 @@ type. Nothing about a reader is in it.
   (`coversHome`), a ballistic or MiG-31K one for Kyiv and its oblast for everybody. **No place set**: no target sound;
   once, silently, "Set your place to get sound alerts" (`snd_noplace`). Under the picker, one line says it (`snd_why`).
   Light (vibration within 10 km) and the pushes (a radius, 15 km by default, every 2 minutes at most) are unchanged.
+  1.58.56: "inside 10 km" is the reader's near zone, `NEAR_R` (10 / 15 / 20 km, 15 unless chosen), here and on Light.
+- **The approach signal** (1.58.56 — a reader: "a signal when entering the zones — the closer, the more alarming; in the
+  very last zone periodic, the frequency increasing as it approaches"; the owner: by the distance reported). While a
+  target was reported inside the near zone in the last `BEEP_FRESH_MIN` (5) minutes — not stale, ended, held, a whole
+  oblast or a region-wide type (those keep their own sound) — a short tick (`beep('tick')`, one 70 ms sine) repeats
+  every `beepEvery(d)` = 1 + 7·d/`NEAR_R` seconds: 8 s at the zone's edge, 1 s at the pin. `d` is the **last reported
+  distance** (`NEAR_ROWS`; `posOf` moves nothing while the estimate is off): the pace changes only with a new report,
+  and nothing moves between two. A chip over the map says it ("🔔 6 km · reported 1 min ago" — `bp_chip`); a tap
+  silences the targets ticking now (`BEEP_MUTE`, by track; one that leaves the zone and comes back, or a new one, ticks
+  again). The bell's switch "Approach signal" (`#beepbtn`, `localStorage` `beep`, on unless switched off) and the
+  sound's own switch and volume govern it; not during the setup.
 - **The admin's message** (1.29; headed "Message from the system admin" since 1.30): the dashboard publishes one message (UK / EN / FR, info / warning / urgent, for
   1 h – 3 days or until removed), stored in `kv.notice` and carried in the alerts state (`notice`), so the live
   line and `/api/state` bring it to both pages as a banner. A reader can close it (remembered on that phone,
@@ -2390,8 +2401,28 @@ Main parts:
   sheet (`slot_names`, `setSlotName` in `i18n.js`, 24 characters, on this phone only; the storage keeps its old slot
   ids, so no place set before is lost). Each pin's sheet (a tap on an empty one, a long press on any): its name, a
   search, or "📍 Put it on the map" (`armPin(true, id)`, then a tap). The active pin is drawn as a numbered pin
-  (`POI_G.pin`) with its name. Zones 10 / 30 / 60 km (their labels sized in screen pixels, `--k`), the conditional ETA
-  band (`etaBand`);
+  (`POI_G.pin`) with its name. Zones **near** / 30 / 60 km (their labels sized in screen pixels, `--k`), the conditional ETA
+  band (`etaBand`). 1.58.56: the near zone is the reader's — **10, 15 or 20 km** (`NEAR_R`, `NEAR_RS`, `localStorage`
+  `near_r`; 15 unless chosen — it was 10 for everybody; a reader: "15 km minimum, eventually 20 — a jet drone at 450–600
+  km/h covers 10 km in about a minute"), chosen in the setup's third step or under 🔔 (`#nearrr`, `setNearR`). It is
+  `ZONES[0]`, the Near list's first band, `homeInfo`'s `near`, level 3 (`escLevel`), the `l3` sound (`sndFor`), the card's
+  "near" and the texts that said "10 km" (`lt_z_near`, `z_near`, `lb_nearhome`, `n_home_b`, `snd_why` take the km). Light
+  reads the same key (its near zone, the radar's highlighted ring). The bot keeps its 10 km (§9d), the push its radius;
+- **the first run, in three steps** (1.58.56 — a reader, after his first minutes on a phone: "a banner with the current
+  situation and an invitation to place a marker occupied almost the entire screen … there were difficulties placing the
+  marker … the user must complete three steps: a language, a marker on the tactical map at any zoom, a minimap with the
+  tracking zone"; the owner picked the three steps). For a phone with no pin and no `setup_done`: the notice is **step
+  1** ("1/3" over it, `#dstep`; its language list; its button "I understand — next", `d_ok_next`; its "precise place"
+  line hidden — `discStep`). Its button starts **`setupStart()`**: the map alone on the whole screen (`setFull(true,
+  true)` — `noFs`: without the browser's full screen), `body.setup` (the status chip, the jar, the replay and full-screen
+  buttons hidden), a card at the top (`#setup .sutop`) and the buttons at the bottom (`.subar`). **Step 2**, the place:
+  a tap puts pin 1 (`setupDrop`, before the armed-pin test in `pointerup`; no press-and-hold pin meanwhile), another tap
+  moves it — at whatever zoom the reader chose, the view untouched; or "Where I am now" (GPS, `setupView(8)`), or "Find
+  an address" (the pin sheet's search; a street arms the exact spot as before). "Next" waits for a pin. **Step 3**, the
+  zone: 10 / 15 / 20 km over the map, which centres the pin between the card and the buttons with the near circle about
+  half of that space (`setupView`), the line on a jet drone's speed (`su3_why`), and the approach signal's switch. "Done"
+  ends it (`setupEnd(true)`: "📍 Pin 1 — near zone: 15 km. Change it any time under 🔔."); "Skip" at step 2 ends it
+  too; `setup_done` keeps it from coming back. Nothing of it leaves the phone;
 - **a pin dropped on the map**: press and hold on open map (a ring fills while the finger stays; a drag only starts past
   `HOLD_SLOP_PX` = 10 screen px; the browser's long-press menu is suppressed) — the fourth pin, as before; or a pin's
   "on the map" (`PIN_FOR`), banner with Cancel, a tap where it goes (`dropPin`). A pin put on the map is named by its pin;
@@ -2953,6 +2984,9 @@ to donate to keep the infrastructure and help the devs" (a Monobank jar, his pic
   military units, mobile air-defence teams, medics — not "the servers") / `sup_fund_qr` / `sup_fund_btn`, and its QR
   code, `static/pumb-qr.svg` (segno; decoded back to the link). The IBAN, the purpose, the NBU link and `nbu-qr.svg` are
   gone; PayPal and the owner's Monobank jar (when set in the dashboard) stay. No card number is written anywhere.
+- **1.58.56, the first run in three steps, the near zone chosen, the approach signal** — §10.1 (the pins, the first
+  run) and §9 (what makes a sound, the approach signal). Polish and Romanian (the same reader) are not added: some 1,500
+  texts, machine-translated and unread, on a safety app — and their countries' alerts would need their own sources.
 - **1.58.55, a pin put on the map keeps its view** (a reader: "after zooming in to place the marker precisely, the
   map reverted to its original scale"): naming a pin dropped on the map (or only renaming one) no longer re-centres the
   map at 20 km across (`homesave`: `same`) — a place found by name or GPS is still shown.

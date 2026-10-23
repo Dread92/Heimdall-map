@@ -201,7 +201,35 @@ body.lite #top .vsw{border-color:#666}body.lite #top .vsw::before{background:#ff
 @keyframes pinhold{from{opacity:.95;transform:scale(.25)}to{opacity:.95;transform:scale(1)}}
 /* the empty 📍 chip arms the map: the next tap puts the pin there */
 #pinarm{position:absolute;z-index:8;left:50%;bottom:96px;transform:translateX(-50%);display:flex;align-items:center;gap:10px;max-width:calc(100% - 24px);background:rgba(18,21,27,.97);border:1px solid var(--ua-yellow);border-radius:4px;padding:8px 8px 8px 12px;font:600 13px var(--sans);color:var(--ink);box-shadow:0 4px 16px rgba(0,0,0,.5)}
-#pinarm[hidden]{display:none}#pinarm button{flex:0 0 auto;border:1px solid var(--line);background:transparent;color:var(--ink);padding:5px 10px;border-radius:3px;font:600 12px var(--sans);cursor:pointer}
+#pinarm[hidden]{display:none}
+/* 1.58.56: the approach signal's chip, over the map while it beeps — one tap silences it */
+#beepchip{position:absolute;z-index:8;left:50%;top:10px;transform:translateX(-50%);display:flex;align-items:center;gap:10px;max-width:calc(100% - 24px);min-height:44px;padding:0 6px 0 12px;background:rgba(18,21,27,.96);border:1px solid #ff4d57;border-radius:var(--r);color:var(--ink);font:600 14px var(--sans);cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.45)}
+#beepchip[hidden]{display:none}#beepchip .bt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#beepchip .bx{flex:none;border:1px solid var(--line2);border-radius:3px;padding:6px 10px;font:700 13px var(--sans)}
+/* 1.58.56: the first-run setup — a card over the top of the map, the buttons at the bottom for the thumb */
+#setup[hidden]{display:none}
+#setup .sutop{position:fixed;z-index:20;left:10px;right:10px;top:calc(var(--sat) + 10px);max-width:540px;margin:0 auto;background:rgba(18,21,27,.97);border:1px solid var(--line2);border-left:4px solid var(--ua-yellow);border-radius:var(--r);padding:12px 14px;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+#setup .sustep{font:700 11.5px var(--mono);letter-spacing:.1em;color:var(--ua-yellow)}
+#setup #setuph{display:block;font:800 19px/1.25 var(--sans);margin:3px 0 4px;color:var(--ink)}
+#setup p{font:500 14.5px/1.4 var(--sans);color:var(--ink2);margin:0}
+#setup .subtns{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}#setup [hidden]{display:none!important}
+#setup .subtns button{min-height:44px;padding:0 14px;border:1px solid var(--line2);border-radius:var(--r);background:#1a1f28;color:var(--ink);font:600 14px var(--sans);cursor:pointer}
+#setup .supriv{display:block;margin-top:8px;font:500 12.5px/1.35 var(--sans);color:var(--ink3)}
+#setup .suzr{display:flex;gap:8px;margin-top:10px}
+#setup .suzr button{flex:1;min-height:48px;border:1px solid var(--line2);border-radius:var(--r);background:#1a1f28;color:var(--ink);font:800 17px var(--mono);cursor:pointer}
+#setup .suzr button.on{background:var(--ua-yellow);border-color:var(--ua-yellow);color:#111}
+#setup .sutg{display:flex;align-items:center;gap:12px;width:100%;margin-top:10px;padding:10px 0 0;border:0;border-top:1px solid var(--line);background:none;color:var(--ink);text-align:left;cursor:pointer;font:inherit}
+#setup .sutg span{flex:1}#setup .sutg b{display:block;font:700 15px var(--sans)}#setup .sutg small{display:block;font:500 12.5px/1.35 var(--sans);color:var(--ink2);margin-top:2px}
+#setup .sutg i{flex:none;position:relative;width:52px;height:32px;border-radius:16px;background:#3a4252;transition:background .2s}
+#setup .sutg i::after{content:'';position:absolute;left:3px;top:3px;width:26px;height:26px;border-radius:50%;background:#fff;transition:left .2s}
+#setup .sutg.on i{background:var(--green)}#setup .sutg.on i::after{left:23px}
+#setup .subar{position:fixed;z-index:20;left:0;right:0;bottom:0;padding:10px 12px calc(10px + var(--sab));display:flex;gap:10px;justify-content:center;background:rgba(11,13,17,.9);border-top:1px solid var(--line)}
+#setup .subar button{min-height:50px;padding:0 18px;border-radius:var(--r);font:800 16px var(--sans);cursor:pointer}
+#setup .suskip{background:rgba(18,21,27,.95);border:1px solid var(--line2);color:var(--ink)}
+#setup .sunext{flex:0 1 260px;background:var(--ua-yellow);border:1px solid var(--ua-yellow);color:#111}
+#setup .sunext:disabled{opacity:.45;cursor:default}
+body.setup #fmchip,body.setup .jarbtn,body.setup .jarhint,body.setup #pinarm,body.setup #tip,body.setup #beepchip,body.setup #fsbtn,body.setup #rpbtn{display:none!important}
+body.setup .mapctl{bottom:calc(84px + var(--sab))}
+.dset label[hidden]{display:none}.dstep{align-self:center;font:700 11.5px var(--mono);letter-spacing:.1em;color:var(--ua-yellow);border:1px solid var(--ua-yellow);border-radius:var(--r);padding:4px 10px;margin:0 auto 6px;width:max-content}.dstep[hidden]{display:none}#pinarm button{flex:0 0 auto;border:1px solid var(--line);background:transparent;color:var(--ink);padding:5px 10px;border-radius:3px;font:600 12px var(--sans);cursor:pointer}
 .mapwrap.arm svg{cursor:crosshair}
 svg#map{display:block;width:100%;height:100%}
 /* situation overlay (raions + home) */
@@ -1409,7 +1437,10 @@ body.lite #mycard,body.lite .panel{background:#000;border-color:#666}body.lite .
   <button class="mi tg on" id="snd" type="button"><span class="lb" data-t="m_snd_s">Sound</span><small data-t="bl_snd_b"></small></button>
   <div class="mrow z vol" id="sndrow"><span class="ml" data-t="m_vol">Volume</span><input type="range" id="sndvol" min="0" max="100" step="5" value="50" data-t-aria="m_vol"><b id="sndvolv">50%</b><button class="mi2" id="sndtest" type="button" data-t-aria="bl_test" data-t-title="bl_test">▶</button></div>
   <div class="mrow z" id="sndrr"><span class="ml" data-t="snd_r">Drones within</span><button class="mi2" type="button" data-sr="10">10 km</button><button class="mi2" type="button" data-sr="20">20 km</button><button class="mi2" type="button" data-sr="30">30 km</button><button class="mi2" type="button" data-sr="0" data-t="snd_r_all">oblast</button></div>
-  <div class="pnote sndw" data-t="snd_why">A drone sounds once when it enters this radius.</div>
+  <div class="pnote sndw" id="sndw">A drone sounds once when it enters this radius.</div>
+  <div class="mrow z" id="nearrr"><span class="ml" data-t="nz_r">Near zone</span><button class="mi2" type="button" data-nr="10">10 km</button><button class="mi2" type="button" data-nr="15">15 km</button><button class="mi2" type="button" data-nr="20">20 km</button></div>
+  <div class="pnote sndw" id="nzw"></div>
+  <button class="mi tg on" id="beepbtn" type="button"><span class="lb" data-t="bp_lbl">Approach signal</span><small data-t="bp_b"></small></button>
   <button class="mi tg" id="vib" type="button"><span class="lb" data-t="m_vib_s">Vibration</span><small data-t="bl_vib_b"></small></button>
 </div>
 <div class="panel" id="menu" hidden role="dialog" aria-labelledby="menuh"><div class="pgrab"></div>
@@ -1474,6 +1505,7 @@ body.lite #mycard,body.lite .panel{background:#000;border-color:#666}body.lite .
   <div class="livebar" id="livebar"></div>
   <div class="attrib" id="attrib" hidden>© OpenStreetMap contributors</div>
   <div id="pinhold"></div>
+  <button type="button" id="beepchip" data-t-title="bp_lbl" title="Approach signal" hidden><span class="bt"></span><span class="bx" data-t="bp_off">Silence</span></button>
   <div id="pinarm" hidden><span data-t="sl_pin_arm">Tap the map where the pin goes</span><button type="button" id="pinarmx" data-t="sl_pin_cancel">Cancel</button></div>
   <div class="mapctl"><button id="laybtn" type="button" data-t-title="m_layers" data-t-aria="m_layers" title="Map layers" aria-label="Map layers"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 3 8l9 5 9-5-9-5z"/><path d="m3 13 9 5 9-5"/></svg></button><button id="zin" type="button" aria-label="+">+</button><button id="zout" type="button" aria-label="−">−</button><button id="zkyiv" type="button" data-t-title="t_center" data-t-aria="t_center" title="Centre on my place"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><path d="M12 2.5v4M12 17.5v4M2.5 12h4M17.5 12h4"/></svg></button><button id="rpbtn" type="button" data-t-title="rp_open" data-t-aria="rp_open" title="Replay — the last 7 days" aria-label="Replay — the last 7 days"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1"/><path d="M3 4v4.5h4.5"/><path d="M12 7.5V12l3 2"/></svg></button><button id="fsbtn" type="button" data-t-title="m_full" data-t-aria="m_full" title="Full-screen map" aria-label="Full-screen map"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="fsin" d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/><path class="fsout" d="M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5"/></svg></button></div>
   <!-- 1.58.46: the donation jar (the owner: "a small jar with coins at the bottom right of the map, for users who want to
@@ -1530,7 +1562,7 @@ body.lite #mycard,body.lite .panel{background:#000;border-color:#666}body.lite .
 <div id="fmchip" role="button" tabindex="0" data-t-title="m_full_exit" title="Exit full screen"></div>
 <div class="sheet" id="sheet"><div class="grab"></div><button type="button" class="shx" data-t-aria="btn_close" aria-label="Close">✕</button><div id="sheetbody"></div></div>
 <div class="toast" id="toast"></div>
-<div class="modal" id="disc" hidden><div class="mbox"><img class="dlogo" src="/static/heimdall-full.webp" alt="Heimdall" width="170" height="157" loading="lazy"><div class="type dtitle" data-t="d_title">IMPORTANT INFORMATION</div><div class="dlangrow"><select class="lsel" id="dlang" aria-label="Language"></select></div>
+<div class="modal" id="disc" hidden><div class="mbox"><div class="dstep" id="dstep" hidden></div><img class="dlogo" src="/static/heimdall-full.webp" alt="Heimdall" width="170" height="157" loading="lazy"><div class="type dtitle" data-t="d_title">IMPORTANT INFORMATION</div><div class="dlangrow"><select class="lsel" id="dlang" aria-label="Language"></select></div>
   <p data-t-html="d_p1"></p>
   <p data-t-html="d_p2"></p>
   <p data-t-html="d_p3"></p>
@@ -1538,6 +1570,13 @@ body.lite #mycard,body.lite .panel{background:#000;border-color:#666}body.lite .
     <label><span data-t="d_home">Precise place to watch — optional</span><button class="tgl" id="dischome" type="button"></button></label></div>
   <div id="discfoot"></div>
   <button type="button" class="dok" id="discok" data-t="d_ok">I understand</button></div></div>
+<!-- 1.58.56: the first-run setup, steps 2 and 3 (step 1 is the notice above) — over the map on the whole screen -->
+<div id="setup" hidden role="dialog" aria-labelledby="setuph"><div class="sutop"><div class="sustep" id="sustep"></div><b id="setuph"></b><p id="sutxt"></p>
+  <div class="subtns" id="subtns"><button type="button" id="sugps" data-t="lt_locate">Where I am now</button><button type="button" id="sufind" data-t="sl_c_find">Find an address</button></div>
+  <small class="supriv" id="supriv" data-t="su2_priv">The pin stays on this phone.</small>
+  <div class="suzr" id="suzr" hidden></div><small class="supriv" id="suwhy" data-t="su3_why" hidden></small>
+  <button type="button" class="sutg on" id="subp" aria-pressed="true" hidden><span><b data-t="bp_lbl">Approach signal</b><small data-t="bp_b"></small></span><i></i></button></div>
+  <div class="subar"><button type="button" class="suskip" id="suskip"></button><button type="button" class="sunext" id="sunext"></button></div></div>
 
 <script type="speculationrules">{"prerender":[{"where":{"href_matches":"/light"},"eagerness":"moderate"}]}</script>
 <script src="/static/i18n.js"></script>
@@ -1636,7 +1675,7 @@ function useSlot(id){ if(!SLOT_IDS.includes(id)) return; ACTIVE=id; HOME=SLOTS[i
   if(typeof drawHome==='function') drawHome(); if(typeof drawZones==='function') drawZones();
   homeAlerted.clear(); homeClosed.clear();  // a new place is a new set of alerts, not a continuation
   if(typeof render==='function') render(); if(typeof paintSlots==='function') paintSlots();
-  if(typeof discHomeLabel==='function') discHomeLabel(); }
+  if(typeof discHomeLabel==='function') discHomeLabel(); if(typeof setupPaint==='function') setupPaint(); }
 let SHOW_UA=false;   // the "show original Ukrainian" switch is gone; Ukrainian readers see the original anyway
 // 1.45.1: suspended. Moving a mark along its heading between reports drew positions no post gave; the switch is
 // hidden and the estimate is off for everybody until it is reconsidered (the code below is kept).
@@ -1657,6 +1696,19 @@ $('snd').onclick=()=>{soundOn=!soundOn;sndSave();volUI();};
 // 1.58.44: the drones' sound radius (sndFor), kept on this phone
 function sndRUI(){ document.querySelectorAll('#sndrr [data-sr]').forEach(b=>{ b.classList.toggle('on',+b.dataset.sr===SND_R); if(+b.dataset.sr) b.textContent=t('snd_km',b.dataset.sr); }); }
 document.querySelectorAll('#sndrr [data-sr]').forEach(b=>b.onclick=()=>{ SND_R=+b.dataset.sr; try{localStorage.setItem('sndr',String(SND_R));}catch(e){} sndRUI(); });
+// 1.58.56 — the near zone's radius. A reader: "increase the minimum tracking zone to 15 km, and eventually 20 km — at
+// 450–600 km/h a jet drone covers 10 km in under a minute"; the owner: the reader's choice, 10, 15 or 20 km, 15 unless
+// chosen (it was 10 for everybody). It is the first ring, the Near list's first band, level 3 and its sound, the card's
+// "near" — for the pins of this phone. The bot keeps its own 10 km (the owner's pick, 1.58.40), the push its own radius.
+const NEAR_RS=[10,15,20]; let NEAR_R=15;
+try{ const r=+localStorage.getItem('near_r'); if(NEAR_RS.includes(r)) NEAR_R=r; }catch(e){}
+function nearRUI(){ document.querySelectorAll('#nearrr [data-nr]').forEach(b=>{ b.classList.toggle('on',+b.dataset.nr===NEAR_R); b.textContent=t('snd_km',b.dataset.nr); });
+  $('nzw').textContent=t('nz_why',NEAR_R); $('sndw').textContent=t('snd_why',NEAR_R); }
+function setNearR(r){ if(!NEAR_RS.includes(+r)) return; NEAR_R=+r; if(typeof ZONES!=='undefined') ZONES[0][0]=NEAR_R;
+  try{ localStorage.setItem('near_r',String(NEAR_R)); }catch(e){} nearRUI();
+  if(typeof drawZones==='function') drawZones(); if(typeof render==='function'&&MAP) render(); if(typeof paintCard==='function') paintCard(true); }
+document.querySelectorAll('#nearrr [data-nr]').forEach(b=>b.onclick=()=>setNearR(b.dataset.nr));
+nearRUI();
 $('sndvol').oninput=e=>{ const x=+e.target.value; soundOn=x>0; if(x>0) sndVol=x; sndSave(); volUI(); };
 // letting go of the slider plays the loudest alert the app has, at that level: what you hear is the ceiling
 $('sndvol').onchange=()=>{ if(soundOn) beep('l4',1); };
@@ -1691,11 +1743,88 @@ pushInit();
 // until people stopped reading it. sessionStorage lives exactly as long as the tab or the installed app's
 // window — so closing and reopening the app shows it again, and the Light page shares the same flag.
 (()=>{ let seen=false; try{ seen=sessionStorage.getItem('disc_seen')==='1'; sessionStorage.setItem('disc_seen','1'); }catch(e){}
-  $('disc').hidden=seen;
-  $('discok').onclick=()=>{$('disc').hidden=true;try{localStorage.setItem('disc_ack',String(Date.now()));}catch(e){};setTimeout(()=>{try{maybeRemindSupport();}catch(e){}},90000);};
-  $('aboutbtn').onclick=()=>{closePanels();$('disc').hidden=false;};
+  $('disc').hidden=seen; discStep();
+  $('discok').onclick=()=>{$('disc').hidden=true;try{localStorage.setItem('disc_ack',String(Date.now()));}catch(e){};setTimeout(()=>{try{maybeRemindSupport();}catch(e){}},90000);
+    if(setupWanted()) setupStart(); };                      // 1.58.56: then steps 2 and 3, once, on a phone with no pin
+  $('aboutbtn').onclick=()=>{closePanels();discStep();$('disc').hidden=false;};
   $('discobl').onchange=e=>setMyOblast(e.target.value);
   $('dischome').onclick=async()=>{$('disc').hidden=true;await $('homebtn').onclick();};})();
+// ---- 1.58.56: the first-run setup -----------------------------------------------------------------------------------
+// A reader, after his first minutes on a phone: "a banner with the current situation and an invitation to place a marker
+// occupied almost the entire screen; somewhere below, unnoticed, a strip of the tactical map … there were difficulties
+// placing the marker. When activating the app, the user must complete three steps: select a language; place a marker on
+// the tactical map, at any zoom; select a minimap with a custom tracking zone." The owner picked the three steps. Step 1
+// is the notice (its language list, "1 of 3" on it); steps 2 and 3 run over the map on the whole screen (setFull, without
+// the browser's own full screen), once, for a phone with no pin: put the pin — a tap, another tap moves it, at any zoom;
+// or GPS, or an address — then the near zone (10, 15 or 20 km, NEAR_R) with the approach signal. "Skip" ends it and it is
+// not offered again (setup_done); the pins, the zone and the signal stay where they always were (the pins' sheet, 🔔).
+var SETUP=null;   // var: useSlot (called before this line runs) asks for it
+const SU_TOUCH=matchMedia('(pointer:coarse)').matches;
+function setupWanted(){ let d=false; try{ d=localStorage.getItem('setup_done')==='1'; }catch(e){} return !d&&!SLOT_IDS.some(id=>SLOTS[id]); }
+function discStep(){ const su=setupWanted(), st=$('dstep'); if(st){ st.hidden=!su; st.textContent=t('su_step',1,3); }
+  $('discok').textContent=t(su?'d_ok_next':'d_ok'); const h=$('dischome'); if(h&&h.closest('label')) h.closest('label').hidden=su; }
+function setupStart(){ if(!MAP){ setTimeout(setupStart,300); return; }
+  SETUP={step:2,slot:SLOT_IDS.find(id=>!SLOTS[id])||SLOT_IDS[0],msg:''}; closePanels(); armPin(false);
+  document.body.classList.add('setup'); setFull(true,true); $('setup').hidden=false; setupPaint(); }
+function setupEnd(done){ const s=SETUP; if(!s) return; SETUP=null; try{ localStorage.setItem('setup_done','1'); }catch(e){}
+  $('setup').hidden=true; document.body.classList.remove('setup'); armPin(false); setFull(false);
+  if(done&&SLOTS[s.slot]) notify('📍 '+slotName(s.slot),t('su_done_b',NEAR_R),'end');
+  paintCard(true); beepLoop(); }
+function setupPaint(){ const s=SETUP; if(!s) return; const p=SLOTS[s.slot], two=s.step===2;
+  $('sustep').textContent=t('su_step',s.step,3); $('setuph').textContent=t(two?'su2_h':'su3_h');
+  $('sutxt').textContent=two?(s.msg||(p?t('su2_set'):t(SU_TOUCH?'su2_t_touch':'su2_t_mouse'))):t('su3_t');
+  $('subtns').hidden=!two; $('supriv').hidden=!two; $('suzr').hidden=two; $('suwhy').hidden=two; $('subp').hidden=two;
+  if(!two) $('suzr').innerHTML=NEAR_RS.map(r=>`<button type="button" data-nr="${r}" class="${r===NEAR_R?'on':''}" aria-pressed="${r===NEAR_R}">${esc(t('snd_km',r))}</button>`).join('');
+  beepUI();
+  $('suskip').textContent=t(two?'su_skip':'su_back'); const n=$('sunext'); n.textContent=t(two?'su_next':'su_done'); n.disabled=two&&!p; }
+// the pin in the middle of the map between the card and the buttons; at step 3 the near zone fills about half of it
+function setupView(wKm){ const p=SETUP&&SLOTS[SETUP.slot]; if(!p) return; const [x,y]=proj(p.lon,p.lat);
+  const r=SR(), top=document.querySelector('#setup .sutop').getBoundingClientRect(), bar=document.querySelector('#setup .subar').getBoundingClientRect();
+  const y0=Math.max(top.bottom,r.top), y1=Math.min(bar.top,r.bottom), band=Math.max(120,y1-y0);
+  const w=wKm||(2*NEAR_R/0.55)*r.width/Math.min(r.width,band);
+  setView(x,y,w); const k=VB.w/r.width; VB.y=y-((y0+y1)/2-r.top)*k; applyVB(); }
+function setupDrop(px,py){ const s=SETUP; if(!s) return; const [cx,cy]=toSvg(px,py); const lon=+(C[0]+cx/KX).toFixed(4), lat=+(C[1]-cy/KY).toFixed(4);
+  const keep=PIN_ARM&&PIN_KEEP; armPin(false); s.msg='';     // a street found by its name keeps its name, moved to the exact spot
+  setSlot(s.slot,keep?Object.assign({lon,lat},keep):{lon,lat,dropped:true});
+  if(navigator.vibrate&&vibOn) navigator.vibrate(40); setupPaint(); }
+$('suskip').onclick=()=>{ if(!SETUP) return; if(SETUP.step===2) setupEnd(false); else { SETUP.step=2; setupPaint(); } };
+$('sunext').onclick=()=>{ const s=SETUP; if(!s) return; if(s.step===2){ if(!SLOTS[s.slot]) return; s.step=3; setupPaint(); setupView(); } else setupEnd(true); };
+$('suzr').onclick=e=>{ const b=e.target.closest('[data-nr]'); if(!b) return; setNearR(b.dataset.nr); setupPaint(); setupView(); };
+$('subp').onclick=()=>setBeep(!BEEP_ON);
+$('sufind').onclick=()=>{ const s=SETUP; if(!s) return; openPinSheet(s.slot,'new').then(()=>$('homefind').onclick()); };
+$('sugps').onclick=()=>{ const s=SETUP; if(!s) return; if(!navigator.geolocation){ s.msg=t('lt_locate_fail'); setupPaint(); return; }
+  s.msg=t('lt_locating'); setupPaint();
+  navigator.geolocation.getCurrentPosition(pos=>{ if(!SETUP) return; SETUP.msg='';
+      setSlot(SETUP.slot,{lon:+pos.coords.longitude.toFixed(4),lat:+pos.coords.latitude.toFixed(4),dropped:true}); setupView(8); },
+    ()=>{ if(!SETUP) return; SETUP.msg=t('lt_locate_fail'); setupPaint(); },{enableHighAccuracy:false,timeout:12000,maximumAge:300000}); };
+
+// ---- 1.58.56: the approach signal -------------------------------------------------------------------------------------
+// The reader: "a signal when entering the zones — the closer, the more alarming; in the very last zone periodic, the
+// frequency increasing as it approaches". The owner: by the distance reported. Inside the near zone a short tick repeats
+// while a target was reported there in the last BEEP_FRESH_MIN minutes — every 8 s at the zone's edge, every second at
+// the pin (beepEvery). Its pace is the LAST REPORTED distance: it changes only when a post reports the target again and
+// never moves on its own (no radar, no extrapolation); it stops when the target is lost, ended, held, or not reported
+// for 5 minutes. A ballistic or other region-wide warning keeps its own sound. A tap on the chip silences the targets
+// ticking now (one that leaves the zone and comes back, or a new one, ticks again); off for good in 🔔.
+const BEEP_FRESH_MIN=5, BEEP_MUTE=new Set(); let BEEP_ON=true, BEEP_T=null;
+try{ BEEP_ON=localStorage.getItem('beep')!=='0'; }catch(e){}
+const beepEvery=d=>Math.max(1,Math.min(8,1+7*d/NEAR_R));   // seconds between two ticks, from the reported distance
+function beepUI(){ const b=$('beepbtn'); if(b) b.classList.toggle('on',BEEP_ON); const s=$('subp'); if(s){ s.classList.toggle('on',BEEP_ON); s.setAttribute('aria-pressed',String(BEEP_ON)); } }
+function setBeep(on){ BEEP_ON=!!on; try{ localStorage.setItem('beep',BEEP_ON?'1':'0'); }catch(e){} beepUI(); beepLoop(); }
+function beepRows(){ if(!HOME) return [];
+  return (NEAR_ROWS||[]).filter(r=>{ const m=r.m; return !r.imm&&!r.vague&&!m.stale&&!m.status&&!m.endedBy&&!m.held&&r.d<=NEAR_R
+    &&agoMin(m.pos_ts||m.ts)<=BEEP_FRESH_MIN; }); }
+function beepLoop(){ clearTimeout(BEEP_T); const rows=beepRows(), keys=new Set(rows.map(r=>trackKey(r.m)));
+  for(const k of [...BEEP_MUTE]) if(!keys.has(k)) BEEP_MUTE.delete(k);
+  const r=rows.filter(x=>!BEEP_MUTE.has(trackKey(x.m))).sort((a,b)=>a.d-b.d)[0]||null;
+  const on=!!r&&BEEP_ON&&soundOn&&sndVol>0&&!SETUP;
+  const c=$('beepchip'); if(c){ c.hidden=!on;
+    if(on){ c.querySelector('.bt').textContent='🔔 '+t('bp_chip',r.d<1?'<1':Math.round(r.d),Math.max(0,Math.round(agoMin(r.m.pos_ts||r.m.ts)))); c.title=t('bp_lbl'); } }
+  if(!on){ BEEP_T=setTimeout(beepLoop,1500); return; }
+  beep('tick',1.5); BEEP_T=setTimeout(beepLoop,beepEvery(r.d)*1000); }
+$('beepchip').onclick=()=>{ for(const r of beepRows()) BEEP_MUTE.add(trackKey(r.m)); beepLoop(); };
+$('beepbtn').onclick=()=>setBeep(!BEEP_ON);
+beepUI(); setTimeout(beepLoop,4000);
 // the entry screen offers the two "watch" settings straight away: my oblast (status band, alerts) + an optional precise place
 // 1.39: one footer everywhere (footerHTML in static/i18n.js) — the welcome notice and the bottom of the drawer
 function paintFooters(){ const h=footerHTML({support:true,build:MYBUILD});
@@ -1733,7 +1862,7 @@ function beep(kind,vol){ if(!soundOn||sndVol<=0) return; const v=vol==null?1:vol
     // 1.36: one tone per escalation level, so the level can be told apart without looking — l1 one soft note
     // (an official alert over the place), l2 two beeps (a target within 30 km), l3 three rising beeps twice (within
     // 10 km, a bridge), l4 three seconds of a two-note warble (ballistic, MiG-31K). A 0 Hz note is a rest.
-    const seq=kind==='l1'?[[660,.22]]:kind==='l2'?[[740,.12],[740,.12]]
+    const seq=kind==='l1'?[[660,.22]]:kind==='tick'?[[1250,.07]]:kind==='l2'?[[740,.12],[740,.12]]
       :kind==='l3'?[[620,.11],[780,.11],[940,.17],[0,.22],[620,.11],[780,.11],[940,.17]]
       :kind==='l4'?[[880,.5],[1040,.5],[880,.5],[1040,.5],[880,.5],[1040,.5]]
       :kind==='end'?[[660,.12],[880,.2]]
@@ -1741,7 +1870,7 @@ function beep(kind,vol){ if(!soundOn||sndVol<=0) return; const v=vol==null?1:vol
       :kind==='threat'?[[520,.1],[520,.1],[520,.1]]:[[880,.15],[660,.15],[880,.15],[660,.3]];
     const gap=kind==='l4'?0:.05, soft=kind==='l1'?.5:1;
     let t=a.currentTime+.02;
-    for(const [f,d] of seq){ if(!f){ t+=d; continue; } const o=a.createOscillator(),g=a.createGain(),L=Math.min(.14,.07*v)*soft;o.type=kind==='l1'?'sine':'square';o.frequency.value=f;
+    for(const [f,d] of seq){ if(!f){ t+=d; continue; } const o=a.createOscillator(),g=a.createGain(),L=Math.min(.14,.07*v)*soft;o.type=kind==='l1'||kind==='tick'?'sine':'square';o.frequency.value=f;
       g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(L,t+.012);g.gain.setValueAtTime(L,t+d-.02);g.gain.linearRampToValueAtTime(0,t+d);
       o.connect(g);g.connect(master);o.start(t);o.stop(t+d+.01);t+=d+gap;} }catch(e){} }
 // The zone a warning is about, turned into that multiplier.
@@ -2142,7 +2271,7 @@ wrap.addEventListener('pointerdown',e=>{if(!e.target.closest('svg#map')) return;
   // Press and hold on open map = drop the 📍 pin there. Not over a marker (that is a tap to open it), not
   // with a second finger down (that is a pinch), and cancelled the moment the map is dragged.
   clearTimeout(holdPin); holdPin=null; pinRing(false);
-  if(!downMk&&!PIN_ARM&&Object.keys(touches).length===1){ const px=e.clientX, py=e.clientY;
+  if(!downMk&&!PIN_ARM&&!SETUP&&Object.keys(touches).length===1){ const px=e.clientX, py=e.clientY;
     pinRing(true,px,py);
     holdPin=setTimeout(()=>{ holdPin=null; pinRing(false); if(moved) return; dropPin(px,py); },600); }});
 wrap.addEventListener('pointermove',e=>{ if(!(e.pointerId in touches)) return;
@@ -2161,6 +2290,7 @@ const endT=e=>{clearTimeout(holdPin);holdPin=null;pinRing(false);delete touches[
 // tap on a marker: pointer capture sends pointerup to the wrapper, so hit-test here (≤10 px screen movement counts as a tap)
 wrap.addEventListener('pointerup',e=>{const mk=downMk,xy=downXY,ob=downOb,ch=downCh;downMk=null;downXY=null;downOb=null;downCh=null;endT(e);
   const tap=xy&&Math.hypot(e.clientX-xy[0],e.clientY-xy[1])<=HOLD_SLOP_PX&&Object.keys(touches).length===0;
+  if(SETUP&&tap){ if(SETUP.step===2) setupDrop(e.clientX,e.clientY); return; }   // 1.58.56: a tap puts the pin, again moves it
   if(PIN_ARM&&tap){ dropPin(e.clientX,e.clientY); return; }
   if(mk&&tap){$('tip').hidden=true;
     if(mk.classList.contains('shl')) openShelter(+mk.dataset.i); else openSheet(mk.dataset.id);}
@@ -2226,8 +2356,8 @@ function homeInfo(m,x,y){
   // The no-speed branch below covers outcomes AND anything the page has no speed model for. A ballistic
   // marker falls in the second group, so the bypass has to survive it — dropping it here is how the whole
   // exemption silently did nothing.
-  if(m.status||m.endedBy||!v) return {near:dist<10||imm,inbound:false,named:false,dist,immediate:imm,zone};
-  return {near:dist<10||imm,inbound:named,named,dist,immediate:imm,zone,eta:named&&v?dist/v:null};
+  if(m.status||m.endedBy||!v) return {near:dist<NEAR_R||imm,inbound:false,named:false,dist,immediate:imm,zone};
+  return {near:dist<NEAR_R||imm,inbound:named,named,dist,immediate:imm,zone,eta:named&&v?dist/v:null};
 }
 // 1.58.44 — what makes a sound, per target (the owner, after a tester: "it keeps pinging constantly … what to actually
 // fear is unclear. Missile threats make sense — no radius there. But for UAVs, it's confusing"):
@@ -2255,7 +2385,7 @@ function sndFor(m,hi,x,y){
     if(IMMEDIATE.has(m.type)) return {rank:3,level:m.type==='ballistic_missiles'&&!officialLevel()?3:4,why:'imm'};
     return {rank:3,level:3,why:'region'}; }
   if(m.place==='область') return null;                   // a whole oblast: no point, no distance
-  if(d<=10) return {rank:3,level:3,why:'near'};
+  if(d<=NEAR_R) return {rank:3,level:3,why:'near'};          // 1.58.56: the reader's near zone (it was 10 km)
   if(d<=REGION_R&&(hi.named||courseAtHome(m,x,y,d))) return {rank:2,level:2,why:'course'};
   if(d<=(SND_R||REGION_R)) return {rank:1,level:2,why:'radius'};
   return null; }
@@ -2274,7 +2404,8 @@ function coversHome(a){ if(!HOME) return false; const u=unitAt(HOME.lon,HOME.lat
 // over which a person can actually do something different: inside 10 km you can hear it and you go now;
 // 10–30 km is the window where an ETA is worth anything at all; out to 60 km is background you want to
 // know about but not act on. They are drawn, so a distance in a label can be placed by eye.
-const ZONES=[[10,'near'],[30,'approach'],[60,'observe']];
+// 1.58.56: the first is the reader's near zone, 10, 15 or 20 km (NEAR_R, setNearR) — 15 unless chosen
+const ZONES=[[NEAR_R,'near'],[30,'approach'],[60,'observe']];
 // How fast each weapon actually flies, as a range rather than a number, because no post ever states it.
 // A single figure would turn "roughly four to six minutes" into "five minutes", which is a promise.
 const SPEED_BAND={drone:[2.2,3.2],jetdrone:[5.5,8.0],cruise:[11,14]};
@@ -2331,7 +2462,7 @@ function drawHome(){ if(typeof drawShelters==='function') setTimeout(drawShelter
     const lab=on&&own&&!p.dropped&&own!==pl?own+' · '+pl:pinLabel(id);
     return `<g class="homemk${on?' on':''}" data-slot="${id}">${on?`<circle class="ring" cx="${x}" cy="${y}" r="5" fill="none" style="stroke-width:1px;vector-effect:non-scaling-stroke"/><circle class="ring" cx="${x}" cy="${y}" r="10" fill="none" style="stroke-width:1px;vector-effect:non-scaling-stroke"/>`:''}<g class="ico" transform="translate(${x} ${y})"><g class="pg"><path class="rh" d="M0-15V-9M0 9v6M-15 0h6M9 0h6"/><circle class="rh" r="10"/><circle class="rr" r="10"/><circle class="rc" r="2.8"/><path class="rt" d="M0-15V-9M0 9v6M-15 0h6M9 0h6"/></g></g><circle class="hd ${k}" cx="${kx(x+15*KPX)}" cy="${y}" r="${kx(3.6*KPX)}"/><text class="hl" x="${kx(x+21*KPX)}" y="${kx(y+4.2*KPX)}">${esc(lab)}</text></g>`; };
   $('homeg').innerHTML=SLOT_IDS.filter(id=>SLOTS[id]&&id!==ACTIVE).map(id=>one(id,SLOTS[id],false)).join('')+one(ACTIVE,HOME,true); }
-$('homeg').addEventListener('click',e=>{ const g=e.target.closest('.homemk'); if(!g) return; const id=g.dataset.slot; if(id===ACTIVE) openPinSheet(id,'edit'); else useSlot(id); });
+$('homeg').addEventListener('click',e=>{ const g=e.target.closest('.homemk'); if(!g||SETUP) return; const id=g.dataset.slot; if(id===ACTIVE) openPinSheet(id,'edit'); else useSlot(id); });
 // 1.58.34: a pin's label — the name its owner gave it, else the place's own name (a dropped pin: its number)
 // — a district or a town; never a street or a dropped point, which would put an address on the screen for whoever stands behind (1.36)
 function pinLabel(id){ const n=String(slotNames()[id]||'').trim(); if(n) return n; const p=SLOTS[id];
@@ -2431,7 +2562,7 @@ $('hschg').onclick=()=>{ hsFreq(); hsStep('where'); };
 $('homefind').onclick=()=>{ hsStep('find'); $('homeq').value=''; renderHomeList(''); setTimeout(()=>$('homeq').focus(),60); hsOpen(); };
 $('homecancel').onclick=()=>{ HS_PEND=null; $('homesheet').classList.remove('show'); };
 $('homesave').onclick=()=>{ const P=HS_PEND; if(!P||!P.place) return; const p=P.place, slot=P.slot, same=p===SLOTS[slot]; setSlotName(slot,$('homen').value); setSlot(slot,p); HS_PEND=null;
-  $('homesheet').classList.remove('show'); notify(t('n_home',homeName()),t('n_home_b'),'end');
+  $('homesheet').classList.remove('show'); notify(t('n_home',homeName()),t('n_home_b',NEAR_R),'end');
   // 1.58.55, a reader: "after zooming in to place the marker precisely, the map went back to its first scale" — a pin put on
   // the map (then named), or a pin only renamed, keeps the view it was put in; a place found by name or GPS is shown
   if(!same){ const [x,y]=proj(p.lon,p.lat); setView(x,y,Math.max(p.street?1.6:4,(p.km||8)*2.6)); }
@@ -3017,7 +3148,7 @@ function tick(){
   // the screen is in the Near list, the card and its counts; nothing is written along the map's border any more
   if($('edges').innerHTML) $('edges').innerHTML='';
   const parts=[]; if(tracked){ const tot=[totShahed?`<b>${totShahed}</b> ${t('lb_shahed')}`:'',totJet?`<b>${totJet}</b> ${t('lb_jet')}`:'',totMsl?`<b>${totMsl}</b> ${t('lb_msl')}`:'',totUnk?`<b>${totUnk}</b> ⚠ ${esc(t(mslCtx()?'lb_unk_mix':'lb_unk_dr'))}`:'',totStale?`<b>${totStale}</b> ?`:''].filter(Boolean).join(' · '); parts.push(tot||`<b>${tracked}</b> ${t('lb_targets')}`); } if(inboundCount) parts.push(`<b class="lvr">${inboundCount} ${t('lb_tokyiv')}</b>`); if(HOME&&homeNamedN) parts.push(`<b class="lvp">${homeNamedN} → ${esc(homeName())}</b>`);
-  else if(HOME&&homeThreats) parts.push(`<b class="lvr">${homeThreats} ${t('lb_nearhome',esc(homeName()))}</b>`); if(ESTIMATE) parts.push('EST'); 
+  else if(HOME&&homeThreats) parts.push(`<b class="lvr">${homeThreats} ${t('lb_nearhome',esc(homeName()),NEAR_R)}</b>`); if(ESTIMATE) parts.push('EST'); 
   // The counters live in the Statistics tab now, not across the bottom of the map. A running tally is
   // something you read once and then reason about; the map is for the thing you are watching move. LIVE
   // keeps them so the tab can render them without recounting.
@@ -3186,7 +3317,7 @@ function openSheet(id){
       const [mx,my]=posOf(m,Date.now()); const hz=homeInfo(m,mx,my);
       const z=hz.zone; const eb=etaBand(m,hz.dist);
       if(!z&&!eb) return '';
-      const zl=z?`<span class="chip ${z==='near'?'red':z==='approach'?'':'muted'}">${esc(t('z_'+z))}</span>`:'';
+      const zl=z?`<span class="chip ${z==='near'?'red':z==='approach'?'':'muted'}">${esc(t('z_'+z,NEAR_R))}</span>`:'';
       // "if it holds its course" is not a hedge bolted on — it is the whole content of the number.
       const el=eb?` <b>${esc(t('eta_band',eb.lo,eb.hi))}</b> <span style="color:var(--muted)">${esc(t('eta_if'))}</span>`:'';
       return `<div class="kv1">${zl}${el}</div>`; })()}
@@ -3281,10 +3412,10 @@ function drawSelPath(){ const g=$('selpath'); if(!g) return; const m=SELP?MK.fin
       +(lab[i]?`<text class="selpt${o.old?' old':''}" x="${kx(o.p[0]+5*KPX)}" y="${kx(o.p[1]-5*KPX)}">${esc(fmtT(o.ts))}</text>`:'')).join(''); }
 // 1.53: the map alone, on the whole screen (a phone's browser bars too, where the browser allows it)
 let FULL=false;
-function setFull(on){ FULL=!!on; document.body.classList.toggle('fullmap',FULL);
+function setFull(on,noFs){ FULL=!!on; document.body.classList.toggle('fullmap',FULL);   // noFs: the map alone, the browser as it is (1.58.56, the setup)
   const b=$('fsbtn'); if(b){ const k=FULL?'m_full_exit':'m_full'; b.title=t(k); b.setAttribute('aria-label',t(k)); }
   try{ const el=document.documentElement;
-    if(FULL&&el.requestFullscreen&&!document.fullscreenElement) el.requestFullscreen({navigationUI:'hide'}).catch(()=>{});
+    if(FULL&&!noFs&&el.requestFullscreen&&!document.fullscreenElement) el.requestFullscreen({navigationUI:'hide'}).catch(()=>{});
     if(!FULL&&document.fullscreenElement&&document.exitFullscreen) document.exitFullscreen().catch(()=>{}); }catch(e){}
   if(FULL) syncFmChip();
   syncTop(); setView(VB.x+VB.w/2,VB.y+VB.h/2,VB.w); }
@@ -3667,8 +3798,8 @@ const rowPlace=m=>m.approach?'→ '+pn(m.target||m.place):(m.place==='облас
 function nearHTML(rows){
   let h=`<div class="nrh"><b>${esc(HOME?t('nr_from',homeName()):t('nr_kyiv'))}</b><button type="button" data-act="place">${esc(HOME?t('lt_change'):t('sl_setpin'))}</button></div>`;
   if(!rows.length) return h+`<div class="nrnote">${esc(t('nr_none'))}</div>`;
-  const band=r=>r.imm?'imm':r.vague?'far':r.d<=10?'near':r.d<=30?'approach':r.d<=60?'observe':'far';
-  const name={imm:t('nr_imm'),near:t('lt_z_near'),approach:t('lt_z_approach'),observe:t('lt_z_observe'),far:t('nr_far')};
+  const band=r=>r.imm?'imm':r.vague?'far':r.d<=NEAR_R?'near':r.d<=30?'approach':r.d<=60?'observe':'far';
+  const name={imm:t('nr_imm'),near:t('lt_z_near',NEAR_R),approach:t('lt_z_approach'),observe:t('lt_z_observe'),far:t('nr_far')};
   let cur='';
   for(const r of rows.slice(0,40)){ const b=band(r), m=r.m;
     if(b!==cur){ cur=b; h+=`<div class="nrb">${esc(name[b])}</div>`; }
@@ -3683,7 +3814,7 @@ function escLevel(rows){ let lv=0;
   if(HOME){ const k=placeLevel(HOME).k; if(k==='R'||k==='Y'||k==='H') lv=1; } else if(officialLevel()) lv=1;
   const live=rows.filter(r=>!r.imm&&!r.vague&&!r.m.stale);
   if(HOME&&live.some(r=>r.d<=30||r.hi.inbound)) lv=2;
-  if(HOME&&live.some(r=>r.d<=10)) lv=3;
+  if(HOME&&live.some(r=>r.d<=NEAR_R)) lv=3;
   if(BRG_ON&&S&&S.bridges&&Object.values(S.bridges).some(e=>e&&e.lvl==='at')) lv=Math.max(lv,3);
   if(TS_TOP&&!TS_TOP.old&&(TS_TOP.ty==='ballistic_missiles'||TS_TOP.ty==='mig31k_departure')) lv=4;
   if(rows.some(r=>r.imm&&!r.m.stale&&r.hi&&r.hi.immediate)) lv=4;
@@ -3747,7 +3878,7 @@ function paintCard(force){
   const bd=$('bdot'); if(bd) bd.className='bdot'+(LEVEL?' l'+LEVEL:'');
   const ch=$('mych');
   if(top){ const m=top.m, here=top.hi.inbound;
-    ch.className='mych'+(top.d<=10||here?' near':''); ch.dataset.id=m.id;
+    ch.className='mych'+(top.d<=NEAR_R||here?' near':''); ch.dataset.id=m.id;
     ch.innerHTML=`${rowIco(m,here?'#ff2d55':null,36)}<div><b>${esc(kindOf(m))}${top.n>1?' ×'+top.n:''}</b><small>${esc(rowPlace(m))} · ${esc(rowSub(top))}</small></div><div class="km">${Math.round(top.d)} ${esc(t('lt_km'))}<small>${esc(fromWhere())}</small></div>`;
     ch.hidden=false; }
   else if(HOME){ ch.className='mych calm'; ch.dataset.id=''; ch.innerHTML=`<b>${esc(t('lt_none'))}.</b> <small>${esc(t('lt_none_b'))}</small>`; ch.hidden=false; }
@@ -4387,7 +4518,7 @@ function applySync(d){ const L=window.LiveSync; if(!L) return;
 // 1.29: the app has a new address (CANONICAL_HOST on the server). On the old one, a banner sends the reader there
 // with this phone's settings in the link's #fragment. Settings only: the watched places never leave this phone —
 // not even in a link, which browser history may keep — so they are set again there.
-const CARRY=['lang','mode','lite','snd','sndvol','vib','est','layers','layers_v2','layers_v3','myobl','sup_seen','sup_never'];
+const CARRY=['lang','mode','lite','snd','sndvol','vib','est','layers','layers_v2','layers_v3','myobl','sup_seen','sup_never','near_r','beep'];
 function checkMove(st){ const el=$('moved'); if(!el) return; const c=st&&st.config&&st.config.canonical;
   if(!c||location.host===c||sessionStorage.getItem('moved_x')){ el.hidden=true; return; }
   let d={}; try{ CARRY.forEach(k=>{ const v=localStorage.getItem(k); if(v!==null) d[k]=v; }); }catch(e){}

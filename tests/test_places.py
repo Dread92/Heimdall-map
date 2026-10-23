@@ -98,7 +98,9 @@ def test_a_dropped_pin_can_never_be_named_by_a_post():
 def test_the_three_zones_are_the_ones_that_were_asked_for():
     m = re.search(r"const ZONES=\[(.*?)\];", PAGE)
     assert m
-    assert [int(x) for x in re.findall(r"\[(\d+),", m.group(1))] == [10, 30, 60]
+    # 1.58.56: the first is the reader's near zone — 10, 15 or 20 km (a reader: "15 km minimum, eventually 20"), 15 unless chosen
+    assert m.group(1) == "[NEAR_R,'near'],[30,'approach'],[60,'observe']"
+    assert "const NEAR_RS=[10,15,20]; let NEAR_R=15;" in PAGE
 
 
 def test_the_eta_is_a_band_and_never_a_number():

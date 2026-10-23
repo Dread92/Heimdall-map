@@ -76,7 +76,7 @@ def test_the_one_instruction_is_the_guides_own_and_links_to_it():
 def test_the_escalation_level_comes_from_facts_and_picks_the_tone():
     i = PAGE.index("function escLevel(rows){")
     body = PAGE[i:PAGE.index("return lv; }", i)]
-    assert "placeLevel(HOME)" in body and "r.d<=30||r.hi.inbound" in body and "r.d<=10" in body
+    assert "placeLevel(HOME)" in body and "r.d<=30||r.hi.inbound" in body and "r.d<=NEAR_R" in body   # 1.58.56
     assert "lvl==='at'" in body and "'mig31k_departure'" in body
     assert "const VIB_L={2:" in PAGE
     assert "now-TONE.t<10000&&level<=TONE.l" in PAGE                 # one tone in 10 s unless it rises

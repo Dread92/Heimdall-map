@@ -336,6 +336,17 @@ but the prompt to set one. The siren and the official app stay first.
 treatment for the most urgent one. "Без подальшої фіксації 3х БР." is three missiles no longer tracked; it ends the
 reports of them, never the warning — that is the official alert's.
 
+## The approach signal follows the posts, not the target (1.58.56)
+
+A reader asked for a signal that repeats inside the near zone, faster as a target comes closer. A beep that speeds up
+reads as a radar: it says "it is coming, now nearer". The app has no radar; it has posts. So the signal's pace is the
+distance **the last post reported** — it changes only when a new post places the target again, it never moves on its
+own between two (the estimate stays off), and it stops when the target is lost, ended, held off the map, or not reported
+for five minutes. Its chip says so in words: "6 km · reported 1 min ago". A whole oblast is not a distance and gives no
+signal; ballistic and other region-wide warnings keep their own sound, which no radius filters. One tap silences it, and
+the sound's own switch and volume govern it. The near zone is the reader's to choose (10, 15 or 20 km) and stays on
+the phone, like the pins; the siren and the official app stay first.
+
 ## A 3D model says what it is, never where it is going (1.58.45)
 
 The owner asked for the threats in 3D, on the marks too, and for a named weapon whose post gave no course to show its

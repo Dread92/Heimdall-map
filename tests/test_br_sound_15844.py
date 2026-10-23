@@ -83,7 +83,7 @@ def test_what_makes_a_sound():
     for s in ("if(!HOME||m.status||m.endedBy||m.stale||m.held||hi.dist==null) return null;",
               "if(SND_REGION.has(m.type)){ if(d>REGION_R) return null;",
               "if(m.place==='область') return null;",
-              "if(d<=10) return {rank:3,level:3,why:'near'};",
+              "if(d<=NEAR_R) return {rank:3,level:3,why:'near'};",            # 1.58.56: the reader's near zone (was 10)
               "if(d<=REGION_R&&(hi.named||courseAtHome(m,x,y,d))) return {rank:2,level:2,why:'course'};",
               "if(d<=(SND_R||REGION_R)) return {rank:1,level:2,why:'radius'};"):
         assert s in body, s
@@ -115,7 +115,7 @@ def test_no_place_no_target_sound_a_prompt():
 
 def test_the_picker_and_its_line_in_three_languages():
     assert '<div class="mrow z" id="sndrr">' in PAGE and 'data-sr="0" data-t="snd_r_all"' in PAGE
-    assert '<div class="pnote sndw" data-t="snd_why">' in PAGE
+    assert '<div class="pnote sndw" id="sndw">' in PAGE and "$('sndw').textContent=t('snd_why',NEAR_R);" in PAGE   # 1.58.56: its km
     for k in ("snd_r", "snd_r_all", "snd_km", "snd_why", "snd_noplace", "snd_noplace_b", "n_reg_b"):
         assert len(re.findall(r"\b" + k + r":", I18N)) == 3, k
     assert "snd_km:'{0} км'" in I18N and "snd_why:'Дрон — один сигнал" in I18N
