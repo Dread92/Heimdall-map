@@ -95,7 +95,7 @@ def test_the_card_and_the_sheets():
     assert "${m3Ico(cur,28)||thrIco(cur.type)}" in PAGE                        # the card: the model, else the silhouette
     assert "(m3Ico(evs[0],34)||silSvg(evs[0])" in PAGE                         # an oblast's targets
     assert '<div class="type">${m3Ico(m,34)}${kind}' in PAGE                   # a target's sheet
-    ico = PAGE[PAGE.index("function m3Ico(m,sz){"):PAGE.index("function m3Ico(m,sz){") + 600]
+    ico = PAGE[PAGE.index("function m3Ico(m,sz,col){"):PAGE.index("function m3Ico(m,sz,col){") + 600]   # 1.58.55: a colour
     assert "if(!m3Ok()||!m||m.status) return '';" in ico and "'spin'" in ico and "steps(${s.n},jump-none)" in ico
 
 

@@ -2,6 +2,20 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.55 — 2026-10-24
+
+- **The 3D models in the Near list and the cheat sheet** (the owner: "update the 3D models in the threats nearby and in
+  the cheat sheet"). Each row of the Near list and the card's top threat show the weapon turning on itself, as on the
+  map, in the hover card and the sheet — pink-red when it heads for your place; the silhouette until its model is ready,
+  and in the night and blackout looks. The guide's weapon cards (Shahed, jet drone, cruise, ballistic, KAB) turn too,
+  from one small picture fetched once the page is up (never with "save data", kept for offline use); printed, the
+  silhouettes.
+- **Fixed: the map no longer jumps back after a pin is put on it** (a reader: "after zooming in to place the marker
+  precisely, the map reverted to its original scale"). Naming a pin you dropped on the map kept the pin but re-centred
+  the map 20 km across; now the map stays where you put it.
+- Tests: the Air Force statistics test dates its September nights a day and two days back — from 24 October its fixture
+  fell outside the statistics' 31-day read and the test failed whatever the code did.
+
 ## 1.58.54 — 2026-10-23
 
 - **The bot's line on the dashboard says how it is now** (the owner: "i keep seeing telegram bot failing"). One long

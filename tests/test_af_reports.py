@@ -52,15 +52,21 @@ def test_a_summary_is_kept_never_read_as_news_nor_as_a_live_threat():
 def test_one_report_per_night_the_statistics_and_the_backfill():
     st = server.State(server.Store(":memory:"), {})
     now = datetime.now(timezone.utc)
+    # 1.58.55: the fixture's nights are 22 and 28 September 2026 — dated a day and two days ago here, or the statistics'
+    # 31-day read (af_reports since a date) dropped the first from 24 October on, whatever the test checks
+    def recent(text, ts, days):
+        r = server.parse_af_report(text, ts)
+        r["date"] = (now - timedelta(days=days)).astimezone(server.kyiv_tz()).strftime("%Y-%m-%d")
+        return r
     # the same night's summary from the Air Force and a re-post: the Air Force's own is the one kept
     t = FIX["80852"][1]
     ts = (now - timedelta(hours=10)).isoformat()
-    st.store.af_save("war_monitor/1", "war_monitor", ts, server.parse_af_report(t, ts))
-    st.store.af_save("kpszsu/80852", "kpszsu", ts, server.parse_af_report(t, ts))
+    st.store.af_save("war_monitor/1", "war_monitor", ts, recent(t, ts, 1))
+    st.store.af_save("kpszsu/80852", "kpszsu", ts, recent(t, ts, 1))
     reps = st.store.af_reports()
     assert len(reps) == 1 and reps[0]["post"] == "kpszsu/80852"
     ts2 = (now - timedelta(hours=3)).isoformat()
-    st.store.af_save("kpszsu/79455", "kpszsu", ts2, server.parse_af_report(FIX["79455"][1], ts2))
+    st.store.af_save("kpszsu/79455", "kpszsu", ts2, recent(FIX["79455"][1], ts2, 2))
     w = st.stats(14)["windows"]["1"]
     assert w["summaries"] == 2 and w["launched_drones"] == 165 + 212 and w["launched_missiles"] == 4
     assert w["af"]["down"]["cruise"] == 1 and "ballistic" in w["af"]["used"]

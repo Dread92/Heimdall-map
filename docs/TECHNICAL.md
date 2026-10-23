@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-23 (1.58.54)
+**Documented version: 1.58** · last updated 2026-10-23 (1.58.55)
 
 The repository is **Dread92/Heimdall-map**. The app's address is **https://heimdall.com.ua** (1.58.34, 18 October
 2026); the Fly app keeps its first name, `kyiv-air-watch-gb`, and its first address keeps working (§15 has the move).
@@ -146,6 +146,7 @@ Heimdall-map/
 │   │                       strip of frames (1.58.45; an ES module, loaded on demand)
 │   ├── vendor/             three-m3d.min.js — three.js 0.185.1 (MIT, three.LICENSE), only the classes models3d.js uses
 │   ├── jar3d.webp          1.58.47: the donation jar in 3D (models3d.js's jar), a strip of 36 frames — scripts/render_jar.js
+│   ├── threats3d.webp      1.58.55: the guide's five weapons turning (models3d.js's spin), a row each — scripts/render_models.js
 │   ├── kyiv-map.json       27 oblasts + all raions, in km around Kyiv (geoBoundaries)
 │   ├── light-map.json      raions of the 8 oblasts + nearby oblast outlines, rivers, roads, towns (built)
 │   ├── light-map-x.json    raions of the 11 oblasts farther out — fetched only for a place there (built, 1.43)
@@ -177,6 +178,7 @@ Heimdall-map/
 │   ├── build_geo.py        rebuilds data/ua_regions.json and static/light-map.json (`--light`: the Light maps only)
 │   ├── build_three.sh      rebuilds static/vendor/three-m3d.min.js from three-m3d.entry.js (npm three + esbuild; 1.58.45)
 │   ├── render_jar.js       renders static/jar3d.webp from models3d.js's jar (Node + Playwright; 1.58.47)
+│   ├── render_models.js    renders static/threats3d.webp, the guide's weapons turning (Node + Playwright; 1.58.55)
 │   ├── build_hromadas.py   rebuilds static/hromadas/ from OCHA's ukr_admin_boundaries.gdb (pyogrio, shapely; 1.58.16)
 │   ├── build_places.py     rebuilds data/regional_places.json from GeoNames (1.43)
 │   ├── build_extra_places.py rebuilds data/extra_places.json from GeoNames (1.52)
@@ -2375,6 +2377,10 @@ Main parts:
   reduced motion it stays the disc. Outcomes, night arrows, blackout (`body.lite`): 2D. The card (`showTip`) and the
   sheet (`openSheet`, the oblast list) show `m3Ico(m, px)` — the `spin` strip as an animated background in the type's
   colour (`m3IcoCol`); until it is made, the silhouette. Light, the guide and the channel's picture keep the silhouettes.
+  1.58.55 (the owner: "update the 3D models in the threats nearby and in the cheat sheet"): the Near list's rows and
+  the card's top threat too — `rowIco(m, col, px)` = `m3Ico(m, px, col)` (a colour can be given: the row's pink-red
+  for a target heading for the reader's place) or the silhouette; `m3Pump` counts the strips made (`M3.gen`, in
+  `CARD_SIG`) and repaints the card and the list when its queue is empty (`paintCard(true)`). The guide: §10.5.
   The strategic-aviation and MiG-31K marks had no fill rule (black on the dark map): purple like the tactical ones;
 - `tick()` — marks: silhouettes per weapon (`G`, `GLYPH_BY_TYPE` from `static/glyphs.js`), turned only to a stated course (`orientOf`),
   uncertainty ring up to 25 km, 5-minute tail, labels (1.53.3: no off-screen edge indicators any more — the owner: the map has too much on it now; a target off the screen is in the Near list);
@@ -2732,7 +2738,11 @@ notification. Not printed.
 
 - **Five rules** that always apply; **weapon cards** (`shahed`, `jet`, `cruise`, `ballistic`, `kab`, `debris`):
   the usual warning time as a chip, how you notice it, what to do — with the map's own silhouette and colour
-  (`static/glyphs.js`, `ICON` in the page); **situations** (`car` — the bridges, `out`, `home`, `kids`, `after`,
+  (`static/glyphs.js`, `ICON` in the page) — 1.58.55: and the weapon turning on itself, as in the app
+  (`static/threats3d.webp`: models3d.js's `spin` of `drone`, `jetdrone`, `missile`, `ballistic`, `bomb`, a row each, 24
+  frames of 96 px, ~140 KB; `M3G` in the page, `scripts/render_models.js`): fetched as an image once the page has
+  loaded (never with "save data"), played by CSS (`.ic.m3`, `m3g`, one row by `--y`); until then, in print and for
+  debris the silhouette; with reduced motion its first frame. The worker keeps it once fetched (`KEEP`); **situations** (`car` — the bridges, `out`, `home`, `kids`, `after`,
   `rad`); the **emergency numbers** as `tel:` links; the **sources**, with what is not taken from them said.
 - Every rule comes from the listed official guidance (ДСНС, National Police, Ministry of Health, Poltava ОВА) —
   [SAFETY.md](SAFETY.md#the-guide-says-what-the-official-guidance-says). The checked date is in the footer.
@@ -2943,6 +2953,9 @@ to donate to keep the infrastructure and help the devs" (a Monobank jar, his pic
   military units, mobile air-defence teams, medics — not "the servers") / `sup_fund_qr` / `sup_fund_btn`, and its QR
   code, `static/pumb-qr.svg` (segno; decoded back to the link). The IBAN, the purpose, the NBU link and `nbu-qr.svg` are
   gone; PayPal and the owner's Monobank jar (when set in the dashboard) stay. No card number is written anywhere.
+- **1.58.55, a pin put on the map keeps its view** (a reader: "after zooming in to place the marker precisely, the
+  map reverted to its original scale"): naming a pin dropped on the map (or only renaming one) no longer re-centres the
+  map at 20 km across (`homesave`: `same`) — a place found by name or GPS is still shown.
 - **1.58.53, the jar without its box** (the owner: "the jar has some black background which looks bad"): one rule after
   every earlier one that drew a face (1.58.47's gold rim and warm light, 1.58.49's phone control) makes `#jarbtn`
   transparent — no border, no `box-shadow`, no `jarglow` — in every look; the strip and the drawing get a

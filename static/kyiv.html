@@ -1226,6 +1226,7 @@ body.lite .panel,body.lite .panel>*,body.lite .sec,body.lite .tabs.ind::after{an
 .nrb{padding:12px 2px 4px;font:750 12.5px/1 var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)}
 .nrow{display:flex;align-items:center;gap:10px;width:100%;min-height:64px;padding:10px 2px;border:0;border-bottom:1px solid var(--line);background:transparent;color:var(--ink);text-align:left;cursor:pointer;font:inherit}
 .nrow>svg{width:38px;height:38px;flex:none;border-radius:var(--r);background:#0e1117;border:1px solid var(--line)}
+.nrow>.m3ico{margin:0;border-radius:var(--r);background-color:#0e1117;border:1px solid var(--line)}.mych>.m3ico{margin:0}
 .nrow>div{flex:1;min-width:0}
 .nrow b{display:block;font:700 16px/1.25 var(--sans)}.nrow small{display:block;font:500 13.5px/1.3 var(--sans);color:var(--ink2);margin-top:1px}
 .nrow .km{flex:none;text-align:right;font:800 21px/1 var(--mono);white-space:nowrap}.nrow .km small{font:600 12.5px var(--sans);color:var(--ink2)}
@@ -2429,8 +2430,11 @@ $('homesug').onclick=e=>{ const b=e.target.closest('[data-n]'); if(b){ $('homen'
 $('hschg').onclick=()=>{ hsFreq(); hsStep('where'); };
 $('homefind').onclick=()=>{ hsStep('find'); $('homeq').value=''; renderHomeList(''); setTimeout(()=>$('homeq').focus(),60); hsOpen(); };
 $('homecancel').onclick=()=>{ HS_PEND=null; $('homesheet').classList.remove('show'); };
-$('homesave').onclick=()=>{ const P=HS_PEND; if(!P||!P.place) return; const p=P.place, slot=P.slot; setSlotName(slot,$('homen').value); setSlot(slot,p); HS_PEND=null;
-  $('homesheet').classList.remove('show'); notify(t('n_home',homeName()),t('n_home_b'),'end'); const [x,y]=proj(p.lon,p.lat); setView(x,y,Math.max(p.street?1.6:4,(p.km||8)*2.6));
+$('homesave').onclick=()=>{ const P=HS_PEND; if(!P||!P.place) return; const p=P.place, slot=P.slot, same=p===SLOTS[slot]; setSlotName(slot,$('homen').value); setSlot(slot,p); HS_PEND=null;
+  $('homesheet').classList.remove('show'); notify(t('n_home',homeName()),t('n_home_b'),'end');
+  // 1.58.55, a reader: "after zooming in to place the marker precisely, the map went back to its first scale" — a pin put on
+  // the map (then named), or a pin only renamed, keeps the view it was put in; a place found by name or GPS is shown
+  if(!same){ const [x,y]=proj(p.lon,p.lat); setView(x,y,Math.max(p.street?1.6:4,(p.km||8)*2.6)); }
   // 1.56: a street is a line — the map is armed so the next tap moves the pin to the exact spot, the street's name kept
   if(p.street){ PIN_KEEP={name:p.name,uk:p.uk,obl:p.obl}; armPin(true,slot,true);
     if(!LAYERS.sat&&!LAYERS.tiles){ LAYERS.tiles=true; applyLayers(); } } };
@@ -2731,7 +2735,7 @@ const upright=()=>0;   // kept for outcome marks, which have no course at all
 //   - a mark whose post gave no course (glyphs.js's `nofront`) shows the model turning on itself without stopping —
 //     it never holds a heading, so none can be read into it; with reduced motion it stays the "?" disc;
 //   - an outcome (shot down, impact, lost), the night and blackout looks, "save data", no WebGL: the 2D drawing.
-const M3={mod:null,state:0,cache:new Map(),queue:[],busy:false,rm:matchMedia('(prefers-reduced-motion: reduce)')};
+const M3={mod:null,state:0,cache:new Map(),queue:[],busy:false,gen:0,rm:matchMedia('(prefers-reduced-motion: reduce)')};
 const M3_KEYS=new Set(['drone','jetdrone','banderol','missile','ballistic','supersonic','bomb','fighter','bomber','unknown']);
 const M3DPR=Math.min(3,window.devicePixelRatio||1);
 const M3PX=Math.max(40,Math.min(96,Math.round(32*M3DPR/8)*8)), M3IPX=Math.max(40,Math.min(104,Math.round(34*M3DPR/8)*8));
@@ -2744,9 +2748,10 @@ function m3Sheet(key,view,col,px,line){ line=line||'#080b10'; const id=key+'|'+v
   M3.cache.set(id,{}); M3.queue.push([id,key,view,col,px,line]); m3Pump(); return null; }
 async function m3Pump(){ if(M3.busy||!M3.mod||!M3.queue.length) return; M3.busy=true;
   while(M3.queue.length){ const [id,key,view,col,px,line]=M3.queue.shift();
-    try{ const sh=await M3.mod.sheet(key,view,col,px,line); if(sh) M3.cache.set(id,sh); }catch(e){}
+    try{ const sh=await M3.mod.sheet(key,view,col,px,line); if(sh){ M3.cache.set(id,sh); M3.gen++; } }catch(e){}
     await new Promise(r=>requestAnimationFrame(()=>setTimeout(r,0))); }
-  M3.busy=false; M3.mod.release(); }   // its WebGL context is let go until a new strip is needed
+  M3.busy=false; M3.mod.release();
+  if(typeof paintCard==='function') paintCard(true); }   // 1.58.55: the Near list and the card take the strips just made   // its WebGL context is let go until a new strip is needed
 const m3Key=m=>((m.type==='drones'||asDrone(m))&&m.jet)?'jetdrone':asDrone(m)?'drone':(GLYPH_BY_TYPE[m.type]||'missile');
 // the card's and the sheet's colours — thrIco's, the jet's own amber, a ballistic missile white (its silhouette's fill)
 const m3IcoCol=m=>(m.type==='drones'||asDrone(m))?(m.jet?'#ffb15c':'#ff8a3d'):/aircraft|mig31k|guided_aerial_bombs/.test(m.type)?'#b07cff':m.type==='ballistic_missiles'?'#ffffff':'#ff5b52';
@@ -2768,8 +2773,9 @@ function m3Mark(b,m,gk){
   // because a filter on the <svg> itself makes Chromium stop clipping it (the whole strip showed across the map)
   if(s) rot.insertAdjacentHTML('beforeend',`<g class="m3 glyph"><svg class="m3v" x="-14" y="-14" width="28" height="28" viewBox="0 0 ${s.px} ${s.px}" aria-hidden="true"><image class="m3i" href="${s.url}" width="${s.px*s.n}" height="${s.px}" style="animation-duration:${s.dur}s;animation-timing-function:steps(${s.n})"/></svg></g>`);
 }
-// the card and the sheet: the model turning, in the type's colour ('' until its strip is made — then the silhouette)
-function m3Ico(m,sz){ if(!m3Ok()||!m||m.status) return ''; const s=m3Sheet(m3Key(m),'spin',m3IcoCol(m),M3IPX); if(!s) return '';
+// the card and the sheet: the model turning, in the type's colour ('' until its strip is made — then the silhouette).
+// 1.58.55: and the Near list's rows and the card's top threat, in their row's colour (pink-red: heading for your place)
+function m3Ico(m,sz,col){ if(!m3Ok()||!m||m.status) return ''; const s=m3Sheet(m3Key(m),'spin',col||m3IcoCol(m),M3IPX); if(!s) return '';
   return `<span class="m3ico" style="width:${sz}px;height:${sz}px;background-image:url(${s.url});background-size:${s.n*100}% 100%;animation-duration:${s.dur}s;animation-timing-function:steps(${s.n},jump-none)" aria-hidden="true"></span>`; }
 // Outcomes the map no longer draws.
 //   clear  — a channel writing "чисто" is not an all-clear. It painted a green ✓ that read as the raid being
@@ -3634,6 +3640,9 @@ const thrIco=(ty,col)=>{ const g=GLYPH_BY_TYPE[ty]; if(!g) return '';
 function silSvg(m,col){ const k=/^(arrow|nofront)$/.test(glyphKey(m))?(((m.type==='drones'||asDrone(m))&&m.jet)?'jetdrone':asDrone(m)?'drone':(GLYPH_BY_TYPE[m.type]||'missile')):glyphKey(m);
   const cls='sil'+(((m.type==='drones'&&m.jet)||m.type==='banderol_missiles')?' jet':'')+(m.type==='ballistic_missiles'?' bal':'')+(m.type==='supersonic_missiles'?' sup':'');
   return `<svg viewBox="-14 -14 28 28" aria-hidden="true"><g class="${cls}" style="--c:${col||KIND_COL(m)}">${G[k]||''}</g></svg>`; }
+// 1.58.55, the owner: "update the 3D models in the threats nearby" — a row's icon is the model turning (as on the map, the
+// hover card and the sheet), the silhouette until its strip is made and in the looks that never load three.js
+const rowIco=(m,col,sz)=>m3Ico(m,sz,col)||silSvg(m,col);
 const NEAR_MAX=350;     // km — the Near list: the reader's region, not the country
 function nearRows(){
   const ref=HOME?proj(HOME.lon,HOME.lat):[0,0], now=Date.now(), out=[];
@@ -3664,7 +3673,7 @@ function nearHTML(rows){
   for(const r of rows.slice(0,40)){ const b=band(r), m=r.m;
     if(b!==cur){ cur=b; h+=`<div class="nrb">${esc(name[b])}</div>`; }
     const here=r.hi.inbound&&!m.stale, km=(r.imm||r.vague)?'—':Math.round(r.d);
-    h+=`<button type="button" class="nrow${here?' here':''}${m.stale?' stale':''}" data-id="${esc(m.id)}">${silSvg(m,here?'#ff2d55':null)}<div><b>${esc(kindOf(m))}${r.n>1?' ×'+r.n:''} · ${esc(rowPlace(m))}</b><small>${esc(rowSub(r))}</small></div><div class="km">${km}<small> ${esc(t('lt_km'))}</small></div></button>`; }
+    h+=`<button type="button" class="nrow${here?' here':''}${m.stale?' stale':''}" data-id="${esc(m.id)}">${rowIco(m,here?'#ff2d55':null,38)}<div><b>${esc(kindOf(m))}${r.n>1?' ×'+r.n:''} · ${esc(rowPlace(m))}</b><small>${esc(rowSub(r))}</small></div><div class="km">${km}<small> ${esc(t('lt_km'))}</small></div></button>`; }
   return h+`<div class="nrnote">${esc(t('nr_note'))}</div>`; }
 // The escalation level, 0–4, from what is already known (docs/TECHNICAL.md §9): 1 an official alert over the place,
 // 2 a target within 30 km of it or heading for it as a post said, 3 within 10 km or a bridge "at", 4 a fresh
@@ -3731,7 +3740,7 @@ function paintCard(force){
   const pk=HOME?placeLevel(HOME).k:(officialLevel()||'G');
   const sig=[LANG,LEVEL,ACTIVE,HOME?HOME.lon+','+HOME.lat:'',pk,top?[top.m.id,Math.round(top.d),top.n,top.chs,Math.round(agoMin(top.m.ts)),top.hi.inbound].join(','):'',
     n30,rows.map(r=>r.m.id+':'+Math.round(r.d)+':'+Math.round(agoMin(r.m.ts))+':'+r.n+(r.m.stale?'s':'')).join('|'),
-    tw?tw.className+(tw.dataset.line||''):'',$('kyiv').querySelector('.dur')?.textContent||''].join('#');
+    tw?tw.className+(tw.dataset.line||''):'',$('kyiv').querySelector('.dur')?.textContent||'',M3.gen].join('#');
   shCard(pk);
   if(sig===CARD_SIG&&!force) return; CARD_SIG=sig;
   const card=$('mycard'); card.className=(card.classList.contains('mini')?'mini ':'')+'lv'+LEVEL+(HOME?' hasplace':'');
@@ -3739,7 +3748,7 @@ function paintCard(force){
   const ch=$('mych');
   if(top){ const m=top.m, here=top.hi.inbound;
     ch.className='mych'+(top.d<=10||here?' near':''); ch.dataset.id=m.id;
-    ch.innerHTML=`${silSvg(m,here?'#ff2d55':null)}<div><b>${esc(kindOf(m))}${top.n>1?' ×'+top.n:''}</b><small>${esc(rowPlace(m))} · ${esc(rowSub(top))}</small></div><div class="km">${Math.round(top.d)} ${esc(t('lt_km'))}<small>${esc(fromWhere())}</small></div>`;
+    ch.innerHTML=`${rowIco(m,here?'#ff2d55':null,36)}<div><b>${esc(kindOf(m))}${top.n>1?' ×'+top.n:''}</b><small>${esc(rowPlace(m))} · ${esc(rowSub(top))}</small></div><div class="km">${Math.round(top.d)} ${esc(t('lt_km'))}<small>${esc(fromWhere())}</small></div>`;
     ch.hidden=false; }
   else if(HOME){ ch.className='mych calm'; ch.dataset.id=''; ch.innerHTML=`<b>${esc(t('lt_none'))}.</b> <small>${esc(t('lt_none_b'))}</small>`; ch.hidden=false; }
   else { ch.className='mych calm set'; ch.dataset.id=''; ch.innerHTML=`<div><b>${esc(t('mc_set'))}</b><small>${esc(t('mc_set_b'))}</small></div><em>›</em>`; ch.hidden=false; }

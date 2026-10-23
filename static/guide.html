@@ -74,6 +74,14 @@ ul.do li::marker,.sit li::marker{color:var(--c,var(--ink3))}
 .sil .glyph.x{fill:none;stroke:var(--c);stroke-width:2.2px}.sil .glyph.ring{fill:none;stroke:var(--c);stroke-width:1.6px}
 .sil .jetfx{display:none}.sil.jet .jetfx{display:inline}.sil .flame{fill:#ffb347;stroke:none}.sil .flame2{fill:#fff4d6;stroke:none}
 .sil.bal .glyph{fill:#fff;stroke:#ff1744;stroke-width:1.4px}
+/* 1.58.55, the owner: "update the 3D models in the cheat sheet" — the weapon turning on itself, as in the app: one picture
+   (static/threats3d.webp, scripts/render_models.js), a row a weapon, played by CSS a frame at a time. It comes after the
+   page, never with "save data"; until then, in print and with reduced motion's first frame, the silhouette is there. */
+.ic.m3{display:block;background:#0e1117 url(/static/threats3d.webp) no-repeat;background-size:2400% 500%;
+  background-position:0 var(--y);animation:m3g 3.2s steps(24,jump-none) infinite}
+.ic.m3~.ic{display:none}
+@keyframes m3g{from{background-position:0 var(--y)}to{background-position:100% var(--y)}}
+@media (prefers-reduced-motion:reduce){.ic.m3{animation:none}}
 .sits{margin-top:22px;display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:10px}
 .sits section{margin-top:0}
 .sit{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:11px 12px 12px}
@@ -105,7 +113,7 @@ noscript p{margin:16px 0;padding:12px;border:1px solid #6b2328;border-radius:6px
   .rules{grid-template-columns:1fr 1fr;gap:4px}.rules li{padding:5px 6px 5px 28px}
   .rules li::before{background:#000;width:16px;height:16px;font-size:10px;line-height:16px;left:6px;top:5px}
   .cards,.sits{grid-template-columns:1fr 1fr 1fr;gap:5px}
-  .wc,.sit{padding:5px 7px 6px}.ic{width:24px;height:24px;background:#fff}
+  .wc,.sit{padding:5px 7px 6px}.ic{width:24px;height:24px;background:#fff}.ic.m3{display:none}.ic.m3~.ic{display:block}
   .wh h3,.sit h3{font-size:11px;margin-bottom:3px}.see{font-size:9.2px;margin:4px 0 3px}
   ul.do,.sit ul{padding-left:13px;gap:2px}
   .chip{border:1px solid #000;background:#fff;color:#000;font-size:9px;padding:1px 4px}
@@ -772,6 +780,8 @@ var NAV=['always','weapons','car','out','home','kids','after','rad','num','src']
 // the map's own silhouette and colour for each card (static/glyphs.js, the same as on Tactical and Light)
 var ICON={shahed:['drone','var(--ora)',''],jet:['jetdrone','var(--amb)',' jet'],cruise:['missile','var(--msl)',''],
   ballistic:['ballistic','var(--msl)',' bal'],kab:['bomb','var(--vio)',''],debris:['down','var(--ink2)','']};
+// 1.58.55: the models turning (static/threats3d.webp) — its rows in this order, made by scripts/render_models.js
+var M3G=['drone','jetdrone','missile','ballistic','bomb'], M3_ON=false;
 var $=function(id){return document.getElementById(id);};
 function pick(){
   // 1.58.46, the audit (C4): one of the three languages — "?lang=constructor" was an object's own key and blanked the page
@@ -781,8 +791,9 @@ function pick(){
 }
 var LANG=pick();
 function icon(id){
-  var I=ICON[id], g=(typeof G!=='undefined'&&I)?G[I[0]]:'';
-  return '<svg class="ic" viewBox="-14 -14 28 28" aria-hidden="true"><g class="sil'+I[2]+'" style="--c:'+I[1]+'">'+(g||'')+'</g></svg>';
+  var I=ICON[id], g=(typeof G!=='undefined'&&I)?G[I[0]]:'', r=I?M3G.indexOf(I[0]):-1;
+  return (M3_ON&&r>=0?'<span class="ic m3" style="--y:'+(r*100/(M3G.length-1))+'%" aria-hidden="true"></span>':'')+
+    '<svg class="ic" viewBox="-14 -14 28 28" aria-hidden="true"><g class="sil'+I[2]+'" style="--c:'+I[1]+'">'+(g||'')+'</g></svg>';
 }
 function li(a){ return a.map(function(x){ return '<li>'+x+'</li>'; }).join(''); }
 function render(){
@@ -814,6 +825,11 @@ $('lng').addEventListener('click',function(e){ var b=e.target.closest('button[da
 function saved(){ if(!('caches' in window)) return;
   caches.match('/guide').then(function(r){ var e=$('saved'); if(e) e.hidden=!r; }).catch(function(){}); }
 render();
+// 1.58.55: the picture of the models once the page is up (never with "save data"); the cards take it when it is here
+(function(){ var sd=false; try{ sd=!!(navigator.connection&&navigator.connection.saveData); }catch(x){}
+  if(sd) return;
+  function go(){ var im=new Image(); im.onload=function(){ M3_ON=true; render(); }; im.src='/static/threats3d.webp'; }
+  if(document.readyState==='complete') setTimeout(go,300); else window.addEventListener('load',function(){ setTimeout(go,300); }); })();
 // 1.57.4: back to where the reader came from — the page of the app before (history), or Light when it was Light, or
 // the map when the guide was opened on its own (a link, a notification, a bookmark)
 (function(){ var b=$('back'), r=null; try{ r=document.referrer?new URL(document.referrer):null; }catch(x){}

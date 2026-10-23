@@ -26,7 +26,8 @@ const GUIDE = ['/guide', '/static/glyphs.js', '/static/heimdall-64.png'];
 const SHELL = ['/static/i18n.js', '/static/live.js', '/static/hromadas.js', '/static/heimdall-192.png', '/static/logo-64.png'];
 // kept when they are first fetched through the worker (never downloaded ahead: a Light reader on 2G does not need
 // the full map) — the page itself from its next opening on
-const KEEP = GUIDE.concat(SHELL, ['/m', '/light', '/static/kyiv-map.json', '/static/map-ua.json', '/static/ukraine-map.json', '/static/light-map.json', '/static/kyiv-districts.json', '/static/towns-ua.json', '/manifest.json', '/light.webmanifest', '/static/shelters.js']);
+// 1.58.55: and the guide's models turning (static/threats3d.webp), once the guide has fetched it
+const KEEP = GUIDE.concat(SHELL, ['/static/threats3d.webp', '/m', '/light', '/static/kyiv-map.json', '/static/map-ua.json', '/static/ukraine-map.json', '/static/light-map.json', '/static/kyiv-districts.json', '/static/towns-ua.json', '/manifest.json', '/light.webmanifest', '/static/shelters.js']);
 // the addresses that are the same page
 const ALIAS = { '/': '/m', '/k': '/m', '/kyiv': '/m', '/l': '/light' };
 self.addEventListener('install', e => {
