@@ -292,6 +292,13 @@ body.lite .jarbtn{display:none}body.m-day .jarbtn{color:#12161c}body.m-night .ja
   body.m-day .jarbtn{background:#fff;border-color:#7d858f}body.m-night .jarbtn{background:#070a0f;border-color:#1c242f}
   .jarhint{bottom:64px}.jarhint::after{right:16px}.attrib.long:not([hidden])~.jarhint{bottom:118px}
 }
+/* 1.58.53, the owner: "the jar has some black background which looks bad". No box any more, on a phone or a computer:
+   the jar stands on the map by itself, a soft shadow under it so it reads on the satellite, the street map and at night;
+   the button keeps its size to hit (44 px on a phone). Its word under it (a computer) gets a shadow of its own. */
+.jarbtn,body.m-day .jarbtn,body.m-night .jarbtn{background:transparent;border-color:transparent;box-shadow:none;animation:none}
+.jarbtn .jar3d,.jarbtn svg{filter:drop-shadow(0 2px 3px rgba(0,0,0,.6)) drop-shadow(0 0 1px rgba(0,0,0,.7))}
+.jarcap{text-shadow:0 1px 2px #000,0 0 5px #000}body.m-day .jarcap{text-shadow:0 0 3px #fff,0 0 6px #fff}
+@media (max-width:999px){.jarbtn .jar3d{width:42px;height:42px}}
 .fbk{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}.fbk button{min-height:38px;padding:0 12px;border:1px solid var(--line2);border-radius:var(--r);background:transparent;color:var(--ink);font:inherit;font-size:13px}.fbk button.on{background:var(--ink);color:var(--bg,#0b0d11);border-color:var(--ink)}
 .fbf textarea,.fbf input{width:100%;box-sizing:border-box;margin:6px 0;padding:10px;border:1px solid var(--line2);border-radius:var(--r);background:rgba(255,255,255,.04);color:var(--ink);font:inherit;font-size:16px}.fbf textarea{min-height:120px;resize:vertical}
 .fbf .hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}.fbf .fbm{min-height:20px;margin:6px 0;font-size:13px}.fbf .fbm.ok{color:#5fd39a}.fbf .fbm.bad{color:#ff8a80}

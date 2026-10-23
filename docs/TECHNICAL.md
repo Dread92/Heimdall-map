@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-23 (1.58.52)
+**Documented version: 1.58** · last updated 2026-10-23 (1.58.53)
 
 The repository is **Dread92/Heimdall-map**. The app's address is **https://heimdall.com.ua** (1.58.34, 18 October
 2026); the Fly app keeps its first name, `kyiv-air-watch-gb`, and its first address keeps working (§15 has the move).
@@ -2933,6 +2933,10 @@ to donate to keep the infrastructure and help the devs" (a Monobank jar, his pic
   military units, mobile air-defence teams, medics — not "the servers") / `sup_fund_qr` / `sup_fund_btn`, and its QR
   code, `static/pumb-qr.svg` (segno; decoded back to the link). The IBAN, the purpose, the NBU link and `nbu-qr.svg` are
   gone; PayPal and the owner's Monobank jar (when set in the dashboard) stay. No card number is written anywhere.
+- **1.58.53, the jar without its box** (the owner: "the jar has some black background which looks bad"): one rule after
+  every earlier one that drew a face (1.58.47's gold rim and warm light, 1.58.49's phone control) makes `#jarbtn`
+  transparent — no border, no `box-shadow`, no `jarglow` — in every look; the strip and the drawing get a
+  `drop-shadow`, the word under it (a computer) a text shadow; the jar is 42 px on a phone, the button still 44.
 - **1.58.52, Heimdall first** (the owner: "inside the Heimdall app the top priority should be supporting Heimdall — clean and
   straightforward; clear primary and secondary actions, no mismatched yellows"): `supportSheet()` is three things, in this
   order — the main card `.payc` (`sup_hd_h`, `sup_hd_b`: what the donations pay for; the QR code `static/heimdall-qr.svg`

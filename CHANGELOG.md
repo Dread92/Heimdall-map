@@ -2,6 +2,12 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.53 — 2026-10-23
+
+- **The jar without its box** (the owner: "the jar has some black background which looks bad"): on a phone and on a
+  computer the jar stands on the map by itself, with a soft shadow so it reads on every background; the button keeps
+  its size to hit.
+
 ## 1.58.52 — 2026-10-23
 
 The support page puts Heimdall first (the owner: "inside the Heimdall app the top priority should definitely be supporting
