@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Heimdall (Kyiv Air Watch) — the full technical documentation, with a map of the system.">
-<meta name="heimdall-version" content="1.58.56">
-<meta name="heimdall-docs" content="d2dc1b56fa139071">
+<meta name="heimdall-version" content="1.58.57">
+<meta name="heimdall-docs" content="62722c80e9326d1d">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Heimdall Technical Manual</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -237,7 +237,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
 <header class="top">
   <div class="wrap">
     <a class="brand" href="#top"><b>Heimdall</b><span>Technical manual</span></a>
-    <span class="ver">1.58.56</span>
+    <span class="ver">1.58.57</span>
     <nav class="nav" aria-label="Sections">
       <a href="#map">Map</a><a href="#journeys">Journeys</a><a href="#rules">Rules</a><a href="#reference">Reference</a><a href="#safety">Safety</a>
     </nav>
@@ -256,7 +256,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
       <h1 class="title">How Heimdall works</h1>
       <p class="lead">An unofficial air-threat map for Kyiv and the oblasts around it. One Python process reads the official
       alert data and the channels that track drones and missiles, stores every post before it reads it, rebuilds the map
-      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.56, 24 October 2026:
+      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.57, 25 October 2026:
       the map first, then everything in full.</p>
     </div>
     <dl class="facts">
@@ -647,7 +647,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
     <div class="doc" id="doc">
 <section class="part" id="tech" data-label="Reference"><p class="partlabel">Part I · The reference</p>
 <h1 id="heimdall--technical-documentation">Heimdall — technical documentation</h1>
-<p><strong>Documented version: 1.58</strong> · last updated 2026-10-24 (1.58.56)</p>
+<p><strong>Documented version: 1.58</strong> · last updated 2026-10-25 (1.58.57)</p>
 <p>The repository is <strong>Dread92/Heimdall-map</strong>. The app's address is <strong>https://heimdall.com.ua</strong> (1.58.34, 18 October
 2026); the Fly app keeps its first name, <code>kyiv-air-watch-gb</code>, and its first address keeps working (§15 has the move).</p>
 <p>This is the complete technical reference: what runs, where the data comes from, how a Telegram post becomes a
@@ -4017,6 +4017,13 @@ page&quot;; the owner: &quot;replace it with this, but keep PayPal&quot;): <code
 military units, mobile air-defence teams, medics — not &quot;the servers&quot;) / <code>sup_fund_qr</code> / <code>sup_fund_btn</code>, and its QR
 code, <code>static/pumb-qr.svg</code> (segno; decoded back to the link). The IBAN, the purpose, the NBU link and <code>nbu-qr.svg</code> are
 gone; PayPal and the owner's Monobank jar (when set in the dashboard) stay. No card number is written anywhere.</li>
+<li><strong>1.58.57, the bank's and PayPal's own logos</strong> (the owner, with the two files: &quot;it's for the app and the sites —
+instead of just the names&quot;): the plain names on the support page's buttons (<code>&lt;i class=&quot;payl&quot;&gt;ПУМБ&lt;/i&gt;</code>, &quot;PayPal&quot;)
+are the brands' logos — <code>static/pumb-logo.png</code> (PUMB's red tile cropped around its wordmark, 144×72, shown 48×24) on
+Heimdall's button and the NGO's banner, <code>static/paypal-logo.png</code> (PayPal's wordmark, its download's baked-in
+checkerboard keyed out, 179×48, shown 60×16 on a white chip: its dark blue on the dark page) on PayPal's; colours as
+given, 48-colour PNGs of 1.6 and 2.3 KB; the name stays as each image's <code>alt</code>. None in the blackout look (<code>lite</code>).
+The NGO's site (07300.org.ua) got the same two on its PUMB and PayPal buttons.</li>
 <li><strong>1.58.56, the first run in three steps, the near zone chosen, the approach signal</strong> — §10.1 (the pins, the first
 run) and §9 (what makes a sound, the approach signal). Polish and Romanian (the same reader) are not added: some 1,500
 texts, machine-translated and unread, on a safety app — and their countries' alerts would need their own sources.</li>
@@ -6126,7 +6133,7 @@ d'alerte ne sont pas des préférences de style.</p>
 </section>
     </div>
   </div>
-  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.56, 24 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
+  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.57, 25 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
 </main>
 
 <script>

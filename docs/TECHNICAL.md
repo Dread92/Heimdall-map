@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-24 (1.58.56)
+**Documented version: 1.58** · last updated 2026-10-25 (1.58.57)
 
 The repository is **Dread92/Heimdall-map**. The app's address is **https://heimdall.com.ua** (1.58.34, 18 October
 2026); the Fly app keeps its first name, `kyiv-air-watch-gb`, and its first address keeps working (§15 has the move).
@@ -2984,6 +2984,13 @@ to donate to keep the infrastructure and help the devs" (a Monobank jar, his pic
   military units, mobile air-defence teams, medics — not "the servers") / `sup_fund_qr` / `sup_fund_btn`, and its QR
   code, `static/pumb-qr.svg` (segno; decoded back to the link). The IBAN, the purpose, the NBU link and `nbu-qr.svg` are
   gone; PayPal and the owner's Monobank jar (when set in the dashboard) stay. No card number is written anywhere.
+- **1.58.57, the bank's and PayPal's own logos** (the owner, with the two files: "it's for the app and the sites —
+  instead of just the names"): the plain names on the support page's buttons (`<i class="payl">ПУМБ</i>`, "PayPal")
+  are the brands' logos — `static/pumb-logo.png` (PUMB's red tile cropped around its wordmark, 144×72, shown 48×24) on
+  Heimdall's button and the NGO's banner, `static/paypal-logo.png` (PayPal's wordmark, its download's baked-in
+  checkerboard keyed out, 179×48, shown 60×16 on a white chip: its dark blue on the dark page) on PayPal's; colours as
+  given, 48-colour PNGs of 1.6 and 2.3 KB; the name stays as each image's `alt`. None in the blackout look (`lite`).
+  The NGO's site (07300.org.ua) got the same two on its PUMB and PayPal buttons.
 - **1.58.56, the first run in three steps, the near zone chosen, the approach signal** — §10.1 (the pins, the first
   run) and §9 (what makes a sound, the approach signal). Polish and Romanian (the same reader) are not added: some 1,500
   texts, machine-translated and unread, on a safety app — and their countries' alerts would need their own sources.

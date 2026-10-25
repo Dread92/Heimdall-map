@@ -48,5 +48,6 @@ def test_one_yellow_and_the_names_on_the_buttons():
     assert ".payb.pri{background:var(--ua-yellow);border:1px solid var(--ua-yellow);color:#111!important}" in PAGE
     assert ".payb.sec{background:transparent;border:1px solid var(--line2);color:var(--ink)!important}" in PAGE
     assert "#ffc439" not in PAGE and "#f2c14e;color:#12161c!important" not in PAGE       # PayPal's own and the jar's yellows
-    assert "<i class=\"payl\">${esc(t('sup_pumb'))}</i>" in SUP and '<i class="payl">PayPal</i>' in SUP
+    # 1.58.57: the names became the bank's and PayPal's own logos (tests/test_logos_15857.py), their names the alt text
+    assert "${esc(t('sup_hd_btn'))}</span>${lgP}</a>" in SUP and "${esc(t('sup_pp_btn'))}</span>${lgPP}</a>" in SUP
     assert "body.lite .payqr{display:none}" in PAGE

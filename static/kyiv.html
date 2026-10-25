@@ -855,7 +855,9 @@ body.lite .leader{stroke:#fff;stroke-opacity:.6}body.lite .anchor{fill:#fff}
 /* 1.58.52, the owner: "inside the app the top priority should be supporting Heimdall — clean and straightforward; clear
    primary and secondary actions, no mismatched yellows". The main card (Heimdall's fundraiser: what it pays for, its QR
    code for a computer, the one bright button), the NGO's fundraiser under it as a quiet banner, then PayPal from abroad.
-   Each button names where it goes (ПУМБ, PayPal) — a plain name, not the brand's logo. */
+   Each button names where it goes (ПУМБ, PayPal) — 1.58.57: with the bank's and PayPal's own logos, the files the owner
+   gave ("it's for the app and the sites, instead of just the names"): PUMB's red tile cropped around its wordmark,
+   PayPal's wordmark on white (static/pumb-logo.png, static/paypal-logo.png); their name is the image's alt. */
 .payc{margin-top:12px;padding:12px;border:1px solid var(--line2);border-left:3px solid var(--ua-yellow);border-radius:var(--r);background:var(--panel)}
 .paych{font:800 15px/1.25 var(--sans);color:var(--ink)}
 .paycb{margin-top:6px;font:500 13.5px/1.45 var(--sans);color:var(--ink2)}
@@ -867,8 +869,9 @@ body.lite .leader{stroke:#fff;stroke-opacity:.6}body.lite .anchor{fill:#fff}
 .payb.pri{background:var(--ua-yellow);border:1px solid var(--ua-yellow);color:#111!important}
 .payb.sec{background:transparent;border:1px solid var(--line2);color:var(--ink)!important}
 .payb:active,.payngo:active{transform:scale(.985)}
-.payl{flex:none;font:800 10.5px/1 var(--sans);font-style:normal;letter-spacing:.04em;padding:4px 6px;border-radius:4px;background:rgba(0,0,0,.14)}
-.payb.sec .payl,.payngo .payl{background:rgba(255,255,255,.08);color:var(--ink2)}body.m-day .payb.sec .payl,body.m-day .payngo .payl{background:rgba(0,0,0,.07)}
+.payl{flex:none;display:block;width:48px;height:24px;border-radius:4px}
+.payl.pp{display:flex;align-items:center;width:auto;padding:0 7px;background:#fff;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}.payl.pp img{display:block;width:60px;height:16px}
+body.lite .payl{display:none}
 .payngo{display:flex;align-items:center;gap:12px;margin-top:10px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r);color:var(--ink2)!important;text-decoration:none;font:500 12.5px/1.45 var(--sans)}
 .payngo b{font-weight:700;color:var(--ink)}.payngoa{flex:none;display:flex;align-items:center;gap:4px;color:var(--ink)}
 .payngoa svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
@@ -4264,17 +4267,21 @@ function supportSheet(){
   // 1.58.46: the owner's Monobank jar (the dashboard's; /api/donate): in the main card, under its button, when it is set
   const jar=DONATE_JAR&&/^https:\/\/send\.monobank\.ua\/jar\/[A-Za-z0-9]{6,24}$/.test(DONATE_JAR)?DONATE_JAR:'';
   const ext=`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>`;
+  // 1.58.57: the bank's and PayPal's logos on their buttons — not in the blackout look (no images there)
+  const lite=document.body.classList.contains('lite');
+  const lgP=lite?'':`<img class="payl" src="/static/pumb-logo.png" width="48" height="24" alt="${esc(t('sup_pumb'))}">`;
+  const lgPP=lite?'':'<span class="payl pp"><img src="/static/paypal-logo.png" width="60" height="16" alt="PayPal"></span>';
   $('sheetbody').innerHTML=`<div class="type">${t('sup_title')}</div>
     ${hd?`<div class="payc">
       <div class="paych">${esc(t('sup_hd_h'))}</div>
       <div class="paycb">${esc(t('sup_hd_b'))}</div>
       <div class="paycr"><a class="payqr" href="${esc(hd)}" target="_blank" rel="noopener noreferrer" aria-label="${esc(t('sup_hd_btn'))}"><img src="/static/heimdall-qr.svg" width="96" height="96" alt=""></a>
-        <div class="paycs"><a class="payb pri" href="${esc(hd)}" target="_blank" rel="noopener noreferrer"><span>${esc(t('sup_hd_btn'))}</span><i class="payl">${esc(t('sup_pumb'))}</i></a>
+        <div class="paycs"><a class="payb pri" href="${esc(hd)}" target="_blank" rel="noopener noreferrer"><span>${esc(t('sup_hd_btn'))}</span>${lgP}</a>
           <div class="kv1 muted payqt">${esc(t('sup_qr_pc'))}</div>
           ${jar?`<a class="payb sec" href="${esc(jar)}" target="_blank" rel="noopener noreferrer">${esc(t('jar_btn'))}</a>`:''}</div></div></div>`:''}
-    ${ngo?`<a class="payngo" href="${esc(ngo)}" target="_blank" rel="noopener noreferrer"><span><b>${esc(t('sup_ngo_h'))}</b> ${esc(t('sup_ngo_b'))}</span><span class="payngoa"><i class="payl">${esc(t('sup_pumb'))}</i>${ext}</span></a>`:''}
+    ${ngo?`<a class="payngo" href="${esc(ngo)}" target="_blank" rel="noopener noreferrer"><span><b>${esc(t('sup_ngo_h'))}</b> ${esc(t('sup_ngo_b'))}</span><span class="payngoa">${lgP}${ext}</span></a>`:''}
     <div class="payab">${esc(t('sup_abroad'))}</div>
-    ${pp?`<a class="payb sec pp" href="${esc(pp)}" target="_blank" rel="noopener noreferrer"><span>${esc(t('sup_pp_btn'))}</span><i class="payl">PayPal</i></a>`:row('PayPal',CONTACT.ngo,'cp1')}
+    ${pp?`<a class="payb sec pp" href="${esc(pp)}" target="_blank" rel="noopener noreferrer"><span>${esc(t('sup_pp_btn'))}</span>${lgPP}</a>`:row('PayPal',CONTACT.ngo,'cp1')}
     <div class="kv1 muted" style="margin-top:12px">${esc(t('sup_thanks'))}</div>
     <div style="margin-top:10px;display:flex;justify-content:space-between;align-items:center">
       <button class="tgl" id="donnever" style="font-size:11px">${t('sup_never')}</button>

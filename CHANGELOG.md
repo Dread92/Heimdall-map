@@ -2,6 +2,13 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.57 — 2026-10-25
+
+- **The bank's and PayPal's own logos on the support buttons** (the owner, with the two files: "for the app and the
+  sites, instead of just the names"): PUMB's red logo on "Support Heimdall" and on the NGO 07300's banner, PayPal's on
+  its button (on a small white chip, readable on the dark page). The names stay for screen readers; the blackout look
+  keeps text only. The NGO's site has them too.
+
 ## 1.58.56 — 2026-10-24
 
 A reader's first minutes with the app on a phone ("the banner and the invitation to place a marker took almost the whole
