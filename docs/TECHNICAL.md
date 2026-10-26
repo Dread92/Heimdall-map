@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-26 (1.58.58)
+**Documented version: 1.58** · last updated 2026-10-26 (1.58.59)
 
 The repository is **Dread92/Heimdall-map**. The app's address is **https://heimdall.com.ua** (1.58.34, 18 October
 2026); the Fly app keeps its first name, `kyiv-air-watch-gb`, and its first address keeps working (§15 has the move).
@@ -62,6 +62,7 @@ hour and the last 24 hours from what it recorded (§7.11):
 | **Tactical** | `/m` (also `/`, `/k`, `/kyiv`) | The full map: every mark with its evidence, the feed, alerts, statistics, display modes, layers. |
 | **Light** | `/light` (also `/l`) | One place (one of the four pins, named by their owner): its raion's official status, what is within 30 km, what is heading there. |
 | **Guide** | `/guide` | What to do, weapon by weapon and situation by situation — the official guidance, in three languages, offline (1.35, §10.5). |
+| **Privacy** | `/privacy` | What stays on the phone, what the server receives and keeps, what only an opt-in sends — in three languages; the address Google Play asks for (1.58.59, §11). |
 
 Both install as separate PWAs (manifest ids `/m` and `/light` — unchanged by the 1.29 rename, so Android offers
 the new name and icon as an update of the installed app; an iPhone keeps an installed app's name and icon until
@@ -165,6 +166,7 @@ Heimdall-map/
 │   ├── admin-login.html    1.58.21: its sign-in page (EN / UK) — the key typed here, never in the address
 │   ├── index.html, mobile.html   older desktop / mobile views (/desktop, /ua)
 │   ├── guide.html          what to do, weapon by weapon (/guide, 1.35): self-contained, content in its JSON block
+│   ├── privacy.html        the privacy policy (/privacy, 1.58.59): three languages, the same facts — §11
 │   ├── sw.js               service worker: push display, notification clicks, the pages and the guide kept for when the server is unreachable
 │   ├── manifest.json, light.webmanifest   the two PWAs
 │   ├── heimdall-*.png      the app icons (any / maskable / iPhone), the favicon; logo-hd-badge.png Android's badge
@@ -200,7 +202,7 @@ Heimdall-map/
 │   ├── github-push.bat     creates the private GitHub repo and pushes (browser sign-in via GitHub CLI)
 │   └── start.sh, dev.sh, tunnel.bat
 ├── tests/                  pytest suites (see §14) and tests/fixtures/
-├── docs/                   this file, SAFETY, DEPLOY, I18N, CORPUS, DEMARRAGE-FR
+├── docs/                   this file, SAFETY, DEPLOY, I18N, CORPUS, DEMARRAGE-FR, PLAY (Google Play: listing, data safety, beta)
 ├── .github/workflows/      ci.yml (tests on 3.9 and 3.12), fly-deploy.yml (optional auto-deploy)
 ├── Dockerfile · fly.toml · render.yaml · deploy-fly.bat · start.bat
 ├── config.example.json     template for config.json (config.json itself is never committed)
@@ -2993,6 +2995,7 @@ to donate to keep the infrastructure and help the devs" (a Monobank jar, his pic
   military units, mobile air-defence teams, medics — not "the servers") / `sup_fund_qr` / `sup_fund_btn`, and its QR
   code, `static/pumb-qr.svg` (segno; decoded back to the link). The IBAN, the purpose, the NBU link and `nbu-qr.svg` are
   gone; PayPal and the owner's Monobank jar (when set in the dashboard) stay. No card number is written anywhere.
+- **1.58.59, the privacy policy and the Play listing** — §11; docs/PLAY.md.
 - **1.58.58, each pin's own near zone** — §10.1 (the pins).
 - **1.58.57, the bank's and PayPal's own logos** (the owner, with the two files: "it's for the app and the sites —
   instead of just the names"): the plain names on the support page's buttons (`<i class="payl">ПУМБ</i>`, "PayPal")
@@ -3036,6 +3039,13 @@ to donate to keep the infrastructure and help the devs" (a Monobank jar, his pic
 - 1.57: the nearest shelter is found on the phone (`static/shelters.js`), from one file that is the same for everyone
   (`/static/shelters.json`): no pin and no position is in any request.
 - Push subscriptions: a ~10 km cell only; older stored homes are coarsened at start.
+- 1.58.59: **the privacy policy** (`/privacy`, `static/privacy.html`; the footer's last link, "Privacy") says this
+  section to readers, in three languages — the pins and settings on the phone; what ordinary use sends (no address
+  kept, the daily count's hash); what only an opt-in sends (push: the push address, a ~10 km cell; feedback: kept 180
+  days, `FB_KEEP_DAYS`, 300 characters to the team's Telegram; a misreading report; the bot); the services a phone
+  talks to (Google Fonts, OpenStreetMap's tiles, the push services, the payment pages, Fly.io). It is the address the
+  Google Play listing gives (docs/PLAY.md: the listing in two languages, the data-safety answers, the beta steps;
+  `tests/test_privacy_15859.py` holds the page to the code's figures). A change to what is kept changes the page.
 - 1.58: the private channel's bot token (`TG_BOT_TOKEN`) is the owner's, created by him at @BotFather and stored by
   `scripts/set-telegram-channel.bat` straight into Fly's secrets (asked hidden, read from stdin by `fly secrets
   import`). The server reads it from the environment and puts it only in the address of its calls to Telegram: no
@@ -3176,6 +3186,7 @@ All JSON unless stated. Public unless marked 🔒 (`ADMIN_KEY`).
 | `GET /`, `/m`, `/k`, `/kyiv` | Tactical page |
 | `GET /light`, `/l` | Light page |
 | `GET /guide` | the what-to-do guide (§10.5): static, three languages, kept offline by `sw.js` |
+| `GET /privacy` | the privacy policy (§11): static, three languages (1.58.59) |
 | `GET /desktop`, `/index.html`, `/dash` | older desktop view |
 | `GET /ua`, `/mobile`, `/mobile.html` | older mobile view |
 | `GET /manifest.json`, `/light.webmanifest`, `/sw.js`, `/favicon.ico`, `/static/*` | PWA files, assets (gzip + ETag) |

@@ -2,6 +2,16 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.59 — 2026-10-26
+
+- **A privacy policy** at heimdall.com.ua/privacy, in Ukrainian, English and French — what stays on your phone (the
+  pins, the settings), what the server receives and keeps (no IP address; a daily count that cannot follow anyone),
+  what only your choices send (push, feedback, a misreading report, the Telegram bot), and the services your phone
+  talks to. Linked at the bottom of every footer ("Privacy"). It is also the address Google Play asks for.
+- **docs/PLAY.md** — the Google Play listing in Ukrainian and English, the answers to the data-safety form, the Expo
+  build and submit settings, and the steps from internal testing to production. The Play build carries no donation
+  buttons (Google Play's Payments policy).
+
 ## 1.58.58 — 2026-10-26
 
 - **Each pin has its own near zone** (the owner: "a way to set the pins' radius, as in the tutorial"): 10, 15 or 20 km

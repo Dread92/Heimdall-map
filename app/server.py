@@ -9358,6 +9358,8 @@ class Handler(BaseHTTPRequestHandler):
             # still opens with no network (static/sw.js). It asks the server for nothing.
             if u.path == "/guide":
                 return self._file("guide.html", "text/html; charset=utf-8")
+            if u.path == "/privacy":                        # 1.58.59: the privacy policy (the site's, and Google Play's address)
+                return self._file("privacy.html", "text/html; charset=utf-8")
             if u.path == "/feedback":                       # 1.58.46: the feedback form on its own (Light, the guide)
                 return self._file("feedback.html", "text/html; charset=utf-8")
             if u.path == "/api/donate":                     # 1.58.46: the jar the map's button opens (None: the support sheet)

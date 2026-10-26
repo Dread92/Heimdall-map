@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Heimdall (Kyiv Air Watch) — the full technical documentation, with a map of the system.">
-<meta name="heimdall-version" content="1.58.58">
-<meta name="heimdall-docs" content="df0f38929979aeca">
+<meta name="heimdall-version" content="1.58.59">
+<meta name="heimdall-docs" content="f96c864e6c5bfa4e">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Heimdall Technical Manual</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -237,7 +237,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
 <header class="top">
   <div class="wrap">
     <a class="brand" href="#top"><b>Heimdall</b><span>Technical manual</span></a>
-    <span class="ver">1.58.58</span>
+    <span class="ver">1.58.59</span>
     <nav class="nav" aria-label="Sections">
       <a href="#map">Map</a><a href="#journeys">Journeys</a><a href="#rules">Rules</a><a href="#reference">Reference</a><a href="#safety">Safety</a>
     </nav>
@@ -256,7 +256,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
       <h1 class="title">How Heimdall works</h1>
       <p class="lead">An unofficial air-threat map for Kyiv and the oblasts around it. One Python process reads the official
       alert data and the channels that track drones and missiles, stores every post before it reads it, rebuilds the map
-      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.58, 26 October 2026:
+      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.59, 26 October 2026:
       the map first, then everything in full.</p>
     </div>
     <dl class="facts">
@@ -647,7 +647,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
     <div class="doc" id="doc">
 <section class="part" id="tech" data-label="Reference"><p class="partlabel">Part I · The reference</p>
 <h1 id="heimdall--technical-documentation">Heimdall — technical documentation</h1>
-<p><strong>Documented version: 1.58</strong> · last updated 2026-10-26 (1.58.58)</p>
+<p><strong>Documented version: 1.58</strong> · last updated 2026-10-26 (1.58.59)</p>
 <p>The repository is <strong>Dread92/Heimdall-map</strong>. The app's address is <strong>https://heimdall.com.ua</strong> (1.58.34, 18 October
 2026); the Fly app keeps its first name, <code>kyiv-air-watch-gb</code>, and its first address keeps working (§15 has the move).</p>
 <p>This is the complete technical reference: what runs, where the data comes from, how a Telegram post becomes a
@@ -719,6 +719,11 @@ hour and the last 24 hours from what it recorded (§7.11):</p>
 <td><strong>Guide</strong></td>
 <td><code>/guide</code></td>
 <td>What to do, weapon by weapon and situation by situation — the official guidance, in three languages, offline (1.35, §10.5).</td>
+</tr>
+<tr>
+<td><strong>Privacy</strong></td>
+<td><code>/privacy</code></td>
+<td>What stays on the phone, what the server receives and keeps, what only an opt-in sends — in three languages; the address Google Play asks for (1.58.59, §11).</td>
 </tr>
 </tbody>
 </table></div>
@@ -816,6 +821,7 @@ real post, and a fix to the rules applies to posts already in the database.</p>
 │   ├── admin-login.html    1.58.21: its sign-in page (EN / UK) — the key typed here, never in the address
 │   ├── index.html, mobile.html   older desktop / mobile views (/desktop, /ua)
 │   ├── guide.html          what to do, weapon by weapon (/guide, 1.35): self-contained, content in its JSON block
+│   ├── privacy.html        the privacy policy (/privacy, 1.58.59): three languages, the same facts — §11
 │   ├── sw.js               service worker: push display, notification clicks, the pages and the guide kept for when the server is unreachable
 │   ├── manifest.json, light.webmanifest   the two PWAs
 │   ├── heimdall-*.png      the app icons (any / maskable / iPhone), the favicon; logo-hd-badge.png Android's badge
@@ -851,7 +857,7 @@ real post, and a fix to the rules applies to posts already in the database.</p>
 │   ├── github-push.bat     creates the private GitHub repo and pushes (browser sign-in via GitHub CLI)
 │   └── start.sh, dev.sh, tunnel.bat
 ├── tests/                  pytest suites (see §14) and tests/fixtures/
-├── docs/                   this file, SAFETY, DEPLOY, I18N, CORPUS, DEMARRAGE-FR
+├── docs/                   this file, SAFETY, DEPLOY, I18N, CORPUS, DEMARRAGE-FR, PLAY (Google Play: listing, data safety, beta)
 ├── .github/workflows/      ci.yml (tests on 3.9 and 3.12), fly-deploy.yml (optional auto-deploy)
 ├── Dockerfile · fly.toml · render.yaml · deploy-fly.bat · start.bat
 ├── config.example.json     template for config.json (config.json itself is never committed)
@@ -4026,6 +4032,7 @@ page&quot;; the owner: &quot;replace it with this, but keep PayPal&quot;): <code
 military units, mobile air-defence teams, medics — not &quot;the servers&quot;) / <code>sup_fund_qr</code> / <code>sup_fund_btn</code>, and its QR
 code, <code>static/pumb-qr.svg</code> (segno; decoded back to the link). The IBAN, the purpose, the NBU link and <code>nbu-qr.svg</code> are
 gone; PayPal and the owner's Monobank jar (when set in the dashboard) stay. No card number is written anywhere.</li>
+<li><strong>1.58.59, the privacy policy and the Play listing</strong> — §11; docs/PLAY.md.</li>
 <li><strong>1.58.58, each pin's own near zone</strong> — §10.1 (the pins).</li>
 <li><strong>1.58.57, the bank's and PayPal's own logos</strong> (the owner, with the two files: &quot;it's for the app and the sites —
 instead of just the names&quot;): the plain names on the support page's buttons (<code>&lt;i class=&quot;payl&quot;&gt;ПУМБ&lt;/i&gt;</code>, &quot;PayPal&quot;)
@@ -4069,6 +4076,13 @@ of the place itself (<code>LT.tiles</code>, §10.2): the server learns no more t
 <li>1.57: the nearest shelter is found on the phone (<code>static/shelters.js</code>), from one file that is the same for everyone
 (<code>/static/shelters.json</code>): no pin and no position is in any request.</li>
 <li>Push subscriptions: a ~10 km cell only; older stored homes are coarsened at start.</li>
+<li>1.58.59: <strong>the privacy policy</strong> (<code>/privacy</code>, <code>static/privacy.html</code>; the footer's last link, &quot;Privacy&quot;) says this
+section to readers, in three languages — the pins and settings on the phone; what ordinary use sends (no address
+kept, the daily count's hash); what only an opt-in sends (push: the push address, a ~10 km cell; feedback: kept 180
+days, <code>FB_KEEP_DAYS</code>, 300 characters to the team's Telegram; a misreading report; the bot); the services a phone
+talks to (Google Fonts, OpenStreetMap's tiles, the push services, the payment pages, Fly.io). It is the address the
+Google Play listing gives (docs/PLAY.md: the listing in two languages, the data-safety answers, the beta steps;
+<code>tests/test_privacy_15859.py</code> holds the page to the code's figures). A change to what is kept changes the page.</li>
 <li>1.58: the private channel's bot token (<code>TG_BOT_TOKEN</code>) is the owner's, created by him at @BotFather and stored by
 <code>scripts/set-telegram-channel.bat</code> straight into Fly's secrets (asked hidden, read from stdin by <code>fly secrets import</code>). The server reads it from the environment and puts it only in the address of its calls to Telegram: no
 error, log line, dashboard row or <code>kv</code> entry carries it (<code>BotAPI</code> reports the method's name and Telegram's words).
@@ -4214,6 +4228,10 @@ scripts show the pasted key on screen.</li>
 <tr>
 <td><code>GET /guide</code></td>
 <td>the what-to-do guide (§10.5): static, three languages, kept offline by <code>sw.js</code></td>
+</tr>
+<tr>
+<td><code>GET /privacy</code></td>
+<td>the privacy policy (§11): static, three languages (1.58.59)</td>
 </tr>
 <tr>
 <td><code>GET /desktop</code>, <code>/index.html</code>, <code>/dash</code></td>
@@ -6143,7 +6161,7 @@ d'alerte ne sont pas des préférences de style.</p>
 </section>
     </div>
   </div>
-  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.58, 26 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
+  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.59, 26 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
 </main>
 
 <script>

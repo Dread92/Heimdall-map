@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b0d11">
+<title>Heimdall — конфіденційність · privacy</title>
+<link rel="icon" href="/static/heimdall-64.png">
+<!-- 1.58.59: the privacy policy (heimdall.com.ua/privacy) — for the site, and the address Google Play asks for. Three
+     languages, the same facts in each (tests/test_privacy_15859.py); every sentence is what the code does, and is
+     changed with it (docs/TECHNICAL.md §11). Without its script, the three languages show one under the other. -->
+<style>
+:root{--bg:#0b0d11;--panel:#12151b;--ink:#ecebe6;--ink2:#b5b3ab;--line:#2a2f38;--y:#ffd500;color-scheme:dark}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:760px;margin:0 auto;padding:16px 16px 48px}
+header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px}header img{width:28px;height:28px}
+header b{font:800 15px/1 system-ui,sans-serif;letter-spacing:.08em}header .sp{flex:1}
+a{color:#9cc0ff}a.back{display:inline-flex;align-items:center;min-height:44px;padding:0 12px;border:1px solid var(--line);border-radius:6px;color:var(--ink);text-decoration:none;font-weight:700}
+.lng{display:flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.lng button{min-width:48px;min-height:40px;border:0;background:none;color:var(--ink2);font:700 12px/1 ui-monospace,Menlo,monospace;cursor:pointer}
+.lng button+button{border-left:1px solid var(--line)}.lng button[aria-pressed="true"]{background:#24303f;color:#fff}
+h1{font-size:24px;line-height:1.2;margin:14px 0 4px}h2{font-size:17px;margin:26px 0 6px}
+.upd{color:var(--ink2);font-size:14px;margin:0 0 14px}
+.box{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--y);border-radius:6px;padding:10px 14px}
+ul{padding-left:20px}li{margin:4px 0}
+html[data-l] article{display:none}html[data-l="uk"] article[lang="uk"],html[data-l="en"] article[lang="en"],html[data-l="fr"] article[lang="fr"]{display:block}
+html:not([data-l]) article+article{border-top:1px solid var(--line);margin-top:30px}
+</style>
+</head>
+<body>
+<main>
+<header><a class="back" href="/m" aria-label="Heimdall">←</a><img src="/static/heimdall-64.png" alt=""><b>HEIMDALL</b><span class="sp"></span>
+  <div class="lng" id="lng" role="group" aria-label="Мова · Language · Langue"><button type="button" data-l="uk" aria-pressed="false">УКР</button><button type="button" data-l="en" aria-pressed="false">EN</button><button type="button" data-l="fr" aria-pressed="false">FR</button></div></header>
+
+<article lang="uk">
+<h1>Конфіденційність</h1>
+<p class="upd">Оновлено 26 жовтня 2026 р. Стосується сайту heimdall.com.ua і застосунків Heimdall для Android та iPhone.</p>
+<div class="box"><p><b>Коротко.</b> Без облікового запису, без реклами, без трекерів. Ваші мітки ніколи не залишають телефон. Сервер не записує вашу IP-адресу. Ми нічого не продаємо й нікому не передаємо.</p></div>
+<h2>Хто ми</h2>
+<p>Heimdall — неофіційний волонтерський сервіс від Black Flame Studio та ГО «07300 — Люди для людей». Питання щодо ваших даних: <a href="mailto:nomakievip@gmail.com">nomakievip@gmail.com</a>.</p>
+<h2>Що залишається лише на вашому телефоні</h2>
+<ul><li>Мітки (до чотирьох): місце, назва, яку ви дали, і радіус близької зони.</li>
+<li>Налаштування: мова, вигляд, звук, обрана область.</li></ul>
+<p>Вони зберігаються в пам'яті браузера або застосунку і ніколи не надсилаються на наш сервер. Щоб стерти їх, видаліть мітку, очистіть дані сайту або видаліть застосунок.</p>
+<h2>Що отримує наш сервер</h2>
+<ul><li><b>Звичайне користування:</b> запити тривог, позначок і частин мапи. Як будь-який сайт, сервер бачить адресу вашої мережі, поки відповідає, але не записує її ні в дані, ні в журнали.</li>
+<li><b>Лічильник користування:</b> раз на день пристрій рахується за хешем його адреси й браузера з «сіллю», яка щодня змінюється. Наступного дня хеші й сіль видаляються. Ми зберігаємо лише підсумки дня: кількість пристроїв, завантажень, мову, чи встановлено застосунок.</li>
+<li><b>Захист від зловживань:</b> хеш адреси з «сіллю» тримається лише в пам'яті, ніколи не зберігається.</li></ul>
+<h2>Лише якщо ви це вмикаєте</h2>
+<ul><li><b>Push-сповіщення:</b> адреса й ключі для сповіщень, які дає ваш браузер чи телефон, мова й теми (наприклад, мости Києва). Якщо ви вмикаєте «Попереджати біля мого місця» — ваше положення, округлене до квадрата ~10 км, і обраний радіус. Ніколи не ваші мітки й не назва. Запис видаляється, коли ви вимикаєте сповіщення або коли три доставки поспіль не вдалися. Доставляє їх служба сповіщень вашого браузера чи телефона (наприклад, Google, Mozilla, Apple).</li>
+<li><b>Відгук:</b> ваш текст, його тип, сторінка, мова, версія й вигляд застосунку, система та розмір екрана. Контакт — лише якщо ви його вказали. Ніколи не місце. Зберігається до 180 днів, потім видаляється. Коротке повідомлення (до 300 символів) надходить у Telegram-чат команди. Денний хеш, як вище, обмежує кількість повідомлень з одного пристрою.</li>
+<li><b>Позначка про помилку прочитання:</b> допис і позначка, про які йдеться, ваша причина й примітка, денний хеш для обмеження.</li>
+<li><b>Бот у Telegram:</b> номер вашого чату, мова, місця, які ви йому дали, і що він вам надіслав (щоб не повторювати). Геопозиція, якою ви поділилися, використовується один раз і не зберігається. /stop або блокування бота видаляє все. Повідомлення проходять через Telegram (діє його політика).</li></ul>
+<h2>Інші служби</h2>
+<ul><li>Повна мапа завантажує шрифти з Google Fonts: сервери Google бачать адресу вашого пристрою.</li>
+<li>Шар вулиць (якщо ввімкнений) завантажує фрагменти мапи з OpenStreetMap (tile.openstreetmap.org). Супутникові знімки й шари Esri йдуть через наш сервер.</li>
+<li>Сторінки донатів (ПУМБ, PayPal, Monobank) і посилання на Telegram відкривають ці служби, з їхніми власними правилами.</li>
+<li>Хостинг: Fly.io, сервери в Європі.</li></ul>
+<h2>Чого ми не робимо</h2>
+<p>Без реклами, без аналітики третіх сторін, без продажу даних, без профілювання. Застосунок не призначений для дітей і не збирає нічого, що вимагало б облікового запису.</p>
+<h2>Ваш вибір</h2>
+<p>Мітки й налаштування — на вашому пристрої. Сповіщення вимикаються під 🔔. Бот — /stop. Щоб дізнатися, що ми зберігаємо, або видалити відгук, напишіть нам (вкажіть дату й приблизний текст: ми не знаємо, хто ви). Якщо Heimdall колись зберігатиме більше, цю сторінку буде оновлено.</p>
+</article>
+
+<article lang="en">
+<h1>Privacy</h1>
+<p class="upd">Updated 26 October 2026. Covers heimdall.com.ua and the Heimdall apps for Android and iPhone.</p>
+<div class="box"><p><b>In short.</b> No account, no ads, no trackers. Your pins never leave your phone. The server does not record your IP address. We sell nothing and share nothing.</p></div>
+<h2>Who we are</h2>
+<p>Heimdall is an unofficial volunteer service by Black Flame Studio and the NGO “07300 — People for People”. Questions about your data: <a href="mailto:nomakievip@gmail.com">nomakievip@gmail.com</a>.</p>
+<h2>What stays on your phone only</h2>
+<ul><li>Your pins (up to four): the place, the name you gave it, and its near-zone radius.</li>
+<li>Your settings: language, look, sound, the oblast you chose.</li></ul>
+<p>They are kept in the browser's or the app's storage and are never sent to our server. To erase them, delete the pin, clear the site's data or uninstall the app.</p>
+<h2>What our server receives</h2>
+<ul><li><b>Ordinary use:</b> requests for the alerts, the marks and the map. Like any website, the server sees your network address while it answers, but does not write it into its data or its logs.</li>
+<li><b>Usage count:</b> once a day, a device is counted through a hash of its address and browser with a “salt” that changes every day. The next day the hashes and the salt are deleted. We keep only the day's totals: devices, page loads, language, whether the app is installed.</li>
+<li><b>Abuse limits:</b> a salted hash of the address is held in memory only, never stored.</li></ul>
+<h2>Only if you turn it on</h2>
+<ul><li><b>Push notifications:</b> the push address and keys your browser or phone gives, the language and the topics (such as the Kyiv bridges). If you turn on “Warn me near my location”: your position rounded to a ~10 km grid square, and the radius you chose. Never your pins, never a name. The record is deleted when you turn notifications off, or after three failed deliveries in a row. They are delivered by your browser's or phone's push service (for example Google, Mozilla or Apple).</li>
+<li><b>Feedback:</b> your text, its kind, the page, the language, the app's version and look, the system and the screen size. A contact only if you give one. Never a place. Kept up to 180 days, then deleted. A short notice (up to 300 characters) goes to the team's Telegram chat. A daily hash, as above, limits the messages from one device.</li>
+<li><b>Reporting a misreading:</b> the post and the mark concerned, your reason and note, and the daily hash for the limit.</li>
+<li><b>The Telegram bot:</b> your chat number, language, the places you gave it, and what it has sent you (so it does not repeat itself). A location you share is used once and not kept. /stop or blocking the bot deletes everything. Messages go through Telegram (its own policy applies).</li></ul>
+<h2>Other services</h2>
+<ul><li>The full map loads its fonts from Google Fonts: Google's servers see your device's address.</li>
+<li>The street layer (when on) loads map tiles from OpenStreetMap (tile.openstreetmap.org). Satellite imagery and Esri layers come through our server.</li>
+<li>The donation pages (PUMB, PayPal, Monobank) and the Telegram links open those services, under their own rules.</li>
+<li>Hosting: Fly.io, servers in Europe.</li></ul>
+<h2>What we do not do</h2>
+<p>No ads, no third-party analytics, no selling of data, no profiling. The app is not directed at children and collects nothing that would need an account.</p>
+<h2>Your choices</h2>
+<p>Pins and settings are on your device. Notifications switch off under 🔔. The bot: /stop. To ask what we hold, or to delete a feedback message, write to us (give the date and roughly the text: we do not know who you are). If Heimdall ever needs to keep more, this page will be updated.</p>
+</article>
+
+<article lang="fr">
+<h1>Confidentialité</h1>
+<p class="upd">Mise à jour le 26 octobre 2026. Couvre heimdall.com.ua et les applications Heimdall pour Android et iPhone.</p>
+<div class="box"><p><b>En bref.</b> Pas de compte, pas de publicité, pas de traceurs. Vos repères ne quittent jamais votre téléphone. Le serveur n'enregistre pas votre adresse IP. Nous ne vendons ni ne partageons rien.</p></div>
+<h2>Qui nous sommes</h2>
+<p>Heimdall est un service bénévole non officiel de Black Flame Studio et de l'ONG « 07300 — Des gens pour les gens ». Questions sur vos données : <a href="mailto:nomakievip@gmail.com">nomakievip@gmail.com</a>.</p>
+<h2>Ce qui reste uniquement sur votre téléphone</h2>
+<ul><li>Vos repères (jusqu'à quatre) : le lieu, le nom que vous lui avez donné et le rayon de sa zone proche.</li>
+<li>Vos réglages : langue, apparence, son, oblast choisi.</li></ul>
+<p>Ils sont gardés dans le stockage du navigateur ou de l'application et ne sont jamais envoyés à notre serveur. Pour les effacer : supprimez le repère, effacez les données du site ou désinstallez l'application.</p>
+<h2>Ce que reçoit notre serveur</h2>
+<ul><li><b>Usage ordinaire :</b> les demandes d'alertes, de marques et de carte. Comme tout site, le serveur voit l'adresse de votre réseau le temps de répondre, mais ne l'inscrit ni dans ses données ni dans ses journaux.</li>
+<li><b>Comptage d'usage :</b> une fois par jour, un appareil est compté par un hachage de son adresse et de son navigateur avec un « sel » qui change chaque jour. Le lendemain, hachages et sel sont supprimés. Nous gardons seulement les totaux du jour : appareils, chargements, langue, application installée ou non.</li>
+<li><b>Limites anti-abus :</b> un hachage salé de l'adresse, gardé en mémoire seulement, jamais enregistré.</li></ul>
+<h2>Seulement si vous l'activez</h2>
+<ul><li><b>Notifications push :</b> l'adresse et les clés de notification fournies par votre navigateur ou téléphone, la langue et les sujets (comme les ponts de Kyiv). Si vous activez « Me prévenir près de ma position » : votre position arrondie à un carré d'environ 10 km, et le rayon choisi. Jamais vos repères, jamais un nom. L'enregistrement est supprimé quand vous coupez les notifications, ou après trois envois échoués de suite. Elles sont acheminées par le service de notifications de votre navigateur ou téléphone (par exemple Google, Mozilla ou Apple).</li>
+<li><b>Votre avis :</b> votre texte, son type, la page, la langue, la version et l'apparence de l'application, le système et la taille d'écran. Un contact seulement si vous en donnez un. Jamais un lieu. Gardé jusqu'à 180 jours, puis supprimé. Un court avis (300 caractères au plus) part vers le chat Telegram de l'équipe. Un hachage du jour, comme ci-dessus, limite les messages d'un même appareil.</li>
+<li><b>Signaler une erreur de lecture :</b> le message et la marque concernés, votre raison et votre note, et le hachage du jour pour la limite.</li>
+<li><b>Le bot Telegram :</b> le numéro de votre conversation, la langue, les lieux que vous lui avez donnés et ce qu'il vous a envoyé (pour ne pas se répéter). Une position partagée sert une fois et n'est pas gardée. /stop ou bloquer le bot efface tout. Les messages passent par Telegram (sa propre politique s'applique).</li></ul>
+<h2>Autres services</h2>
+<ul><li>La carte complète charge ses polices depuis Google Fonts : les serveurs de Google voient l'adresse de votre appareil.</li>
+<li>La couche des rues (si elle est activée) charge des tuiles depuis OpenStreetMap (tile.openstreetmap.org). L'imagerie satellite et les couches Esri passent par notre serveur.</li>
+<li>Les pages de dons (PUMB, PayPal, Monobank) et les liens Telegram ouvrent ces services, selon leurs propres règles.</li>
+<li>Hébergement : Fly.io, serveurs en Europe.</li></ul>
+<h2>Ce que nous ne faisons pas</h2>
+<p>Pas de publicité, pas d'analytique tierce, pas de vente de données, pas de profilage. L'application ne s'adresse pas aux enfants et ne collecte rien qui nécessiterait un compte.</p>
+<h2>Vos choix</h2>
+<p>Repères et réglages sont sur votre appareil. Les notifications se coupent sous 🔔. Le bot : /stop. Pour savoir ce que nous gardons, ou supprimer un avis, écrivez-nous (donnez la date et à peu près le texte : nous ne savons pas qui vous êtes). Si Heimdall devait un jour garder davantage, cette page serait mise à jour.</p>
+</article>
+</main>
+<script>
+(function(){
+var O=['uk','en','fr'], L=null;
+try{ var q=new URLSearchParams(location.search).get('lang'); if(O.indexOf(q)>=0) L=q; }catch(e){}
+if(!L){ try{ var s=localStorage.getItem('lang'); if(O.indexOf(s)>=0) L=s; }catch(e){} }
+if(!L){ var n=(navigator.language||'uk').slice(0,2).toLowerCase(); L=n==='uk'||n==='ru'?'uk':n==='fr'?'fr':'en'; }
+function set(l){ L=l; document.documentElement.setAttribute('data-l',l); document.documentElement.lang=l;
+  [].forEach.call(document.querySelectorAll('#lng button'),function(b){ b.setAttribute('aria-pressed',String(b.getAttribute('data-l')===l)); });
+  document.title=l==='uk'?'Heimdall — конфіденційність':l==='fr'?'Heimdall — confidentialité':'Heimdall — privacy'; }
+document.getElementById('lng').addEventListener('click',function(e){ var b=e.target.closest('button[data-l]'); if(!b) return;
+  set(b.getAttribute('data-l')); try{ localStorage.setItem('lang',L); }catch(x){} });
+set(L);
+})();
+</script>
+</body>
+</html>

@@ -120,7 +120,7 @@ en:{
   lite_on:'Blackout mode on — black & white, no tiles, minimal data',lite_off:'Blackout mode off',
   geo_title:'Location-based alerts',geo_body:'Your position is stored only to compute the distance to reported targets, and only for the notifications on this device.',
   geo_btn:'Use my location',geo_radius:'Radius',geo_on:'Watching {0} km around you',geo_off:'Location alerts off',geo_deny:'Location permission refused',geo_need_push:'Turn on push notifications first.',
-  credits:'Made by Black Flame Studio & NGO 07300',credits_dev:'Built by Dread92',
+  credits:'Made by Black Flame Studio & NGO 07300',credits_dev:'Built by Dread92',priv_link:'Privacy',
   build_lbl:'build',
   alt_desc:'DESCENDING',alt_desc_l:'descending',alt_climb:'climbing',alt_low:'low',alt_high:'high',alt_src:'the post says so — altitude is never guessed',
   th_unknown2:'Threat — type not stated',k_unknown:'Unspecified',lb_unknown:'?',
@@ -252,7 +252,7 @@ uk:{
   lite_on:'Режим блекауту увімкнено — чорно-біле, без тайлів, мінімум даних',lite_off:'Режим блекауту вимкнено',
   geo_title:'Сповіщення за геопозицією',geo_body:'Ваша позиція зберігається лише для обчислення відстані до повідомлених цілей і лише для сповіщень на цьому пристрої.',
   geo_btn:'Використати моє місце',geo_radius:'Радіус',geo_on:'Стежимо за {0} км навколо вас',geo_off:'Сповіщення за місцем вимкнено',geo_deny:'Доступ до геолокації відхилено',geo_need_push:'Спочатку увімкніть push-сповіщення.',
-  credits:'Зроблено Black Flame Studio та ГО 07300',credits_dev:'Розробив Dread92',
+  credits:'Зроблено Black Flame Studio та ГО 07300',credits_dev:'Розробив Dread92',priv_link:'Конфіденційність',
   build_lbl:'збірка',
   alt_desc:'ЗНИЖУЄТЬСЯ',alt_desc_l:'знижується',alt_climb:'набирає висоту',alt_low:'низько',alt_high:'високо',alt_src:'так сказано в дописі — висота ніколи не вигадується',
   th_unknown2:'Загроза — тип не вказано',k_unknown:'Не вказано',lb_unknown:'?',
@@ -384,7 +384,7 @@ fr:{
   lite_on:'Mode blackout activé — noir et blanc, sans tuiles, données minimales',lite_off:'Mode blackout désactivé',
   geo_title:'Alertes selon votre position',geo_body:"Votre position n'est conservée que pour calculer la distance aux cibles signalées, et uniquement pour les notifications de cet appareil.",
   geo_btn:'Utiliser ma position',geo_radius:'Rayon',geo_on:'Surveillance de {0} km autour de vous',geo_off:'Alertes de proximité désactivées',geo_deny:'Autorisation de localisation refusée',geo_need_push:"Activez d'abord les notifications push.",
-  credits:'Réalisé par Black Flame Studio & ONG 07300',credits_dev:'Développé par Dread92',
+  credits:'Réalisé par Black Flame Studio & ONG 07300',credits_dev:'Développé par Dread92',priv_link:'Confidentialité',
   build_lbl:'build',
   alt_desc:'EN DESCENTE',alt_desc_l:'en descente',alt_climb:'en montée',alt_low:'basse altitude',alt_high:'haute altitude',alt_src:"c'est écrit dans la publication — l'altitude n'est jamais devinée",
   th_unknown2:'Menace — type non précisé',k_unknown:'Non précisé',lb_unknown:'?',
@@ -523,7 +523,7 @@ function footerHTML(o){ o=o||{}; const ver=typeof APP_VERSION!=='undefined'?APP_
     +`<a class="hf-fb" href="/feedback" data-hf="feedback">${_hx(t('fb_link'))}</a>`   // 1.58.46: the Tactical page opens its sheet
     +`<div class="hf-cr"><span class="hf-o">${o.logos===false?'':'<img src="/static/bf-logo.png" alt="" width="20" height="20" loading="lazy">'}© 2026 Black Flame Studio</span><span>&amp;</span>`
     +`<span class="hf-o">${o.logos===false?'':'<img src="/static/logo-64.png" alt="" width="20" height="20" loading="lazy">'}${CONTACT.ngoSite?`<a href="${_hx(CONTACT.ngoSite)}" target="_blank" rel="noopener">NGO 07300</a>`:'NGO 07300'}</span></div>`
-    +`<div class="hf-ver"><span>${_hx(t('credits_dev'))}</span>${ver?` · <span>${_hx(t('sup_ver'))} ${_hx(ver)}</span>`:''}${o.build?` · <span>${_hx(t('build_lbl'))} ${_hx(o.build)}</span>`:''}</div>`
+    +`<div class="hf-ver"><span>${_hx(t('credits_dev'))}</span>${ver?` · <span>${_hx(t('sup_ver'))} ${_hx(ver)}</span>`:''}${o.build?` · <span>${_hx(t('build_lbl'))} ${_hx(o.build)}</span>`:''} · <a href="/privacy">${_hx(t('priv_link'))}</a></div>`   // 1.58.59
     +(CONTACT.telegram?`<div class="hf-com"><a href="${_hx(CONTACT.telegram)}" target="_blank" rel="noopener">💬 ${_hx(t('sup_community'))}</a></div>`:'')
     +'</div>'; }
 // Share the app: the phone's own share sheet (Telegram, WhatsApp, SMS…), or the link copied where there is none. The
