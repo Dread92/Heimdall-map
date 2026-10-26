@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-25 (1.58.57)
+**Documented version: 1.58** · last updated 2026-10-26 (1.58.58)
 
 The repository is **Dread92/Heimdall-map**. The app's address is **https://heimdall.com.ua** (1.58.34, 18 October
 2026); the Fly app keeps its first name, `kyiv-air-watch-gb`, and its first address keeps working (§15 has the move).
@@ -2407,7 +2407,16 @@ Main parts:
   km/h covers 10 km in about a minute"), chosen in the setup's third step or under 🔔 (`#nearrr`, `setNearR`). It is
   `ZONES[0]`, the Near list's first band, `homeInfo`'s `near`, level 3 (`escLevel`), the `l3` sound (`sndFor`), the card's
   "near" and the texts that said "10 km" (`lt_z_near`, `z_near`, `lb_nearhome`, `n_home_b`, `snd_why` take the km). Light
-  reads the same key (its near zone, the radar's highlighted ring). The bot keeps its 10 km (§9d), the push its radius;
+  reads the same key (its near zone, the radar's highlighted ring). The bot keeps its 10 km (§9d), the push its radius.
+  1.58.58 (the owner: "a way to set the pins' radius, as in the tutorial"; his pick: one a pin): **each pin keeps its
+  own** — `r` in its record (`SLOTS[id].r`, `localStorage` only, beside its place); the pin on screen sets `NEAR_R`
+  (`pinR`, `nearSync` in `useSlot`); a pin with none takes the last one chosen (`near_r`, `NEAR_DEF`), and keeps it once
+  another is chosen (`setNearR(r, slot)` gives those the default first). `setSlot` stores a copy of the place with its
+  radius — a pin moved keeps it. The bell's row is the pin on screen's ("Near zone · Pin 1", `nz_r_pin`). **The pin's
+  sheet** has a "Near zone · 15 km ›" row (`#hszone`): it opens the tutorial's third screen for that pin (`zoneOpen`,
+  `SETUP.zone`) — the map alone, the pin in the middle, its zone drawn as it is chosen around it (`drawZones`), 10 / 15
+  / 20 km, the approach signal; "Done" gives the sheet the radius (`HS_PEND.r`, saved with the pin), "Back" changes
+  nothing; the map comes back as it was (`ZONE_VB`). Light reads the pin's own (`nearR()`);
 - **the first run, in three steps** (1.58.56 — a reader, after his first minutes on a phone: "a banner with the current
   situation and an invitation to place a marker occupied almost the entire screen … there were difficulties placing the
   marker … the user must complete three steps: a language, a marker on the tactical map at any zoom, a minimap with the
@@ -2984,6 +2993,7 @@ to donate to keep the infrastructure and help the devs" (a Monobank jar, his pic
   military units, mobile air-defence teams, medics — not "the servers") / `sup_fund_qr` / `sup_fund_btn`, and its QR
   code, `static/pumb-qr.svg` (segno; decoded back to the link). The IBAN, the purpose, the NBU link and `nbu-qr.svg` are
   gone; PayPal and the owner's Monobank jar (when set in the dashboard) stay. No card number is written anywhere.
+- **1.58.58, each pin's own near zone** — §10.1 (the pins).
 - **1.58.57, the bank's and PayPal's own logos** (the owner, with the two files: "it's for the app and the sites —
   instead of just the names"): the plain names on the support page's buttons (`<i class="payl">ПУМБ</i>`, "PayPal")
   are the brands' logos — `static/pumb-logo.png` (PUMB's red tile cropped around its wordmark, 144×72, shown 48×24) on

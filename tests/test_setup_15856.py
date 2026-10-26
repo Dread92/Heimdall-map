@@ -68,16 +68,18 @@ def test_step_three_the_zone_on_the_map():
     paint = _between("function setupPaint(){", "function setupView(")
     assert "NEAR_RS.map(r=>`<button type=\"button\" data-nr=\"${r}\"" in paint
     view = _between("function setupView(wKm){", "function setupDrop(")
-    assert "(2*NEAR_R/0.55)" in view and "VB.y=y-((y0+y1)/2-r.top)*k" in view
-    assert "setNearR(b.dataset.nr); setupPaint(); setupView();" in PAGE
+    assert "(2*(SETUP.zone?SETUP.r:NEAR_R)/0.55)" in view                # 1.58.58: or the pin's zone being chosen and "VB.y=y-((y0+y1)/2-r.top)*k" in view
+    assert "else setNearR(b.dataset.nr); setupPaint(); setupView(); };" in PAGE
 
 
 # ---- the near zone -----------------------------------------------------------------------------------------------------
 def test_the_near_zone_is_the_readers_and_used_everywhere_the_ten_was():
-    assert "const NEAR_RS=[10,15,20]; let NEAR_R=15;" in PAGE
-    assert "const r=+localStorage.getItem('near_r'); if(NEAR_RS.includes(r)) NEAR_R=r;" in PAGE
-    setr = _between("function setNearR(r){", "document.querySelectorAll('#nearrr [data-nr]')")
-    assert "ZONES[0][0]=NEAR_R" in setr and "localStorage.setItem('near_r',String(NEAR_R))" in setr and "drawZones()" in setr
+    # 1.58.58: each pin's own (tests/test_pin_zone_15858.py); near_r is the last one chosen, 15 unless chosen
+    assert "var NEAR_RS=[10,15,20], NEAR_DEF=15;" in PAGE
+    assert "const r=+localStorage.getItem('near_r'); if(NEAR_RS.includes(r)) NEAR_DEF=r;" in PAGE
+    setr = _between("function setNearR(r,slot){", "document.querySelectorAll('#nearrr [data-nr]')")
+    assert "nearSync()" in setr and "localStorage.setItem('near_r',String(r))" in setr and "drawZones()" in setr
+    assert "function nearSync(){ NEAR_R=pinR(HOME); try{ ZONES[0][0]=NEAR_R; }catch(e){}" in PAGE
     for s in ("const ZONES=[[NEAR_R,'near'],[30,'approach'],[60,'observe']];",
               "near:dist<NEAR_R||imm,inbound:false", "near:dist<NEAR_R||imm,inbound:named",
               "if(d<=NEAR_R) return {rank:3,level:3,why:'near'};",
@@ -87,8 +89,8 @@ def test_the_near_zone_is_the_readers_and_used_everywhere_the_ten_was():
         assert s in PAGE, s
     assert not re.search(r"\b(?:d|dist|r\.d|top\.d)\s*<=?\s*10\b", PAGE)
     # Light reads the same choice; the bot keeps its own 10 km (the owner's pick, 1.58.40)
-    assert "if([10,15,20].includes(r)) NEAR_R=r;" in LIGHT and "const ZONES=[[NEAR_R,'near'],[30,'approach']];" in LIGHT
-    assert "t('lt_z_'+zone,NEAR_R)" in LIGHT and "k===NEAR_R?' r10':''" in LIGHT
+    assert "if([10,15,20].includes(r)) NEAR_D=r;" in LIGHT and "const zoneOf=d=>d<=nearR()?'near':d<=30?'approach':null;" in LIGHT
+    assert "t('lt_z_'+zone,nearR())" in LIGHT and "k===nearR()?' r10':''" in LIGHT
     assert "NEAR_KM = 10.0" in BOT
     # a setting, never a place: carried like the others in a link to the new address, never sent to the server
     assert "'sup_never','near_r','beep'];" in PAGE

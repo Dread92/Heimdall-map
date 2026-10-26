@@ -2,6 +2,14 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.58 — 2026-10-26
+
+- **Each pin has its own near zone** (the owner: "a way to set the pins' radius, as in the tutorial"): 10, 15 or 20 km
+  per pin — say 20 km at home and 10 km at work; the pin on screen decides. In a pin's sheet, "Near zone · 15 km ›"
+  opens the tutorial's zone screen for that pin: the map with the pin in the middle, its circle as you choose, and the
+  approach signal; "Done", then "Save the pin". Under 🔔 the row now sets the pin on screen. Pins set before keep the
+  zone they had. Light follows the pin's own zone.
+
 ## 1.58.57 — 2026-10-25
 
 - **The bank's and PayPal's own logos on the support buttons** (the owner, with the two files: "for the app and the

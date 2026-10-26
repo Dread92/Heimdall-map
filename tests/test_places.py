@@ -100,7 +100,7 @@ def test_the_three_zones_are_the_ones_that_were_asked_for():
     assert m
     # 1.58.56: the first is the reader's near zone — 10, 15 or 20 km (a reader: "15 km minimum, eventually 20"), 15 unless chosen
     assert m.group(1) == "[NEAR_R,'near'],[30,'approach'],[60,'observe']"
-    assert "const NEAR_RS=[10,15,20]; let NEAR_R=15;" in PAGE
+    assert "var NEAR_RS=[10,15,20], NEAR_DEF=15;" in PAGE and "var NEAR_R=pinR(HOME);" in PAGE   # 1.58.58: the pin's own
 
 
 def test_the_eta_is_a_band_and_never_a_number():

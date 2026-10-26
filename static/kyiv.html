@@ -505,6 +505,7 @@ body.kbd #homelist{flex:1 1 auto;min-height:0;max-height:none}
 .hschips{display:flex;flex-wrap:wrap;gap:6px}.hschips button{min-height:36px;font:600 13px var(--sans);padding:0 10px;border:1px solid var(--line2);border-radius:var(--r);background:transparent;color:var(--ink2);cursor:pointer}.hschips button:hover{color:var(--ink);border-color:var(--ink3)}
 .hspick{display:flex;align-items:center;gap:10px;padding:8px 8px 8px 12px;border:1px solid var(--line2);border-radius:var(--r);background:var(--bg)}.hspick>div{flex:1;min-width:0}.hspick b{display:block;font:700 15px/1.2 var(--sans);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.hspick span{font:500 12px var(--mono);color:var(--ink3)}
 .hspick svg{width:20px;height:20px;flex:none;fill:none;stroke:var(--ink2);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.hszone{width:100%;color:var(--ink);text-align:left;font:inherit;cursor:pointer}.hszone span{display:block;font:500 12.5px/1.35 var(--sans);color:var(--ink2);margin-top:2px}.hszone .hszc{flex:none;font:700 20px/1 var(--sans);color:var(--ink2);margin:0 4px}
 .hsact{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}.hsact .sp{flex:1}.hsact button{flex:none;white-space:nowrap}
 /* the sheet is a column (the keyboard, 1.54.9), where a float has no say: the ✕ at the top right, the title beside it */
 #homesheet .shx{align-self:flex-end;margin:-4px -4px -40px 0;position:relative;z-index:3}#homesheet .type{padding-right:48px}
@@ -1441,7 +1442,7 @@ body.lite #mycard,body.lite .panel{background:#000;border-color:#666}body.lite .
   <div class="mrow z vol" id="sndrow"><span class="ml" data-t="m_vol">Volume</span><input type="range" id="sndvol" min="0" max="100" step="5" value="50" data-t-aria="m_vol"><b id="sndvolv">50%</b><button class="mi2" id="sndtest" type="button" data-t-aria="bl_test" data-t-title="bl_test">▶</button></div>
   <div class="mrow z" id="sndrr"><span class="ml" data-t="snd_r">Drones within</span><button class="mi2" type="button" data-sr="10">10 km</button><button class="mi2" type="button" data-sr="20">20 km</button><button class="mi2" type="button" data-sr="30">30 km</button><button class="mi2" type="button" data-sr="0" data-t="snd_r_all">oblast</button></div>
   <div class="pnote sndw" id="sndw">A drone sounds once when it enters this radius.</div>
-  <div class="mrow z" id="nearrr"><span class="ml" data-t="nz_r">Near zone</span><button class="mi2" type="button" data-nr="10">10 km</button><button class="mi2" type="button" data-nr="15">15 km</button><button class="mi2" type="button" data-nr="20">20 km</button></div>
+  <div class="mrow z" id="nearrr"><span class="ml" id="nzl" data-t="nz_r">Near zone</span><button class="mi2" type="button" data-nr="10">10 km</button><button class="mi2" type="button" data-nr="15">15 km</button><button class="mi2" type="button" data-nr="20">20 km</button></div>
   <div class="pnote sndw" id="nzw"></div>
   <button class="mi tg on" id="beepbtn" type="button"><span class="lb" data-t="bp_lbl">Approach signal</span><small data-t="bp_b"></small></button>
   <button class="mi tg" id="vib" type="button"><span class="lb" data-t="m_vib_s">Vibration</span><small data-t="bl_vib_b"></small></button>
@@ -1560,6 +1561,7 @@ body.lite #mycard,body.lite .panel{background:#000;border-color:#666}body.lite .
 <div class="hs" id="hs-name" hidden><div class="hslbl" data-t="sl_place">Place</div>
 <div class="hspick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6-5.2-6-10a6 6 0 0 1 12 0c0 4.8-6 10-6 10z"/><circle cx="12" cy="11" r="2"/></svg><div><b id="hspn"></b><span id="hsps"></span></div><button type="button" class="b-t" id="hschg" data-t="sl_change">change</button></div>
 <div class="hslbl" data-t="sl_name_l">Name, on this phone</div><input id="homen" maxlength="24" autocomplete="off" data-t-ph="sl_name" placeholder="Name — kept only on this phone" aria-label="Name"><div class="hschips" id="homesug" style="margin-top:8px"></div>
+<div class="hslbl" data-t="nz_r">Near zone</div><button type="button" class="hspick hszone" id="hszone"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/></svg><div><b id="hszr">15 km</b><span data-t="hs_zone_b">the highest level, its sound and the approach signal inside it — see it on the map</span></div><span class="hszc" aria-hidden="true">›</span></button>
 <div class="hsact"><button type="button" class="b-dgr" id="homeclear" data-t="sl_delete" hidden>Delete</button><span class="sp"></span><button type="button" class="b-t" id="homecancel" data-t="btn_cancel">Cancel</button><button type="button" class="b-p" id="homesave" data-t="sl_save">Save the pin</button></div>
 <div class="hsconf" id="homeconf" hidden><span data-t="sl_delete_q">Delete this pin?</span><button type="button" class="b-dgr" id="homedel" data-t="sl_delete_yes">Yes, delete</button><button type="button" class="b-t" id="homedelno" data-t="btn_no">No</button></div></div></div>
 <div id="fmchip" role="button" tabindex="0" data-t-title="m_full_exit" title="Exit full screen"></div>
@@ -1668,13 +1670,23 @@ try{ const raw=JSON.parse(localStorage.getItem('slots')||'null');
 try{ const old=JSON.parse(localStorage.getItem('home')||'null');
      if(old&&!SLOTS.home){ SLOTS.home=old; localStorage.setItem('slots',JSON.stringify(SLOTS)); } }catch(e){}
 let HOME=SLOTS[ACTIVE]||null;
+// 1.58.58, the owner: "a way to set the pins' radius, as in the tutorial" — and his pick: one radius a pin. Each pin keeps
+// its near zone (10, 15 or 20 km) in its own record, on this phone only (`r`, beside its place); the pin on screen sets
+// NEAR_R. A pin with none (set before 1.58.58) takes the last one chosen (`near_r`, 15 unless chosen), and keeps it once
+// another is chosen. var, not let: useSlot can run before the lines that set them.
+var NEAR_RS=[10,15,20], NEAR_DEF=15;
+try{ const r=+localStorage.getItem('near_r'); if(NEAR_RS.includes(r)) NEAR_DEF=r; }catch(e){}
+function pinR(p){ return p&&NEAR_RS.includes(p.r)?p.r:NEAR_DEF; }
+var NEAR_R=pinR(HOME);
 function saveSlots(){ try{ localStorage.setItem('slots',JSON.stringify(SLOTS));
   localStorage.setItem('slot_active',ACTIVE);
   // keep the legacy key in step so an older cached page still finds a place
   if(SLOTS[ACTIVE]) localStorage.setItem('home',JSON.stringify(SLOTS[ACTIVE])); else localStorage.removeItem('home');
 }catch(e){} }
-function setSlot(id,place){ if(!SLOT_IDS.includes(id)) return; SLOTS[id]=place||null; useSlot(id); }
-function useSlot(id){ if(!SLOT_IDS.includes(id)) return; ACTIVE=id; HOME=SLOTS[id]||null; saveSlots();
+function setSlot(id,place){ if(!SLOT_IDS.includes(id)) return;
+  // a copy (a place picked from a list is shared), with its radius: the one given, else the pin's own — moved, it keeps it
+  SLOTS[id]=place?Object.assign({},place,{r:NEAR_RS.includes(place.r)?place.r:pinR(SLOTS[id])}):null; useSlot(id); }
+function useSlot(id){ if(!SLOT_IDS.includes(id)) return; ACTIVE=id; HOME=SLOTS[id]||null; saveSlots(); nearSync();
   if(typeof drawHome==='function') drawHome(); if(typeof drawZones==='function') drawZones();
   homeAlerted.clear(); homeClosed.clear();  // a new place is a new set of alerts, not a continuation
   if(typeof render==='function') render(); if(typeof paintSlots==='function') paintSlots();
@@ -1702,13 +1714,18 @@ document.querySelectorAll('#sndrr [data-sr]').forEach(b=>b.onclick=()=>{ SND_R=+
 // 1.58.56 — the near zone's radius. A reader: "increase the minimum tracking zone to 15 km, and eventually 20 km — at
 // 450–600 km/h a jet drone covers 10 km in under a minute"; the owner: the reader's choice, 10, 15 or 20 km, 15 unless
 // chosen (it was 10 for everybody). It is the first ring, the Near list's first band, level 3 and its sound, the card's
-// "near" — for the pins of this phone. The bot keeps its own 10 km (the owner's pick, 1.58.40), the push its own radius.
-const NEAR_RS=[10,15,20]; let NEAR_R=15;
-try{ const r=+localStorage.getItem('near_r'); if(NEAR_RS.includes(r)) NEAR_R=r; }catch(e){}
+// "near". The bot keeps its own 10 km (the owner's pick, 1.58.40), the push its own radius. 1.58.58: a pin's own
+// (NEAR_RS, pinR and NEAR_R are set with the pins, above); here, the pin on screen's, under 🔔.
 function nearRUI(){ document.querySelectorAll('#nearrr [data-nr]').forEach(b=>{ b.classList.toggle('on',+b.dataset.nr===NEAR_R); b.textContent=t('snd_km',b.dataset.nr); });
+  $('nzl').textContent=HOME?t('nz_r_pin',pinLabel(ACTIVE)):t('nz_r');
   $('nzw').textContent=t('nz_why',NEAR_R); $('sndw').textContent=t('snd_why',NEAR_R); }
-function setNearR(r){ if(!NEAR_RS.includes(+r)) return; NEAR_R=+r; if(typeof ZONES!=='undefined') ZONES[0][0]=NEAR_R;
-  try{ localStorage.setItem('near_r',String(NEAR_R)); }catch(e){} nearRUI();
+// the pin on screen's radius into everything that reads it (useSlot calls it: another pin, another zone)
+function nearSync(){ NEAR_R=pinR(HOME); try{ ZONES[0][0]=NEAR_R; }catch(e){} if($('nzw')) nearRUI(); }
+// a radius chosen for a pin (the pin on screen unless named): the others keep theirs (those with none get the last
+// chosen first), and it is the one a new pin gets
+function setNearR(r,slot){ r=+r; if(!NEAR_RS.includes(r)) return; slot=slot||ACTIVE;
+  for(const id of SLOT_IDS) if(SLOTS[id]&&!NEAR_RS.includes(SLOTS[id].r)) SLOTS[id].r=NEAR_DEF;
+  if(SLOTS[slot]) SLOTS[slot].r=r; NEAR_DEF=r; try{ localStorage.setItem('near_r',String(r)); }catch(e){} saveSlots(); nearSync();
   if(typeof drawZones==='function') drawZones(); if(typeof render==='function'&&MAP) render(); if(typeof paintCard==='function') paintCard(true); }
 document.querySelectorAll('#nearrr [data-nr]').forEach(b=>b.onclick=()=>setNearR(b.dataset.nr));
 nearRUI();
@@ -1773,26 +1790,42 @@ function setupEnd(done){ const s=SETUP; if(!s) return; SETUP=null; try{ localSto
   $('setup').hidden=true; document.body.classList.remove('setup'); armPin(false); setFull(false);
   if(done&&SLOTS[s.slot]) notify('📍 '+slotName(s.slot),t('su_done_b',NEAR_R),'end');
   paintCard(true); beepLoop(); }
-function setupPaint(){ const s=SETUP; if(!s) return; const p=SLOTS[s.slot], two=s.step===2;
-  $('sustep').textContent=t('su_step',s.step,3); $('setuph').textContent=t(two?'su2_h':'su3_h');
+function setupPaint(){ const s=SETUP; if(!s) return; const p=s.place||SLOTS[s.slot], two=s.step===2, cur=s.zone?s.r:NEAR_R;
+  $('sustep').textContent=s.zone?(($('homen').value||'').trim()||pinLabel(s.slot)):t('su_step',s.step,3); $('setuph').textContent=t(two?'su2_h':'su3_h');
   $('sutxt').textContent=two?(s.msg||(p?t('su2_set'):t(SU_TOUCH?'su2_t_touch':'su2_t_mouse'))):t('su3_t');
   $('subtns').hidden=!two; $('supriv').hidden=!two; $('suzr').hidden=two; $('suwhy').hidden=two; $('subp').hidden=two;
-  if(!two) $('suzr').innerHTML=NEAR_RS.map(r=>`<button type="button" data-nr="${r}" class="${r===NEAR_R?'on':''}" aria-pressed="${r===NEAR_R}">${esc(t('snd_km',r))}</button>`).join('');
+  if(!two) $('suzr').innerHTML=NEAR_RS.map(r=>`<button type="button" data-nr="${r}" class="${r===cur?'on':''}" aria-pressed="${r===cur}">${esc(t('snd_km',r))}</button>`).join('');
   beepUI();
   $('suskip').textContent=t(two?'su_skip':'su_back'); const n=$('sunext'); n.textContent=t(two?'su_next':'su_done'); n.disabled=two&&!p; }
 // the pin in the middle of the map between the card and the buttons; at step 3 the near zone fills about half of it
-function setupView(wKm){ const p=SETUP&&SLOTS[SETUP.slot]; if(!p) return; const [x,y]=proj(p.lon,p.lat);
+function setupView(wKm){ const p=SETUP&&(SETUP.place||SLOTS[SETUP.slot]); if(!p) return; const [x,y]=proj(p.lon,p.lat);
   const r=SR(), top=document.querySelector('#setup .sutop').getBoundingClientRect(), bar=document.querySelector('#setup .subar').getBoundingClientRect();
   const y0=Math.max(top.bottom,r.top), y1=Math.min(bar.top,r.bottom), band=Math.max(120,y1-y0);
-  const w=wKm||(2*NEAR_R/0.55)*r.width/Math.min(r.width,band);
+  const w=wKm||(2*(SETUP.zone?SETUP.r:NEAR_R)/0.55)*r.width/Math.min(r.width,band);
   setView(x,y,w); const k=VB.w/r.width; VB.y=y-((y0+y1)/2-r.top)*k; applyVB(); }
 function setupDrop(px,py){ const s=SETUP; if(!s) return; const [cx,cy]=toSvg(px,py); const lon=+(C[0]+cx/KX).toFixed(4), lat=+(C[1]-cy/KY).toFixed(4);
   const keep=PIN_ARM&&PIN_KEEP; armPin(false); s.msg='';     // a street found by its name keeps its name, moved to the exact spot
   setSlot(s.slot,keep?Object.assign({lon,lat},keep):{lon,lat,dropped:true});
   if(navigator.vibrate&&vibOn) navigator.vibrate(40); setupPaint(); }
-$('suskip').onclick=()=>{ if(!SETUP) return; if(SETUP.step===2) setupEnd(false); else { SETUP.step=2; setupPaint(); } };
-$('sunext').onclick=()=>{ const s=SETUP; if(!s) return; if(s.step===2){ if(!SLOTS[s.slot]) return; s.step=3; setupPaint(); setupView(); } else setupEnd(true); };
-$('suzr').onclick=e=>{ const b=e.target.closest('[data-nr]'); if(!b) return; setNearR(b.dataset.nr); setupPaint(); setupView(); };
+$('suskip').onclick=()=>{ if(!SETUP) return; if(SETUP.zone) zoneClose(false); else if(SETUP.step===2) setupEnd(false); else { SETUP.step=2; setupPaint(); } };
+$('sunext').onclick=()=>{ const s=SETUP; if(!s) return; if(s.zone) zoneClose(true); else if(s.step===2){ if(!SLOTS[s.slot]) return; s.step=3; setupPaint(); setupView(); } else setupEnd(true); };
+$('suzr').onclick=e=>{ const b=e.target.closest('[data-nr]'); if(!b) return;
+  if(SETUP&&SETUP.zone){ SETUP.r=+b.dataset.nr; drawZones(); } else setNearR(b.dataset.nr); setupPaint(); setupView(); };
+// 1.58.58, the owner: "a way to set the pins' radius, as in the tutorial" — the pin's sheet opens the tutorial's third
+// step for that pin (SETUP.zone): the map alone, the pin in the middle, its near zone drawn as it is chosen (drawZones),
+// 10 / 15 / 20 km, the approach signal. "Done" gives the sheet the radius (HS_PEND.r; "Save the pin" keeps it, "Cancel"
+// drops it); "Back" changes nothing. The map comes back as it was.
+let ZONE_VB=null;
+function zoneOpen(){ const P=HS_PEND; if(!P||!P.place||!MAP) return; P.name=$('homen').value; ZONE_VB={...VB};
+  $('homesheet').classList.remove('show'); armPin(false);
+  SETUP={step:3,zone:true,slot:P.slot,place:P.place,r:P.r,msg:''};
+  document.body.classList.add('setup'); setFull(true,true); $('setup').hidden=false; setupPaint(); setupView(); drawZones(); }
+function zoneClose(keep){ const s=SETUP; if(!s||!s.zone) return; SETUP=null;
+  $('setup').hidden=true; document.body.classList.remove('setup'); setFull(false);
+  if(ZONE_VB){ Object.assign(VB,ZONE_VB); setView(VB.x+VB.w/2,VB.y+VB.h/2,VB.w); ZONE_VB=null; }
+  if(keep&&HS_PEND) HS_PEND.r=s.r; drawZones(); hsZoneLbl(); if(HS_PEND) $('homesheet').classList.add('show'); }
+function hsZoneLbl(){ const P=HS_PEND; if(P) $('hszr').textContent=t('snd_km',P.r); }
+$('hszone').onclick=zoneOpen;
 $('subp').onclick=()=>setBeep(!BEEP_ON);
 $('sufind').onclick=()=>{ const s=SETUP; if(!s) return; openPinSheet(s.slot,'new').then(()=>$('homefind').onclick()); };
 $('sugps').onclick=()=>{ const s=SETUP; if(!s) return; if(!navigator.geolocation){ s.msg=t('lt_locate_fail'); setupPaint(); return; }
@@ -2416,9 +2449,11 @@ function speedBand(m){ return m.type==='drones'?(m.jet?SPEED_BAND.jetdrone:SPEED
   :(m.type==='cruise_missiles'||m.type==='unspecified_missiles'||m.type==='banderol_missiles')?SPEED_BAND.cruise:null; }
 function zoneOf(d){ if(d==null) return null; for(const [r,k] of ZONES) if(d<=r) return k; return null; }
 function drawZones(){ const g=$('zones'); if(!g) return;
-  if(!MAP||!HOME){ g.innerHTML=''; return; }
-  const [x,y]=proj(HOME.lon,HOME.lat);
-  g.innerHTML=ZONES.map(([r,k])=>
+  // 1.58.58: a pin's zone being chosen is drawn around that pin, at the radius on screen
+  const zp=SETUP&&SETUP.zone?SETUP.place:HOME, zs=SETUP&&SETUP.zone?[[SETUP.r,'near'],...ZONES.slice(1)]:ZONES;
+  if(!MAP||!zp){ g.innerHTML=''; return; }
+  const [x,y]=proj(zp.lon,zp.lat);
+  g.innerHTML=zs.map(([r,k])=>
     `<circle class="zone z-${k}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r}" fill="none"/>`
     +`<text class="zlbl" x="${x.toFixed(1)}" y="${kx(y-r-3*KPX)}" text-anchor="middle">${r} km</text>`).join('');
 }
@@ -2548,7 +2583,7 @@ const HS_FREQ=['Оболонь','Троєщина','Позняки','Брова�
 const hsStep=k=>{ for(const x of ['where','find','name']) $('hs-'+x).hidden=x!==k; };
 const hsPlaceName=p=>!p?'':p.dropped||!(p.name||p.uk)?t('sl_pin_dropped'):(LANG==='uk'&&p.uk?p.uk:townName(p.name||p.uk));
 async function openPinSheet(id,mode){ closePanels(); if(!SLOT_IDS.includes(id)) id=ACTIVE; if(!PLACES_ALL.length) await loadPlacesList();
-  HS_PEND={slot:id,mode:mode||'new',place:mode==='edit'?SLOTS[id]:null,name:mode==='edit'?String(slotNames()[id]||''):''};
+  HS_PEND={slot:id,mode:mode||'new',place:mode==='edit'?SLOTS[id]:null,name:mode==='edit'?String(slotNames()[id]||''):'',r:pinR(SLOTS[id])};
   $('homet').textContent=mode==='edit'?pinLabel(id):t('sl_new'); $('homed').textContent=t('sl_local_1');
   if(mode==='edit'&&SLOTS[id]) hsName(); else { hsFreq(); hsStep('where'); }
   $('homesheet').classList.add('show'); }
@@ -2559,12 +2594,13 @@ function hsChoose(place){ if(!HS_PEND) return; HS_PEND.place=place; hsName(); }
 function hsName(){ const P=HS_PEND, p=P.place; $('hspn').textContent=hsPlaceName(p)||'—'; $('hsps').textContent=p&&p.obl&&typeof oblFull==='function'?oblFull(p.obl):'';
   $('homen').value=P.name||(p&&!p.dropped&&!p.street?hsPlaceName(p):''); $('homen').placeholder=t('sl_name');
   $('homesug').innerHTML=['sl_s_home','sl_s_work','sl_s_kids','sl_s_parents'].map(k=>`<button type="button" data-n="${esc(t(k))}">${esc(t(k))}</button>`).join('');
-  $('homeclear').hidden=P.mode!=='edit'; $('homeconf').hidden=true; hsStep('name'); }
+  $('homeclear').hidden=P.mode!=='edit'; $('homeconf').hidden=true; hsZoneLbl(); hsStep('name'); }
 $('homesug').onclick=e=>{ const b=e.target.closest('[data-n]'); if(b){ $('homen').value=b.dataset.n; $('homen').focus(); } };
 $('hschg').onclick=()=>{ hsFreq(); hsStep('where'); };
 $('homefind').onclick=()=>{ hsStep('find'); $('homeq').value=''; renderHomeList(''); setTimeout(()=>$('homeq').focus(),60); hsOpen(); };
 $('homecancel').onclick=()=>{ HS_PEND=null; $('homesheet').classList.remove('show'); };
 $('homesave').onclick=()=>{ const P=HS_PEND; if(!P||!P.place) return; const p=P.place, slot=P.slot, same=p===SLOTS[slot]; setSlotName(slot,$('homen').value); setSlot(slot,p); HS_PEND=null;
+  if(P.r!==pinR(SLOTS[slot])) setNearR(P.r,slot);                       // 1.58.58: the radius chosen in its zone screen
   $('homesheet').classList.remove('show'); notify(t('n_home',homeName()),t('n_home_b',NEAR_R),'end');
   // 1.58.55, a reader: "after zooming in to place the marker precisely, the map went back to its first scale" — a pin put on
   // the map (then named), or a pin only renamed, keeps the view it was put in; a place found by name or GPS is shown

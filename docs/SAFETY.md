@@ -344,8 +344,8 @@ distance **the last post reported** — it changes only when a new post places t
 own between two (the estimate stays off), and it stops when the target is lost, ended, held off the map, or not reported
 for five minutes. Its chip says so in words: "6 km · reported 1 min ago". A whole oblast is not a distance and gives no
 signal; ballistic and other region-wide warnings keep their own sound, which no radius filters. One tap silences it, and
-the sound's own switch and volume govern it. The near zone is the reader's to choose (10, 15 or 20 km) and stays on
-the phone, like the pins; the siren and the official app stay first.
+the sound's own switch and volume govern it. The near zone is the reader's to choose (10, 15 or 20 km), for each pin
+since 1.58.58, and stays on the phone with the pin; the siren and the official app stay first.
 
 ## A 3D model says what it is, never where it is going (1.58.45)
 

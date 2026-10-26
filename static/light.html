@@ -341,10 +341,10 @@ const RZ={z:1,cx:0,cy:0}, ZMAX=4;
 const symAt=(x,y)=>`transform:translate(${x.toFixed(2)}px,${y.toFixed(2)}px) scale(var(--iz,1))`;
 const inView=(x,y,m=4)=>Math.abs(x-RZ.cx)<=66/RZ.z+m&&Math.abs(y-RZ.cy)<=66/RZ.z+m;
 let SEL=null, RT=[];   // the mark whose card is open; where the marks are, for a tap
-// 1.58.56: the near zone chosen on Tactical (10/15/20 km)
-let NEAR_R=15; try{ const r=+localStorage.near_r; if([10,15,20].includes(r)) NEAR_R=r; }catch(e){}
-const ZONES=[[NEAR_R,'near'],[30,'approach']];
-const zoneOf=d=>{for(const [r,k] of ZONES) if(d<=r) return k; return null;};
+// 1.58.56–58: the pin's near zone, set on Tactical (10/15/20 km), else the last one chosen
+let NEAR_D=15; try{ const r=+localStorage.near_r; if([10,15,20].includes(r)) NEAR_D=r; }catch(e){}
+const nearR=()=>{ const r=(place()||{}).r; return [10,15,20].includes(r)?r:NEAR_D; };
+const zoneOf=d=>d<=nearR()?'near':d<=30?'approach':null;
 const CLOSING=new Set(['down','impact','lost','clear']);
 const COL={drones:'--ora',jet:'--amb',cruise_missiles:'--msl',unspecified_missiles:'--msl',banderol_missiles:'--amb',ballistic_missiles:'--msl',
   supersonic_missiles:'--msl',guided_aerial_bombs:'--vio',tactic_aircraft_activity:'--vio',strategic_aircraft_activity:'--ink2',mig31k_departure:'--vio',unknown:'--ink2'};
@@ -568,7 +568,7 @@ function paint(){
   const kx=111*Math.cos(rad(p.lat)), loc=(lon,lat)=>[(lon-p.lon)*kx*S,-(lat-p.lat)*111*S], iz=1/RZ.z;
   let g=`<defs><clipPath id="disc"><circle r="60"/></clipPath></defs><circle class="bg" r="60"/>`
     +`<g clip-path="url(#disc)">${mapLayer(p,kx,loc,iz)}</g>`
-    +[...new Set([10,20,30,NEAR_R])].sort((a,b)=>a-b).map(k=>`<circle class="ring${k===NEAR_R?' r10':''}" r="${k*S}"/><g style="${symAt(0,-k*S)}"><text class="rl" x="1.5" y="-.8">${k}</text></g>`).join('')
+    +[...new Set([10,20,30,nearR()])].sort((a,b)=>a-b).map(k=>`<circle class="ring${k===nearR()?' r10':''}" r="${k*S}"/><g style="${symAt(0,-k*S)}"><text class="rl" x="1.5" y="-.8">${k}</text></g>`).join('')
     +`<g style="${symAt(0,-60)}"><text class="nn" x="-1.4" y="-2.5">N</text></g><g style="${symAt(0,0)}"><circle class="me" r="1.8"/></g>`;
   const CRI=getComputedStyle(document.documentElement).getPropertyValue('--cri').trim(), ORA=getComputedStyle(document.documentElement).getPropertyValue('--ora').trim();
   RT=[];
@@ -604,7 +604,7 @@ function paint(){
   // the list — each row opens on a tap: what the post said, the track so far, the source
   const row=({m,d,zone,toHere,eta,no},force)=>{
     const n=(m.count&&m.count>1)?' ×'+m.count:'';
-    const bits=[zone?t('lt_z_'+zone,NEAR_R):t('lt_far')]; if(toHere) bits.push(`<b class="hr">${esc(t('lt_here'))}</b>`);
+    const bits=[zone?t('lt_z_'+zone,nearR()):t('lt_far')]; if(toHere) bits.push(`<b class="hr">${esc(t('lt_here'))}</b>`);
     if(m.approach) bits.push(`<span class="wh">${esc(t('lt_to',apprTo(m)))}</span>`);
     else if(m.place) bits.push(`<span class="wh">${esc(t('lt_at',pn(m.place)))}</span>`);
     if(statedCourse(m)) bits.push(esc(t('lt_course',DIRS[Math.round(m.heading/45)%8])));
@@ -638,7 +638,7 @@ function paint(){
   $('list').innerHTML=(rows.length?rows.map(r=>row(r)).join(''):`<div class="none"><b>${esc(t('lt_none'))}</b><small>${esc(t('lt_none_b'))}</small></div>`)
     +(far.length?`<div class="sec">${esc(t('lt_appr'))}</div>`+far.map(r=>row(r)).join(''):'');
 
-  // a buzz for something new inside the near zone (NEAR_R), or anything that outruns a radius — once per target
+  // a buzz for something new inside the near zone (nearR), or anything that outruns a radius — once per target
   for(const r of rows) if(r.zone==='near'&&!SEEN.has(r.m.id)){ SEEN.add(r.m.id); if(navigator.vibrate) navigator.vibrate([200,100,200]); }
   for(const m of imm) if(!SEEN.has(m.id)){ SEEN.add(m.id); if(navigator.vibrate) navigator.vibrate([300,80,300,80,300]); }
 }

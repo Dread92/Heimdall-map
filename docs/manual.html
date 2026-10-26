@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Heimdall (Kyiv Air Watch) — the full technical documentation, with a map of the system.">
-<meta name="heimdall-version" content="1.58.57">
-<meta name="heimdall-docs" content="62722c80e9326d1d">
+<meta name="heimdall-version" content="1.58.58">
+<meta name="heimdall-docs" content="df0f38929979aeca">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Heimdall Technical Manual</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -237,7 +237,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
 <header class="top">
   <div class="wrap">
     <a class="brand" href="#top"><b>Heimdall</b><span>Technical manual</span></a>
-    <span class="ver">1.58.57</span>
+    <span class="ver">1.58.58</span>
     <nav class="nav" aria-label="Sections">
       <a href="#map">Map</a><a href="#journeys">Journeys</a><a href="#rules">Rules</a><a href="#reference">Reference</a><a href="#safety">Safety</a>
     </nav>
@@ -256,7 +256,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
       <h1 class="title">How Heimdall works</h1>
       <p class="lead">An unofficial air-threat map for Kyiv and the oblasts around it. One Python process reads the official
       alert data and the channels that track drones and missiles, stores every post before it reads it, rebuilds the map
-      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.57, 25 October 2026:
+      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.58, 26 October 2026:
       the map first, then everything in full.</p>
     </div>
     <dl class="facts">
@@ -647,7 +647,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
     <div class="doc" id="doc">
 <section class="part" id="tech" data-label="Reference"><p class="partlabel">Part I · The reference</p>
 <h1 id="heimdall--technical-documentation">Heimdall — technical documentation</h1>
-<p><strong>Documented version: 1.58</strong> · last updated 2026-10-25 (1.58.57)</p>
+<p><strong>Documented version: 1.58</strong> · last updated 2026-10-26 (1.58.58)</p>
 <p>The repository is <strong>Dread92/Heimdall-map</strong>. The app's address is <strong>https://heimdall.com.ua</strong> (1.58.34, 18 October
 2026); the Fly app keeps its first name, <code>kyiv-air-watch-gb</code>, and its first address keeps working (§15 has the move).</p>
 <p>This is the complete technical reference: what runs, where the data comes from, how a Telegram post becomes a
@@ -3471,7 +3471,16 @@ band (<code>etaBand</code>). 1.58.56: the near zone is the reader's — <strong>
 km/h covers 10 km in about a minute&quot;), chosen in the setup's third step or under 🔔 (<code>#nearrr</code>, <code>setNearR</code>). It is
 <code>ZONES[0]</code>, the Near list's first band, <code>homeInfo</code>'s <code>near</code>, level 3 (<code>escLevel</code>), the <code>l3</code> sound (<code>sndFor</code>), the card's
 &quot;near&quot; and the texts that said &quot;10 km&quot; (<code>lt_z_near</code>, <code>z_near</code>, <code>lb_nearhome</code>, <code>n_home_b</code>, <code>snd_why</code> take the km). Light
-reads the same key (its near zone, the radar's highlighted ring). The bot keeps its 10 km (§9d), the push its radius;</li>
+reads the same key (its near zone, the radar's highlighted ring). The bot keeps its 10 km (§9d), the push its radius.
+1.58.58 (the owner: &quot;a way to set the pins' radius, as in the tutorial&quot;; his pick: one a pin): <strong>each pin keeps its
+own</strong> — <code>r</code> in its record (<code>SLOTS[id].r</code>, <code>localStorage</code> only, beside its place); the pin on screen sets <code>NEAR_R</code>
+(<code>pinR</code>, <code>nearSync</code> in <code>useSlot</code>); a pin with none takes the last one chosen (<code>near_r</code>, <code>NEAR_DEF</code>), and keeps it once
+another is chosen (<code>setNearR(r, slot)</code> gives those the default first). <code>setSlot</code> stores a copy of the place with its
+radius — a pin moved keeps it. The bell's row is the pin on screen's (&quot;Near zone · Pin 1&quot;, <code>nz_r_pin</code>). <strong>The pin's
+sheet</strong> has a &quot;Near zone · 15 km ›&quot; row (<code>#hszone</code>): it opens the tutorial's third screen for that pin (<code>zoneOpen</code>,
+<code>SETUP.zone</code>) — the map alone, the pin in the middle, its zone drawn as it is chosen around it (<code>drawZones</code>), 10 / 15
+/ 20 km, the approach signal; &quot;Done&quot; gives the sheet the radius (<code>HS_PEND.r</code>, saved with the pin), &quot;Back&quot; changes
+nothing; the map comes back as it was (<code>ZONE_VB</code>). Light reads the pin's own (<code>nearR()</code>);</li>
 <li><strong>the first run, in three steps</strong> (1.58.56 — a reader, after his first minutes on a phone: &quot;a banner with the current
 situation and an invitation to place a marker occupied almost the entire screen … there were difficulties placing the
 marker … the user must complete three steps: a language, a marker on the tactical map at any zoom, a minimap with the
@@ -4017,6 +4026,7 @@ page&quot;; the owner: &quot;replace it with this, but keep PayPal&quot;): <code
 military units, mobile air-defence teams, medics — not &quot;the servers&quot;) / <code>sup_fund_qr</code> / <code>sup_fund_btn</code>, and its QR
 code, <code>static/pumb-qr.svg</code> (segno; decoded back to the link). The IBAN, the purpose, the NBU link and <code>nbu-qr.svg</code> are
 gone; PayPal and the owner's Monobank jar (when set in the dashboard) stay. No card number is written anywhere.</li>
+<li><strong>1.58.58, each pin's own near zone</strong> — §10.1 (the pins).</li>
 <li><strong>1.58.57, the bank's and PayPal's own logos</strong> (the owner, with the two files: &quot;it's for the app and the sites —
 instead of just the names&quot;): the plain names on the support page's buttons (<code>&lt;i class=&quot;payl&quot;&gt;ПУМБ&lt;/i&gt;</code>, &quot;PayPal&quot;)
 are the brands' logos — <code>static/pumb-logo.png</code> (PUMB's red tile cropped around its wordmark, 144×72, shown 48×24) on
@@ -5197,8 +5207,8 @@ distance <strong>the last post reported</strong> — it changes only when a new 
 own between two (the estimate stays off), and it stops when the target is lost, ended, held off the map, or not reported
 for five minutes. Its chip says so in words: &quot;6 km · reported 1 min ago&quot;. A whole oblast is not a distance and gives no
 signal; ballistic and other region-wide warnings keep their own sound, which no radius filters. One tap silences it, and
-the sound's own switch and volume govern it. The near zone is the reader's to choose (10, 15 or 20 km) and stays on
-the phone, like the pins; the siren and the official app stay first.</p>
+the sound's own switch and volume govern it. The near zone is the reader's to choose (10, 15 or 20 km), for each pin
+since 1.58.58, and stays on the phone with the pin; the siren and the official app stay first.</p>
 <h2 id="s-a-3d-model-says-what-it-is-never-where-it-is-going-15845">A 3D model says what it is, never where it is going (1.58.45)<a class="anc" href="#s-a-3d-model-says-what-it-is-never-where-it-is-going-15845" aria-label="Link to this section">#</a></h2>
 <p>The owner asked for the threats in 3D, on the marks too, and for a named weapon whose post gave no course to show its
 model rather than a &quot;?&quot; disc. A model has a nose, so the silhouettes' rule holds for it unchanged: seen from above, it
@@ -6133,7 +6143,7 @@ d'alerte ne sont pas des préférences de style.</p>
 </section>
     </div>
   </div>
-  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.57, 25 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
+  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.58, 26 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
 </main>
 
 <script>
