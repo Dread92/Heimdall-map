@@ -58,7 +58,7 @@ def _marks(st):
 
 # ---- the prompt, version 4 ------------------------------------------------------------------------------------------
 def test_two_places_the_channels_emoji_bare_names_and_alert_messages():
-    assert A.PROMPT_VERSION == "5"                       # 1.58.42: no emoji is a weapon
+    assert A.PROMPT_VERSION == "6"                       # 1.58.42: no emoji is a weapon; 1.58.60: a warning for the next day
     for rule in ("Two places per target: where it is (place_id, with its relation) and where it is going (toward_id)",
                  '"на Житомирщині в напрямку Житомира" = place o10 in_oblast, toward Житомир',
                  "a tracker's line that is only a place name", '"на Київщині, н.п. Гребінка"', "never by an emoji",

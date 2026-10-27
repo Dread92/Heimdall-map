@@ -66,7 +66,7 @@ def test_the_arrows_channel_reads_its_words_not_its_icons():
 
 
 def test_the_ai_reader_takes_no_emoji_for_a_weapon():
-    assert A.PROMPT_VERSION == "5" and A.CHECK_VERSION == "6" and not hasattr(A, "EMOJI_KIND")
+    assert A.PROMPT_VERSION == "6" and A.CHECK_VERSION == "6" and not hasattr(A, "EMOJI_KIND")      # 1.58.60: "6"
     assert "never by an emoji" in A.SYSTEM and '"🛵", "шахед"' not in A.SYSTEM
     cands = [("c1", "Бровари", "Бровари | Київська область")]
     for q in ("🛵", "🚀", "💣"):

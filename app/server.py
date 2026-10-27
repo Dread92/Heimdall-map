@@ -390,6 +390,14 @@ def tag_feed_text(text, channel=None, near=None):
     # a retraction carries no threat of its own — "балістика була хибною відміткою" is not a ballistic warning
     if is_retraction(text):
         return ["retract"] + (["kyiv"] if KYIV_RE.search(text) else [])
+    # 1.58.60: a warning for the next hours or days ("дали попередження на 24 години щодо застосування ворогом
+    # балістичного озброєння по м. Київ та Київщині") is a forecast: kept in the feed as a warning, never a ballistic tag.
+    # Only its sentences — what else the post says is tagged as before.
+    if geo:
+        kept = geo.drop_span_warnings(text)
+        if not kept:
+            return ["alert", "forecast"]
+        text = kept
     tags = [name for name, rx in FEED_TAGS if rx.search(text)]
     if FORECAST_RX.search(text) and not re.search(r"\bпуск\b|зафіксовано\s+пуск|швидкісн\w*\s+ціл|зліт\s+міг|злетів|у\s+повітрі\s+міг", text, re.I):
         return [t for t in tags if t == "alert"] + ["forecast"]

@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-26 (1.58.59)
+**Documented version: 1.58** · last updated 2026-10-27 (1.58.60)
 
 The repository is **Dread92/Heimdall-map**. The app's address is **https://heimdall.com.ua** (1.58.34, 18 October
 2026); the Fly app keeps its first name, `kyiv-air-watch-gb`, and its first address keeps working (§15 has the move).
@@ -670,6 +670,17 @@ anything), then the news guard (`geo.looks_like_news`: strong news words, report
 summaries, and since 1.41.2 `looks_like_explainer` — a live tracker talking *about* the sky: "до прикладу",
 "розповім про балістику", "по цій темі", "я описую ціль", "якщо ціль знищена …", "ворог планує"), then threat
 tags. `parse_for_channel` applies `looks_like_explainer` to every channel's parser, so none of it is ever a mark.
+1.58.60: **a warning for hours or days ahead** — "дали попередження на 24 години щодо застосування ворогом балістичного
+озброєння по м. Київ та Київщині" (@kyiv_airdef, 27 Oct), "протягом доби існує загроза …", "найближчу добу можлива …",
+"у найближчі дні ймовірна …" — was two ballistic marks (Kyiv, its oblast) and the ballistic strip. `geo.drop_span_warnings`
+takes out every sentence (`geo._sentences`: "м. Київ", "н.п.", "12.30" end none) that names a span of three hours or
+more, a day or days (`SPAN_WARN_RX`) with a warning word (`SPAN_WORD_RX`) and nothing in the sky (`SPAN_LIVE_RX`: a
+launch, a course, a flight, an outcome, "негайно"); `parse_for_channel`, `parse_post` and `tag_feed_text` read what is
+left. A post that is only that is tagged `alert` + `forecast` — kept in a tracker's feed as a warning, raising nothing;
+"Балістика на Київ! Попередження на 24 години продовжено" still warns of its missile. The city administration's "threat"
+line (`parse_kmda`) ignores a day's notice too; an alert start is the official data's and is unchanged. The AI reader's
+rule 12 says the same (`PROMPT_VERSION` 6), and the offline glossary reads it ("A warning was issued for 24 hours
+regarding the enemy's use of ballistic weapons on Kyiv and Kyiv region").
 1.42.1: **a retraction** comes before all of it (`is_retraction()`): a glitch of the system ("лаг системи", "збій
 системи", "хибне спрацювання") on its own, or "not confirmed" / a false alert about something missile-shaped (a speed,
 a launch, a rocket, a MiG) — "Хибна ціль" is not one, that is a decoy, which flies. It is tagged `retract` and nothing
@@ -2995,6 +3006,7 @@ to donate to keep the infrastructure and help the devs" (a Monobank jar, his pic
   military units, mobile air-defence teams, medics — not "the servers") / `sup_fund_qr` / `sup_fund_btn`, and its QR
   code, `static/pumb-qr.svg` (segno; decoded back to the link). The IBAN, the purpose, the NBU link and `nbu-qr.svg` are
   gone; PayPal and the owner's Monobank jar (when set in the dashboard) stay. No card number is written anywhere.
+- **1.58.60, a warning for the next 24 hours is no target** — §7 (tagging).
 - **1.58.59, the privacy policy and the Play listing** — §11; docs/PLAY.md.
 - **1.58.58, each pin's own near zone** — §10.1 (the pins).
 - **1.58.57, the bank's and PayPal's own logos** (the owner, with the two files: "it's for the app and the sites —

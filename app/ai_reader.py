@@ -25,7 +25,7 @@ import urllib.request
 from collections import OrderedDict, deque
 from datetime import datetime, timezone
 
-PROMPT_VERSION = "5"     # 1.52: where it is AND where it is going; bare names; alerts are not targets; 1.58.42: no emoji is a weapon
+PROMPT_VERSION = "6"     # 1.52: where it is AND where it is going; bare names; alerts are not targets; 1.58.42: no emoji is a weapon; 1.58.60: a warning for the next day is no target
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 DEFAULT_MODEL = "anthropic/claude-haiku-5.5"
 MAX_CANDIDATES = 30
@@ -76,7 +76,7 @@ Rules:
 9. Origin: where the post says the target comes from, outside the places above — a direction ("з півночі" = n, "з південного сходу" = se) or a country or area ("з Білорусі", "з території РБ" = belarus; "з Росії", "з Брянщини", "з Курщини", "з боку Бєлгорода" = russia; "з моря", "з акваторії Чорного моря" = sea; "з Криму" = crimea; "з окупованих територій", "з ТОТ" = occupied). A Ukrainian oblast or town it comes from is relation from that place, never an origin.
 10. Heading only when the post gives a course as a direction ("курс на захід" = w). A town it flies to is heading_to that town, not a heading.
 11. Height, vertical state and speed matter most to the people under a target: give them whenever the post states them, and only for the target they are written for (the same line or paragraph; a height on a line of its own after several targets belongs to the target just above it). Altitude in metres ("висота 2200", "на 1,5 км" = 1500); vertical: "знижується", "спускається", "пікірує", "скидає висоту" = descending; "набирає висоту" = climbing; "низько", "на малій висоті" = low; "високо", "на великій висоті" = high; speed ("швидкість 180 км/год" = 180).
-12. Nothing about aerial targets — an official alert message ("Повітряна тривога", "Відбій", "жовтий рівень", "Дронова загроза" with a district: that is an alert, not a target), news, a fundraiser, an advert, the Air Force's morning totals: targets [].
+12. Nothing about aerial targets — an official alert message ("Повітряна тривога", "Відбій", "жовтий рівень", "Дронова загроза" with a district: that is an alert, not a target), news, a fundraiser, an advert, the Air Force's morning totals, a warning for the hours or days ahead ("попередження на 24 години щодо застосування балістики", "протягом доби можлива атака": what may come, not a target): targets [].
 13. PREVIOUS POSTS are context only. "Далі на X" continues the last target named there; but never copy a fact from them into this post's entry unless this post states it.
 14. ON THE MAP NOW lists the targets other posts placed, by their tag (#01, #04…). If one of this post's targets is one of them — the same weapon reported again near the same place, or "Далі на X" continuing it — put its tag in same_as; otherwise "". Such a target is still listed: same_as says which it is.
 15. The PARSER READING may be wrong or miss targets. Never copy it; read the post yourself. Where it missed a target the post names, add it; where it misread one, your reading — by the post's words — is the one to give.

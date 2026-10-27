@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Heimdall (Kyiv Air Watch) — the full technical documentation, with a map of the system.">
-<meta name="heimdall-version" content="1.58.59">
-<meta name="heimdall-docs" content="f96c864e6c5bfa4e">
+<meta name="heimdall-version" content="1.58.60">
+<meta name="heimdall-docs" content="9cea8bca7ab79d2a">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Heimdall Technical Manual</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -237,7 +237,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
 <header class="top">
   <div class="wrap">
     <a class="brand" href="#top"><b>Heimdall</b><span>Technical manual</span></a>
-    <span class="ver">1.58.59</span>
+    <span class="ver">1.58.60</span>
     <nav class="nav" aria-label="Sections">
       <a href="#map">Map</a><a href="#journeys">Journeys</a><a href="#rules">Rules</a><a href="#reference">Reference</a><a href="#safety">Safety</a>
     </nav>
@@ -256,7 +256,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
       <h1 class="title">How Heimdall works</h1>
       <p class="lead">An unofficial air-threat map for Kyiv and the oblasts around it. One Python process reads the official
       alert data and the channels that track drones and missiles, stores every post before it reads it, rebuilds the map
-      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.59, 26 October 2026:
+      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.60, 27 October 2026:
       the map first, then everything in full.</p>
     </div>
     <dl class="facts">
@@ -647,7 +647,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
     <div class="doc" id="doc">
 <section class="part" id="tech" data-label="Reference"><p class="partlabel">Part I · The reference</p>
 <h1 id="heimdall--technical-documentation">Heimdall — technical documentation</h1>
-<p><strong>Documented version: 1.58</strong> · last updated 2026-10-26 (1.58.59)</p>
+<p><strong>Documented version: 1.58</strong> · last updated 2026-10-27 (1.58.60)</p>
 <p>The repository is <strong>Dread92/Heimdall-map</strong>. The app's address is <strong>https://heimdall.com.ua</strong> (1.58.34, 18 October
 2026); the Fly app keeps its first name, <code>kyiv-air-watch-gb</code>, and its first address keeps working (§15 has the move).</p>
 <p>This is the complete technical reference: what runs, where the data comes from, how a Telegram post becomes a
@@ -1756,6 +1756,17 @@ anything), then the news guard (<code>geo.looks_like_news</code>: strong news wo
 summaries, and since 1.41.2 <code>looks_like_explainer</code> — a live tracker talking <em>about</em> the sky: &quot;до прикладу&quot;,
 &quot;розповім про балістику&quot;, &quot;по цій темі&quot;, &quot;я описую ціль&quot;, &quot;якщо ціль знищена …&quot;, &quot;ворог планує&quot;), then threat
 tags. <code>parse_for_channel</code> applies <code>looks_like_explainer</code> to every channel's parser, so none of it is ever a mark.
+1.58.60: <strong>a warning for hours or days ahead</strong> — &quot;дали попередження на 24 години щодо застосування ворогом балістичного
+озброєння по м. Київ та Київщині&quot; (@kyiv_airdef, 27 Oct), &quot;протягом доби існує загроза …&quot;, &quot;найближчу добу можлива …&quot;,
+&quot;у найближчі дні ймовірна …&quot; — was two ballistic marks (Kyiv, its oblast) and the ballistic strip. <code>geo.drop_span_warnings</code>
+takes out every sentence (<code>geo._sentences</code>: &quot;м. Київ&quot;, &quot;н.п.&quot;, &quot;12.30&quot; end none) that names a span of three hours or
+more, a day or days (<code>SPAN_WARN_RX</code>) with a warning word (<code>SPAN_WORD_RX</code>) and nothing in the sky (<code>SPAN_LIVE_RX</code>: a
+launch, a course, a flight, an outcome, &quot;негайно&quot;); <code>parse_for_channel</code>, <code>parse_post</code> and <code>tag_feed_text</code> read what is
+left. A post that is only that is tagged <code>alert</code> + <code>forecast</code> — kept in a tracker's feed as a warning, raising nothing;
+&quot;Балістика на Київ! Попередження на 24 години продовжено&quot; still warns of its missile. The city administration's &quot;threat&quot;
+line (<code>parse_kmda</code>) ignores a day's notice too; an alert start is the official data's and is unchanged. The AI reader's
+rule 12 says the same (<code>PROMPT_VERSION</code> 6), and the offline glossary reads it (&quot;A warning was issued for 24 hours
+regarding the enemy's use of ballistic weapons on Kyiv and Kyiv region&quot;).
 1.42.1: <strong>a retraction</strong> comes before all of it (<code>is_retraction()</code>): a glitch of the system (&quot;лаг системи&quot;, &quot;збій
 системи&quot;, &quot;хибне спрацювання&quot;) on its own, or &quot;not confirmed&quot; / a false alert about something missile-shaped (a speed,
 a launch, a rocket, a MiG) — &quot;Хибна ціль&quot; is not one, that is a decoy, which flies. It is tagged <code>retract</code> and nothing
@@ -4032,6 +4043,7 @@ page&quot;; the owner: &quot;replace it with this, but keep PayPal&quot;): <code
 military units, mobile air-defence teams, medics — not &quot;the servers&quot;) / <code>sup_fund_qr</code> / <code>sup_fund_btn</code>, and its QR
 code, <code>static/pumb-qr.svg</code> (segno; decoded back to the link). The IBAN, the purpose, the NBU link and <code>nbu-qr.svg</code> are
 gone; PayPal and the owner's Monobank jar (when set in the dashboard) stay. No card number is written anywhere.</li>
+<li><strong>1.58.60, a warning for the next 24 hours is no target</strong> — §7 (tagging).</li>
 <li><strong>1.58.59, the privacy policy and the Play listing</strong> — §11; docs/PLAY.md.</li>
 <li><strong>1.58.58, each pin's own near zone</strong> — §10.1 (the pins).</li>
 <li><strong>1.58.57, the bank's and PayPal's own logos</strong> (the owner, with the two files: &quot;it's for the app and the sites —
@@ -6161,7 +6173,7 @@ d'alerte ne sont pas des préférences de style.</p>
 </section>
     </div>
   </div>
-  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.59, 26 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
+  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.60, 27 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
 </main>
 
 <script>

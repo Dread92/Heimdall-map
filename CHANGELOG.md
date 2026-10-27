@@ -2,6 +2,16 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.60 — 2026-10-27
+
+- **A warning for the next 24 hours is no longer a ballistic missile** (the owner: "this @kyiv_airdef message was
+  flagged wrongly as a ballistic threat"). "Дали попередження на 24 години щодо застосування ворогом балістичного
+  озброєння по м. Київ та Київщині" — a notice that ballistic missiles may be used some time in the next day — put two
+  ballistic marks on Kyiv and its oblast and lit the ballistic strip. A warning that covers hours or days ("на 24 години",
+  "протягом доби", "найближчу добу", "у найближчі дні") now places nothing and raises nothing: it stays in the feed as a
+  warning. Only that sentence — a missile reported in the same post still warns. The city administration's channel and
+  the AI second reader follow the same rule, and the feed's English reads it properly.
+
 ## 1.58.59 — 2026-10-26
 
 - **A privacy policy** at heimdall.com.ua/privacy, in Ukrainian, English and French — what stays on your phone (the

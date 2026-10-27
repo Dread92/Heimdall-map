@@ -1373,6 +1373,56 @@ def looks_like_explainer(t):
     return bool(EXPLAIN_RX.search(t) or PLAN_RX.search(t))
 
 
+# 1.58.60: a warning for hours or days ahead. "дали попередження на 24 години щодо застосування ворогом балістичного
+# озброєння по м. Київ та Київщині" (@kyiv_airdef, 27 Oct 2026, 13:15) — the monitoring channels' notice that ballistic
+# missiles may be used against Kyiv some time in the next day — was drawn as ballistic missiles over Kyiv and its oblast
+# and lit the ballistic strip (the owner: "flagged wrongly as a ballistic threat"). A warning that covers hours or a day
+# says what may come, as the night's assessment does (server.FORECAST_RX): its sentence places nothing and raises
+# nothing. Only its sentence: "Балістика на Київ! Попередження на 24 години продовжено" still warns of the missile.
+# Three hours and more, a day, several days — not "в найближчі 10 хвилин", not a time of day ("на 3 годину ночі").
+_SPAN = (r"(?:(?:[3-9]|[1-9]\d{1,2})\s*(?:-?(?:х|ти|ми|и|ї))?\s*(?:годин(?:и|ах)?|год\.?|час(?:а|ов)|ч\.)(?![а-яіїєґ'])"
+         r"|доб[уиі]|доба|сут(?:ки|ок)|(?:кілька|декілька|кількох)\s+(?:годин|днів|діб)|тиждень|тижня)")
+SPAN_WARN_RX = re.compile(r"(?<![а-яіїєґ'])(?:(?:на|протягом|впродовж|упродовж|продовж|найближч\w*|наступн\w*|ближайш\w*|"
+                          r"следующ\w*|в\s+течени[ие])\s+(?:(?:найближч|наступн|ближайш|следующ)\w*\s+)?" + _SPAN +
+                          r"|(?:найближч|наступн|ближайш|следующ)\w*\s+(?:дн(?:і|ів)|дни|дней)(?![а-яіїєґ']))", re.I)
+# what the sentence warns of: a warning, a threat, a possibility
+SPAN_WORD_RX = re.compile(r"попередж|застереж|загроз|ризик|можлив|ймовірн|очіку|не\s+виключ|предупрежд|угроз|возможн|"
+                          r"вероятн|ожида", re.I)
+# and nothing in the sky: a launch, a course, a target in flight, an outcome
+SPAN_LIVE_RX = re.compile(r"(?<![а-яіїєґ'])(?:за)?пуск|зафіксов|курс|летить|летять|рухаєт|швидкісн\w*\s+ціл|зліт|злетів|"
+                          r"злетіл|(?:у|в)\s+повітрі|вибух|збит|знищ|мінус|негайно|(?<![а-яіїєґ'])над\s", re.I)
+# "м. Київ", "с. Гора", "н.п. X", "Київська обл." end no sentence
+_SENT_ABBR = {"м", "с", "смт", "сел", "обл", "р-н", "р", "вул", "просп", "пр", "ст", "пгт", "г", "ім", "т", "п"}
+
+
+def _sentences(text):
+    """The post's sentences, each with what ends it — "м. Київ", "о 12.30" or a link do not end one."""
+    out, start = [], 0
+    for m in re.finditer(r"[.!?…‼]+|\n", text):
+        if m.group(0) == ".":
+            nxt = text[m.end():m.end() + 1]
+            w = re.search(r"([\w'-]+)$", text[start:m.start()])
+            if (nxt and not nxt.isspace()) or (w and w.group(1).lower() in _SENT_ABBR):
+                continue
+        out.append(text[start:m.end()])
+        start = m.end()
+    out.append(text[start:])
+    return [s for s in out if s.strip()]
+
+
+def is_span_warning(s):
+    """Is this sentence a warning for hours or days ahead, and nothing seen in the sky?"""
+    n = _norm(s)
+    return bool(SPAN_WARN_RX.search(n) and SPAN_WORD_RX.search(n) and not SPAN_LIVE_RX.search(n))
+
+
+def drop_span_warnings(text):
+    """The post without its warnings for hours or days ahead (1.58.60); "" when that is all it says."""
+    if not text or not SPAN_WARN_RX.search(_norm(text)):
+        return text
+    return "".join(s for s in _sentences(text) if not is_span_warning(s)).strip()
+
+
 # 1.58.15: a tracker's list — oblast (or city) headings and one target a line, "2х БпЛА курсом на Кременчук" — is a long
 # post of sightings, not an article. @kudy_letyt's all-Ukraine lists run to 1,500 characters: read as news by their
 # length alone, they were never stored, and the channel the owner had just added placed nothing.
@@ -1864,7 +1914,7 @@ _EXIT_RX = re.compile(r"(?:вилеті\w*|вилета\w*|покину\w*|по�
 def parse_post(text, home=None):
     """Return a list of marker dicts for one post (may be empty). `home` (1.43): the oblast of the regional channel
     that posted it — whose villages a sentence naming no oblast is read against."""
-    t = _norm(prepare(text))
+    t = _norm(drop_span_warnings(prepare(text)))   # 1.58.60: what may come in the next hours or days is no target
     t = _drop_clear_sentences(t)
     if CLEAR_RX.search(t) and not re.search(r"бпла|ракет|каб", t):
         return []
@@ -3088,6 +3138,9 @@ def _parse_for_channel(channel, text, near=None):
     text = drop_friendly(text)                      # 1.43.1: our own drone is no target
     if not text:
         return []
+    text = drop_span_warnings(text)                 # 1.58.60: a warning for the next 24 hours is no target either
+    if not text:
+        return []
     if channel == "nikalert":
         return parse_nikalert(text)                 # 1.58.25: its own conventions, read whole (a recap is not split)
     # 1.45: artillery and mortars ("артобстріл по Корабельному району Херсона з ТОТ") are not in the sky this app watches
@@ -3179,7 +3232,8 @@ def parse_kmda(text):
         return {"kind": "start", "level": level, "threats": _threats_from(text, level)}
     if re.search(r"працюють сили ппо|працює ппо", t):
         return {"kind": "threat", "threats": [{"threat_type": "air_defense", "level": "red", "source_message": text.strip()[:160]}]}
-    if re.search(r"загроза застосування балістич|балістична загроза|загроза балістики", t):
+    if re.search(r"загроза застосування балістич|балістична загроза|загроза балістики", t) and drop_span_warnings(text):
+        # 1.58.60: "протягом доби існує загроза застосування балістики" — a day's notice, not this alert's threat
         return {"kind": "threat", "threats": [{"threat_type": "ballistic_missiles", "level": "red", "source_message": text.strip()[:160]}]}
     return None
 

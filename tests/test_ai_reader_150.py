@@ -511,7 +511,7 @@ def test_refused_both_ways_it_pauses_and_says_why():
 
 
 def test_the_rules_now_ask_for_origin_and_speed():
-    assert A.PROMPT_VERSION == "5"
+    assert A.PROMPT_VERSION == "6"
     for rule in ("9. Origin:", '"з Білорусі"', "never an origin", "give them whenever the post states them", "the target just above it",
                  "Answer with the JSON object only"):
         assert rule.lower() in A.SYSTEM.lower(), rule
