@@ -1331,6 +1331,8 @@ SUMMARY_RX = re.compile(
     # 1.43: the night's tally relayed by a regional tracker: "Уночі Сили ППО збили 161 ціль ворога … Вдалося знищити або
     # подавити 117 ударних безпілотників, 5 балістичних ракет" was drawn as ballistic missiles over Dnipro
     r"(?:уночі|вночі)\s+(?:\S+\s+){0,3}?(?:збил|знищил|подавил)\w*\s+\d+|вдалося\s+(?:знищити|збити|подавити)|"
+    # 1.58.61: "Вночі було застосовано лише 16 з майже 60 готових до застосування балістичних ракет" — last night's count
+    r"(?:уночі|вночі|минулої\s+ночі|за\s+ніч)\s+(?:\S+\s+){0,2}?застосован\w*|"
     # 1.57.9: a strike told after it happened. The Air Force at 23:48: "❗️О 22.10 ворог завдав удару по столиці
     # попередньо 6-ма балістичними ракетами … Інформації щодо пусків з території противника не поступало" — drawn as
     # ballistic missiles over Kyiv, "launch completed", 98 minutes after the strike (the owner: "encore une news
@@ -1391,6 +1393,21 @@ SPAN_WORD_RX = re.compile(r"попередж|застереж|загроз|ри�
 # and nothing in the sky: a launch, a course, a target in flight, an outcome
 SPAN_LIVE_RX = re.compile(r"(?<![а-яіїєґ'])(?:за)?пуск|зафіксов|курс|летить|летять|рухаєт|швидкісн\w*\s+ціл|зліт|злетів|"
                           r"злетіл|(?:у|в)\s+повітрі|вибух|збит|знищ|мінус|негайно|(?<![а-яіїєґ'])над\s", re.I)
+# 1.58.61: and "this night" ahead — "❗️Отримано попередження про повторну загрозу застосування балістичного озброєння по
+# обʼєктах у Києві та Київській області цієї ночі." (27 Oct, 16:59, relayed by the trackers) lit the ballistic strip for
+# 25 minutes, the afternoon before the night it warned of (the owner: "again, it's a news"). The night needs a word of
+# notice — a warning, a forecast, an expectation — not "загроза" alone: "Загроза балістики цієї ночі" in the night
+# itself may be the threat of the moment.
+NIGHT_AHEAD_RX = re.compile(r"(?<![а-яіїєґ'])(?:ціє[їі]\s+ночі|сьогодні\s+(?:в|у)ночі|сьогодні\s+(?:в|у)\s+ночі|"
+                            r"(?:наступн|найближч)\w*\s+ноч\w*|на\s+(?:цю\s+|наступну\s+|найближчу\s+)?ніч(?![а-яіїєґ'])|"
+                            r"(?:протягом|впродовж|упродовж)\s+ночі|этой\s+ночью|сегодня\s+ночью|в\s+эту\s+ночь|на\s+(?:эту\s+)?ночь)", re.I)
+NOTICE_RX = re.compile(r"попередж|застереж|прогноз|очіку|ймовірн|можлив|не\s+виключ|отриман\w*\s+інформац|"
+                       r"предупрежд|прогноз|ожида|вероятн|возможн", re.I)
+# a target going somewhere, in the same sentence: "Шахеди на Бровари, цієї ночі очікуємо ще" is a sighting first ("по
+# балістиці на Київ", "щодо ракет на Київ" is what the warning is about)
+SPAN_TARGET_RX = re.compile(r"(?<![а-яіїєґ'])(?<!по )(?<!про )(?<!щодо )(?:шахед\w*|мопед\w*|бпла|дрон\w*|реактив\w*|балістик\w*|ракет\w*|каб\w*|"
+                            r"ціл[ьі]\w*|бр|\d+\s*[хx×])\s+(?:\S+\s+)?(?:на|повз|через|курс\w*|(?:в|у)\s+(?:бік|напрямку))\s|"
+                            r"(?<![\d.:])\d{1,2}\s+(?:на|повз|курс\w*)\s", re.I)
 # "м. Київ", "с. Гора", "н.п. X", "Київська обл." end no sentence
 _SENT_ABBR = {"м", "с", "смт", "сел", "обл", "р-н", "р", "вул", "просп", "пр", "ст", "пгт", "г", "ім", "т", "п"}
 
@@ -1413,12 +1430,13 @@ def _sentences(text):
 def is_span_warning(s):
     """Is this sentence a warning for hours or days ahead, and nothing seen in the sky?"""
     n = _norm(s)
-    return bool(SPAN_WARN_RX.search(n) and SPAN_WORD_RX.search(n) and not SPAN_LIVE_RX.search(n))
+    ahead = (SPAN_WARN_RX.search(n) and SPAN_WORD_RX.search(n)) or (NIGHT_AHEAD_RX.search(n) and NOTICE_RX.search(n))
+    return bool(ahead and not SPAN_LIVE_RX.search(n) and not SPAN_TARGET_RX.search(n))
 
 
 def drop_span_warnings(text):
     """The post without its warnings for hours or days ahead (1.58.60); "" when that is all it says."""
-    if not text or not SPAN_WARN_RX.search(_norm(text)):
+    if not text or not (SPAN_WARN_RX.search(_norm(text)) or NIGHT_AHEAD_RX.search(_norm(text))):
         return text
     return "".join(s for s in _sentences(text) if not is_span_warning(s)).strip()
 

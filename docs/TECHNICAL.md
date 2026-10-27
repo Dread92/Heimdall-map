@@ -1,6 +1,6 @@
 # Heimdall — technical documentation
 
-**Documented version: 1.58** · last updated 2026-10-27 (1.58.60)
+**Documented version: 1.58** · last updated 2026-10-27 (1.58.61)
 
 The repository is **Dread92/Heimdall-map**. The app's address is **https://heimdall.com.ua** (1.58.34, 18 October
 2026); the Fly app keeps its first name, `kyiv-air-watch-gb`, and its first address keeps working (§15 has the move).
@@ -681,6 +681,14 @@ left. A post that is only that is tagged `alert` + `forecast` — kept in a trac
 line (`parse_kmda`) ignores a day's notice too; an alert start is the official data's and is unchanged. The AI reader's
 rule 12 says the same (`PROMPT_VERSION` 6), and the offline glossary reads it ("A warning was issued for 24 hours
 regarding the enemy's use of ballistic weapons on Kyiv and Kyiv region").
+1.58.61: **and tonight** — "❗️Отримано попередження про повторну загрозу застосування балістичного озброєння по обʼєктах у
+Києві та Київській області цієї ночі.", relayed at 16:59 with last night's count after it, lit the strip for 25 minutes
+(the owner: "again, it's a news"). "Цієї ночі", "сьогодні вночі", "наступної ночі", "на ніч", "протягом ночі"
+(`NIGHT_AHEAD_RX`) count as a span when the sentence has a word of notice (`NOTICE_RX`: a warning, a forecast, an
+expectation — not "загроза" alone, which in the night itself may be the threat of the moment). A sentence that reports a
+target going somewhere (`SPAN_TARGET_RX`: "Шахеди на Бровари, цієї ночі очікуємо ще", "1 на Яготин, протягом доби …") is
+kept whole. "Вночі було застосовано лише 16 з … балістичних ракет" is a summary (`SUMMARY_RX`); a warning followed by a
+summary is tagged `alert` + `forecast`, not dropped as news.
 1.42.1: **a retraction** comes before all of it (`is_retraction()`): a glitch of the system ("лаг системи", "збій
 системи", "хибне спрацювання") on its own, or "not confirmed" / a false alert about something missile-shaped (a speed,
 a launch, a rocket, a MiG) — "Хибна ціль" is not one, that is a decoy, which flies. It is tagged `retract` and nothing
@@ -3006,6 +3014,7 @@ to donate to keep the infrastructure and help the devs" (a Monobank jar, his pic
   military units, mobile air-defence teams, medics — not "the servers") / `sup_fund_qr` / `sup_fund_btn`, and its QR
   code, `static/pumb-qr.svg` (segno; decoded back to the link). The IBAN, the purpose, the NBU link and `nbu-qr.svg` are
   gone; PayPal and the owner's Monobank jar (when set in the dashboard) stay. No card number is written anywhere.
+- **1.58.61, nor a warning for tonight** — §7 (tagging).
 - **1.58.60, a warning for the next 24 hours is no target** — §7 (tagging).
 - **1.58.59, the privacy policy and the Play listing** — §11; docs/PLAY.md.
 - **1.58.58, each pin's own near zone** — §10.1 (the pins).

@@ -86,3 +86,37 @@ def test_the_ai_reader_is_told_the_same_and_the_feed_reads_it_in_english():
     assert '"попередження на 24 години щодо застосування балістики"' in ai_reader.SYSTEM and ai_reader.PROMPT_VERSION == "6"
     assert translate.translate_offline(POST) == \
         "A warning was issued for 24 hours regarding the enemy's use of ballistic weapons on Kyiv and Kyiv region"
+
+
+# ---- 1.58.61: tonight -----------------------------------------------------------------------------------------------
+# 27 Oct, 16:59, relayed by the trackers; the ballistic strip for 25 minutes, the afternoon before the night it warned of
+# (the owner: "again, it's a news"). Its second paragraph is last night's count.
+TONIGHT = ("❗️Отримано попередження про повторну загрозу застосування балістичного озброєння по обʼєктах у Києві та "
+           "Київській області цієї ночі.\n\nВночі було застосовано лише 16 з майже 60 готових до застосування балістичних "
+           "ракет. Жодного «Циркона» застосовано не було.")
+
+
+def test_a_warning_for_tonight_and_last_nights_count_raise_nothing():
+    for ch in CHANNELS + ("eRadarrua", "kpszsu"):
+        assert geo.parse_for_channel(ch, TONIGHT) == [], ch
+        tags = server.tag_feed_text(TONIGHT, ch)
+        assert tags == ["alert", "forecast"], (ch, tags)
+    assert server.is_relevant(TONIGHT, ["alert", "forecast"], "kyiv_airdef")
+    assert geo.looks_like_summary(geo._norm("Вночі було застосовано лише 16 з майже 60 готових до застосування балістичних ракет."))
+    for t in ("Попередження: сьогодні вночі ймовірна масована атака на Київ",
+              "Протягом ночі можливі повторні удари балістикою по столиці, будьте уважні",
+              "Прогноз на наступну ніч: очікується комбінований удар"):
+        assert geo.drop_span_warnings(t) == "", t
+        assert "ballistic_missiles" not in server.tag_feed_text(t, "kyiv_airdef"), t
+
+
+def test_tonight_alone_or_a_target_in_the_sentence_is_still_read():
+    # no word of notice: in the night itself it may be the threat of the moment
+    t = "Загроза балістики цієї ночі для Києва"
+    assert geo.drop_span_warnings(t) == t and "ballistic_missiles" in server.tag_feed_text(t, "chyste_nebo")
+    for t in ("Шахеди на Бровари, цієї ночі очікуємо ще", "1 на Яготин, протягом доби можливі ще",
+              "Реактивний курсом на Київ, найближчу добу можливі нові"):
+        assert geo.drop_span_warnings(t) == t, t
+        assert geo.parse_for_channel("kyiv_airdef", t), t
+    en = translate.translate_offline(TONIGHT)
+    assert en.startswith("❗️A warning was received about repeated threat of the use of ballistic weapons") and "tonight" in en

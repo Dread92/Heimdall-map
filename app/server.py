@@ -395,7 +395,8 @@ def tag_feed_text(text, channel=None, near=None):
     # Only its sentences — what else the post says is tagged as before.
     if geo:
         kept = geo.drop_span_warnings(text)
-        if not kept:
+        # 1.58.61: and a warning for tonight followed by last night's count is a forecast too, not a news item dropped
+        if not kept or (kept != text and geo.looks_like_news(geo._norm(kept))):
             return ["alert", "forecast"]
         text = kept
     tags = [name for name, rx in FEED_TAGS if rx.search(text)]

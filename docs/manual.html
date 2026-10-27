@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Heimdall (Kyiv Air Watch) — the full technical documentation, with a map of the system.">
-<meta name="heimdall-version" content="1.58.60">
-<meta name="heimdall-docs" content="9cea8bca7ab79d2a">
+<meta name="heimdall-version" content="1.58.61">
+<meta name="heimdall-docs" content="707cfae103713ee3">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Heimdall Technical Manual</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -237,7 +237,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
 <header class="top">
   <div class="wrap">
     <a class="brand" href="#top"><b>Heimdall</b><span>Technical manual</span></a>
-    <span class="ver">1.58.60</span>
+    <span class="ver">1.58.61</span>
     <nav class="nav" aria-label="Sections">
       <a href="#map">Map</a><a href="#journeys">Journeys</a><a href="#rules">Rules</a><a href="#reference">Reference</a><a href="#safety">Safety</a>
     </nav>
@@ -256,7 +256,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
       <h1 class="title">How Heimdall works</h1>
       <p class="lead">An unofficial air-threat map for Kyiv and the oblasts around it. One Python process reads the official
       alert data and the channels that track drones and missiles, stores every post before it reads it, rebuilds the map
-      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.60, 27 October 2026:
+      on every pass, and serves the pages and the pushes. This manual is the repository's own documentation, as of version 1.58.61, 27 October 2026:
       the map first, then everything in full.</p>
     </div>
     <dl class="facts">
@@ -647,7 +647,7 @@ figure.map{margin:0;background:var(--panel);border:1px solid var(--line);border-
     <div class="doc" id="doc">
 <section class="part" id="tech" data-label="Reference"><p class="partlabel">Part I · The reference</p>
 <h1 id="heimdall--technical-documentation">Heimdall — technical documentation</h1>
-<p><strong>Documented version: 1.58</strong> · last updated 2026-10-27 (1.58.60)</p>
+<p><strong>Documented version: 1.58</strong> · last updated 2026-10-27 (1.58.61)</p>
 <p>The repository is <strong>Dread92/Heimdall-map</strong>. The app's address is <strong>https://heimdall.com.ua</strong> (1.58.34, 18 October
 2026); the Fly app keeps its first name, <code>kyiv-air-watch-gb</code>, and its first address keeps working (§15 has the move).</p>
 <p>This is the complete technical reference: what runs, where the data comes from, how a Telegram post becomes a
@@ -1767,6 +1767,14 @@ left. A post that is only that is tagged <code>alert</code> + <code>forecast</co
 line (<code>parse_kmda</code>) ignores a day's notice too; an alert start is the official data's and is unchanged. The AI reader's
 rule 12 says the same (<code>PROMPT_VERSION</code> 6), and the offline glossary reads it (&quot;A warning was issued for 24 hours
 regarding the enemy's use of ballistic weapons on Kyiv and Kyiv region&quot;).
+1.58.61: <strong>and tonight</strong> — &quot;❗️Отримано попередження про повторну загрозу застосування балістичного озброєння по обʼєктах у
+Києві та Київській області цієї ночі.&quot;, relayed at 16:59 with last night's count after it, lit the strip for 25 minutes
+(the owner: &quot;again, it's a news&quot;). &quot;Цієї ночі&quot;, &quot;сьогодні вночі&quot;, &quot;наступної ночі&quot;, &quot;на ніч&quot;, &quot;протягом ночі&quot;
+(<code>NIGHT_AHEAD_RX</code>) count as a span when the sentence has a word of notice (<code>NOTICE_RX</code>: a warning, a forecast, an
+expectation — not &quot;загроза&quot; alone, which in the night itself may be the threat of the moment). A sentence that reports a
+target going somewhere (<code>SPAN_TARGET_RX</code>: &quot;Шахеди на Бровари, цієї ночі очікуємо ще&quot;, &quot;1 на Яготин, протягом доби …&quot;) is
+kept whole. &quot;Вночі було застосовано лише 16 з … балістичних ракет&quot; is a summary (<code>SUMMARY_RX</code>); a warning followed by a
+summary is tagged <code>alert</code> + <code>forecast</code>, not dropped as news.
 1.42.1: <strong>a retraction</strong> comes before all of it (<code>is_retraction()</code>): a glitch of the system (&quot;лаг системи&quot;, &quot;збій
 системи&quot;, &quot;хибне спрацювання&quot;) on its own, or &quot;not confirmed&quot; / a false alert about something missile-shaped (a speed,
 a launch, a rocket, a MiG) — &quot;Хибна ціль&quot; is not one, that is a decoy, which flies. It is tagged <code>retract</code> and nothing
@@ -4043,6 +4051,7 @@ page&quot;; the owner: &quot;replace it with this, but keep PayPal&quot;): <code
 military units, mobile air-defence teams, medics — not &quot;the servers&quot;) / <code>sup_fund_qr</code> / <code>sup_fund_btn</code>, and its QR
 code, <code>static/pumb-qr.svg</code> (segno; decoded back to the link). The IBAN, the purpose, the NBU link and <code>nbu-qr.svg</code> are
 gone; PayPal and the owner's Monobank jar (when set in the dashboard) stay. No card number is written anywhere.</li>
+<li><strong>1.58.61, nor a warning for tonight</strong> — §7 (tagging).</li>
 <li><strong>1.58.60, a warning for the next 24 hours is no target</strong> — §7 (tagging).</li>
 <li><strong>1.58.59, the privacy policy and the Play listing</strong> — §11; docs/PLAY.md.</li>
 <li><strong>1.58.58, each pin's own near zone</strong> — §10.1 (the pins).</li>
@@ -6173,7 +6182,7 @@ d'alerte ne sont pas des préférences de style.</p>
 </section>
     </div>
   </div>
-  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.60, 27 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
+  <footer class="wrap foot">Built from the repository's <span style="font-family:var(--mono)">docs/</span> at version 1.58.61, 27 October 2026. TECHNICAL.md is updated with every patch; this page is a snapshot of it.</footer>
 </main>
 
 <script>

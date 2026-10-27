@@ -2,6 +2,16 @@
 
 Every patch adds an entry here and updates [docs/TECHNICAL.md](docs/TECHNICAL.md) — see its §18.
 
+## 1.58.61 — 2026-10-27
+
+- **A warning for tonight is no ballistic missile either** (the owner: "again, it's a news"). "Отримано попередження про
+  повторну загрозу застосування балістичного озброєння по обʼєктах у Києві та Київській області цієї ночі", posted at
+  16:59 with last night's count after it ("Вночі було застосовано лише 16 з майже 60 … балістичних ракет"), lit the
+  ballistic strip for 25 minutes. A warning, forecast or expectation for tonight ("цієї ночі", "сьогодні вночі",
+  "наступної ночі", "протягом ночі") now raises nothing and stays in the feed as a warning; last night's count is a
+  summary. A sentence that reports a target on its way ("Шахеди на Бровари, цієї ночі очікуємо ще") is still read.
+- The feed's English reads both posts properly.
+
 ## 1.58.60 — 2026-10-27
 
 - **A warning for the next 24 hours is no longer a ballistic missile** (the owner: "this @kyiv_airdef message was
